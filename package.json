@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test --pass-with-no-tests",
     "data:ingest": "tsx scripts/ingestHistorical.ts",
-    "data:lineups": "tsx scripts/ingestRotowireLineups.ts"
+    "data:lineups": "tsx scripts/ingestRotowireLineups.ts",
+    "data:minutes": "tsx scripts/ingestCurrentMatchStats.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",
