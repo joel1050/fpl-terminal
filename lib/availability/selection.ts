@@ -42,17 +42,6 @@ interface RotowireSignal {
 const clamp = (value: number, minimum: number, maximum: number): number =>
   Math.min(maximum, Math.max(minimum, value));
 
-/**
- * A match counts half as much as the one four matches later. Team selection is
- * a decision somebody makes each week, so recent matches say more about a
- * player's role than old ones do. Rates behave the other way round and are left
- * on a flat average in the projection model.
- */
-const ROLE_HALF_LIFE_MATCHES = 4;
-/** A match's worth of prior, so two starts in a row do not read as certainty. */
-const ROLE_PRIOR_MATCHES = 1;
-const ROLE_PRIOR_START_RATE = 0.35;
-
 const START_MINUTES: Record<Player["position"], number> = { GK: 90, DEF: 84, MID: 79, FWD: 78 };
 const CAMEO_MINUTES: Record<Player["position"], number> = { GK: 5, DEF: 14, MID: 20, FWD: 20 };
 
@@ -71,27 +60,6 @@ function mapValue<T>(map: ReadonlyMap<number, T> | Readonly<Record<number, T>> |
     : (map as Readonly<Record<number, T>>)[key];
 }
 
-/**
- * Start and cameo rates with recent matches weighted more heavily. Falls back
- * to a flat average when only season totals are available.
- */
-function decayedRoleRates(
-  rows: readonly HistoricalMatchStat[],
-): { startRate: number; cameoRate: number } | undefined {
-  if (rows.length === 0) return undefined;
-  const ordered = [...rows].sort((a, b) => b.gameweek - a.gameweek);
-  let weight = ROLE_PRIOR_MATCHES;
-  let starts = ROLE_PRIOR_MATCHES * ROLE_PRIOR_START_RATE;
-  let cameos = 0;
-  ordered.forEach((row, index) => {
-    const share = Math.pow(0.5, index / ROLE_HALF_LIFE_MATCHES);
-    weight += share;
-    if (row.minutes >= 60) starts += share;
-    else if (row.minutes > 0) cameos += share;
-  });
-  return { startRate: clamp(starts / weight, 0, 1), cameoRate: clamp(cameos / weight, 0, 1) };
-}
-
 function historicalSignal(
   player: Player,
   options: PlayerSelectionOptions,
@@ -107,12 +75,8 @@ function historicalSignal(
     ? Math.max(0, stats.starts)
     : rows.filter((row) => row.minutes >= 60).length;
   const sample = Math.max(matches, starts, stats?.minutes ? Math.ceil(stats.minutes / 90) : 0);
-  const decayed = decayedRoleRates(rows);
-  const startRate = decayed?.startRate
-    ?? (sample > 0 ? clamp(starts / sample, 0, 1) : 0);
-  const cameoRate = decayed
-    ? clamp(decayed.cameoRate, 0, 1 - startRate)
-    : (sample > 0 ? clamp(Math.max(0, appearances - starts) / sample, 0, 1 - startRate) : 0);
+  const startRate = sample > 0 ? clamp(starts / sample, 0, 1) : 0;
+  const cameoRate = sample > 0 ? clamp(Math.max(0, appearances - starts) / sample, 0, 1 - startRate) : 0;
   const appearanceMinutes = rows
     .filter((row) => row.minutes > 0)
     .map((row) => row.minutes)
