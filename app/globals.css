@@ -90,13 +90,61 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .filter-reset { min-height: 28px; margin-left: auto; padding: 0 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 9px; letter-spacing: .06em; }
 .filter-reset:hover { border-color: var(--amber); color: var(--amber); }
 
-.table-wrap { overflow: auto; max-height: calc(100vh - 230px); }
-.player-table { width: max-content; border-collapse: collapse; text-align: right; white-space: nowrap; }
+.table-wrap { overflow: auto; max-height: calc(100vh - 230px); container-type: inline-size; container-name: market-table; }
+.player-table { width: max-content; min-width: 500px; border-collapse: separate; border-spacing: 0; table-layout: auto; text-align: right; white-space: nowrap; }
 .player-table th { position: sticky; z-index: 1; top: 0; padding: 7px 7px; border-bottom: 1px solid var(--border); background: var(--panel); color: var(--muted); font-size: 8px; font-weight: 500; letter-spacing: .05em; }
 .player-table th:first-child, .player-table td:first-child { text-align: left; }
 .player-table td { padding: 4px 7px; border-bottom: 1px solid #151a1d; color: var(--text); font-size: 9px; }
 .player-table tr { transition-property: background-color; transition-duration: 120ms; }
 .player-table tbody tr:hover, .player-table tbody tr.selected { background: #13181b; }
+/* The add action stays reachable no matter how far the panel is squeezed. */
+.player-table th:last-child, .player-table td:last-child { position: sticky; right: 0; z-index: 2; background: var(--panel); box-shadow: -6px 0 6px -6px rgba(0,0,0,.55); }
+.player-table th:last-child { z-index: 3; }
+.player-table tbody tr:hover td:last-child, .player-table tbody tr.selected td:last-child { background: #13181b; }
+
+/* Panel-width aware density: the fixtures column breathes with the panel —
+   one badge (~33px) per step across its whole range — then yields RISK, EXP
+   MIN and XGI/90 before hitting the horizontal-scroll floor. Thresholds are
+   measured against real row content (fixed cols ≈ 504px on desktop) plus a
+   45px safety margin for long names, sort arrows and classic scrollbars. */
+@container market-table (max-width: 648px) { .player-table .fixture-run span:nth-child(n+4) { display: none; } }
+@container market-table (max-width: 681px) { .player-table .fixture-run span:nth-child(n+5) { display: none; } }
+@container market-table (max-width: 714px) { .player-table .fixture-run span:nth-child(n+6) { display: none; } }
+@container market-table (max-width: 747px) { .player-table .fixture-run span:nth-child(n+7) { display: none; } }
+@container market-table (max-width: 780px) { .player-table .fixture-run span:nth-child(n+8) { display: none; } }
+@container market-table (max-width: 813px) { .player-table .fixture-run span:nth-child(n+9) { display: none; } }
+@container market-table (max-width: 846px) { .player-table .fixture-run span:nth-child(n+10) { display: none; } }
+@container market-table (max-width: 879px) { .player-table .fixture-run span:nth-child(n+11) { display: none; } }
+@container market-table (max-width: 912px) { .player-table .fixture-run span:nth-child(n+12) { display: none; } }
+@container market-table (max-width: 945px) { .player-table .fixture-run span:nth-child(n+13) { display: none; } }
+@container market-table (max-width: 978px) { .player-table .fixture-run span:nth-child(n+14) { display: none; } }
+@container market-table (max-width: 1011px) { .player-table .fixture-run span:nth-child(n+15) { display: none; } }
+@container market-table (max-width: 1044px) { .player-table .fixture-run span:nth-child(n+16) { display: none; } }
+@container market-table (max-width: 1077px) { .player-table .fixture-run span:nth-child(n+17) { display: none; } }
+@container market-table (max-width: 1110px) { .player-table .fixture-run span:nth-child(n+18) { display: none; } }
+@container market-table (max-width: 1143px) { .player-table .fixture-run span:nth-child(n+19) { display: none; } }
+@container market-table (max-width: 1176px) { .player-table .fixture-run span:nth-child(n+20) { display: none; } }
+@container market-table (max-width: 1209px) { .player-table .fixture-run span:nth-child(n+21) { display: none; } }
+@container market-table (max-width: 1242px) { .player-table .fixture-run span:nth-child(n+22) { display: none; } }
+@container market-table (max-width: 1275px) { .player-table .fixture-run span:nth-child(n+23) { display: none; } }
+@container market-table (max-width: 1308px) { .player-table .fixture-run span:nth-child(n+24) { display: none; } }
+@container market-table (max-width: 1341px) { .player-table .fixture-run span:nth-child(n+25) { display: none; } }
+@container market-table (max-width: 1374px) { .player-table .fixture-run span:nth-child(n+26) { display: none; } }
+@container market-table (max-width: 1407px) { .player-table .fixture-run span:nth-child(n+27) { display: none; } }
+@container market-table (max-width: 1440px) { .player-table .fixture-run span:nth-child(n+28) { display: none; } }
+@container market-table (max-width: 1473px) { .player-table .fixture-run span:nth-child(n+29) { display: none; } }
+@container market-table (max-width: 1506px) { .player-table .fixture-run span:nth-child(n+30) { display: none; } }
+@container market-table (max-width: 1539px) { .player-table .fixture-run span:nth-child(n+31) { display: none; } }
+@container market-table (max-width: 1572px) { .player-table .fixture-run span:nth-child(n+32) { display: none; } }
+@container market-table (max-width: 1605px) { .player-table .fixture-run span:nth-child(n+33) { display: none; } }
+@container market-table (max-width: 1638px) { .player-table .fixture-run span:nth-child(n+34) { display: none; } }
+@container market-table (max-width: 1671px) { .player-table .fixture-run span:nth-child(n+35) { display: none; } }
+@container market-table (max-width: 1704px) { .player-table .fixture-run span:nth-child(n+36) { display: none; } }
+@container market-table (max-width: 1737px) { .player-table .fixture-run span:nth-child(n+37) { display: none; } }
+@container market-table (max-width: 1770px) { .player-table .fixture-run span:nth-child(n+38) { display: none; } }
+@container market-table (max-width: 647px) { .player-table th:nth-child(11), .player-table td:nth-child(11) { display: none; } }
+@container market-table (max-width: 619px) { .player-table th:nth-child(9), .player-table td:nth-child(9) { display: none; } }
+@container market-table (max-width: 577px) { .player-table th:nth-child(10), .player-table td:nth-child(10) { display: none; } }
 .player-name-button { display: inline-flex; align-items: baseline; max-width: 205px; gap: 4px; overflow: hidden; border: 0; background: transparent; color: var(--text); text-align: left; }
 .player-name-button strong { overflow: hidden; text-overflow: ellipsis; font-size: 10px; font-weight: 600; }
 .player-name-button small { color: var(--muted); font-size: 9px; }

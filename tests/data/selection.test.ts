@@ -47,6 +47,10 @@ describe("player selection model", () => {
     });
     const starter = selections.get(1)!;
     const absent = selections.get(2)!;
+    expect(starter.startProbability).toBe(0.875);
+    expect(starter.cameoProbability).toBe(0.068);
+    expect(absent.startProbability).toBe(0.275);
+    expect(absent.cameoProbability).toBe(0.12);
     expect(starter.startProbability).toBeGreaterThan(absent.startProbability * 3);
     expect(starter.evidence.some((item) => item.source === "ROTOWIRE_XI")).toBe(true);
     expect(absent.evidence.some((item) => item.detail.includes("Not in the RotoWire predicted XI"))).toBe(true);
@@ -104,6 +108,26 @@ describe("player selection model", () => {
     expect(selections.get(2)!.startProbability).toBeLessThan(0.05);
     expect(selections.get(3)!.startProbability).toBeLessThan(selections.get(4)!.startProbability);
     expect(selections.get(3)!.evidence.some((item) => item.source === "ROTOWIRE_AVAILABILITY")).toBe(true);
+  });
+
+  it("never lets a RotoWire starter signal raise injured or suspended probabilities", () => {
+    const injured = { ...player(1), status: "i" };
+    const suspended = { ...player(2), status: "s" };
+    const selections = buildPlayerSelections([injured, suspended], {
+      rotowire: {
+        mappings: [
+          mapping(1, "STARTER"),
+          mapping(1, "UNAVAILABLE", "OUT"),
+          mapping(2, "STARTER"),
+          mapping(2, "UNAVAILABLE", "SUS"),
+        ],
+      },
+    });
+
+    for (const selection of selections.values()) {
+      expect(selection.startProbability).toBeLessThanOrEqual(0.01);
+      expect(selection.cameoProbability).toBeLessThanOrEqual(0.01);
+    }
   });
 
   it("keeps an uncovered, unmapped player on a conservative prior", () => {

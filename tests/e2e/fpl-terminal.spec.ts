@@ -137,9 +137,16 @@ test.describe("FPL Terminal acceptance", () => {
 
     const universe = page.getByRole("region", { name: /player universe/i }).first();
     await expect(universe).toBeVisible();
-    const headers = (await universe.getByRole("columnheader").allTextContents()).join(" ").replace(/\s+/g, " ");
-    for (const label of [/own(?:ership)?%?/i, /(?:gw\s*xp|xp\s*gw)/i, /(?:3gw|3\s*gw|xp\s*3)/i, /(?:5gw|5\s*gw|xp\s*5)/i, /xp\s*\/\s*£/i, /(?:exp|expected)\s*min/i, /risk/i, /fixtures/i]) {
-      expect(headers, `player universe should expose ${label}`).toMatch(label);
+    const headers = () => universe.getByRole("columnheader").allTextContents().then((texts) => texts.join(" ").replace(/\s+/g, " "));
+    for (const label of [/own(?:ership)?%?/i, /(?:gw\s*xp|xp\s*gw)/i, /(?:3gw|3\s*gw|xp\s*3)/i, /(?:5gw|5\s*gw|xp\s*5)/i, /xp\s*\/\s*£/i, /fixtures/i]) {
+      expect(await headers(), `player universe should expose ${label}`).toMatch(label);
+    }
+
+    // Secondary metric columns yield to panel width and return on wide screens.
+    await page.setViewportSize({ width: 1728, height: 1000 });
+    await expect(universe).toBeVisible();
+    for (const label of [/(?:exp|expected)\s*min/i, /xgi\s*\/?\s*90/i, /risk/i]) {
+      expect(await headers(), `player universe should expose ${label} on wide panels`).toMatch(label);
     }
 
     for (const name of [/player universe/i, /squad builder/i, /squad analysis/i, /ai analyst/i]) {

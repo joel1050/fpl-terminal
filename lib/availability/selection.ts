@@ -236,12 +236,11 @@ export function buildPlayerSelections(
     let start = historicalStart * 0.75 + fallbackStartRate(player) * 0.25;
     let cameo = historicalCameo * 0.75 + fallbackCameoRate(player) * 0.25;
     const teamCovered = coveredTeams.has(player.teamId);
-    if (signal?.starter) {
-      start = Math.max(start, signal.confirmed ? 0.96 : 0.9);
-      cameo = Math.min(cameo, 0.05);
-    } else if (teamCovered) {
-      start *= 0.2;
-      cameo = Math.max(cameo, 0.12);
+    if (teamCovered) {
+      const rotowireStart = signal?.starter ? (signal.confirmed ? 0.96 : 0.9) : 0.1;
+      const rotowireCameo = signal?.starter ? 0.05 : 0.12;
+      start = rotowireStart * 0.75 + historicalStart * 0.25;
+      cameo = rotowireCameo * 0.75 + historicalCameo * 0.25;
     }
     if (signal?.availability) {
       start *= signal.availability === "QUES" ? 0.65 : 0.01;

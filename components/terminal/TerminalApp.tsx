@@ -297,7 +297,7 @@ function expectedInvolvementPer90(player: TerminalPlayer): string {
 
 function FixtureRun({ player }: { player: TerminalPlayer }) {
   if (!player.fixtures.length) return <>—</>;
-  return <span className="fixture-run">{player.fixtures.slice(0, 5).map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>)}</span>;
+  return <span className="fixture-run">{player.fixtures.map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>)}</span>;
 }
 
 function weeklyPoints(plan: WeeklyLineupPlan): number {
