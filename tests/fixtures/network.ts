@@ -29,6 +29,33 @@ export async function interceptFplData(page: Page) {
       return;
     }
 
+    if (pathname.includes("/api/transfer-suggestions") && route.request().method() === "POST") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          gameweek: 1,
+          horizon: 5,
+          suggestions: [{
+            outgoingPlayerId: 17,
+            incomingPlayerId: 20,
+            horizon: 5,
+            beforeXp: 250,
+            afterXp: 248,
+            projectedDelta: -2,
+            projectedDeltaPerGW: -0.4,
+            cashReleasedTenths: 6,
+            score: -0.25,
+            kind: "CASH_RELEASE",
+            incomingRisk: 0.05,
+            confidence: "HIGH",
+            reason: "cash release: -2.0 xP over 5GW, releases £0.6m",
+          }],
+        }),
+      });
+      return;
+    }
+
     if (/(?:ai|analyst|chat)/.test(pathname) && route.request().method() !== "GET") {
       // The acceptance test models a missing key without making a production API call.
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "DEEPSEEK_API_KEY is not configured" }) });

@@ -14,7 +14,8 @@ import { normalizeBootstrap } from "@/lib/fpl/normalize";
 import { enrichPlayersWithHistory } from "@/lib/historical/enrichPlayers";
 import { loadHistoricalBundle } from "@/lib/historical/load";
 import { analyzeSquad } from "@/lib/analysis/analyzeSquad";
-import { findReplacements, suggestForSlot } from "@/lib/analysis/replacements";
+import { suggestForSlot } from "@/lib/analysis/replacements";
+import { findBestSingleTransfers } from "@/lib/analysis/singleTransfers";
 import { simulateChange } from "@/lib/analysis/simulateChange";
 import { projectPlayer } from "@/lib/projections/projectPlayer";
 import type { OptimizerResult } from "@/lib/optimizer/optimizer";
@@ -167,8 +168,8 @@ export function createFplToolAdapters(): AIDataAdapters {
     },
     findReplacements: async (input, context) => {
       const universe = await players();
-      const result = findReplacements({ outgoingPlayerId: input.playerId, squad: selectedIds(context), players: universe, ...options(context) });
-      return { candidates: result.slice(0, input.limit ?? 5), maxAffordablePriceTenths: result.maxAffordablePriceTenths, message: result.message };
+      const result = findBestSingleTransfers({ outgoingPlayerId: input.playerId, squad: selectedIds(context), players: universe, gameweek: context.gameweek, ...options(context) });
+      return { candidates: result.slice(0, input.limit ?? 5), method: "exact_single_transfer" };
     },
     suggestForSlot: async (input, context) => {
       const universe = await players();
@@ -184,9 +185,13 @@ export function createFplToolAdapters(): AIDataAdapters {
       lockedPlayerIds: [...new Set([...(context.squad.lockedPlayerIds ?? []), input.playerId])],
     })),
     simulateChange: async (input, context) => {
-      const result = simulateChange({ squad: selectedIds(context), players: await players(), outId: input.outId, inId: input.inId, ...options(context) });
+      const result = simulateChange({ squad: selectedIds(context), players: await players(), outId: input.outId, inId: input.inId, gameweek: context.gameweek, ...options(context) });
       return {
         legal: result.legal,
+        horizon: result.horizon,
+        optimizedBeforeXp: result.optimizedBeforeXp,
+        optimizedAfterXp: result.optimizedAfterXp,
+        projectedDelta: result.projectedDelta,
         priceDeltaTenths: result.priceDeltaTenths,
         projectedDeltaGW: result.projectedDeltaGW,
         projectedDelta3: result.projectedDelta3,

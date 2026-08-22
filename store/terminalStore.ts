@@ -163,6 +163,7 @@ export type TerminalState = {
   setSort: (sortKey: SortKey) => void;
   addPlayer: (id: number, position: Position) => boolean;
   removePlayer: (id: number) => boolean;
+  replacePlayer: (outgoingId: number, incomingId: number, position: Position) => boolean;
   toggleLock: (id: number) => void;
   setSelectedPlayer: (id?: number) => void;
   setStrategy: (strategy: Partial<Pick<TerminalState, "horizon" | "riskMode" | "benchStrategy">>) => void;
@@ -245,6 +246,20 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       lockedPlayerIds: state.lockedPlayerIds.filter((playerId) => playerId !== id),
       captainId: state.captainId === id ? undefined : state.captainId,
       viceCaptainId: state.viceCaptainId === id ? undefined : state.viceCaptainId,
+    });
+    return true;
+  },
+  replacePlayer: (outgoingId, incomingId, position) => {
+    const state = get();
+    if (state.lockedPlayerIds.includes(outgoingId) || state.playerIds.includes(incomingId) || positionOf(outgoingId, state.byPosition) !== position) return false;
+    set({
+      playerIds: state.playerIds.map((id) => id === outgoingId ? incomingId : id),
+      byPosition: { ...state.byPosition, [position]: state.byPosition[position].map((id) => id === outgoingId ? incomingId : id) },
+      benchGoalkeeperId: state.benchGoalkeeperId === outgoingId ? incomingId : state.benchGoalkeeperId,
+      benchOrder: state.benchOrder.map((id) => id === outgoingId ? incomingId : id),
+      captainId: state.captainId === outgoingId ? incomingId : state.captainId,
+      viceCaptainId: state.viceCaptainId === outgoingId ? incomingId : state.viceCaptainId,
+      selectedPlayerId: incomingId,
     });
     return true;
   },

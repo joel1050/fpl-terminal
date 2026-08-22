@@ -4,9 +4,11 @@ import type { Player } from "../../types/player";
 import { analyzeSquad, type AnalyzeSquadOptions } from "./analyzeSquad";
 import { asPlayers, costOf, legalSquad, playerMap, type PlayerUniverse, type SquadReference } from "./context";
 import { budgetFeasibility } from "./replacements";
+import { projectWeeklyLineupHorizons } from "../squad/weeklyLineup";
 
 export interface SimulateChangeInput extends AnalyzeSquadOptions {
   squad: SquadReference;
+  gameweek?: number;
   players?: PlayerUniverse;
   playerPool?: PlayerUniverse;
   outId?: number;
@@ -75,19 +77,42 @@ export function simulateChange(input: SimulateChangeInput): SimulationResult {
   const partialErrors = legality.errors.filter((error) => !error.startsWith("Squad must contain 15") && !/requires \d+ players \(received/.test(error));
   const legal = partialErrors.length === 0 && (afterIds.length === 15 ? legality.legal : feasibility.feasible);
   const priceDeltaTenths = costOf(afterIds, map) - costOf(beforeIds, map);
-  const projectedDeltaGW = after.projectedNextGW - before.projectedNextGW;
-  const projectedDelta3 = after.projectedNext3 - before.projectedNext3;
-  const projectedDelta5 = after.projectedNext5 - before.projectedNext5;
+  const baselineLegal = legalSquad(beforeIds, map, {
+    budgetTenths: input.budgetTenths,
+    maxPlayersPerClub: input.maxPlayersPerClub,
+    excludedPlayerIds: input.excludedPlayerIds,
+  }).legal;
+  const riskMode = input.risk ?? input.strategy?.risk ?? "BALANCED";
+  const gameweek = input.gameweek ?? 1;
+  const beforePlayers = beforeIds.map((id) => map.get(id)).filter((player): player is Player => Boolean(player));
+  const afterPlayers = afterIds.map((id) => map.get(id)).filter((player): player is Player => Boolean(player));
+  const beforeProjection = baselineLegal
+    ? projectWeeklyLineupHorizons({ squad: beforePlayers, gameweek, riskMode })
+    : { nextGW: before.projectedNextGW, next3: before.projectedNext3, next5: before.projectedNext5 };
+  const afterProjection = legal
+    ? projectWeeklyLineupHorizons({ squad: afterPlayers, gameweek, riskMode })
+    : { nextGW: after.projectedNextGW, next3: after.projectedNext3, next5: after.projectedNext5 };
+  const projectedDeltaGW = afterProjection.nextGW - beforeProjection.nextGW;
+  const projectedDelta3 = afterProjection.next3 - beforeProjection.next3;
+  const projectedDelta5 = afterProjection.next5 - beforeProjection.next5;
+  const horizon = input.horizon ?? input.strategy?.horizon ?? 5;
+  const optimizedBeforeXp = horizon === 1 ? beforeProjection.nextGW : horizon === 3 ? beforeProjection.next3 : beforeProjection.next5;
+  const optimizedAfterXp = horizon === 1 ? afterProjection.nextGW : horizon === 3 ? afterProjection.next3 : afterProjection.next5;
+  const projectedDelta = optimizedAfterXp - optimizedBeforeXp;
   if (priceDeltaTenths > 0) explanationFactors.push(`Costs ${(priceDeltaTenths / 10).toFixed(1)}m more.`);
   if (priceDeltaTenths < 0) explanationFactors.push(`Releases ${(-priceDeltaTenths / 10).toFixed(1)}m.`);
-  if (projectedDelta5 > 0) explanationFactors.push(`Adds ${projectedDelta5.toFixed(1)} projected points over five gameweeks.`);
-  if (projectedDelta5 < 0) explanationFactors.push(`Loses ${(-projectedDelta5).toFixed(1)} projected points over five gameweeks.`);
+  if (projectedDelta > 0) explanationFactors.push(`Adds ${projectedDelta.toFixed(1)} optimized projected points over ${horizon} gameweek${horizon === 1 ? "" : "s"}.`);
+  if (projectedDelta < 0) explanationFactors.push(`Loses ${(-projectedDelta).toFixed(1)} optimized projected points over ${horizon} gameweek${horizon === 1 ? "" : "s"}.`);
   explanationFactors.push(...legality.errors);
   if (afterIds.length < 15 && !feasibility.feasible) explanationFactors.push("The partial squad cannot be completed within the remaining budget.");
   if (!explanationFactors.length) explanationFactors.push("No material model change was detected.");
   return {
     before,
     after,
+    horizon,
+    optimizedBeforeXp,
+    optimizedAfterXp,
+    projectedDelta,
     priceDeltaTenths,
     projectedDeltaGW,
     projectedDelta3,

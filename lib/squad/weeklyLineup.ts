@@ -99,6 +99,11 @@ function metrics(player: Player, gameweek: number): PlayerWeekMetrics {
   };
 }
 
+/** Shared player inputs used by weekly lineup and exact transfer comparisons. */
+export function weeklyPlayerMetrics(player: Player, gameweek: number): PlayerWeekMetrics {
+  return metrics(player, gameweek);
+}
+
 function formationCounts(ids: readonly number[], players: ReadonlyMap<number, Player>): Record<Position, number> {
   const counts: Record<Position, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
   for (const id of ids) {
@@ -186,10 +191,6 @@ function benchIsValid(players: readonly Player[], starterIds: readonly number[],
     byId.get(keeperId)?.position === "GK" && order.every((id) => byId.get(id)?.position !== "GK");
 }
 
-function playedMaskValue(id: number, allIds: readonly number[], mask: number): boolean {
-  return (mask & (1 << allIds.indexOf(id))) !== 0;
-}
-
 function appearanceProbability(ids: readonly number[], mask: number, probabilities: ReadonlyMap<number, number>): number {
   return ids.reduce((value, id, index) => {
     const play = (mask & (1 << index)) !== 0;
@@ -198,23 +199,32 @@ function appearanceProbability(ids: readonly number[], mask: number, probabiliti
   }, 1);
 }
 
-function applyMask(
+function appearanceStates(ids: readonly number[], probabilities: ReadonlyMap<number, number>): Array<{ mask: number; probability: number }> {
+  const states: Array<{ mask: number; probability: number }> = [];
+  for (let mask = 0; mask < (1 << ids.length); mask += 1) {
+    const probability = appearanceProbability(ids, mask, probabilities);
+    if (probability > 0) states.push({ mask, probability });
+  }
+  return states;
+}
+
+function outfieldAutosubGain(
   starterIds: readonly number[],
-  keeperId: number,
+  outfieldStarters: readonly number[],
   benchOrder: readonly number[],
-  allIds: readonly number[],
-  mask: number,
+  starterMask: number,
+  benchMask: number,
   byId: ReadonlyMap<number, Player>,
   gameweek: number,
 ): number {
   const starters = [...starterIds];
   let gain = 0;
-  const isPlaying = (id: number) => playedMaskValue(id, allIds, mask);
-  const starterKeeper = starters.find((id) => byId.get(id)?.position === "GK");
-  if (starterKeeper !== undefined && !isPlaying(starterKeeper) && isPlaying(keeperId)) {
-    starters.splice(starters.indexOf(starterKeeper), 1, keeperId);
-    gain += metrics(byId.get(keeperId)!, gameweek).points;
-  }
+  const isPlaying = (id: number) => {
+    const starterIndex = outfieldStarters.indexOf(id);
+    if (starterIndex >= 0) return (starterMask & (1 << starterIndex)) !== 0;
+    const benchIndex = benchOrder.indexOf(id);
+    return benchIndex < 0 || (benchMask & (1 << benchIndex)) !== 0;
+  };
   for (const substituteId of benchOrder) {
     if (!isPlaying(substituteId)) continue;
     const absent = starters
@@ -238,15 +248,22 @@ export function expectedAutosubValue(
 ): number {
   const byId = new Map(players.map((player) => [player.id, player]));
   if (!benchIsValid(players, starterIds, benchGoalkeeperId, benchOrder)) return 0;
-  const allIds = [...starterIds, benchGoalkeeperId, ...benchOrder];
   const probabilities = new Map(players.map((player) => [player.id, probabilityDidNotPlay(player, gameweek)]));
-  let expected = 0;
-  for (let mask = 0; mask < (1 << allIds.length); mask += 1) {
-    const probability = appearanceProbability(allIds, mask, probabilities);
-    if (probability === 0) continue;
-    expected += probability * applyMask(starterIds, benchGoalkeeperId, benchOrder, allIds, mask, byId, gameweek);
+  const starterKeeper = starterIds.find((id) => byId.get(id)?.position === "GK");
+  const keeperExpected = starterKeeper === undefined ? 0 : (probabilities.get(starterKeeper) ?? 0)
+    * (1 - (probabilities.get(benchGoalkeeperId) ?? 0))
+    * metrics(byId.get(benchGoalkeeperId)!, gameweek).points;
+  const outfieldStarters = starterIds.filter((id) => byId.get(id)?.position !== "GK");
+  const starterStates = appearanceStates(outfieldStarters, probabilities);
+  const benchStates = appearanceStates(benchOrder, probabilities);
+  let outfieldExpected = 0;
+  for (const starterState of starterStates) {
+    for (const benchState of benchStates) {
+      outfieldExpected += starterState.probability * benchState.probability
+        * outfieldAutosubGain(starterIds, outfieldStarters, benchOrder, starterState.mask, benchState.mask, byId, gameweek);
+    }
   }
-  return round(expected);
+  return round(keeperExpected + outfieldExpected);
 }
 
 function fingerprint(players: readonly Player[], gameweek: number): string {
@@ -339,6 +356,26 @@ export function pickWeeklyTeam(input: WeeklyLineupInput): WeeklyLineupPlan {
     warnings: [],
     projectionFingerprint: fingerprint(squad, gameweek),
   };
+}
+
+/** Uses the weekly lineup engine for each distinct gameweek in the displayed horizons. */
+export function projectWeeklyLineupHorizons(input: WeeklyLineupInput, appliedPlan?: WeeklyLineupPlan) {
+  const plans = Array.from({ length: 5 }, (_, index) => {
+    const gameweek = input.gameweek + index;
+    return index === 0 && appliedPlan?.gameweek === gameweek
+      ? appliedPlan
+      : pickWeeklyTeam({ ...input, gameweek });
+  });
+  const total = (length: number) => round(plans.slice(0, length).reduce((sum, plan) => sum + plan.projectedTotal, 0));
+  return { nextGW: total(1), next3: total(3), next5: total(5) };
+}
+
+/** Projects only the requested number of distinct gameweeks. */
+export function projectWeeklyLineupTotal(input: WeeklyLineupInput, horizon: 1 | 3 | 5): number {
+  return round(Array.from({ length: horizon }, (_, index) => pickWeeklyTeam({
+    ...input,
+    gameweek: input.gameweek + index,
+  })).reduce((sum, plan) => sum + plan.projectedTotal, 0));
 }
 
 /** Validates a manually persisted lineup against the current 15-player squad. */

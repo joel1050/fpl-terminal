@@ -5,6 +5,7 @@ import {
   expectedAutosubValue,
   pickWeeklyTeam,
   probabilityDidNotPlay,
+  projectWeeklyLineupHorizons,
   validateWeeklyLineup,
 } from "@/lib/squad/weeklyLineup";
 
@@ -109,6 +110,26 @@ describe("weekly lineup engine", () => {
     expect(plan.projectedXI).toBe(0);
     expect(plan.projectedTotal).toBe(0);
     expect(probabilityDidNotPlay(players[0], 2)).toBe(1);
+  });
+
+  it("builds 1GW, 3GW, and 5GW totals from the same weekly lineup method", () => {
+    const players = squad().map((item) => ({
+      ...item,
+      projection: {
+        ...item.projection!,
+        fixtures: Array.from({ length: 5 }, (_, index) => ({
+          ...item.projection!.fixtures[0],
+          gameweek: index + 1,
+          expectedPoints: item.projection!.nextGW + index,
+        })),
+      },
+    }));
+    const plans = Array.from({ length: 5 }, (_, index) => pickWeeklyTeam({ squad: players, gameweek: index + 1, riskMode: "BALANCED" }));
+    expect(projectWeeklyLineupHorizons({ squad: players, gameweek: 1, riskMode: "BALANCED" })).toEqual({
+      nextGW: plans[0].projectedTotal,
+      next3: Math.round(plans.slice(0, 3).reduce((sum, plan) => sum + plan.projectedTotal, 0) * 1000) / 1000,
+      next5: Math.round(plans.reduce((sum, plan) => sum + plan.projectedTotal, 0) * 1000) / 1000,
+    });
   });
 
   it("uses raw xPts for captain and appearance-adjusted xPts for vice-captain", () => {

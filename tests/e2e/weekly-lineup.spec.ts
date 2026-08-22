@@ -130,7 +130,8 @@ test.describe("weekly lineup acceptance", () => {
     await expect(region.getByRole("button", { name: /select .* to move into the starting xi/i })).toHaveCount(4);
     await editWeeklyTeam(region);
 
-    await expect(region).toContainText(/GW \d+ · \d-\d-\d · .* xP/i);
+    await expect(region.locator(".lineup-status")).toHaveCount(0);
+    await expect(region.getByLabel("Squad projection metrics")).toContainText(/GW xP/i);
     const saved = await page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");
       return state && {
@@ -194,6 +195,15 @@ test.describe("weekly lineup acceptance", () => {
     expect(layout).toEqual({ centeredRows: true, centeredBench: true, goalkeeperWideEnough: true, cardsInsidePanel: true });
   });
 
+  test("shows the centered XI and bench before the lineup is applied", async ({ page }) => {
+    await pasteLegalSquad(page);
+    const region = weeklyRegion(page);
+    await expect(region.getByRole("region", { name: /^starting xi$/i })).toBeVisible();
+    await expect(region.getByRole("region", { name: /^bench$/i })).toBeVisible();
+    await expect(region.getByRole("button", { name: /make .* captain/i })).toHaveCount(11);
+    await expect(region.getByRole("button", { name: /select .* to move into the starting xi/i })).toHaveCount(4);
+  });
+
   test("surfaces stale FPL data after a gameweek refresh", async ({ page }) => {
     await pasteLegalSquad(page);
     await openWeeklyTeam(page);
@@ -225,7 +235,7 @@ test.describe("weekly lineup acceptance", () => {
 
     await clickButton(page, /^REFRESH$/i);
     await expect(page.getByLabel("Terminal status")).toContainText(/STALE|SNAPSHOT/i);
-    await expect(page.getByText(/stale|out of date|refresh.*lineup|reselect/i).first()).toBeVisible();
+    await expect(weeklyRegion(page).getByRole("button", { name: /pick team · outdated/i })).toBeVisible();
   });
 
   test("keeps the weekly picker usable on a phone-sized screen", async ({ page }) => {

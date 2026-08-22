@@ -4,7 +4,12 @@ import { interceptFplData } from "../fixtures/network";
 
 test.describe("FPL Terminal acceptance", () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => window.localStorage.clear());
+    await page.addInitScript(() => {
+      if (!window.sessionStorage.getItem("fpl-terminal-test")) {
+        window.localStorage.clear();
+        window.sessionStorage.setItem("fpl-terminal-test", "ready");
+      }
+    });
     await interceptFplData(page);
     await page.goto("/");
   });
@@ -104,11 +109,25 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("region", { name: /weakest links/i })).toHaveCount(0);
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
     await expect(replacements).toBeVisible();
+    await expect(replacements).toContainText(/EXACT/i);
+    await expect(replacements).toContainText(/Faes\s*→\s*Smith/i);
+
+    await clickButton(page, /^PICK TEAM$/i);
+    await expect(page.getByText(/team picked and saved/i)).toBeVisible();
 
     await replacements.getByRole("button", { name: /simulate/i }).first().click();
     await expect(page.getByText(/simulation|before|after|price effect|gw effect/i).first()).toBeVisible();
     await clickButton(page, /apply/i);
     await expect(page.getByText(/applied|updated|total cost|projected/i).first()).toBeVisible();
+    const squadPanel = page.getByRole("region", { name: /squad builder and analysis/i });
+    await expect(squadPanel.getByRole("button", { name: /pick team · outdated/i })).toBeVisible();
+    await expect(squadPanel.getByTestId("squad-roster")).toContainText(/Smith/i);
+    await expect(squadPanel.getByTestId("squad-roster")).not.toContainText(/Faes/i);
+
+    await page.reload();
+    await chooseMode(page, /analyze (?:a )?team/i);
+    await waitForMarket(page);
+    await expect(page.getByRole("region", { name: /squad builder and analysis/i }).getByTestId("squad-roster")).toContainText(/Smith/i);
   });
 
   test("keeps the quantitative workspace usable and explains AI offline mode", async ({ page }) => {

@@ -110,6 +110,16 @@ describe("persisted weekly lineup state", () => {
     expect(isLineupStale(current.lineupGameweek, current.lineupProjectionFingerprint, 1, "fp-2")).toBe(true);
   });
 
+  it("applies a transfer atomically while preserving the outgoing lineup role", () => {
+    const store = useTerminalStore.getState();
+    expect(store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "fp-1", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 })).toBe(true);
+    expect(store.replacePlayer(12, 20, "MID")).toBe(true);
+    expect(useTerminalStore.getState()).toMatchObject({ benchOrder: [7, 20, 15], lineupGameweek: 1, lineupProjectionFingerprint: "fp-1" });
+    const before = useTerminalStore.getState().playerIds;
+    expect(useTerminalStore.getState().replacePlayer(3, 20, "DEF")).toBe(false);
+    expect(useTerminalStore.getState().playerIds).toEqual(before);
+  });
+
   it("drops metadata instead of manufacturing a lineup from malformed persisted bench data", () => {
     useTerminalStore.getState().reset();
     useTerminalStore.getState().hydrate({

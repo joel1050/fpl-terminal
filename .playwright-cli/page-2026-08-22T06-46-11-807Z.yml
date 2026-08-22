@@ -1,0 +1,13 @@
+- main [ref=e2]:
+  - generic [ref=e3]: FPL TERMINAL
+  - paragraph [ref=e6]: QUANTITATIVE FPL SQUAD INTELLIGENCE
+  - generic [ref=e7]:
+    - button "MODE A BUILD FROM SCRATCH Start with £100.0m and construct your squad player by player, with live projections reacting to every pick." [active] [ref=e8] [cursor=pointer]:
+      - generic [ref=e9]: MODE A
+      - strong [ref=e10]: BUILD FROM SCRATCH
+      - generic [ref=e11]: Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.
+    - 'button "MODE B ANALYZE A TEAM Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities." [ref=e12] [cursor=pointer]':
+      - generic [ref=e13]: MODE B
+      - strong [ref=e14]: ANALYZE A TEAM
+      - generic [ref=e15]: "Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities."
+  - generic [ref=e16]: SYNCING FPL MARKET…
