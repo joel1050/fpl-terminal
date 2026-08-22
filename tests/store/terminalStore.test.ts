@@ -138,8 +138,11 @@ describe("persisted weekly lineup state", () => {
   });
 
   it("round-trips the new fields through saved state parsing", () => {
+    useTerminalStore.getState().dismissTransferSuggestion(3, 16);
     const saved = exportTerminalState(useTerminalStore.getState());
-    expect(parseSavedState(JSON.stringify(saved))).toMatchObject({ benchOrder: [] });
+    useTerminalStore.getState().reset();
+    useTerminalStore.getState().hydrate(parseSavedState(JSON.stringify(saved)));
+    expect(useTerminalStore.getState()).toMatchObject({ benchOrder: [], dismissedTransferKeys: ["3:16"] });
   });
 
   it("replaces a complete imported squad atomically", () => {

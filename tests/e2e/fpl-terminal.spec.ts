@@ -155,6 +155,20 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("region", { name: /squad builder and analysis/i }).getByTestId("squad-roster")).toContainText(/Saka/i);
   });
 
+  test("dismisses a transfer suggestion across reloads", async ({ page }) => {
+    await chooseMode(page, /analyze (?:a )?team/i);
+    await waitForMarket(page);
+    const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
+    const dismiss = replacements.getByRole("button", { name: /dismiss rice to saka suggestion/i });
+    await expect(dismiss).toBeVisible();
+    await dismiss.click();
+    await expect(replacements).not.toContainText(/Rice\s*→\s*Saka/i);
+
+    await page.reload();
+    await waitForMarket(page);
+    await expect(page.getByRole("region", { name: /^transfer suggestions$/i })).not.toContainText(/Rice\s*→\s*Saka/i);
+  });
+
   test("keeps the quantitative workspace usable and explains AI offline mode", async ({ page }) => {
     await chooseMode(page, /build from scratch/i);
     await waitForMarket(page);

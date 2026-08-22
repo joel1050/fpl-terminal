@@ -57,6 +57,7 @@ export type PersistedTerminalState = PersistentFPLState & {
   lineupGameweek?: number;
   lineupProjectionFingerprint?: string;
   panelRatios?: Partial<Record<DesktopPanel, number>>;
+  dismissedTransferKeys?: string[];
 };
 
 const emptySlots = (): SlotMap => ({ GK: [], DEF: [], MID: [], FWD: [] });
@@ -174,6 +175,7 @@ export type TerminalState = {
   riskMode: RiskMode;
   benchStrategy: BenchStrategy;
   panelRatios: Partial<Record<DesktopPanel, number>>;
+  dismissedTransferKeys: string[];
   isHydrated: boolean;
   setMode: (mode: TerminalMode | null) => void;
   setMobileTab: (tab: TerminalState["activeMobileTab"]) => void;
@@ -188,6 +190,7 @@ export type TerminalState = {
   setSelectedPlayer: (id?: number) => void;
   setStrategy: (strategy: Partial<Pick<TerminalState, "horizon" | "riskMode" | "benchStrategy">>) => void;
   setPanelRatios: (ratios: Partial<Record<DesktopPanel, number>>) => void;
+  dismissTransferSuggestion: (outgoingId: number, incomingId: number) => void;
   setCaptain: (id?: number) => boolean;
   setViceCaptain: (id?: number) => boolean;
   applyLineup: (input: ApplyLineupInput) => boolean;
@@ -232,6 +235,7 @@ const initial = {
   riskMode: "BALANCED" as const,
   benchStrategy: "BALANCED" as const,
   panelRatios: {},
+  dismissedTransferKeys: [],
   isHydrated: false,
 };
 
@@ -329,6 +333,11 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   setSelectedPlayer: (selectedPlayerId) => set({ selectedPlayerId }),
   setStrategy: (strategy) => set(strategy),
   setPanelRatios: (ratios) => set({ panelRatios: sanitizePanelRatios(ratios) }),
+  dismissTransferSuggestion: (outgoingId, incomingId) => {
+    if (!Number.isSafeInteger(outgoingId) || outgoingId < 1 || !Number.isSafeInteger(incomingId) || incomingId < 1) return;
+    const key = `${outgoingId}:${incomingId}`;
+    set((state) => state.dismissedTransferKeys.includes(key) ? state : { dismissedTransferKeys: [...state.dismissedTransferKeys, key].slice(-600) });
+  },
   setCaptain: (captainId) => {
     const state = get();
     const startingXI = deriveStartingXI(state.playerIds, state.benchGoalkeeperId, state.benchOrder);
@@ -420,6 +429,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       riskMode: state.riskMode ?? "BALANCED",
       benchStrategy: state.benchStrategy ?? "BALANCED",
       panelRatios: sanitizePanelRatios(state.panelRatios),
+      dismissedTransferKeys: [...new Set((Array.isArray(state.dismissedTransferKeys) ? state.dismissedTransferKeys : []).filter((key): key is string => typeof key === "string" && /^[1-9]\d*:[1-9]\d*$/.test(key)))].slice(0, 600),
       isHydrated: true,
     });
   },
@@ -442,6 +452,7 @@ export function exportTerminalState(state: TerminalState): PersistedTerminalStat
     riskMode: state.riskMode,
     benchStrategy: state.benchStrategy,
     panelRatios: state.panelRatios,
+    dismissedTransferKeys: state.dismissedTransferKeys,
     excludedPlayerIds: [],
   };
 }

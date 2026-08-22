@@ -514,7 +514,7 @@ export default function TerminalApp() {
     const state = useTerminalStore.getState();
     if (!state.isHydrated) return;
     window.localStorage.setItem("fpl-terminal-state", JSON.stringify(exportTerminalState(state)));
-  }, [store.isHydrated, store.mode, store.entryId, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.riskMode, store.benchStrategy, store.panelRatios]);
+  }, [store.isHydrated, store.mode, store.entryId, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -585,7 +585,7 @@ export default function TerminalApp() {
     .map((weakness) => playerById.get(weakness.playerId))
     .filter((player): player is TerminalPlayer => Boolean(player)), [playerById, squadAnalysis.weaknesses]);
   const transferRequestKey = selected.length === 15
-    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.horizon}|${store.riskMode}|${data.gameweek ?? 1}`
+    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.horizon}|${store.riskMode}|${data.gameweek ?? 1}|${store.dismissedTransferKeys.join(",")}`
     : "";
   useEffect(() => {
     if (!transferRequestKey) return;
@@ -597,6 +597,7 @@ export default function TerminalApp() {
       body: JSON.stringify({
         squad: store.playerIds,
         lockedPlayerIds: store.lockedPlayerIds,
+        dismissedTransferKeys: store.dismissedTransferKeys,
         horizon: store.horizon,
         risk: store.riskMode,
       }),
@@ -609,8 +610,11 @@ export default function TerminalApp() {
       setTransferSearch({ key: transferRequestKey, suggestions: [], state: "ERROR", message: error instanceof Error ? error.message : "Exact transfer search failed" });
     });
     return () => controller.abort();
-  }, [store.horizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
-  const transferSuggestions = transferRequestKey && transferSearch.key === transferRequestKey ? transferSearch.suggestions : [];
+  }, [store.dismissedTransferKeys, store.horizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
+  const dismissedTransferKeys = new Set(store.dismissedTransferKeys);
+  const transferSuggestions = transferRequestKey && transferSearch.key === transferRequestKey
+    ? transferSearch.suggestions.filter((move) => !dismissedTransferKeys.has(`${move.outgoingPlayerId}:${move.incomingPlayerId}`))
+    : [];
   const transferSuggestionState: "INCOMPLETE" | "LOADING" | "READY" | "ERROR" = !transferRequestKey ? "INCOMPLETE" : transferSearch.key === transferRequestKey ? transferSearch.state : "LOADING";
   const transferSuggestionMessage = transferSearch.key === transferRequestKey ? transferSearch.message : null;
 
@@ -1033,7 +1037,7 @@ export default function TerminalApp() {
             <section className="bench-section" aria-label="Bench"><div className="lineup-roster-heading"><span>BENCH</span><span>BGK · B1 · B2 · B3</span></div><div className="slot-grid bench-slot-grid">{benchSlots.map((slot) => { const player = slot.id ? playerById.get(slot.id) : undefined; return player ? renderSquadPlayer(player, false, slot.label) : <EmptySlot key={slot.label} position={slot.position} maxPriceTenths={slotMaxPrices[slot.position]} onChoose={() => choosePlayer(slot.position)} />; })}</div></section>
           </div>
           <MetricStrip spent={spent} projected={projected} risk={risk} />
-          <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} playerById={playerById} onSimulate={simulateMove} />
+          <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} playerById={playerById} onSimulate={simulateMove} onDismiss={store.dismissTransferSuggestion} />
           {simulation && simulationMove && <div className="squad-overlay"><SimulationPanel result={simulation} move={simulationMove} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMove(null); }} /></div>}
           <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
         </section>
@@ -1144,7 +1148,16 @@ function MetricStrip({ spent, projected, risk }: { spent: number; projected: { n
 
 function StrategyControls({ horizon, riskMode, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5; riskMode: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5; riskMode?: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">RISK</span><div className="segmented">{(["SAFE", "BALANCED", "AGGRESSIVE"] as const).map((value) => <button key={value} className={riskMode === value ? "active" : ""} onClick={() => setStrategy({ riskMode: value })}>{value.slice(0, 4)}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value.slice(0, 4)}</button>)}</div></div></div>; }
 
-function TransferSuggestionsPanel({ suggestions, state, message, playerById, onSimulate }: { suggestions: SingleTransferSuggestion[]; state: "INCOMPLETE" | "LOADING" | "READY" | "ERROR"; message: string | null; playerById: Map<number, TerminalPlayer>; onSimulate: (outId: number, inId: number) => void }) { return <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions"><div className="subsection-head"><div><span className="section-kicker">TRANSFER SUGGESTIONS</span><span className="panel-count">EXACT</span></div></div><div className="replacement-scroll">{suggestions.length ? suggestions.map((suggestion) => { const outgoing = playerById.get(suggestion.outgoingPlayerId); const incoming = playerById.get(suggestion.incomingPlayerId); const kind = suggestion.kind === "BOTH" ? "xP + CASH" : "xP UPGRADE"; return <div className="replacement-row" key={`${suggestion.outgoingPlayerId}-${suggestion.incomingPlayerId}`}><div><strong>{outgoing?.displayName ?? `Player ${suggestion.outgoingPlayerId}`} → {incoming?.displayName ?? `Player ${suggestion.incomingPlayerId}`}</strong><small>{kind} · {incoming?.teamShortName ?? "—"} · {incoming ? money(incoming.priceTenths) : "—"}</small></div><div className="transfer-effects"><span className="green">+{suggestion.projectedDelta.toFixed(1)} xP</span><span>{suggestion.cashReleasedTenths >= 0 ? "+" : "−"}{money(Math.abs(suggestion.cashReleasedTenths))} ITB</span></div><button className="compact-action" onClick={() => onSimulate(suggestion.outgoingPlayerId, suggestion.incomingPlayerId)}>SIMULATE</button></div>; }) : <div className="empty-copy">{state === "LOADING" ? "CALCULATING LEGAL xP-INCREASING TRANSFERS…" : state === "INCOMPLETE" ? "Complete a legal 15-player squad to calculate exact transfers." : state === "ERROR" ? message ?? "Exact transfer search is unavailable." : "No legal single transfer increases optimized lineup xP."}</div>}</div></section>; }
+function TransferSuggestionsPanel({ suggestions, state, message, playerById, onSimulate, onDismiss }: { suggestions: SingleTransferSuggestion[]; state: "INCOMPLETE" | "LOADING" | "READY" | "ERROR"; message: string | null; playerById: Map<number, TerminalPlayer>; onSimulate: (outId: number, inId: number) => void; onDismiss: (outId: number, inId: number) => void }) {
+  return <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions"><div className="subsection-head"><div><span className="section-kicker">TRANSFER SUGGESTIONS</span><span className="panel-count">EXACT</span></div></div><div className="replacement-scroll">{suggestions.length ? suggestions.map((suggestion) => {
+    const outgoing = playerById.get(suggestion.outgoingPlayerId);
+    const incoming = playerById.get(suggestion.incomingPlayerId);
+    const outgoingName = outgoing?.displayName ?? `Player ${suggestion.outgoingPlayerId}`;
+    const incomingName = incoming?.displayName ?? `Player ${suggestion.incomingPlayerId}`;
+    const kind = suggestion.kind === "BOTH" ? "xP + CASH" : "xP UPGRADE";
+    return <div className="replacement-row" key={`${suggestion.outgoingPlayerId}-${suggestion.incomingPlayerId}`}><div><strong>{outgoingName} → {incomingName}</strong><small>{kind} · {incoming?.teamShortName ?? "—"} · {incoming ? money(incoming.priceTenths) : "—"}</small></div><div className="transfer-effects"><span className="green">+{suggestion.projectedDelta.toFixed(1)} xP</span><span>{suggestion.cashReleasedTenths >= 0 ? "+" : "−"}{money(Math.abs(suggestion.cashReleasedTenths))} ITB</span></div><div className="transfer-actions"><button className="compact-action" onClick={() => onSimulate(suggestion.outgoingPlayerId, suggestion.incomingPlayerId)}>SIMULATE</button><button className="transfer-dismiss" aria-label={`Dismiss ${outgoingName} to ${incomingName} suggestion`} title="Dismiss suggestion" onClick={() => onDismiss(suggestion.outgoingPlayerId, suggestion.incomingPlayerId)}>×</button></div></div>;
+  }) : <div className="empty-copy">{state === "LOADING" ? "CALCULATING LEGAL xP-INCREASING TRANSFERS…" : state === "INCOMPLETE" ? "Complete a legal 15-player squad to calculate exact transfers." : state === "ERROR" ? message ?? "Exact transfer search is unavailable." : "No legal single transfer increases optimized lineup xP."}</div>}</div></section>;
+}
 
 function SimulationPanel({ result, move, playerById, onApply, onDiscard }: { result: SimulationResult; move: { outId: number; inId: number }; playerById: Map<number, TerminalPlayer>; onApply: () => void; onDiscard: () => void }) { return <section className="panel simulation-panel"><div className="panel-header"><div><span className="section-kicker">SIMULATION</span><span className="panel-count">{result.legal ? "LEGAL" : "CHECK REQUIRED"}</span></div><button className="icon-button" onClick={onDiscard} aria-label="Close simulation">×</button></div><div className="simulation-move">{playerById.get(move.outId)?.displayName ?? "Outgoing"} <span>→</span> {playerById.get(move.inId)?.displayName ?? "Incoming"}</div><div className="simulation-grid"><div><span>CURRENT {result.horizon}GW xP</span><strong>{points(result.optimizedBeforeXp)}</strong></div><div><span>SIMULATED {result.horizon}GW xP</span><strong>{points(result.optimizedAfterXp)}</strong></div><div><span>PRICE EFFECT</span><strong>{money(result.priceDeltaTenths)}</strong></div><div><span>xP EFFECT</span><strong className={result.projectedDelta >= 0 ? "green" : "red"}>{result.projectedDelta >= 0 ? "+" : ""}{result.projectedDelta.toFixed(1)}</strong></div></div><p className="simulation-note">{result.explanationFactors[0] ?? "Model comparison complete."}{!result.legal && " The current selection still has a squad-rules issue."}</p><div className="simulation-actions"><button className="primary-button" onClick={onApply}>APPLY CHANGES</button><button className="secondary-button" onClick={onDiscard}>DISCARD</button></div></section>; }
 
