@@ -585,7 +585,7 @@ export default function TerminalApp() {
     .map((weakness) => playerById.get(weakness.playerId))
     .filter((player): player is TerminalPlayer => Boolean(player)), [playerById, squadAnalysis.weaknesses]);
   const transferRequestKey = selected.length === 15
-    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.horizon}|${store.riskMode}|${data.gameweek ?? 1}|${store.dismissedTransferKeys.join(",")}`
+    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.horizon}|${store.riskMode}|${data.gameweek ?? 1}`
     : "";
   useEffect(() => {
     if (!transferRequestKey) return;
@@ -597,7 +597,6 @@ export default function TerminalApp() {
       body: JSON.stringify({
         squad: store.playerIds,
         lockedPlayerIds: store.lockedPlayerIds,
-        dismissedTransferKeys: store.dismissedTransferKeys,
         horizon: store.horizon,
         risk: store.riskMode,
       }),
@@ -610,7 +609,7 @@ export default function TerminalApp() {
       setTransferSearch({ key: transferRequestKey, suggestions: [], state: "ERROR", message: error instanceof Error ? error.message : "Exact transfer search failed" });
     });
     return () => controller.abort();
-  }, [store.dismissedTransferKeys, store.horizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
+  }, [store.horizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
   const dismissedTransferKeys = new Set(store.dismissedTransferKeys);
   const transferSuggestions = transferRequestKey && transferSearch.key === transferRequestKey
     ? transferSearch.suggestions.filter((move) => !dismissedTransferKeys.has(`${move.outgoingPlayerId}:${move.incomingPlayerId}`))

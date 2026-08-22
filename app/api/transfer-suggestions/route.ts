@@ -15,7 +15,6 @@ const requestSchema = z.object({
   excludedPlayerIds: z.array(z.number().int().positive()).max(600).optional(),
   horizon: z.union([z.literal(1), z.literal(3), z.literal(5)]),
   risk: z.enum(["SAFE", "BALANCED", "AGGRESSIVE"]),
-  dismissedTransferKeys: z.array(z.string().regex(/^[1-9]\d*:[1-9]\d*$/)).max(600).optional(),
 }).strict();
 
 export async function POST(request: Request) {
@@ -32,7 +31,6 @@ export async function POST(request: Request) {
     const gameweek = projected.events.find((event) => event.isCurrent)?.id
       ?? projected.events.find((event) => event.isNext)?.id
       ?? 1;
-    const dismissed = new Set(parsed.data.dismissedTransferKeys ?? []);
     const suggestions = findBestSingleTransfers({
       squad: parsed.data.squad,
       players: projected.players,
@@ -41,7 +39,7 @@ export async function POST(request: Request) {
       risk: parsed.data.risk,
       lockedPlayerIds: parsed.data.lockedPlayerIds,
       excludedPlayerIds: parsed.data.excludedPlayerIds,
-    }).filter((move) => !dismissed.has(`${move.outgoingPlayerId}:${move.incomingPlayerId}`)).slice(0, 5);
+    }).slice(0, 5);
     return NextResponse.json({ gameweek, horizon: parsed.data.horizon, suggestions });
   } catch (error) {
     console.error("Exact single-transfer search failed", error);

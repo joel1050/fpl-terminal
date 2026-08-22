@@ -71,20 +71,6 @@ describe("single-transfer route", () => {
     await expect(response.json()).resolves.toMatchObject({ gameweek: 3, horizon: 5, suggestions: [{ outgoingPlayerId: 3, incomingPlayerId: 16 }] });
   });
 
-  it("does not return dismissed transfer pairs", async () => {
-    mocks.find.mockReturnValue([
-      { outgoingPlayerId: 3, incomingPlayerId: 16 },
-      { outgoingPlayerId: 4, incomingPlayerId: 17 },
-    ]);
-    const response = await POST(new Request("http://localhost/api/transfer-suggestions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ squad: players.map((item) => item.id), lockedPlayerIds: [], dismissedTransferKeys: ["3:16"], horizon: 5, risk: "BALANCED" }),
-    }));
-
-    await expect(response.json()).resolves.toMatchObject({ suggestions: [{ outgoingPlayerId: 4, incomingPlayerId: 17 }] });
-  });
-
   it("reports unavailable FPL data without searching", async () => {
     mocks.bootstrapData = null;
     const response = await POST(new Request("http://localhost/api/transfer-suggestions", {

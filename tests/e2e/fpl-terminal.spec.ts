@@ -156,13 +156,18 @@ test.describe("FPL Terminal acceptance", () => {
   });
 
   test("dismisses a transfer suggestion across reloads", async ({ page }) => {
+    let suggestionRequests = 0;
+    page.on("request", (request) => { if (request.url().includes("/api/transfer-suggestions")) suggestionRequests += 1; });
     await chooseMode(page, /analyze (?:a )?team/i);
     await waitForMarket(page);
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
     const dismiss = replacements.getByRole("button", { name: /dismiss rice to saka suggestion/i });
     await expect(dismiss).toBeVisible();
+    await expect.poll(() => suggestionRequests).toBe(1);
     await dismiss.click();
     await expect(replacements).not.toContainText(/Rice\s*→\s*Saka/i);
+    await page.waitForTimeout(250);
+    expect(suggestionRequests).toBe(1);
 
     await page.reload();
     await waitForMarket(page);
