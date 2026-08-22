@@ -25,6 +25,8 @@ export interface ProjectionComponents {
   goals: number;
   assists: number;
   cleanSheets: number;
+  /** Negative: FPL deducts a point per two goals conceded by a goalkeeper or defender. */
+  goalsConceded: number;
   saves: number;
   defensiveContribution: number;
   bonus: number;

@@ -8,7 +8,8 @@ import type {
   Position,
 } from "@/types/player";
 import type { ProjectionComponents, ProjectionOptions, TeamStrength } from "@/types/projection";
-import { calculateFixtureAdjustment } from "./fixtureAdjustment";
+import { calculateFixtureAdjustment, LEAGUE_AVERAGE_GOALS_AGAINST } from "./fixtureAdjustment";
+import { expectedFloorDivision, thresholdProbability } from "./distributions";
 import { estimateExpectedMinutes, type ExpectedMinutesOptions } from "./expectedMinutes";
 import { projectionConfidence, calculateRiskScore, valuePerMillion } from "./metrics";
 import { regressPer90 } from "./regression";
@@ -22,7 +23,18 @@ const PRIOR_XA: Record<Position, number> = { GK: 0.02, DEF: 0.08, MID: 0.2, FWD:
 const UNKNOWN_DEFENDER_XG_PRIOR = 0.02;
 const UNKNOWN_DEFENDER_XA_PRIOR = 0.02;
 const GOAL_POINTS: Record<Position, number> = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
+// Pool averages per 90 from 2025/26, used when a player has no usable sample.
+const PRIOR_DEFENSIVE_CONTRIBUTION: Record<Position, number> = { GK: 0, DEF: 7.7, MID: 8.6, FWD: 4.7 };
+const PRIOR_SAVES: Record<Position, number> = { GK: 2.8, DEF: 0, MID: 0, FWD: 0 };
+const PRIOR_BONUS: Record<Position, number> = { GK: 0.22, DEF: 0.22, MID: 0.32, FWD: 0.59 };
+// Ceilings on a per-90 rate, one per statistic. A shared ceiling of 3 silently
+// capped defensive contributions and goalkeeper saves, which run far higher.
+const RATE_CEILING = { goalInvolvement: 3, saves: 10, defensiveContribution: 30, bonus: 3 } as const;
 const CLEAN_SHEET_POINTS: Record<Position, number> = { GK: 4, DEF: 4, MID: 1, FWD: 0 };
+const DEFENSIVE_CONTRIBUTION_THRESHOLD: Record<Position, number> = { GK: 0, DEF: 10, MID: 12, FWD: 12 };
+const DEFENSIVE_CONTRIBUTION_POINTS = 2;
+const SAVES_PER_POINT = 3;
+const GOALS_CONCEDED_PER_DEDUCTION = 2;
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
@@ -67,6 +79,7 @@ function regressedPlayerRate(
   fallback: "goals" | "assists" | undefined,
   prior: number,
   currentGameweek: number,
+  ceiling: number = RATE_CEILING.goalInvolvement,
 ): number {
   const historical = historicalRate(player, primary) ?? (fallback ? historicalRate(player, fallback) : undefined);
   const current = currentRate(player, primary) ?? (fallback ? currentRate(player, fallback) : undefined);
@@ -77,7 +90,7 @@ function regressedPlayerRate(
     rate = rate * (1 - currentWeight) + current.rate * currentWeight;
     sample += current.minutes * currentWeight;
   }
-  return clamp(regressPer90(rate, sample, prior, 900), 0, 3);
+  return clamp(regressPer90(rate, sample, prior, 900), 0, ceiling);
 }
 
 function teamFor(
@@ -119,6 +132,7 @@ function zeroComponents(): ProjectionComponents {
     goals: 0,
     assists: 0,
     cleanSheets: 0,
+    goalsConceded: 0,
     saves: 0,
     defensiveContribution: 0,
     bonus: 0,
@@ -216,14 +230,34 @@ function fixtureComponents(
     if (playedSixty) {
       components.cleanSheets += weight * adjustment.cleanSheetProbability * CLEAN_SHEET_POINTS[player.position];
     }
-    components.saves += player.position === "GK"
-      ? weight * (rates.saves * minutesShare * adjustment.attackMultiplier) / 3
-      : 0;
-    const threshold = player.position === "DEF" ? 10 : 12;
-    components.defensiveContribution += player.position === "GK"
-      ? 0
-      : weight * (rates.defensiveContribution * minutesShare * 2) / threshold;
-    components.bonus += weight * rates.bonus * minutesShare * 0.3;
+    if (player.position === "GK" || player.position === "DEF") {
+      // A point goes for every second goal conceded while the player is on the
+      // pitch, so this scales with minutes and applies to cameos too.
+      components.goalsConceded -= weight * expectedFloorDivision(
+        adjustment.expectedGoalsAgainst * minutesShare,
+        GOALS_CONCEDED_PER_DEDUCTION,
+      );
+    }
+    if (player.position === "GK") {
+      // Save volume follows the opponent's threat, not the team's own attack.
+      const savesEnvironment = clamp(
+        adjustment.expectedGoalsAgainst / LEAGUE_AVERAGE_GOALS_AGAINST,
+        0.7,
+        1.4,
+      );
+      components.saves += weight * expectedFloorDivision(
+        rates.saves * minutesShare * savesEnvironment,
+        SAVES_PER_POINT,
+      );
+    }
+    const threshold = DEFENSIVE_CONTRIBUTION_THRESHOLD[player.position];
+    if (threshold > 0) {
+      // The reward is a threshold, so its expectation is a probability rather
+      // than a share of the threshold: 2 x P(count >= threshold).
+      components.defensiveContribution += weight * DEFENSIVE_CONTRIBUTION_POINTS
+        * thresholdProbability(rates.defensiveContribution * minutesShare, threshold);
+    }
+    components.bonus += weight * rates.bonus * minutesShare;
   }
   components.total = Object.entries(components)
     .filter(([key]) => key !== "total")
@@ -280,9 +314,9 @@ export function projectPlayer(
   const rates = {
     xg: regressedPlayerRate(player, "expectedGoals", "goals", attackingPrior(player, options, "expectedGoals", "goals"), currentGameweek),
     xa: regressedPlayerRate(player, "expectedAssists", "assists", attackingPrior(player, options, "expectedAssists", "assists"), currentGameweek),
-    saves: regressedPlayerRate(player, "saves", undefined, player.position === "GK" ? 2.8 : 0, currentGameweek),
-    defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, player.position === "DEF" ? 4 : 3, currentGameweek),
-    bonus: regressedPlayerRate(player, "bonus", undefined, 0.12, currentGameweek),
+    saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves),
+    defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution),
+    bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus),
   };
   const projectionHorizon = Math.max(5, horizon);
   const upcoming = player.fixtures

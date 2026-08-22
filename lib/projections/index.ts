@@ -7,3 +7,4 @@ export * from "./projectPlayer";
 export * from "./regression";
 export * from "./risk";
 export * from "./value";
+export * from "./distributions";

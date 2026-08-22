@@ -11,8 +11,13 @@ export interface FixtureAdjustmentResult {
   attackMultiplier: number;
   defenceMultiplier: number;
   cleanSheetProbability: number;
+  /** Goals against over a full match, always consistent with the clean-sheet probability. */
+  expectedGoalsAgainst: number;
   overallMultiplier: number;
 }
+
+/** Goals against for an average side, used to scale save volume to the fixture. */
+export const LEAGUE_AVERAGE_GOALS_AGAINST = 1.35;
 
 const difficultyMultiplier: Record<number, number> = {
   1: 1.14,
@@ -70,7 +75,7 @@ export function calculateFixtureAdjustment(
     : clamp(Math.round(fixture.difficulty), 1, 5);
   const base = difficultyMultiplier[difficulty] ?? 1;
   const venue = fixture.isHome ? 1.03 : 0.97;
-  let expectedGoalsAgainst = 1.35 * (fixture.isHome ? 0.9 : 1.1);
+  let expectedGoalsAgainst = LEAGUE_AVERAGE_GOALS_AGAINST * (fixture.isHome ? 0.9 : 1.1);
   let attackMultiplier = base * venue;
   // Easy opponents improve both attacking returns and clean-sheet odds.
   let defenceMultiplier = base * (fixture.isHome ? 1.03 : 0.97);
@@ -100,11 +105,21 @@ export function calculateFixtureAdjustment(
   attackMultiplier = clamp(attackMultiplier, 0.7, 1.3);
   defenceMultiplier = clamp(defenceMultiplier, 0.7, 1.3);
   cleanSheetProbability ??= clamp(Math.exp(-expectedGoalsAgainst), 0.03, 0.65);
+  // One goals-against number per fixture. Inverting the clean-sheet probability
+  // keeps the lookup table and the goals-conceded deduction from disagreeing:
+  // both now come from the same Poisson.
+  expectedGoalsAgainst = -Math.log(clamp(cleanSheetProbability, 0.03, 0.9));
   const position = options.position;
   const overallMultiplier = position === "GK" || position === "DEF"
     ? defenceMultiplier
     : attackMultiplier;
-  return { attackMultiplier, defenceMultiplier, cleanSheetProbability, overallMultiplier };
+  return {
+    attackMultiplier,
+    defenceMultiplier,
+    cleanSheetProbability,
+    expectedGoalsAgainst,
+    overallMultiplier,
+  };
 }
 
 /** A scalar fixture multiplier for directional comparisons and simple callers. */
