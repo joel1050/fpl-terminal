@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FPL Terminal">
+  <rect width="64" height="64" fill="#050607"/>
+  <path d="M9 14h46v36H9z" fill="#101417" stroke="#f4a900" stroke-width="3"/>
+  <path d="M17 25h12M17 34h21M17 43h14" stroke="#45c4e8" stroke-width="4" stroke-linecap="square"/>
+  <circle cx="47" cy="25" r="3" fill="#36d17c"/>
+</svg>

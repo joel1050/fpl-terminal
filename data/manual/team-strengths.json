@@ -1,0 +1,48 @@
+{
+  "season": "2026/27",
+  "updatedAt": "2026-08-21T05:19:00Z",
+  "method": "Current public table consensus, checked against title, top-four, and relegation betting markets after the latest transfers.",
+  "scale": {
+    "1": "Relegation tier",
+    "2": "Lower-table tier",
+    "3": "Mid-table tier",
+    "4": "European contender",
+    "5": "Title contender"
+  },
+  "sources": [
+    {
+      "name": "TablePredict Premier League consensus",
+      "url": "https://tablepredict.com/predictions/premier-league"
+    },
+    {
+      "name": "Sky Sports 10,000-simulation season forecast",
+      "url": "https://www.skysports.com/football/news/11661/13571927/sky-sports-supercomputer-predicts-2026-27-premier-league-table-as-arsenal-retain-title-and-liverpool-jump-back-above-man-utd-between-the-lines"
+    },
+    {
+      "name": "RotoWire Premier League futures odds",
+      "url": "https://www.rotowire.com/soccer/article/premier-league-predictions-best-bets-futures-odds-2026-27-127839"
+    }
+  ],
+  "teams": [
+    { "name": "Arsenal", "shortName": "ARS", "consensusRank": 1, "strength": 5 },
+    { "name": "Manchester City", "shortName": "MCI", "consensusRank": 2, "strength": 5 },
+    { "name": "Liverpool", "shortName": "LIV", "consensusRank": 3, "strength": 5 },
+    { "name": "Manchester United", "shortName": "MUN", "consensusRank": 4, "strength": 4 },
+    { "name": "Chelsea", "shortName": "CHE", "consensusRank": 5, "strength": 4 },
+    { "name": "Aston Villa", "shortName": "AVL", "consensusRank": 6, "strength": 4 },
+    { "name": "Tottenham Hotspur", "shortName": "TOT", "consensusRank": 7, "strength": 4 },
+    { "name": "Brighton & Hove Albion", "shortName": "BHA", "consensusRank": 8, "strength": 3 },
+    { "name": "Bournemouth", "shortName": "BOU", "consensusRank": 9, "strength": 3 },
+    { "name": "Newcastle United", "shortName": "NEW", "consensusRank": 10, "strength": 3 },
+    { "name": "Brentford", "shortName": "BRE", "consensusRank": 11, "strength": 3 },
+    { "name": "Everton", "shortName": "EVE", "consensusRank": 12, "strength": 3 },
+    { "name": "Sunderland", "shortName": "SUN", "consensusRank": 13, "strength": 3 },
+    { "name": "Crystal Palace", "shortName": "CRY", "consensusRank": 14, "strength": 2 },
+    { "name": "Fulham", "shortName": "FUL", "consensusRank": 15, "strength": 2 },
+    { "name": "Nottingham Forest", "shortName": "NFO", "consensusRank": 16, "strength": 2 },
+    { "name": "Leeds United", "shortName": "LEE", "consensusRank": 17, "strength": 2 },
+    { "name": "Coventry City", "shortName": "COV", "consensusRank": 18, "strength": 1 },
+    { "name": "Ipswich Town", "shortName": "IPS", "consensusRank": 19, "strength": 1 },
+    { "name": "Hull City", "shortName": "HUL", "consensusRank": 20, "strength": 1 }
+  ]
+}
