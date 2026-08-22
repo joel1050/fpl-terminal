@@ -165,4 +165,54 @@ describe("persisted weekly lineup state", () => {
     expect(useTerminalStore.getState().replaceSquad({ ...imported, playerIds: imported.playerIds.slice(1) }, lineup, 4827193)).toBe(false);
     expect(useTerminalStore.getState().playerIds).toEqual(before);
   });
+
+  it("inherits GW1 planning choices into GW2 and isolates later edits", () => {
+    const store = useTerminalStore.getState();
+    store.initializeGameweek(1);
+    expect(store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "fp-1", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 })).toBe(true);
+    store.toggleLock(4);
+
+    expect(store.setPlanningGameweek(2)).toBe(true);
+    expect(useTerminalStore.getState()).toMatchObject({ planningGameweek: 2, playerIds: squad.playerIds, benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3, lockedPlayerIds: [4], lineupGameweek: 2, lineupProjectionFingerprint: "fp-1" });
+    expect(useTerminalStore.getState().gameweekPlans[1]).toMatchObject({ playerIds: squad.playerIds, captainId: 1, viceCaptainId: 3 });
+
+    expect(useTerminalStore.getState().setCaptain(4)).toBe(true);
+    expect(useTerminalStore.getState().removePlayer(5)).toBe(true);
+    expect(useTerminalStore.getState().setPlanningGameweek(1)).toBe(true);
+    expect(useTerminalStore.getState()).toMatchObject({ planningGameweek: 1, playerIds: squad.playerIds, captainId: 1, viceCaptainId: 3, lockedPlayerIds: [4] });
+
+    expect(useTerminalStore.getState().setPlanningGameweek(3)).toBe(true);
+    expect(useTerminalStore.getState()).toMatchObject({ planningGameweek: 3, playerIds: squad.playerIds.filter((id) => id !== 5), captainId: 4, viceCaptainId: 3, lockedPlayerIds: [4] });
+  });
+
+  it("persists the selected week and every plan through export and reload", () => {
+    const store = useTerminalStore.getState();
+    store.initializeGameweek(1);
+    store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "fp-1", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 });
+    store.setPlanningGameweek(2);
+    store.setCaptain(4);
+    const saved = exportTerminalState(useTerminalStore.getState());
+
+    useTerminalStore.getState().reset();
+    useTerminalStore.getState().hydrate(parseSavedState(JSON.stringify(saved)));
+    expect(useTerminalStore.getState()).toMatchObject({ planningGameweek: 2, playerIds: squad.playerIds, captainId: 4, viceCaptainId: 3 });
+    expect(Object.keys(useTerminalStore.getState().gameweekPlans).sort()).toEqual(["1", "2"]);
+    expect(useTerminalStore.getState().gameweekPlans[1]).toMatchObject({ captainId: 1, viceCaptainId: 3 });
+    expect(useTerminalStore.getState().gameweekPlans[2]).toMatchObject({ captainId: 4, viceCaptainId: 3 });
+  });
+
+  it("clears future plans when an official squad replaces the current state", () => {
+    const store = useTerminalStore.getState();
+    store.initializeGameweek(1);
+    store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "old", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 });
+    store.setPlanningGameweek(2);
+    const imported = {
+      playerIds: squad.playerIds.map((id) => id + 20),
+      byPosition: Object.fromEntries(Object.entries(squad.byPosition).map(([position, ids]) => [position, ids.map((id) => id + 20)])) as typeof squad.byPosition,
+    };
+    expect(store.replaceSquad(imported, { gameweek: 1, lineupProjectionFingerprint: "official", benchGoalkeeperId: 22, benchOrder: [27, 32, 35], captainId: 21, viceCaptainId: 23 }, 123)).toBe(true);
+    expect(useTerminalStore.getState().planningGameweek).toBe(1);
+    expect(Object.keys(useTerminalStore.getState().gameweekPlans)).toEqual(["1"]);
+    expect(useTerminalStore.getState().gameweekPlans[2]).toBeUndefined();
+  });
 });

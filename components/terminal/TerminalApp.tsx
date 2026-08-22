@@ -6,7 +6,7 @@ import { analyzeSquad } from "@/lib/analysis/analyzeSquad";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
 import { chooseCaptainVice } from "@/lib/squad/captain";
 import { explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
-import { expectedAutosubValue, pickWeeklyTeam, projectWeeklyLineupHorizons, validateWeeklyLineup } from "@/lib/squad/weeklyLineup";
+import { expectedAutosubValue, pickWeeklyTeam, projectWeeklyLineupHorizons, validateWeeklyLineup, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import type { OptimizerResult } from "@/lib/optimizer/optimizer";
 import { projectPlayer } from "@/lib/projections/projectPlayer";
 import {
@@ -320,6 +320,28 @@ function FixtureRun({ player }: { player: TerminalPlayer }) {
   return <span className="fixture-run">{player.fixtures.slice(0, 12).map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>)}</span>;
 }
 
+function squadFixturesForGameweek(player: TerminalPlayer, gameweek: number): PlayerFixture[] {
+  const projectedFixtures = player.projection?.fixtures ?? [];
+  if (projectedFixtures.length) return projectedFixtures.filter((fixture) => fixture.gameweek === gameweek).map((fixture) => fixture.fixture);
+  return player.fixtures.filter((fixture) => fixture.gameweek === gameweek);
+}
+
+function SquadFixtureBadges({ player, gameweek }: { player: TerminalPlayer; gameweek: number }) {
+  const fixtures = squadFixturesForGameweek(player, gameweek);
+  return <span className="squad-fixture-badges" aria-label={`Gameweek ${gameweek} fixtures`}>
+    {fixtures.length ? fixtures.map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>) : <span className="blank">BLANK</span>}
+  </span>;
+}
+
+function aggregateWeeklyProjection(players: readonly TerminalPlayer[], gameweek: number): { nextGW: number; next3: number; next5: number } {
+  const totals = Array.from({ length: 5 }, (_, index) => players.reduce((sum, player) => sum + weeklyPlayerMetrics(player, gameweek + index).points, 0));
+  return {
+    nextGW: totals[0] ?? 0,
+    next3: totals.slice(0, 3).reduce((sum, value) => sum + value, 0),
+    next5: totals.reduce((sum, value) => sum + value, 0),
+  };
+}
+
 function formationLabel(plan: WeeklyLineupPlan): string {
   return plan.formation || "—";
 }
@@ -338,8 +360,12 @@ function persistedLineupPlan(
     if (position) result[position] += 1;
     return result;
   }, { GK: 0, DEF: 0, MID: 0, FWD: 0 });
-  const projectedXI = starters.reduce((sum, id) => sum + (playerById.get(id)?.projection?.nextGW ?? 0), 0);
-  const captainBonus = captainId ? playerById.get(captainId)?.projection?.nextGW ?? 0 : 0;
+  const projectedXI = starters.reduce((sum, id) => {
+    const player = playerById.get(id);
+    return sum + (player ? weeklyPlayerMetrics(player, base.gameweek).points : 0);
+  }, 0);
+  const captain = captainId === undefined ? undefined : playerById.get(captainId);
+  const captainBonus = captain ? weeklyPlayerMetrics(captain, base.gameweek).points : 0;
   const squadIds = new Set([...starters, benchGoalkeeperId, ...benchOrder]);
   const squad = [...playerById.values()].filter((player) => squadIds.has(player.id));
   const autosubValue = benchGoalkeeperId !== undefined && benchOrder.length === 3
@@ -429,6 +455,7 @@ export default function TerminalApp() {
     return () => window.clearTimeout(timer);
   }, [notice]);
   const [optimizing, setOptimizing] = useState(false);
+  const [reverseBusy, setReverseBusy] = useState(false);
   const [transferSearch, setTransferSearch] = useState<{ key: string; suggestions: SingleTransferSuggestion[]; state: "READY" | "ERROR"; message: string | null }>({ key: "", suggestions: [], state: "READY", message: null });
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
   const [simulationMove, setSimulationMove] = useState<{ outId: number; inId: number } | null>(null);
@@ -439,6 +466,8 @@ export default function TerminalApp() {
   const resizeRef = useRef<ResizeState | null>(null);
   const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false, ai: false });
   const { data, status, message, refresh } = bootstrap;
+  const liveCurrentGW = clamp(Math.round(data.gameweek ?? store.currentGameweek ?? 1), 1, 38);
+  const initializeGameweek = store.initializeGameweek;
 
   const togglePanel = (panel: DesktopPanel) => setCollapsedPanels((current) => ({ ...current, [panel]: !current[panel] }));
 
@@ -511,10 +540,15 @@ export default function TerminalApp() {
   }, []);
 
   useEffect(() => {
+    if (!store.isHydrated || data.gameweek === null) return;
+    initializeGameweek(liveCurrentGW);
+  }, [data.gameweek, initializeGameweek, liveCurrentGW, store.isHydrated]);
+
+  useEffect(() => {
     const state = useTerminalStore.getState();
     if (!state.isHydrated) return;
     window.localStorage.setItem("fpl-terminal-state", JSON.stringify(exportTerminalState(state)));
-  }, [store.isHydrated, store.mode, store.entryId, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys]);
+  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.mode, store.entryId, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -534,6 +568,7 @@ export default function TerminalApp() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [store]);
 
+  const planningGameweek = clamp(Math.round(store.planningGameweek ?? liveCurrentGW), liveCurrentGW, 38);
   const selected = useMemo(() => data.players.filter((player) => store.playerIds.includes(player.id)), [data.players, store.playerIds]);
   const playerById = useMemo(() => new Map(data.players.map((player) => [player.id, player])), [data.players]);
   const spent = useMemo(() => selected.reduce((sum, player) => sum + player.priceTenths, 0), [selected]);
@@ -550,10 +585,10 @@ export default function TerminalApp() {
   }, {} as Record<Position, number>), [data.players, selected]);
   const weeklyEnginePlan = useMemo(() => pickWeeklyTeam({
     squad: selected,
-    gameweek: data.gameweek ?? 1,
+    gameweek: planningGameweek,
     riskMode: store.riskMode,
-  }), [data.gameweek, selected, store.riskMode]);
-  const lineupApplied = store.lineupGameweek !== undefined && store.lineupProjectionFingerprint !== undefined;
+  }), [planningGameweek, selected, store.riskMode]);
+  const lineupApplied = store.lineupGameweek === planningGameweek && store.lineupProjectionFingerprint !== undefined;
   const currentGWPlan = useMemo<WeeklyLineupPlan | null>(() => {
     if (!lineupApplied || store.benchGoalkeeperId === undefined || store.benchOrder.length !== 3) {
       return weeklyEnginePlan.starterIds.length === 11 ? weeklyEnginePlan : null;
@@ -564,28 +599,24 @@ export default function TerminalApp() {
   const lineupStale = lineupApplied && (store.lineupGameweek !== weeklyEnginePlan.gameweek || store.lineupProjectionFingerprint !== weeklyEnginePlan.projectionFingerprint);
   const projected = useMemo<{ nextGW?: number; next3?: number; next5?: number }>(() => {
     if (!selected.length) return {};
-    if (weeklyEnginePlan.starterIds.length !== 11) return {
-      nextGW: squadAnalysis.projectedNextGW,
-      next3: squadAnalysis.projectedNext3,
-      next5: squadAnalysis.projectedNext5,
-    };
+    if (weeklyEnginePlan.starterIds.length !== 11) return aggregateWeeklyProjection(selected, planningGameweek);
     return projectWeeklyLineupHorizons({
       squad: selected,
-      gameweek: data.gameweek ?? 1,
+      gameweek: planningGameweek,
       riskMode: store.riskMode,
     }, !lineupStale ? currentGWPlan ?? undefined : undefined);
-  }, [currentGWPlan, data.gameweek, lineupStale, selected, squadAnalysis.projectedNext3, squadAnalysis.projectedNext5, squadAnalysis.projectedNextGW, store.riskMode, weeklyEnginePlan.starterIds.length]);
+  }, [currentGWPlan, lineupStale, planningGameweek, selected, store.riskMode, weeklyEnginePlan.starterIds.length]);
   const risk = useMemo(() => {
     if (!selected.length) return undefined;
-    const values = selected.map((player) => player.projection?.riskScore ?? 0).filter((value) => value > 0);
-    return values.length === selected.length && values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : undefined;
-  }, [selected]);
+    const values = selected.map((player) => weeklyPlayerMetrics(player, planningGameweek).pDNP);
+    return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 100) : undefined;
+  }, [planningGameweek, selected]);
   const weakest = useMemo(() => squadAnalysis.weaknesses
     .slice(0, 3)
     .map((weakness) => playerById.get(weakness.playerId))
     .filter((player): player is TerminalPlayer => Boolean(player)), [playerById, squadAnalysis.weaknesses]);
   const transferRequestKey = selected.length === 15
-    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.horizon}|${store.riskMode}|${data.gameweek ?? 1}`
+    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.horizon}|${store.riskMode}|${planningGameweek}`
     : "";
   useEffect(() => {
     if (!transferRequestKey) return;
@@ -599,6 +630,7 @@ export default function TerminalApp() {
         lockedPlayerIds: store.lockedPlayerIds,
         horizon: store.horizon,
         risk: store.riskMode,
+        gameweek: planningGameweek,
       }),
     }).then(async (response) => {
       const body = await response.json() as { suggestions?: SingleTransferSuggestion[]; error?: string };
@@ -609,7 +641,7 @@ export default function TerminalApp() {
       setTransferSearch({ key: transferRequestKey, suggestions: [], state: "ERROR", message: error instanceof Error ? error.message : "Exact transfer search failed" });
     });
     return () => controller.abort();
-  }, [store.horizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
+  }, [planningGameweek, store.horizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
   const dismissedTransferKeys = new Set(store.dismissedTransferKeys);
   const transferSuggestions = transferRequestKey && transferSearch.key === transferRequestKey
     ? transferSearch.suggestions.filter((move) => !dismissedTransferKeys.has(`${move.outgoingPlayerId}:${move.incomingPlayerId}`))
@@ -765,7 +797,7 @@ export default function TerminalApp() {
 
   const moveGWBench = (id: number, direction: -1 | 1) => {
     if (!currentGWPlan) return;
-    const currentOrder = store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan.benchOrder;
+    const currentOrder = lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan.benchOrder;
     if (!lineupApplied && !applyWeeklyPlan(currentGWPlan)) return;
     const index = currentOrder.indexOf(id);
     const nextIndex = index + direction;
@@ -778,10 +810,10 @@ export default function TerminalApp() {
   const applyCaptaincy = (captainId: number, viceCaptainId: number) => {
     if (!currentGWPlan || captainId === viceCaptainId) return false;
     const applied = store.applyLineup({
-      gameweek: store.lineupGameweek ?? currentGWPlan.gameweek,
-      lineupProjectionFingerprint: store.lineupProjectionFingerprint ?? currentGWPlan.projectionFingerprint,
-      benchGoalkeeperId: store.benchGoalkeeperId ?? currentGWPlan.benchGoalkeeperId,
-      benchOrder: store.benchOrder.length === 3 ? [...store.benchOrder] : [...currentGWPlan.benchOrder],
+      gameweek: lineupApplied ? store.lineupGameweek ?? currentGWPlan.gameweek : currentGWPlan.gameweek,
+      lineupProjectionFingerprint: lineupApplied ? store.lineupProjectionFingerprint ?? currentGWPlan.projectionFingerprint : currentGWPlan.projectionFingerprint,
+      benchGoalkeeperId: lineupApplied ? store.benchGoalkeeperId ?? currentGWPlan.benchGoalkeeperId : currentGWPlan.benchGoalkeeperId,
+      benchOrder: lineupApplied && store.benchOrder.length === 3 ? [...store.benchOrder] : [...currentGWPlan.benchOrder],
       captainId,
       viceCaptainId,
     });
@@ -808,7 +840,9 @@ export default function TerminalApp() {
       return;
     }
     try {
-      const plan = chooseCaptainVice(selected);
+      const starters = currentGWPlan?.starterIds.length === 11 ? currentGWPlan.starterIds : undefined;
+      const expectedPoints = Object.fromEntries(selected.map((player) => [player.id, weeklyPlayerMetrics(player, planningGameweek).points]));
+      const plan = chooseCaptainVice(selected, starters, { expectedPoints });
       store.setCaptain(plan.captainId);
       store.setViceCaptain(plan.viceCaptainId);
       setNotice("Captain and vice-captain selected from the current projection model.");
@@ -823,7 +857,7 @@ export default function TerminalApp() {
       players: data.players,
       outId,
       inId,
-      gameweek: data.gameweek ?? 1,
+      gameweek: planningGameweek,
       horizon: store.horizon,
       risk: store.riskMode,
       bench: store.benchStrategy,
@@ -845,7 +879,7 @@ export default function TerminalApp() {
       players: data.players,
       outId: outgoing.id,
       inId: incoming.id,
-      gameweek: data.gameweek ?? 1,
+      gameweek: planningGameweek,
       horizon: store.horizon,
       risk: store.riskMode,
       bench: store.benchStrategy,
@@ -869,7 +903,7 @@ export default function TerminalApp() {
       const response = await fetch("/api/ai", {
         method: "POST",
         headers: { "content-type": "application/json", accept: "application/json" },
-        body: JSON.stringify({ message: text, context: { gameweek: data.gameweek ?? 1, squad: { playerIds: store.playerIds, lockedPlayerIds: store.lockedPlayerIds, captainId: store.captainId, viceCaptainId: store.viceCaptainId }, finances: { costTenths: spent, bankTenths: 1000 - spent }, strategy: { horizon: store.horizon, risk: store.riskMode, bench: store.benchStrategy } } }),
+        body: JSON.stringify({ message: text, context: { gameweek: planningGameweek, squad: { playerIds: store.playerIds, lockedPlayerIds: store.lockedPlayerIds, captainId: store.captainId, viceCaptainId: store.viceCaptainId }, finances: { costTenths: spent, bankTenths: 1000 - spent }, strategy: { horizon: store.horizon, risk: store.riskMode, bench: store.benchStrategy } } }),
       });
       if (!response.ok) throw new Error(`AI analyst returned ${response.status}`);
       const payload = objectOf(await response.json());
@@ -895,7 +929,8 @@ export default function TerminalApp() {
           viceCaptainId: numberOf(readField(weeklyAction, "viceCaptainId")) ?? 0,
           projectionFingerprint: stringOf(readField(weeklyAction, "projectionFingerprint")) ?? "",
         };
-        const valid = candidate.gameweek === weeklyEnginePlan.gameweek
+        const valid = candidate.gameweek === planningGameweek
+          && candidate.gameweek === weeklyEnginePlan.gameweek
           && candidate.projectionFingerprint === weeklyEnginePlan.projectionFingerprint
           && validateWeeklyLineup(candidate, selected).legal;
         if (valid) {
@@ -937,6 +972,44 @@ export default function TerminalApp() {
     }
   };
 
+  const changePlanningGameweek = (target: number) => {
+    const bounded = clamp(Math.round(target), liveCurrentGW, 38);
+    if (bounded === planningGameweek) return;
+    if (store.switchGameweek(bounded) === false) return;
+    setGWSwapSelection({});
+    setSimulation(null);
+    setSimulationMove(null);
+  };
+
+  const reverseAllChanges = async () => {
+    const entryId = store.entryId;
+    if (!entryId) {
+      setNotice("Reverse all changes is available after importing an FPL team.");
+      return;
+    }
+    if (!window.confirm(`Reverse all changes and restore the official Gameweek ${liveCurrentGW} squad?`)) return;
+    setReverseBusy(true);
+    try {
+      const response = await fetch(`/api/fpl/entry/${entryId}?gameweek=${liveCurrentGW}`, { headers: { accept: "application/json" } });
+      const body = await response.json() as { data?: ImportedTeam; errors?: string[] };
+      if (!response.ok || !body.data?.squad || !body.data.lineup) throw new Error(body.errors?.[0] ?? "Official FPL squad restore failed.");
+      const known = new Set(data.players.map((player) => player.id));
+      if (body.data.squad.playerIds.some((playerId) => !known.has(playerId))) throw new Error("The official squad contains players missing from the current FPL player data. Refresh and try again.");
+      const importedPlayers = data.players.filter((player) => body.data!.squad.playerIds.includes(player.id));
+      const fingerprint = pickWeeklyTeam({ squad: importedPlayers, gameweek: liveCurrentGW, riskMode: store.riskMode }).projectionFingerprint;
+      if (!fingerprint || !store.replaceSquad(body.data.squad, { ...body.data.lineup, lineupProjectionFingerprint: fingerprint }, entryId)) throw new Error("FPL returned an invalid 15-player squad.");
+      store.switchGameweek(liveCurrentGW);
+      setGWSwapSelection({});
+      setSimulation(null);
+      setSimulationMove(null);
+      setNotice(`Official Gameweek ${liveCurrentGW} squad restored. Future plans cleared.`);
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "Official FPL squad restore failed.");
+    } finally {
+      setReverseBusy(false);
+    }
+  };
+
   const reset = () => {
     if (window.confirm("Reset the current squad and saved terminal state?")) {
       store.reset();
@@ -952,6 +1025,7 @@ export default function TerminalApp() {
   if (store.mode === "ANALYZE" && !store.entryId) {
     return <TeamImportScreen
       players={data.players}
+      gameweek={liveCurrentGW}
       onBack={() => store.setMode(null)}
       onImport={(result) => {
         const importedPlayers = data.players.filter((player) => result.squad.playerIds.includes(player.id));
@@ -973,9 +1047,9 @@ export default function TerminalApp() {
     store.setFilters({ position: "ALL", club: "", minPrice: "", maxPrice: "", minOwnership: "", maxOwnership: "", availability: "ALL", confidence: "ALL", risk: "ALL", affordableOnly: false, excludeSelected: false, quick: "ALL" });
   };
   const renderSquadPlayer = (player: TerminalPlayer, starter: boolean, benchLabel?: string) => {
-    const benchIndex = (store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(player.id);
+    const benchIndex = (lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(player.id);
     const swapSelected = benchLabel ? gwSwapSelection.benchId === player.id : gwSwapSelection.starterId === player.id;
-    return <SquadSlot key={player.id} player={player} locked={store.lockedPlayerIds.includes(player.id)} captain={(store.captainId ?? currentGWPlan?.captainId) === player.id} vice={(store.viceCaptainId ?? currentGWPlan?.viceCaptainId) === player.id} starter={starter} benchLabel={benchLabel} benchIndex={benchIndex} lineupActive={Boolean(currentGWPlan)} swapSelected={swapSelected} onRemove={() => store.removePlayer(player.id)} onToggleLock={() => store.toggleLock(player.id)} onSelect={() => store.setSelectedPlayer(player.id)} onSwap={() => selectGWSwapPlayer(benchLabel ? "bench" : "starter", player.id)} onCaptain={() => makeGWCaptain(player.id)} onViceCaptain={() => makeGWViceCaptain(player.id)} onMoveBench={(direction) => moveGWBench(player.id, direction)} />;
+    return <SquadSlot key={player.id} player={player} gameweek={planningGameweek} locked={store.lockedPlayerIds.includes(player.id)} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === player.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === player.id} starter={starter} benchLabel={benchLabel} benchIndex={benchIndex} lineupActive={Boolean(currentGWPlan)} swapSelected={swapSelected} onRemove={() => store.removePlayer(player.id)} onToggleLock={() => store.toggleLock(player.id)} onSelect={() => store.setSelectedPlayer(player.id)} onSwap={() => selectGWSwapPlayer(benchLabel ? "bench" : "starter", player.id)} onCaptain={() => makeGWCaptain(player.id)} onViceCaptain={() => makeGWViceCaptain(player.id)} onMoveBench={(direction) => moveGWBench(player.id, direction)} />;
   };
   const choosePlayer = (position: Position) => {
     const maxPriceTenths = slotMaxPrices[position];
@@ -1022,7 +1096,8 @@ export default function TerminalApp() {
         </section>
 
         <section id="terminal-panel-squad" data-panel="squad" className={`squad-column ${collapsedPanels.squad ? "panel-collapsed" : ""} ${store.activeMobileTab === "SQUAD" ? "mobile-visible" : ""}`} aria-label="Squad builder and analysis">
-          <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><details className="strategy-settings"><summary className="compact-action">SETTINGS</summary><div className="strategy-popover"><StrategyControls horizon={store.horizon} riskMode={store.riskMode} benchStrategy={store.benchStrategy} setStrategy={store.setStrategy} /></div></details><button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button><button className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "PICK TEAM · OUTDATED" : "PICK TEAM"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
+          <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><details className="strategy-settings"><summary className="compact-action">SETTINGS</summary><div className="strategy-popover"><StrategyControls horizon={store.horizon} riskMode={store.riskMode} benchStrategy={store.benchStrategy} setStrategy={store.setStrategy} /><div className="settings-divider" /><button type="button" className="settings-danger" disabled={!store.entryId || reverseBusy} onClick={() => void reverseAllChanges()}>{reverseBusy ? "RESTORING…" : "REVERSE ALL CHANGES"}</button>{!store.entryId && <span className="settings-note">Import an FPL team to restore official picks.</span>}</div></details><button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button><button className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "PICK TEAM · OUTDATED" : "PICK TEAM"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
+          <div className="planning-toolbar" aria-label="Squad planning Gameweek"><span className="section-kicker">PLAN</span><div className="planning-switcher" role="group" aria-label="Select planning Gameweek"><button type="button" className="planning-arrow" disabled={planningGameweek <= liveCurrentGW} onClick={() => changePlanningGameweek(planningGameweek - 1)} aria-label="Previous planning Gameweek">←</button><span aria-live="polite">GW {planningGameweek}</span><button type="button" className="planning-arrow" disabled={planningGameweek >= 38} onClick={() => changePlanningGameweek(planningGameweek + 1)} aria-label="Next planning Gameweek">→</button></div><span className="planning-live">LIVE GW {liveCurrentGW}</span></div>
           <div className="squad-sections lineup-roster" data-testid="squad-roster">
             <section className="starting-xi" aria-label="Starting XI"><div className="lineup-roster-heading"><span>STARTING XI</span><span>{currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · {currentGWPlan ? 11 : draftStarterCount}/11</span></div>
               {POSITIONS.map((position) => {
@@ -1059,7 +1134,7 @@ function ModeChooser({ status, message, gameweek, onChoose }: { status: DataStat
 
 type ImportedTeam = { entryId: number; teamName?: string; managerName?: string; squad: SquadState; lineup: Omit<ApplyLineupInput, "lineupProjectionFingerprint"> };
 
-function TeamImportScreen({ players, onImport, onBack }: { players: TerminalPlayer[]; onImport: (result: ImportedTeam) => boolean; onBack: () => void }) {
+function TeamImportScreen({ players, gameweek, onImport, onBack }: { players: TerminalPlayer[]; gameweek: number; onImport: (result: ImportedTeam) => boolean; onBack: () => void }) {
   const [entryId, setEntryId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1070,7 +1145,7 @@ function TeamImportScreen({ players, onImport, onBack }: { players: TerminalPlay
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch(`/api/fpl/entry/${id}`, { headers: { accept: "application/json" } });
+      const response = await fetch(`/api/fpl/entry/${id}?gameweek=${gameweek}`, { headers: { accept: "application/json" } });
       const body = await response.json() as { data?: ImportedTeam; errors?: string[] };
       if (!response.ok || !body.data?.squad || !body.data.lineup) throw new Error(body.errors?.[0] ?? "FPL team import failed.");
       const known = new Set(players.map((player) => player.id));
@@ -1082,7 +1157,7 @@ function TeamImportScreen({ players, onImport, onBack }: { players: TerminalPlay
       setBusy(false);
     }
   };
-  return <main className="mode-screen import-screen"><button type="button" className="import-back" onClick={onBack}>← BACK</button><div className="mode-brand"><span className="brand-mark" aria-hidden="true" /><span>FPL TERMINAL</span></div><p className="mode-tagline">IMPORT YOUR OFFICIAL FPL TEAM</p><form className="import-card" onSubmit={submit}><label htmlFor="fpl-entry-id">ENTER FPL ID</label><div className="import-controls"><input id="fpl-entry-id" inputMode="numeric" pattern="[0-9]*" autoFocus value={entryId} onChange={(event) => setEntryId(event.target.value)} placeholder="4827193" /><button className="primary-button" type="submit" disabled={busy || !players.length}>{busy ? "IMPORTING…" : "IMPORT TEAM"}</button></div><p>We’ll load Gameweek 1 picks from the official FPL API and fill all 15 squad positions.</p>{!players.length && <span className="import-error" role="status">Waiting for the FPL player list…</span>}{error && <span className="import-error" role="alert">{error}</span>}</form></main>;
+  return <main className="mode-screen import-screen"><button type="button" className="import-back" onClick={onBack}>← BACK</button><div className="mode-brand"><span className="brand-mark" aria-hidden="true" /><span>FPL TERMINAL</span></div><p className="mode-tagline">IMPORT YOUR OFFICIAL FPL TEAM</p><form className="import-card" onSubmit={submit}><label htmlFor="fpl-entry-id">ENTER FPL ID</label><div className="import-controls"><input id="fpl-entry-id" inputMode="numeric" pattern="[0-9]*" autoFocus value={entryId} onChange={(event) => setEntryId(event.target.value)} placeholder="4827193" /><button className="primary-button" type="submit" disabled={busy || !players.length}>{busy ? "IMPORTING…" : "IMPORT TEAM"}</button></div><p>We’ll load Gameweek {gameweek} picks from the official FPL API and fill all 15 squad positions.</p>{!players.length && <span className="import-error" role="status">Waiting for the FPL player list…</span>}{error && <span className="import-error" role="alert">{error}</span>}</form></main>;
 }
 
 function StatusCell({ label, value, tone }: { label: string; value: string; tone?: "amber" | "green" | "red" | "cyan" }) { return <div className="status-cell"><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
@@ -1132,10 +1207,11 @@ function PlayerDetail({ player, locked, freshness, source, onClose, onAdd, onTog
 
 function Metric({ label, value, tone }: { label: string; value: string; tone?: string }) { return <div><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
 
-function SquadSlot({ player, locked, captain, vice, starter, benchLabel, benchIndex, lineupActive, swapSelected, onRemove, onToggleLock, onSelect, onSwap, onCaptain, onViceCaptain, onMoveBench }: { player: TerminalPlayer; locked: boolean; captain: boolean; vice: boolean; starter: boolean; benchLabel?: string; benchIndex: number; lineupActive: boolean; swapSelected: boolean; onRemove: () => void; onToggleLock: () => void; onSelect: () => void; onSwap: () => void; onCaptain: () => void; onViceCaptain: () => void; onMoveBench: (direction: -1 | 1) => void }) {
+function SquadSlot({ player, gameweek, locked, captain, vice, starter, benchLabel, benchIndex, lineupActive, swapSelected, onRemove, onToggleLock, onSelect, onSwap, onCaptain, onViceCaptain, onMoveBench }: { player: TerminalPlayer; gameweek: number; locked: boolean; captain: boolean; vice: boolean; starter: boolean; benchLabel?: string; benchIndex: number; lineupActive: boolean; swapSelected: boolean; onRemove: () => void; onToggleLock: () => void; onSelect: () => void; onSwap: () => void; onCaptain: () => void; onViceCaptain: () => void; onMoveBench: (direction: -1 | 1) => void }) {
   const benched = Boolean(benchLabel);
   return <article className={`squad-slot filled ${locked ? "locked" : ""} ${benched ? "benched" : ""} ${swapSelected ? "lineup-selected" : ""}`}>
-    <button className="slot-main" onClick={onSelect}><span className="slot-player">{player.displayName}</span><span className="slot-sub">{player.teamShortName} · {money(player.priceTenths)}</span><span className="slot-xp">{points(player.projection?.nextGW)} <small>xP</small></span></button>
+    <SquadFixtureBadges player={player} gameweek={gameweek} />
+    <button className="slot-main" onClick={onSelect}><span className="slot-player">{player.displayName}</span><span className="slot-sub">{player.teamShortName} · {money(player.priceTenths)}</span><span className="slot-xp">{points(weeklyPlayerMetrics(player, gameweek).points)} <small>xP</small></span></button>
     <div className="slot-flags"><button className={`lock-flag ${locked ? "on" : ""}`} onClick={onToggleLock} aria-label={`${locked ? "Unlock" : "Lock"} ${player.displayName}`} aria-pressed={locked}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d="M4 7V5a4 4 0 0 1 8 0v2" /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button>{!locked && <button className="remove-flag" onClick={onRemove} aria-label={`Remove ${player.displayName}`}>×</button>}</div>
     {lineupActive && <div className="lineup-controls">{starter ? <><button className={`role-button captain ${captain ? "active" : ""}`} onClick={onCaptain} aria-label={`Make ${player.displayName} captain`} aria-pressed={captain}>C</button><button className={`role-button vice ${vice ? "active" : ""}`} onClick={onViceCaptain} aria-label={`Make ${player.displayName} vice-captain`} aria-pressed={vice}>VC</button><button className="role-button bench-toggle" onClick={onSwap} aria-label={`Select ${player.displayName} to move to bench`} aria-pressed={swapSelected}>B</button></> : <><button className="role-button bench-toggle active" onClick={onSwap} aria-label={`Select ${player.displayName} to move into the starting XI`} aria-pressed={swapSelected}>{benchLabel}</button>{benchIndex >= 0 && <><button className="role-button bench-order" disabled={benchIndex === 0} onClick={() => onMoveBench(-1)} aria-label={`Move ${player.displayName} up the bench order`}>↑</button><button className="role-button bench-order" disabled={benchIndex === 2} onClick={() => onMoveBench(1)} aria-label={`Move ${player.displayName} down the bench order`}>↓</button></>}</>}</div>}
   </article>;

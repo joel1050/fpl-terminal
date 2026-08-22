@@ -157,6 +157,7 @@ export function enrichPlayersWithHistory(
   }));
   const projections = projectPlayers(selectedPlayers, {
     horizon: 5,
+    fixtureHorizon: 39 - gw,
     currentGameweek: gw,
     teamStrengths: strengths,
   });

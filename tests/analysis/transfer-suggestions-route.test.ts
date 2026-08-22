@@ -71,6 +71,17 @@ describe("single-transfer route", () => {
     await expect(response.json()).resolves.toMatchObject({ gameweek: 3, horizon: 5, suggestions: [{ outgoingPlayerId: 3, incomingPlayerId: 16 }] });
   });
 
+  it("searches a requested gameweek", async () => {
+    const response = await POST(new Request("http://localhost/api/transfer-suggestions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ squad: players.map((item) => item.id), lockedPlayerIds: [], gameweek: 17, horizon: 1, risk: "SAFE" }),
+    }));
+    expect(response.status).toBe(200);
+    expect(mocks.find).toHaveBeenCalledWith(expect.objectContaining({ gameweek: 17, horizon: 1, risk: "SAFE" }));
+    await expect(response.json()).resolves.toMatchObject({ gameweek: 17, horizon: 1 });
+  });
+
   it("reports unavailable FPL data without searching", async () => {
     mocks.bootstrapData = null;
     const response = await POST(new Request("http://localhost/api/transfer-suggestions", {

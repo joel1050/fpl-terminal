@@ -156,4 +156,14 @@ describe("transparent projection model", () => {
     });
     expect(blankCurrentGameweek.nextGW).toBe(0);
   });
+
+  it("can retain fixtures beyond the five-gameweek summary horizon", () => {
+    const projection = projectPlayer(player([
+      { gameweek: 1, opponentTeamId: 2, opponentShortName: "A", isHome: true, difficulty: 2 },
+      { gameweek: 8, opponentTeamId: 3, opponentShortName: "B", isHome: false, difficulty: 4 },
+    ]), { currentGameweek: 1, horizon: 5, fixtureHorizon: 8, expectedMinutes: 90 });
+
+    expect(projection.fixtures.map(({ gameweek }) => gameweek)).toEqual([1, 8]);
+    expect(projection.next5).toBeCloseTo(projection.nextGW, 6);
+  });
 });

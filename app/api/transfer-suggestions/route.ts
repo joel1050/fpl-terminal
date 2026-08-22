@@ -13,6 +13,7 @@ const requestSchema = z.object({
   squad: z.array(z.number().int().positive()).length(15),
   lockedPlayerIds: z.array(z.number().int().positive()).max(15),
   excludedPlayerIds: z.array(z.number().int().positive()).max(600).optional(),
+  gameweek: z.number().int().min(1).max(38).optional(),
   horizon: z.union([z.literal(1), z.literal(3), z.literal(5)]),
   risk: z.enum(["SAFE", "BALANCED", "AGGRESSIVE"]),
 }).strict();
@@ -28,7 +29,8 @@ export async function POST(request: Request) {
     const projected = enrichBootstrapWithProjections(normalized, historical).bootstrap;
     const legality = legalSquad(parsed.data.squad, playerMap(projected.players));
     if (!legality.legal) return NextResponse.json({ error: legality.errors[0] ?? "A legal 15-player squad is required" }, { status: 422 });
-    const gameweek = projected.events.find((event) => event.isCurrent)?.id
+    const gameweek = parsed.data.gameweek
+      ?? projected.events.find((event) => event.isCurrent)?.id
       ?? projected.events.find((event) => event.isNext)?.id
       ?? 1;
     const suggestions = findBestSingleTransfers({

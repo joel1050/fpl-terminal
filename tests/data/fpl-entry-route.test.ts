@@ -40,13 +40,29 @@ describe("FPL team import route", () => {
     const response = await GET(new Request("http://localhost/api/fpl/entry/4827193"), { params: Promise.resolve({ id: "4827193" }) });
     expect(response.status).toBe(200);
     expect(mocks.getEntry).toHaveBeenCalledWith(4827193);
-    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193);
+    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 1);
     await expect(response.json()).resolves.toMatchObject({ data: {
       teamName: "Test XI",
       managerName: "Test Manager",
       squad: { byPosition: { GK: [1, 2], DEF: [3, 4, 5, 6, 7], MID: [8, 9, 10, 11, 12], FWD: [13, 14, 15] } },
       lineup: { gameweek: 1, benchGoalkeeperId: 2, benchOrder: [6, 7, 15], captainId: 13, viceCaptainId: 14 },
     } });
+  });
+
+  it("imports picks for the requested gameweek", async () => {
+    const response = await GET(new Request("http://localhost/api/fpl/entry/4827193?gameweek=7"), { params: Promise.resolve({ id: "4827193" }) });
+    expect(response.status).toBe(200);
+    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 7);
+    await expect(response.json()).resolves.toMatchObject({ data: { lineup: { gameweek: 7 } } });
+  });
+
+  it("rejects an invalid gameweek before fetching the entry", async () => {
+    mocks.getEntry.mockClear();
+    mocks.getEntryPicks.mockClear();
+    const response = await GET(new Request("http://localhost/api/fpl/entry/4827193?gameweek=39"), { params: Promise.resolve({ id: "4827193" }) });
+    expect(response.status).toBe(400);
+    expect(mocks.getEntry).not.toHaveBeenCalled();
+    expect(mocks.getEntryPicks).not.toHaveBeenCalled();
   });
 
   it("rejects malformed IDs and incomplete squads", async () => {

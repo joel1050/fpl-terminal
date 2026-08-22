@@ -168,13 +168,16 @@ export function getEntry(entryId: number): Promise<FplResponse<FplEntryPayload>>
   });
 }
 
-export function getEntryPicks(entryId: number): Promise<FplResponse<FplEntryPicksPayload>> {
+export function getEntryPicks(entryId: number, gameweek = 1): Promise<FplResponse<FplEntryPicksPayload>> {
   if (!Number.isSafeInteger(entryId) || entryId < 1) {
     return Promise.resolve({ data: null, freshness: null, error: "Team id must be a positive integer" });
   }
+  if (!Number.isSafeInteger(gameweek) || gameweek < 1 || gameweek > 38) {
+    return Promise.resolve({ data: null, freshness: null, error: "Gameweek must be an integer from 1 to 38" });
+  }
   return requestJson({
-    key: `entry-${entryId}-event-1-picks`,
-    path: `entry/${entryId}/event/1/picks/`,
+    key: `entry-${entryId}-event-${gameweek}-picks`,
+    path: `entry/${entryId}/event/${gameweek}/picks/`,
     schema: FplEntryPicksSchema,
     ttlMs: FPL_CACHE_TTLS_MS.entry,
     persistSnapshot: false,

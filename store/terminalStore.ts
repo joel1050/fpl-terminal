@@ -58,9 +58,172 @@ export type PersistedTerminalState = PersistentFPLState & {
   lineupProjectionFingerprint?: string;
   panelRatios?: Partial<Record<DesktopPanel, number>>;
   dismissedTransferKeys?: string[];
+  currentGameweek?: number;
+  planningGameweek?: number;
+  gameweekPlans?: Record<number, GameweekPlanSnapshot>;
 };
 
+export type GameweekPlanSnapshot = {
+  gameweek: number;
+  playerIds: number[];
+  byPosition: SlotMap;
+  benchGoalkeeperId?: number;
+  benchOrder: number[];
+  lockedPlayerIds: number[];
+  captainId?: number;
+  viceCaptainId?: number;
+  lineupGameweek?: number;
+  lineupProjectionFingerprint?: string;
+};
+
+/** Alias used by callers that refer to a saved weekly plan rather than its storage shape. */
+export type GameweekPlan = GameweekPlanSnapshot;
+
 const emptySlots = (): SlotMap => ({ GK: [], DEF: [], MID: [], FWD: [] });
+
+const POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
+const MAX_GAMEWEEK = 38;
+
+function validId(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+
+function validGameweek(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= MAX_GAMEWEEK;
+}
+
+export function clampGameweek(gameweek: number, currentGameweek = 1): number {
+  const current = validGameweek(currentGameweek) ? currentGameweek : 1;
+  if (!Number.isFinite(gameweek)) return current;
+  return Math.min(MAX_GAMEWEEK, Math.max(current, Math.trunc(gameweek)));
+}
+
+function cloneSlotMap(byPosition: SlotMap): SlotMap {
+  return Object.fromEntries(POSITIONS.map((position) => [position, [...byPosition[position]]])) as SlotMap;
+}
+
+function clonePlan(plan: GameweekPlanSnapshot, gameweek = plan.gameweek): GameweekPlanSnapshot {
+  return {
+    ...plan,
+    gameweek,
+    playerIds: [...plan.playerIds],
+    byPosition: cloneSlotMap(plan.byPosition),
+    benchOrder: [...plan.benchOrder],
+    lockedPlayerIds: [...plan.lockedPlayerIds],
+  };
+}
+
+function validNumberArray(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every(validId) && new Set(value).size === value.length;
+}
+
+function safeNumberArray(value: unknown): number[] | undefined {
+  return Array.isArray(value) && value.every(validId) ? [...value] : undefined;
+}
+
+function validSlotMap(value: unknown): value is SlotMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const candidate = value as Partial<Record<Position, unknown>>;
+  return POSITIONS.every((position) => validNumberArray(candidate[position]));
+}
+
+function validSquadShape(value: unknown): value is SquadState {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const candidate = value as Partial<SquadState>;
+  return validNumberArray(candidate.playerIds) && validSlotMap(candidate.byPosition);
+}
+
+function sanitizeSquad(value: unknown): SquadState | undefined {
+  if (!validSquadShape(value)) return undefined;
+  return { playerIds: [...value.playerIds], byPosition: cloneSlotMap(value.byPosition) };
+}
+
+function sanitizePlan(value: unknown, expectedGameweek: number): GameweekPlanSnapshot | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const candidate = value as Partial<GameweekPlanSnapshot>;
+  if ((candidate.gameweek !== undefined && candidate.gameweek !== expectedGameweek)
+    || !validNumberArray(candidate.playerIds)
+    || !validSlotMap(candidate.byPosition)
+    || !validNumberArray(candidate.benchOrder)
+    || !validNumberArray(candidate.lockedPlayerIds)) return undefined;
+  const byPosition = candidate.byPosition as SlotMap;
+  if (candidate.playerIds.length > 15
+    || byPosition.GK.length > 2
+    || byPosition.DEF.length > 5
+    || byPosition.MID.length > 5
+    || byPosition.FWD.length > 3
+    || candidate.benchOrder.length > 3
+    || candidate.lockedPlayerIds.length > 15) return undefined;
+  const listedIds = POSITIONS.flatMap((position) => candidate.byPosition?.[position] ?? []);
+  const playerSet = new Set(candidate.playerIds);
+  if (listedIds.some((id) => !playerSet.has(id)) || new Set(listedIds).size !== listedIds.length) return undefined;
+  if (candidate.benchGoalkeeperId !== undefined && (!validId(candidate.benchGoalkeeperId) || !byPosition.GK.includes(candidate.benchGoalkeeperId))) return undefined;
+  if (candidate.benchOrder.some((id) => !playerSet.has(id) || byPosition.GK.includes(id))) return undefined;
+  if (candidate.lockedPlayerIds.some((id) => !playerSet.has(id))) return undefined;
+  if (candidate.captainId !== undefined && (!validId(candidate.captainId) || !playerSet.has(candidate.captainId))) return undefined;
+  if (candidate.viceCaptainId !== undefined && (!validId(candidate.viceCaptainId) || !playerSet.has(candidate.viceCaptainId))) return undefined;
+  if (candidate.captainId !== undefined && candidate.captainId === candidate.viceCaptainId) return undefined;
+  if (candidate.lineupGameweek !== undefined && !validGameweek(candidate.lineupGameweek)) return undefined;
+  if (candidate.lineupProjectionFingerprint !== undefined && (typeof candidate.lineupProjectionFingerprint !== "string" || !candidate.lineupProjectionFingerprint.trim())) return undefined;
+  if ((candidate.lineupGameweek === undefined) !== (candidate.lineupProjectionFingerprint === undefined)) return undefined;
+  return clonePlan({
+    gameweek: expectedGameweek,
+    playerIds: candidate.playerIds,
+    byPosition,
+    benchGoalkeeperId: candidate.benchGoalkeeperId,
+    benchOrder: candidate.benchOrder,
+    lockedPlayerIds: candidate.lockedPlayerIds,
+    captainId: candidate.captainId,
+    viceCaptainId: candidate.viceCaptainId,
+    lineupGameweek: candidate.lineupGameweek,
+    lineupProjectionFingerprint: candidate.lineupProjectionFingerprint?.trim(),
+  });
+}
+
+function sanitizePlans(value: unknown): Record<number, GameweekPlanSnapshot> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const plans: Record<number, GameweekPlanSnapshot> = {};
+  for (const [key, rawPlan] of Object.entries(value)) {
+    const gameweek = Number(key);
+    if (!validGameweek(gameweek)) continue;
+    const plan = sanitizePlan(rawPlan, gameweek);
+    if (plan) plans[gameweek] = plan;
+  }
+  return plans;
+}
+
+function planFromState(state: Pick<TerminalState, "planningGameweek" | "playerIds" | "byPosition" | "benchGoalkeeperId" | "benchOrder" | "lockedPlayerIds" | "captainId" | "viceCaptainId" | "lineupGameweek" | "lineupProjectionFingerprint">, gameweek = state.planningGameweek): GameweekPlanSnapshot {
+  return {
+    gameweek,
+    playerIds: [...state.playerIds],
+    byPosition: cloneSlotMap(state.byPosition),
+    benchGoalkeeperId: state.benchGoalkeeperId,
+    benchOrder: [...state.benchOrder],
+    lockedPlayerIds: [...state.lockedPlayerIds],
+    captainId: state.captainId,
+    viceCaptainId: state.viceCaptainId,
+    lineupGameweek: state.lineupGameweek,
+    lineupProjectionFingerprint: state.lineupProjectionFingerprint,
+  };
+}
+
+function savePlan(plans: Record<number, GameweekPlanSnapshot>, plan: GameweekPlanSnapshot): Record<number, GameweekPlanSnapshot> {
+  const clean = sanitizePlan(plan, plan.gameweek);
+  return clean ? { ...plans, [plan.gameweek]: clean } : { ...plans };
+}
+
+function nearestPriorPlan(plans: Record<number, GameweekPlanSnapshot>, gameweek: number): GameweekPlanSnapshot | undefined {
+  const source = Object.keys(plans)
+    .map(Number)
+    .filter((candidate) => candidate <= gameweek)
+    .sort((left, right) => right - left)[0];
+  return source === undefined ? undefined : plans[source];
+}
+
+function activePlanPatch(state: TerminalState, patch: Partial<Pick<TerminalState, "playerIds" | "byPosition" | "benchGoalkeeperId" | "benchOrder" | "lockedPlayerIds" | "captainId" | "viceCaptainId" | "lineupGameweek" | "lineupProjectionFingerprint" | "selectedPlayerId">>): Partial<TerminalState> {
+  const next = { ...state, ...patch };
+  return { ...patch, gameweekPlans: savePlan(state.gameweekPlans, planFromState(next)) };
+}
 
 function positionOf(id: number, byPosition: SlotMap): Position | undefined {
   return (Object.keys(byPosition) as Position[]).find((position) => byPosition[position].includes(id));
@@ -157,6 +320,9 @@ export type TerminalState = {
   mode: TerminalMode | null;
   entryId?: number;
   activeMobileTab: "SQUAD" | "MARKET" | "AI";
+  currentGameweek: number;
+  planningGameweek: number;
+  gameweekPlans: Record<number, GameweekPlanSnapshot>;
   playerIds: number[];
   byPosition: SlotMap;
   benchGoalkeeperId?: number;
@@ -178,6 +344,9 @@ export type TerminalState = {
   dismissedTransferKeys: string[];
   isHydrated: boolean;
   setMode: (mode: TerminalMode | null) => void;
+  initializeGameweek: (currentGameweek: number) => number;
+  setPlanningGameweek: (gameweek: number) => boolean;
+  switchGameweek: (gameweek: number) => boolean;
   setMobileTab: (tab: TerminalState["activeMobileTab"]) => void;
   setSearch: (search: string) => void;
   setFilters: (filters: Partial<TerminalFilters>) => void;
@@ -204,6 +373,9 @@ const initial = {
   mode: null,
   entryId: undefined,
   activeMobileTab: "SQUAD" as const,
+  currentGameweek: 1,
+  planningGameweek: 1,
+  gameweekPlans: {} as Record<number, GameweekPlanSnapshot>,
   playerIds: [],
   byPosition: emptySlots(),
   benchGoalkeeperId: undefined,
@@ -242,6 +414,39 @@ const initial = {
 export const useTerminalStore = create<TerminalState>((set, get) => ({
   ...initial,
   setMode: (mode) => set({ mode }),
+  initializeGameweek: (currentGameweek) => {
+    const normalized = validGameweek(currentGameweek) ? currentGameweek : 1;
+    set({ currentGameweek: normalized });
+    const state = get();
+    const target = clampGameweek(state.planningGameweek, normalized);
+    state.setPlanningGameweek(target);
+    return target;
+  },
+  setPlanningGameweek: (requestedGameweek) => {
+    const state = get();
+    const gameweek = clampGameweek(requestedGameweek, state.currentGameweek);
+    const savedPlans = savePlan(state.gameweekPlans, planFromState(state));
+    const exact = savedPlans[gameweek];
+    const source = exact ?? nearestPriorPlan(savedPlans, gameweek) ?? planFromState(state, gameweek);
+    const restored = clonePlan(source, gameweek);
+    if (!exact && source.lineupGameweek !== undefined) restored.lineupGameweek = gameweek;
+    set({
+      planningGameweek: gameweek,
+      playerIds: [...restored.playerIds],
+      byPosition: cloneSlotMap(restored.byPosition),
+      benchGoalkeeperId: restored.benchGoalkeeperId,
+      benchOrder: [...restored.benchOrder],
+      lockedPlayerIds: [...restored.lockedPlayerIds],
+      captainId: restored.captainId,
+      viceCaptainId: restored.viceCaptainId,
+      lineupGameweek: restored.lineupGameweek,
+      lineupProjectionFingerprint: restored.lineupProjectionFingerprint,
+      selectedPlayerId: undefined,
+      gameweekPlans: savePlan(savedPlans, restored),
+    });
+    return true;
+  },
+  switchGameweek: (gameweek) => get().setPlanningGameweek(gameweek),
   setMobileTab: (activeMobileTab) => set({ activeMobileTab }),
   setSearch: (search) => set({ search }),
   setFilters: (filters) => set((state) => ({ filters: { ...state.filters, ...filters } })),
@@ -254,17 +459,17 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     if (state.playerIds.includes(id)) return false;
     const limits: Record<Position, number> = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
     if (state.byPosition[position].length >= limits[position] || state.playerIds.length >= 15) return false;
-    set({
+    set(activePlanPatch(state, {
       playerIds: [...state.playerIds, id],
       byPosition: { ...state.byPosition, [position]: [...state.byPosition[position], id] },
-    });
+    }));
     return true;
   },
   removePlayer: (id) => {
     const state = get();
     if (state.lockedPlayerIds.includes(id)) return false;
     const position = positionOf(id, state.byPosition);
-    set({
+    set(activePlanPatch(state, {
       playerIds: state.playerIds.filter((playerId) => playerId !== id),
       byPosition: position ? { ...state.byPosition, [position]: state.byPosition[position].filter((playerId) => playerId !== id) } : state.byPosition,
       benchGoalkeeperId: state.benchGoalkeeperId === id ? undefined : state.benchGoalkeeperId,
@@ -272,13 +477,13 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       lockedPlayerIds: state.lockedPlayerIds.filter((playerId) => playerId !== id),
       captainId: state.captainId === id ? undefined : state.captainId,
       viceCaptainId: state.viceCaptainId === id ? undefined : state.viceCaptainId,
-    });
+    }));
     return true;
   },
   replacePlayer: (outgoingId, incomingId, position) => {
     const state = get();
     if (state.lockedPlayerIds.includes(outgoingId) || state.playerIds.includes(incomingId) || positionOf(outgoingId, state.byPosition) !== position) return false;
-    set({
+    set(activePlanPatch(state, {
       playerIds: state.playerIds.map((id) => id === outgoingId ? incomingId : id),
       byPosition: { ...state.byPosition, [position]: state.byPosition[position].map((id) => id === outgoingId ? incomingId : id) },
       benchGoalkeeperId: state.benchGoalkeeperId === outgoingId ? incomingId : state.benchGoalkeeperId,
@@ -286,7 +491,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       captainId: state.captainId === outgoingId ? incomingId : state.captainId,
       viceCaptainId: state.viceCaptainId === outgoingId ? incomingId : state.viceCaptainId,
       selectedPlayerId: incomingId,
-    });
+    }));
     return true;
   },
   replaceSquad: (squad, lineup, entryId) => {
@@ -310,7 +515,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       viceCaptainId: lineup.viceCaptainId,
     }, lineup);
     if (!checked.valid || checked.benchGoalkeeperId === undefined) return false;
-    set({
+    const next = {
       playerIds: [...squad.playerIds],
       byPosition,
       benchGoalkeeperId: checked.benchGoalkeeperId,
@@ -322,10 +527,13 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       viceCaptainId: checked.viceCaptainId,
       selectedPlayerId: undefined,
       entryId,
-    });
+    };
+    const gameweek = lineup.gameweek;
+    const nextState = { ...get(), ...next, planningGameweek: clampGameweek(gameweek, get().currentGameweek), gameweekPlans: {} };
+    set({ ...next, planningGameweek: nextState.planningGameweek, gameweekPlans: { [gameweek]: planFromState(nextState, gameweek) } });
     return true;
   },
-  toggleLock: (id) => set((state) => ({
+  toggleLock: (id) => set((state) => activePlanPatch(state, {
     lockedPlayerIds: state.lockedPlayerIds.includes(id)
       ? state.lockedPlayerIds.filter((playerId) => playerId !== id)
       : [...state.lockedPlayerIds, id],
@@ -344,7 +552,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const lineupApplied = state.lineupGameweek !== undefined && state.lineupProjectionFingerprint !== undefined;
     if (lineupApplied && (captainId === undefined || state.viceCaptainId === undefined)) return false;
     if (captainId !== undefined && (startingXI.length !== 11 || !startingXI.includes(captainId) || captainId === state.viceCaptainId)) return false;
-    set({ captainId });
+    set(activePlanPatch(state, { captainId }));
     return true;
   },
   setViceCaptain: (viceCaptainId) => {
@@ -353,21 +561,21 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const lineupApplied = state.lineupGameweek !== undefined && state.lineupProjectionFingerprint !== undefined;
     if (lineupApplied && (viceCaptainId === undefined || state.captainId === undefined)) return false;
     if (viceCaptainId !== undefined && (startingXI.length !== 11 || !startingXI.includes(viceCaptainId) || viceCaptainId === state.captainId)) return false;
-    set({ viceCaptainId });
+    set(activePlanPatch(state, { viceCaptainId }));
     return true;
   },
   applyLineup: (input) => {
     const state = get();
     const checked = validLineup(state, input);
     if (!checked.valid || checked.benchGoalkeeperId === undefined) return false;
-    set({
+    set(activePlanPatch(state, {
       benchGoalkeeperId: checked.benchGoalkeeperId,
       benchOrder: checked.benchOrder,
       captainId: checked.captainId,
       viceCaptainId: checked.viceCaptainId,
       lineupGameweek: input.gameweek,
       lineupProjectionFingerprint: input.lineupProjectionFingerprint.trim(),
-    });
+    }));
     return true;
   },
   swapStarterBench: (starterId, benchId) => {
@@ -387,7 +595,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const checked = validLineup(nextState, { gameweek: state.lineupGameweek ?? 1, lineupProjectionFingerprint: state.lineupProjectionFingerprint ?? "draft" , benchGoalkeeperId, benchOrder });
     const structuralErrors = checked.errors.filter((error) => !error.includes("gameweek") && !error.includes("fingerprint"));
     if (state.playerIds.length === 15 && (structuralErrors.length > 0 || nextStartingXI.length !== 11)) return false;
-    set({ benchGoalkeeperId, benchOrder });
+    set(activePlanPatch(state, { benchGoalkeeperId, benchOrder }));
     return true;
   },
   reorderBench: (order) => {
@@ -395,41 +603,62 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const current = state.benchOrder;
     const validCurrent = current.length === 3 && new Set(current).size === 3 && current.every((id) => state.playerIds.includes(id) && positionOf(id, state.byPosition) !== "GK");
     if (!validCurrent || order.length !== 3 || new Set(order).size !== 3 || order.some((id) => !current.includes(id))) return false;
-    set({ benchOrder: [...order] });
+    set(activePlanPatch(state, { benchOrder: [...order] }));
     return true;
   },
   hydrate: (state) => {
     if (!state) return set({ isHydrated: true });
     const current = get();
-    const playerIds = state.squad?.playerIds ?? [];
-    const byPosition = state.squad?.byPosition ?? emptySlots();
+    const hasSquad = Object.prototype.hasOwnProperty.call(state, "squad");
+    const incomingSquad = sanitizeSquad(state.squad);
+    const playerIds = incomingSquad?.playerIds ?? (hasSquad ? [] : [...current.playerIds]);
+    const byPosition = incomingSquad?.byPosition ?? (hasSquad ? emptySlots() : cloneSlotMap(current.byPosition));
+    const hasPlans = Object.prototype.hasOwnProperty.call(state, "gameweekPlans");
+    const plans = hasPlans ? sanitizePlans(state.gameweekPlans) : {};
+    const currentGameweek = validGameweek(state.currentGameweek) ? state.currentGameweek : current.currentGameweek;
+    const requestedGameweek = validGameweek(state.planningGameweek) ? state.planningGameweek : current.planningGameweek;
+    const planningGameweek = clampGameweek(requestedGameweek, currentGameweek);
+    const persistedPlan = hasPlans ? plans[planningGameweek] : undefined;
+    const planPlayerIds = persistedPlan?.playerIds ?? playerIds;
+    const planByPosition = persistedPlan?.byPosition ?? byPosition;
     const incomingMetadata = Object.prototype.hasOwnProperty.call(state, "lineupGameweek") || Object.prototype.hasOwnProperty.call(state, "lineupProjectionFingerprint");
     const currentLineupApplied = current.lineupGameweek !== undefined && current.lineupProjectionFingerprint !== undefined;
-    const candidateBenchGoalkeeperId = state.benchGoalkeeperId ?? (incomingMetadata ? undefined : current.benchGoalkeeperId);
-    const candidateBenchOrder = state.benchOrder ? [...state.benchOrder] : incomingMetadata ? [] : [...current.benchOrder];
-    const candidateLineupGameweek = state.lineupGameweek ?? (incomingMetadata ? undefined : current.lineupGameweek);
-    const candidateLineupProjectionFingerprint = state.lineupProjectionFingerprint ?? (incomingMetadata ? undefined : current.lineupProjectionFingerprint);
-    const candidateCaptainId = state.captainId ?? (incomingMetadata ? undefined : current.captainId);
-    const candidateViceCaptainId = state.viceCaptainId ?? (incomingMetadata ? undefined : current.viceCaptainId);
-    const metadataValid = !incomingMetadata || (candidateLineupGameweek !== undefined && typeof candidateLineupProjectionFingerprint === "string" && Boolean(candidateLineupProjectionFingerprint) && validLineup({ playerIds, byPosition, benchGoalkeeperId: candidateBenchGoalkeeperId, benchOrder: candidateBenchOrder, captainId: candidateCaptainId, viceCaptainId: candidateViceCaptainId }, { gameweek: candidateLineupGameweek, lineupProjectionFingerprint: candidateLineupProjectionFingerprint, benchGoalkeeperId: candidateBenchGoalkeeperId, benchOrder: candidateBenchOrder }).valid);
+    const candidateBenchGoalkeeperId = persistedPlan?.benchGoalkeeperId ?? (validId(state.benchGoalkeeperId) ? state.benchGoalkeeperId : undefined) ?? (incomingMetadata ? undefined : current.benchGoalkeeperId);
+    const candidateBenchOrder = persistedPlan ? [...persistedPlan.benchOrder] : safeNumberArray(state.benchOrder) ?? (incomingMetadata ? [] : [...current.benchOrder]);
+    const candidateLineupGameweek = persistedPlan?.lineupGameweek ?? (validGameweek(state.lineupGameweek) ? state.lineupGameweek : undefined) ?? (incomingMetadata ? undefined : current.lineupGameweek);
+    const candidateLineupProjectionFingerprint = persistedPlan?.lineupProjectionFingerprint ?? (typeof state.lineupProjectionFingerprint === "string" && state.lineupProjectionFingerprint.trim() ? state.lineupProjectionFingerprint.trim() : undefined) ?? (incomingMetadata ? undefined : current.lineupProjectionFingerprint);
+    const candidateCaptainId = persistedPlan?.captainId ?? (validId(state.captainId) ? state.captainId : undefined) ?? (incomingMetadata ? undefined : current.captainId);
+    const candidateViceCaptainId = persistedPlan?.viceCaptainId ?? (validId(state.viceCaptainId) ? state.viceCaptainId : undefined) ?? (incomingMetadata ? undefined : current.viceCaptainId);
+    const metadataValid = persistedPlan ? true : !incomingMetadata || (candidateLineupGameweek !== undefined && typeof candidateLineupProjectionFingerprint === "string" && Boolean(candidateLineupProjectionFingerprint) && validLineup({ playerIds: planPlayerIds, byPosition: planByPosition, benchGoalkeeperId: candidateBenchGoalkeeperId, benchOrder: candidateBenchOrder, captainId: candidateCaptainId, viceCaptainId: candidateViceCaptainId }, { gameweek: candidateLineupGameweek, lineupProjectionFingerprint: candidateLineupProjectionFingerprint, benchGoalkeeperId: candidateBenchGoalkeeperId, benchOrder: candidateBenchOrder }).valid);
     const preserveCurrentLineup = currentLineupApplied && (!incomingMetadata || !metadataValid);
-    set({
-      mode: state.mode === "BUILD" || state.mode === "ANALYZE" || state.mode === null ? state.mode : current.mode,
-      entryId: Number.isSafeInteger(state.entryId) && Number(state.entryId) > 0 ? state.entryId : current.entryId,
-      playerIds,
-      byPosition,
+    const activeState = {
+      playerIds: persistedPlan ? [...persistedPlan.playerIds] : playerIds,
+      byPosition: persistedPlan ? cloneSlotMap(persistedPlan.byPosition) : byPosition,
       benchGoalkeeperId: preserveCurrentLineup ? current.benchGoalkeeperId : candidateBenchGoalkeeperId,
       benchOrder: preserveCurrentLineup ? [...current.benchOrder] : candidateBenchOrder,
       lineupGameweek: preserveCurrentLineup ? current.lineupGameweek : metadataValid ? candidateLineupGameweek : undefined,
       lineupProjectionFingerprint: preserveCurrentLineup ? current.lineupProjectionFingerprint : metadataValid ? candidateLineupProjectionFingerprint : undefined,
-      lockedPlayerIds: state.lockedPlayerIds ?? [],
+      lockedPlayerIds: persistedPlan ? [...persistedPlan.lockedPlayerIds] : (Array.isArray(state.lockedPlayerIds) ? [...new Set(state.lockedPlayerIds.filter(validId).filter((id) => playerIds.includes(id)))] : []),
       captainId: preserveCurrentLineup ? current.captainId : metadataValid ? candidateCaptainId : undefined,
       viceCaptainId: preserveCurrentLineup ? current.viceCaptainId : metadataValid ? candidateViceCaptainId : undefined,
-      horizon: state.horizon ?? 5,
-      riskMode: state.riskMode ?? "BALANCED",
-      benchStrategy: state.benchStrategy ?? "BALANCED",
+    };
+    const nextPlans = hasPlans
+      ? savePlan(plans, persistedPlan ?? planFromState({ ...current, ...activeState, planningGameweek }, planningGameweek))
+      : hasSquad && incomingSquad
+        ? { [planningGameweek]: planFromState({ ...current, ...activeState, planningGameweek }, planningGameweek) }
+        : current.gameweekPlans;
+    set({
+      currentGameweek,
+      planningGameweek,
+      mode: state.mode === "BUILD" || state.mode === "ANALYZE" || state.mode === null ? state.mode : current.mode,
+      entryId: Number.isSafeInteger(state.entryId) && Number(state.entryId) > 0 ? state.entryId : current.entryId,
+      ...activeState,
+      horizon: state.horizon === 1 || state.horizon === 3 || state.horizon === 5 ? state.horizon : current.horizon,
+      riskMode: state.riskMode === "SAFE" || state.riskMode === "BALANCED" || state.riskMode === "AGGRESSIVE" ? state.riskMode : current.riskMode,
+      benchStrategy: state.benchStrategy === "CHEAP" || state.benchStrategy === "BALANCED" || state.benchStrategy === "STRONG" ? state.benchStrategy : current.benchStrategy,
       panelRatios: sanitizePanelRatios(state.panelRatios),
       dismissedTransferKeys: [...new Set((Array.isArray(state.dismissedTransferKeys) ? state.dismissedTransferKeys : []).filter((key): key is string => typeof key === "string" && /^[1-9]\d*:[1-9]\d*$/.test(key)))].slice(0, 600),
+      gameweekPlans: nextPlans,
       isHydrated: true,
     });
   },
@@ -437,6 +666,12 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
 }));
 
 export function exportTerminalState(state: TerminalState): PersistedTerminalState {
+  const plans = Object.keys(state.gameweekPlans).reduce((result, key) => {
+    const gameweek = Number(key);
+    const clean = sanitizePlan(state.gameweekPlans[gameweek], gameweek);
+    if (clean) result[gameweek] = clean;
+    return result;
+  }, {} as Record<number, GameweekPlanSnapshot>);
   return {
     mode: state.mode,
     entryId: state.entryId,
@@ -453,6 +688,8 @@ export function exportTerminalState(state: TerminalState): PersistedTerminalStat
     benchStrategy: state.benchStrategy,
     panelRatios: state.panelRatios,
     dismissedTransferKeys: state.dismissedTransferKeys,
+    planningGameweek: state.planningGameweek,
+    gameweekPlans: plans,
     excludedPlayerIds: [],
   };
 }
@@ -460,8 +697,12 @@ export function exportTerminalState(state: TerminalState): PersistedTerminalStat
 export function parseSavedState(raw: string): Partial<PersistedTerminalState> | null {
   try {
     const value = JSON.parse(raw) as Partial<PersistedTerminalState>;
-    if (!value || typeof value !== "object" || !value.squad || !Array.isArray(value.squad.playerIds)) return null;
-    return value;
+    if (!value || typeof value !== "object" || Array.isArray(value) || !sanitizeSquad(value.squad)) return null;
+    const parsed: Partial<PersistedTerminalState> = { ...value, squad: sanitizeSquad(value.squad) };
+    if (Object.prototype.hasOwnProperty.call(value, "gameweekPlans")) parsed.gameweekPlans = sanitizePlans(value.gameweekPlans);
+    if (value.planningGameweek !== undefined && !validGameweek(value.planningGameweek)) delete parsed.planningGameweek;
+    if (value.currentGameweek !== undefined && !validGameweek(value.currentGameweek)) delete parsed.currentGameweek;
+    return parsed;
   } catch {
     return null;
   }

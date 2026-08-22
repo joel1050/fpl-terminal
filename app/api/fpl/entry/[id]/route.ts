@@ -8,15 +8,20 @@ const POSITIONS: Record<number, Position> = { 1: "GK", 2: "DEF", 3: "MID", 4: "F
 const COUNTS: Record<Position, number> = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const { id: rawId } = await params;
   if (!/^\d+$/.test(rawId)) return fplJson(null, null, ["Team id must be a positive integer"], 400);
   const entryId = Number(rawId);
   if (!Number.isSafeInteger(entryId) || entryId < 1) return fplJson(null, null, ["Team id must be a positive integer"], 400);
+  const rawGameweek = new URL(request.url).searchParams.get("gameweek");
+  const gameweek = rawGameweek === null ? 1 : Number(rawGameweek);
+  if (rawGameweek !== null && (!/^\d+$/.test(rawGameweek) || !Number.isSafeInteger(gameweek) || gameweek < 1 || gameweek > 38)) {
+    return fplJson(null, null, ["Gameweek must be an integer from 1 to 38"], 400);
+  }
 
-  const [entry, event] = await Promise.all([getEntry(entryId), getEntryPicks(entryId)]);
+  const [entry, event] = await Promise.all([getEntry(entryId), getEntryPicks(entryId, gameweek)]);
   const errors = errorList(entry.error, event.error);
   if (!entry.data || !event.data) {
     return fplJson(null, { entry: entry.freshness, picks: event.freshness }, errors, errors.some((error) => /HTTP 404/.test(error)) ? 404 : 503);
@@ -53,7 +58,7 @@ export async function GET(
     managerName: [entry.data.player_first_name, entry.data.player_last_name].filter(Boolean).join(" "),
     squad: { playerIds, byPosition },
     lineup: {
-      gameweek: 1,
+      gameweek,
       benchGoalkeeperId: benchGoalkeepers[0].element,
       benchOrder,
       captainId: captains[0].element,

@@ -16,6 +16,7 @@ import { regressPer90 } from "./regression";
 
 export type ProjectPlayerOptions = Partial<ProjectionOptions> & {
   expectedMinutesOptions?: ExpectedMinutesOptions;
+  fixtureHorizon?: number;
 };
 
 const PRIOR_XG: Record<Position, number> = { GK: 0.01, DEF: 0.08, MID: 0.25, FWD: 0.45 };
@@ -318,7 +319,7 @@ export function projectPlayer(
     defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution),
     bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus),
   };
-  const projectionHorizon = Math.max(5, horizon);
+  const projectionHorizon = Math.max(5, options.fixtureHorizon ?? horizon);
   const upcoming = player.fixtures
     .filter(
       (fixture) =>
