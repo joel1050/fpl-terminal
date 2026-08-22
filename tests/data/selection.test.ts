@@ -40,6 +40,37 @@ function mapping(playerId: number, source: RotowireMappedRecord["source"], statu
 }
 
 describe("player selection model", () => {
+  it("weights recent matches more heavily when reading a player's role", () => {
+    const history = (minutes: readonly number[]) => ({
+      players: [],
+      playerMappings: [{ currentPlayerId: 1, historicalPlayerId: 1, confidence: "EXACT" as const }],
+      matchStats: minutes.map((played, index) => ({
+        historicalPlayerId: 1,
+        gameweek: index + 1,
+        fixtureId: index + 1,
+        opponentTeamId: 2,
+        minutes: played,
+        totalPoints: 0,
+        goals: 0,
+        assists: 0,
+        expectedGoals: 0,
+        expectedAssists: 0,
+        bonus: 0,
+        bps: 0,
+        wasHome: true,
+      })),
+      generatedAt: "2026-08-20T00:00:00.000Z",
+    });
+    const started = Array.from({ length: 14 }, () => 90);
+    const benched = Array.from({ length: 14 }, () => 0);
+    // Same 28 matches, same 14 starts. Only the order differs.
+    const droppedRecently = buildPlayerSelections([player(1)], { historical: history([...started, ...benched]) });
+    const recalled = buildPlayerSelections([player(1)], { historical: history([...benched, ...started]) });
+
+    expect(recalled.get(1)!.startProbability).toBeGreaterThan(0.7);
+    expect(droppedRecently.get(1)!.startProbability).toBeLessThan(0.3);
+  });
+
   it("normalizes scenarios and gives the predicted XI a strong start signal", () => {
     const selections = buildPlayerSelections([player(1), player(2)], {
       rotowire: { snapshot: { fetchedAt: "2026-08-20T12:00:00.000Z" }, mappings: [mapping(1, "STARTER")] },
