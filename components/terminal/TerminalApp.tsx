@@ -6,7 +6,7 @@ import { analyzeSquad } from "@/lib/analysis/analyzeSquad";
 import { findReplacements } from "@/lib/analysis/replacements";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
 import { chooseCaptainVice } from "@/lib/squad/captain";
-import { calculateBudgetFeasibility, explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
+import { explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
 import { expectedAutosubValue, pickWeeklyTeam, validateWeeklyLineup } from "@/lib/squad/weeklyLineup";
 import type { OptimizerResult } from "@/lib/optimizer/optimizer";
 import { projectPlayer } from "@/lib/projections/projectPlayer";
@@ -25,9 +25,9 @@ type DataState = "SYNCING" | "LIVE" | "SNAPSHOT" | "STALE" | "EMPTY" | "ERROR";
 
 const POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
 const POSITION_LIMITS: Record<Position, number> = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
-type DesktopPanel = "market" | "squad" | "analysis" | "ai";
-const DESKTOP_PANELS: DesktopPanel[] = ["market", "squad", "analysis", "ai"];
-const PANEL_LABELS: Record<DesktopPanel, string> = { market: "Player universe", squad: "Squad builder", analysis: "Squad analysis", ai: "AI analyst" };
+type DesktopPanel = "market" | "squad" | "ai";
+const DESKTOP_PANELS: DesktopPanel[] = ["market", "squad", "ai"];
+const PANEL_LABELS: Record<DesktopPanel, string> = { market: "Player universe", squad: "Squad builder and analysis", ai: "AI analyst" };
 
 type ResizeState = {
   panel: DesktopPanel;
@@ -297,7 +297,7 @@ function expectedInvolvementPer90(player: TerminalPlayer): string {
 
 function FixtureRun({ player }: { player: TerminalPlayer }) {
   if (!player.fixtures.length) return <>—</>;
-  return <span className="fixture-run">{player.fixtures.map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>)}</span>;
+  return <span className="fixture-run">{player.fixtures.slice(0, 12).map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>)}</span>;
 }
 
 function weeklyPoints(plan: WeeklyLineupPlan): number {
@@ -398,23 +398,20 @@ export default function TerminalApp() {
   const [pasteText, setPasteText] = useState("");
   const [pasteMessage, setPasteMessage] = useState<string | null>(null);
   const [ambiguous, setAmbiguous] = useState<Array<{ name: string; matches: TerminalPlayer[] }>>([]);
-  const [aiMessages, setAiMessages] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
+  const [aiMessages, setAiMessages] = useState<Array<{ role: "user" | "assistant"; text: string; at: number; actions?: Array<{ type?: string; playerId?: unknown; outId?: unknown; inId?: unknown }> }>>([]);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiOnline, setAiOnline] = useState<boolean | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [optimizing, setOptimizing] = useState(false);
-  const [showReplacements, setShowReplacements] = useState(false);
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
   const [simulationMove, setSimulationMove] = useState<{ outId: number; inId: number } | null>(null);
-  const [squadView, setSquadView] = useState<"BUILD" | "GW TEAM">("BUILD");
-  const [gwDraft, setGwDraft] = useState<WeeklyLineupPlan | null>(null);
   const [gwSwapSelection, setGWSwapSelection] = useState<{ starterId?: number; benchId?: number }>({});
   const searchRef = useRef<HTMLInputElement>(null);
   const aiRef = useRef<HTMLTextAreaElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<ResizeState | null>(null);
-  const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false, analysis: false, ai: false });
+  const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false, ai: false });
   const [panelRatios, setPanelRatios] = useState<Partial<Record<DesktopPanel, number>>>({});
   const { data, status, message, refresh } = bootstrap;
 
@@ -520,7 +517,6 @@ export default function TerminalApp() {
     risk: store.riskMode,
     bench: store.benchStrategy,
   }), [data.players, store.benchStrategy, store.horizon, store.playerIds, store.riskMode]);
-  const feasibility = useMemo(() => calculateBudgetFeasibility(selected, data.players), [data.players, selected]);
   const slotMaxPrices = useMemo(() => POSITIONS.reduce((result, position) => {
     result[position] = maxSafePriceForPosition(position, selected, data.players);
     return result;
@@ -541,11 +537,6 @@ export default function TerminalApp() {
     const startingXI = deriveStartingXI(store.playerIds, store.benchGoalkeeperId, store.benchOrder);
     return persistedLineupPlan(weeklyEnginePlan, startingXI, store.benchGoalkeeperId, store.benchOrder, store.captainId, store.viceCaptainId, playerById);
   }, [lineupApplied, playerById, store.benchGoalkeeperId, store.benchOrder, store.captainId, store.playerIds, store.viceCaptainId, weeklyEnginePlan]);
-  const draftActive = Boolean(gwDraft && gwDraft.gameweek === weeklyEnginePlan.gameweek && gwDraft.projectionFingerprint === weeklyEnginePlan.projectionFingerprint);
-  const proposedGWPlan = draftActive ? gwDraft : currentGWPlan;
-  const gwCurrentPoints = useMemo(() => currentGWPlan ? weeklyPoints(currentGWPlan) : 0, [currentGWPlan]);
-  const gwProposedPoints = useMemo(() => proposedGWPlan ? weeklyPoints(proposedGWPlan) : 0, [proposedGWPlan]);
-  const gwDirty = draftActive;
   const lineupStale = lineupApplied && (store.lineupGameweek !== weeklyEnginePlan.gameweek || store.lineupProjectionFingerprint !== weeklyEnginePlan.projectionFingerprint);
   const risk = useMemo(() => {
     if (!selected.length) return undefined;
@@ -701,110 +692,88 @@ export default function TerminalApp() {
     }
   };
 
-  const updateGWPlan = (changes: Partial<WeeklyLineupPlan>) => {
-    if (!proposedGWPlan) return;
-    setGwDraft({ ...proposedGWPlan, ...changes });
-  };
-
   const pickGWTeam = () => {
     if (weeklyEnginePlan.starterIds.length !== 11 || weeklyEnginePlan.benchOrder.length !== 3 || weeklyEnginePlan.benchGoalkeeperId === 0) {
-      setNotice("Complete a legal 15-player squad before picking a GW TEAM.");
+      setNotice("Complete a legal 15-player squad before picking a team.");
       return;
     }
-    setGwDraft(weeklyEnginePlan);
+    const applied = store.applyLineup({
+      gameweek: weeklyEnginePlan.gameweek,
+      lineupProjectionFingerprint: weeklyEnginePlan.projectionFingerprint,
+      benchGoalkeeperId: weeklyEnginePlan.benchGoalkeeperId,
+      benchOrder: [...weeklyEnginePlan.benchOrder],
+      captainId: weeklyEnginePlan.captainId,
+      viceCaptainId: weeklyEnginePlan.viceCaptainId,
+    });
+    if (!applied) {
+      setNotice("The weekly pick failed the squad rules. Check the squad and try again.");
+      return;
+    }
     setGWSwapSelection({});
-    setNotice("GW TEAM picked. Review the proposed lineup before applying it.");
+    setNotice("Team picked and saved for this Gameweek.");
   };
 
   const selectGWSwapPlayer = (role: "starter" | "bench", id: number) => {
-    if (!proposedGWPlan) return;
+    if (!currentGWPlan) {
+      setNotice("Pick a team before changing starters and substitutes.");
+      return;
+    }
     const nextSelection = role === "starter" ? { ...gwSwapSelection, starterId: id } : { ...gwSwapSelection, benchId: id };
     const starterId = nextSelection.starterId;
     const benchId = nextSelection.benchId;
     if (starterId === undefined || benchId === undefined) {
       setGWSwapSelection(nextSelection);
-      setNotice(`Select a ${role === "starter" ? "bench player" : "starter"} to propose the swap.`);
+      setNotice(`Select a ${role === "starter" ? "substitute" : "starter"} to complete the swap.`);
       return;
     }
-    const starters = [...proposedGWPlan.starterIds];
-    const bench = [proposedGWPlan.benchGoalkeeperId, ...proposedGWPlan.benchOrder];
-    const starterIndex = starters.indexOf(starterId);
-    const benchIndex = bench.indexOf(benchId);
-    if (starterIndex < 0 || benchIndex < 0) return;
-    if (proposedGWPlan.captainId === starterId || proposedGWPlan.viceCaptainId === starterId) {
+    if (store.captainId === starterId || store.viceCaptainId === starterId) {
       setNotice("Choose a different captain or vice-captain before moving that starter to the bench.");
       setGWSwapSelection({});
       return;
     }
-    starters[starterIndex] = benchId;
-    bench[benchIndex] = starterId;
-    const benchGoalkeeperId = bench.find((id) => playerById.get(id)?.position === "GK");
-    const nextPlan = persistedLineupPlan(proposedGWPlan, starters, benchGoalkeeperId, bench.filter((id) => id !== benchGoalkeeperId), proposedGWPlan.captainId, proposedGWPlan.viceCaptainId, playerById);
-    if (!validateWeeklyLineup(nextPlan, selected).legal) {
+    if (!store.swapStarterBench(starterId, benchId)) {
       setNotice("That swap would leave an invalid starting formation. Pick a compatible player.");
       setGWSwapSelection({});
       return;
     }
-    updateGWPlan(nextPlan);
     setGWSwapSelection({});
-    setNotice(`${playerById.get(benchId)?.displayName ?? "Player"} proposed to start.`);
+    setNotice(`${playerById.get(benchId)?.displayName ?? "Player"} moved into the starting XI.`);
   };
 
   const moveGWBench = (id: number, direction: -1 | 1) => {
-    if (!proposedGWPlan) return;
-    const index = proposedGWPlan.benchOrder.indexOf(id);
+    const index = store.benchOrder.indexOf(id);
     const nextIndex = index + direction;
-    if (index < 0 || nextIndex < 0 || nextIndex >= proposedGWPlan.benchOrder.length) return;
-    const bench = [...proposedGWPlan.benchOrder];
+    if (index < 0 || nextIndex < 0 || nextIndex >= store.benchOrder.length) return;
+    const bench = [...store.benchOrder];
     [bench[index], bench[nextIndex]] = [bench[nextIndex], bench[index]];
-    updateGWPlan(persistedLineupPlan(proposedGWPlan, proposedGWPlan.starterIds, proposedGWPlan.benchGoalkeeperId, bench, proposedGWPlan.captainId, proposedGWPlan.viceCaptainId, playerById));
+    if (store.reorderBench(bench)) setNotice("Bench order updated.");
+  };
+
+  const applyCaptaincy = (captainId: number, viceCaptainId: number) => {
+    if (!currentGWPlan || store.benchGoalkeeperId === undefined || store.benchOrder.length !== 3 || captainId === viceCaptainId) return false;
+    const applied = store.applyLineup({
+      gameweek: store.lineupGameweek ?? currentGWPlan.gameweek,
+      lineupProjectionFingerprint: store.lineupProjectionFingerprint ?? currentGWPlan.projectionFingerprint,
+      benchGoalkeeperId: store.benchGoalkeeperId,
+      benchOrder: [...store.benchOrder],
+      captainId,
+      viceCaptainId,
+    });
+    if (applied) setNotice("Captaincy updated.");
+    else setNotice("Captain and vice-captain must be different starters.");
+    return applied;
   };
 
   const makeGWCaptain = (id: number) => {
-    if (!proposedGWPlan) return;
-    const viceCaptainId = proposedGWPlan.viceCaptainId === id ? proposedGWPlan.captainId : proposedGWPlan.viceCaptainId;
-    if (viceCaptainId === undefined || viceCaptainId === id) return;
-    updateGWPlan(persistedLineupPlan(proposedGWPlan, proposedGWPlan.starterIds, proposedGWPlan.benchGoalkeeperId, proposedGWPlan.benchOrder, id, viceCaptainId, playerById));
+    if (!currentGWPlan || currentGWPlan.viceCaptainId === 0) return;
+    const viceCaptainId = currentGWPlan.viceCaptainId === id ? currentGWPlan.captainId : currentGWPlan.viceCaptainId;
+    applyCaptaincy(id, viceCaptainId);
   };
 
   const makeGWViceCaptain = (id: number) => {
-    if (!proposedGWPlan) return;
-    const captainId = proposedGWPlan.captainId === id ? proposedGWPlan.viceCaptainId : proposedGWPlan.captainId;
-    if (captainId === undefined || captainId === id) return;
-    updateGWPlan(persistedLineupPlan(proposedGWPlan, proposedGWPlan.starterIds, proposedGWPlan.benchGoalkeeperId, proposedGWPlan.benchOrder, captainId, id, playerById));
-  };
-
-  const applyGWTeam = () => {
-    if (!proposedGWPlan) return;
-    if (selected.length < 15 || proposedGWPlan.starterIds.length !== 11 || proposedGWPlan.benchOrder.length !== 3 || proposedGWPlan.benchGoalkeeperId === 0) {
-      setNotice("Complete a legal 15-player squad before applying the GW TEAM pick.");
-      return;
-    }
-    if (proposedGWPlan.captainId === undefined || proposedGWPlan.viceCaptainId === undefined) {
-      setNotice("Choose a captain and vice-captain before applying the GW TEAM pick.");
-      return;
-    }
-    const applied = store.applyLineup({
-      gameweek: proposedGWPlan.gameweek,
-      lineupProjectionFingerprint: proposedGWPlan.projectionFingerprint,
-      benchGoalkeeperId: proposedGWPlan.benchGoalkeeperId,
-      benchOrder: [...proposedGWPlan.benchOrder],
-      captainId: proposedGWPlan.captainId,
-      viceCaptainId: proposedGWPlan.viceCaptainId,
-    });
-    if (!applied) {
-      setNotice("The weekly pick failed the squad rules. Review the starting XI and bench order.");
-      return;
-    }
-    setGwDraft(null);
-    setGWSwapSelection({});
-    setNotice("GW TEAM pick applied for this squad.");
-  };
-
-  const discardGWTeam = () => {
-    setGwDraft(null);
-    setGWSwapSelection({});
-    setNotice("GW TEAM changes discarded.");
+    if (!currentGWPlan || currentGWPlan.captainId === 0) return;
+    const captainId = currentGWPlan.captainId === id ? currentGWPlan.viceCaptainId : currentGWPlan.captainId;
+    applyCaptaincy(captainId, id);
   };
 
   const setCaptainDeterministically = () => {
@@ -855,7 +824,7 @@ export default function TerminalApp() {
     const text = prompt.trim();
     if (!text || aiBusy) return;
     setAiPrompt("");
-    setAiMessages((messages) => [...messages, { role: "user", text }]);
+    setAiMessages((messages) => [...messages, { role: "user", text, at: Date.now() }]);
     setAiBusy(true);
     try {
       const response = await fetch("/api/ai", {
@@ -866,7 +835,11 @@ export default function TerminalApp() {
       if (!response.ok) throw new Error(`AI analyst returned ${response.status}`);
       const payload = objectOf(await response.json());
       const answer = stringOf(payload?.message) ?? stringOf(payload?.text) ?? "The analyst returned no explanation.";
-      setAiMessages((messages) => [...messages, { role: "assistant", text: answer }]);
+      const actions = arrayOf(payload?.actions)
+        .map(objectOf)
+        .map((action) => ({ type: stringOf(readField(action, "type")), playerId: readField(action, "playerId"), outId: readField(action, "outId"), inId: readField(action, "inId") }))
+        .filter((action): action is { type: string; playerId: unknown; outId: unknown; inId: unknown } => Boolean(action.type));
+      setAiMessages((messages) => [...messages, { role: "assistant", text: answer, at: Date.now(), actions }]);
       const weeklyAction = arrayOf(payload?.actions)
         .map(objectOf)
         .find((action): action is UnknownRecord => Boolean(action && readField(action, "type") === "APPLY_WEEKLY_LINEUP"));
@@ -887,10 +860,8 @@ export default function TerminalApp() {
           && candidate.projectionFingerprint === weeklyEnginePlan.projectionFingerprint
           && validateWeeklyLineup(candidate, selected).legal;
         if (valid) {
-          setGwDraft(candidate);
-          setSquadView("GW TEAM");
           store.setMobileTab("SQUAD");
-          setNotice("AI weekly team proposal ready for review. Use APPLY LINEUP to save it.");
+          setNotice("AI weekly team recommendation is ready. Use PICK TEAM to apply the shared lineup engine.");
         } else {
           setNotice("AI weekly team proposal failed validation against the current squad and projections.");
         }
@@ -898,9 +869,32 @@ export default function TerminalApp() {
       setAiOnline(true);
     } catch {
       setAiOnline(false);
-      setAiMessages((messages) => [...messages, { role: "assistant", text: "AI analyst is offline. The squad controls and deterministic analysis remain available; no model output was used." }]);
+      setAiMessages((messages) => [...messages, { role: "assistant", text: "AI analyst is offline. The squad controls and deterministic analysis remain available; no model output was used.", at: Date.now() }]);
     } finally {
       setAiBusy(false);
+    }
+  };
+
+  const handleAnalystAction = (action: { type?: string; playerId?: unknown; outId?: unknown; inId?: unknown }) => {
+    const playerId = numberOf(action.playerId);
+    if (action.type === "VIEW_PLAYER" && playerId !== undefined) {
+      store.setSelectedPlayer(playerId);
+      store.setMobileTab("MARKET");
+      return;
+    }
+    if (action.type === "LOCK_PLAYER" && playerId !== undefined) {
+      store.toggleLock(playerId);
+      return;
+    }
+    if (action.type === "OPTIMIZE") {
+      void runOptimize(false);
+      return;
+    }
+    const outId = numberOf(action.outId);
+    const inId = numberOf(action.inId);
+    if (action.type === "SIMULATE_TRANSFER" && outId !== undefined && inId !== undefined && playerById.has(outId) && playerById.has(inId)) {
+      store.setMobileTab("SQUAD");
+      simulateMove(outId, inId);
     }
   };
 
@@ -926,8 +920,13 @@ export default function TerminalApp() {
     store.setSearch("");
     store.setFilters({ position: "ALL", club: "", minPrice: "", maxPrice: "", minOwnership: "", maxOwnership: "", availability: "ALL", confidence: "ALL", risk: "ALL", affordableOnly: false, excludeSelected: false, quick: "ALL" });
   };
+  const renderSquadPlayer = (player: TerminalPlayer, starter: boolean, benchLabel?: string) => {
+    const benchIndex = store.benchOrder.indexOf(player.id);
+    const swapSelected = benchLabel ? gwSwapSelection.benchId === player.id : gwSwapSelection.starterId === player.id;
+    return <SquadSlot key={player.id} player={player} locked={store.lockedPlayerIds.includes(player.id)} captain={store.captainId === player.id} vice={store.viceCaptainId === player.id} starter={starter} benchLabel={benchLabel} benchIndex={benchIndex} lineupActive={Boolean(currentGWPlan)} swapSelected={swapSelected} onRemove={() => store.removePlayer(player.id)} onToggleLock={() => store.toggleLock(player.id)} onSelect={() => store.setSelectedPlayer(player.id)} onSwap={() => selectGWSwapPlayer(benchLabel ? "bench" : "starter", player.id)} onCaptain={() => makeGWCaptain(player.id)} onViceCaptain={() => makeGWViceCaptain(player.id)} onMoveBench={(direction) => moveGWBench(player.id, direction)} />;
+  };
   return (
-    <main className="terminal-app">
+    <main className={`terminal-app ${isAnalyze ? "has-paste-strip" : ""}`}>
       <header className="topbar">
         <button className="brand" onClick={() => store.setMode(null)} aria-label="Return to mode chooser"><span className="brand-mark">FPL</span><span>TERMINAL</span></button>
         <div className="topbar-stats" aria-label="Terminal status">
@@ -942,7 +941,7 @@ export default function TerminalApp() {
         <div className="topbar-actions"><button className="text-button" onClick={refresh}>REFRESH</button><button className="text-button" onClick={() => exportState(store)}>EXPORT</button><button className="text-button" onClick={() => importRef.current?.click()}>IMPORT</button><button className="text-button danger-text" onClick={reset}>RESET</button><input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, store)} /></div>
       </header>
 
-      <nav className="mobile-tabs" aria-label="Terminal panels">{(["SQUAD", "ANALYSIS", "MARKET", "AI"] as const).map((tab) => <button key={tab} className={store.activeMobileTab === tab ? "active" : ""} onClick={() => store.setMobileTab(tab)}>{tab}</button>)}</nav>
+      <nav className="mobile-tabs" aria-label="Terminal panels">{(["SQUAD", "MARKET", "AI"] as const).map((tab) => <button key={tab} className={store.activeMobileTab === tab ? "active" : ""} onClick={() => store.setMobileTab(tab)}>{tab}</button>)}</nav>
 
       {isAnalyze && <section className="paste-strip panel"><div><span className="section-kicker">ANALYZE A TEAM</span><p>Paste names from your current squad. Matches stay local; uncertain names require a choice.</p></div><textarea value={pasteText} onChange={(event) => setPasteText(event.target.value)} placeholder="Raya\nGabriel, Haaland" aria-label="Paste squad player names" /><button className="primary-button" onClick={handlePaste}>RESOLVE NAMES</button>{pasteMessage && <span className="inline-note">{pasteMessage}</span>}</section>}
       {ambiguous.length > 0 && <section className="ambiguity panel" aria-live="polite"><div className="section-kicker">SELECT AMBIGUOUS MATCHES</div>{ambiguous.map((item) => <div className="ambiguity-row" key={item.name}><span>{item.name}</span><div>{item.matches.map((player) => <button key={player.id} className="choice-button" onClick={() => { addPlayer(player); setAmbiguous((current) => current.filter((entry) => entry.name !== item.name)); }}>{player.displayName} · {player.teamShortName}</button>)}</div></div>)}</section>}
@@ -957,28 +956,26 @@ export default function TerminalApp() {
           <PanelResizer panel="market" onResizeStart={beginPanelResize} />
         </section>
 
-        <section id="terminal-panel-squad" data-panel="squad" className={`squad-column ${collapsedPanels.squad ? "panel-collapsed" : ""} ${store.activeMobileTab === "SQUAD" ? "mobile-visible" : ""}`} aria-label={squadView === "GW TEAM" ? "GW team picker" : "Squad builder"}>
-          <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><div className="team-view-switch" role="group" aria-label="Squad workflow"><button className={squadView === "BUILD" ? "active" : ""} onClick={() => setSquadView("BUILD")}>BUILD</button><button className={squadView === "GW TEAM" ? "active" : ""} onClick={() => setSquadView("GW TEAM")}>GW TEAM</button></div><div className="mode-pill">{isAnalyze ? "ANALYZE" : "BUILD"}</div>{squadView === "BUILD" && <button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button>}<PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
-          {squadView === "GW TEAM" ? <GWTeamPanel status={status} selectedCount={selected.length} current={currentGWPlan} proposed={proposedGWPlan} currentPoints={gwCurrentPoints} proposedPoints={gwProposedPoints} playerById={playerById} dirty={gwDirty} lineupApplied={lineupApplied} lineupStale={lineupStale} swapSelection={gwSwapSelection} onPick={pickGWTeam} onSwap={selectGWSwapPlayer} onMoveBench={moveGWBench} onCaptain={makeGWCaptain} onViceCaptain={makeGWViceCaptain} onApply={applyGWTeam} onDiscard={discardGWTeam} /> : <>
-            <div className="budget-rail"><div><span>SPENT</span><strong className={spent > 1000 ? "red" : ""}>{money(spent)}</strong></div><div><span>ITB</span><strong className={spent > 1000 ? "red" : "amber"}>{money(1000 - spent)}</strong></div><div><span>LOCKED</span><strong>{store.lockedPlayerIds.length}</strong></div></div>
-            <div className="squad-sections">{POSITIONS.map((position) => <div className="position-section" key={position}><div className="position-heading"><span>{position}</span><span>{store.byPosition[position].length}/{POSITION_LIMITS[position]}</span></div><div className={`slot-grid slot-${position.toLowerCase()}`}>{Array.from({ length: POSITION_LIMITS[position] }, (_, index) => { const id = store.byPosition[position][index]; const player = id ? playerById.get(id) : undefined; const maxPriceTenths = slotMaxPrices[position]; return player ? <SquadSlot key={player.id} player={player} locked={store.lockedPlayerIds.includes(player.id)} captain={store.captainId === player.id} vice={store.viceCaptainId === player.id} onRemove={() => store.removePlayer(player.id)} onToggleLock={() => store.toggleLock(player.id)} onSelect={() => store.setSelectedPlayer(player.id)} onCaptain={() => store.setCaptain(store.captainId === player.id ? undefined : player.id)} /> : <EmptySlot key={`${position}-${index}`} position={position} maxPriceTenths={maxPriceTenths} onChoose={() => { store.setFilters({ position, maxPrice: (maxPriceTenths / 10).toFixed(1) }); store.setMobileTab("MARKET"); searchRef.current?.focus(); }} />; })}</div></div>)}</div>
-            <MetricStrip spent={spent} projected={projected} risk={risk} />
-            <FeasibilityRail selected={selected} spent={spent} feasibility={feasibility} />
-            <StrategyControls horizon={store.horizon} riskMode={store.riskMode} benchStrategy={store.benchStrategy} setStrategy={store.setStrategy} />
-          </>}
+        <section id="terminal-panel-squad" data-panel="squad" className={`squad-column ${collapsedPanels.squad ? "panel-collapsed" : ""} ${store.activeMobileTab === "SQUAD" ? "mobile-visible" : ""}`} aria-label="Squad builder and analysis">
+          <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><details className="strategy-settings"><summary className="compact-action">SETTINGS</summary><div className="strategy-popover"><StrategyControls horizon={store.horizon} riskMode={store.riskMode} benchStrategy={store.benchStrategy} setStrategy={store.setStrategy} /></div></details><button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button><button className="compact-action pick-team-action" onClick={pickGWTeam}>PICK TEAM</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
+          <div className={`lineup-status ${lineupStale ? "stale" : currentGWPlan ? "applied" : "empty"}`} role={lineupStale ? "alert" : "status"}>{lineupStale ? <><strong>LINEUP OUTDATED · PICK TEAM</strong><span>Squad, Gameweek, or projections changed.</span></> : currentGWPlan ? <><strong>GW {currentGWPlan.gameweek} · {formationLabel(currentGWPlan)} · {points(weeklyPoints(currentGWPlan))} xP</strong><span>C {playerById.get(currentGWPlan.captainId)?.displayName ?? "—"} · VC {playerById.get(currentGWPlan.viceCaptainId)?.displayName ?? "—"}</span></> : <><strong>NO TEAM PICKED</strong><span>Pick a team to set the XI, bench, C and VC.</span></>}</div>
+          {currentGWPlan ? <div className="squad-sections lineup-roster" data-testid="squad-roster">
+            <section className="starting-xi" aria-label="Starting XI"><div className="lineup-roster-heading"><span>STARTING XI</span><span>{formationLabel(currentGWPlan)} · 11/11</span></div>
+              {POSITIONS.map((position) => {
+                const players = currentGWPlan.starterIds.map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => player?.position === position);
+                return <div className="position-section starting-position" key={position}><div className="position-heading"><span>{position}</span><span>{players.length}</span></div><div className="slot-grid starting-slot-grid" style={{ "--slot-count": players.length } as CSSProperties}>{players.map((player) => renderSquadPlayer(player, true))}</div></div>;
+              })}
+            </section>
+            <section className="bench-section" aria-label="Bench"><div className="lineup-roster-heading"><span>BENCH</span><span>BGK · B1 · B2 · B3</span></div><div className="slot-grid bench-slot-grid">{[currentGWPlan.benchGoalkeeperId, ...currentGWPlan.benchOrder].map((id, index) => { const player = playerById.get(id); return player ? renderSquadPlayer(player, false, index === 0 ? "BGK" : `B${index}`) : null; })}</div></section>
+          </div> : <div className="squad-sections" data-testid="squad-roster">{POSITIONS.map((position) => <div className="position-section" key={position}><div className="position-heading"><span>{position}</span><span>{store.byPosition[position].length}/{POSITION_LIMITS[position]}</span></div><div className={`slot-grid slot-${position.toLowerCase()}`}>{Array.from({ length: POSITION_LIMITS[position] }, (_, index) => { const id = store.byPosition[position][index]; const player = id ? playerById.get(id) : undefined; const maxPriceTenths = slotMaxPrices[position]; if (!player) return <EmptySlot key={`${position}-${index}`} position={position} maxPriceTenths={maxPriceTenths} onChoose={() => { store.setFilters({ position, maxPrice: (maxPriceTenths / 10).toFixed(1) }); store.setMobileTab("MARKET"); searchRef.current?.focus(); }} />; return renderSquadPlayer(player, false); })}</div></div>)}</div>}
+          <MetricStrip spent={spent} projected={projected} risk={risk} />
+          <TransferSuggestionsPanel outgoingId={squadAnalysis.weaknesses[0]?.playerId} candidates={replacements} playerById={playerById} onSimulate={simulateMove} />
+          {simulation && simulationMove && <div className="squad-overlay"><SimulationPanel result={simulation} move={simulationMove} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMove(null); }} /></div>}
           <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
         </section>
 
-        <section id="terminal-panel-analysis" data-panel="analysis" className={`analysis-column ${collapsedPanels.analysis ? "panel-collapsed" : ""} ${store.activeMobileTab === "ANALYSIS" ? "mobile-visible" : ""}`} aria-label="Squad analysis">
-          <AnalysisPanel selected={selected} weakest={weakest} projected={projected} risk={risk} playerById={playerById} analysis={squadAnalysis} onSelect={(id) => store.setSelectedPlayer(id)} onOpenReplacements={() => setShowReplacements(true)} collapsed={collapsedPanels.analysis} onToggle={() => togglePanel("analysis")} />
-          {showReplacements && <ReplacementPanel outgoingId={squadAnalysis.weaknesses[0]?.playerId} candidates={replacements} playerById={playerById} onClose={() => setShowReplacements(false)} onSimulate={simulateMove} />}
-          {simulation && simulationMove && <SimulationPanel result={simulation} move={simulationMove} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMove(null); }} />}
-          <section className="panel opportunity-panel"><div className="panel-header"><span className="section-kicker">MARKET OPPORTUNITIES</span><span className="data-badge model">MODEL</span></div>{squadAnalysis.opportunities.length ? squadAnalysis.opportunities.slice(0, 3).map((opportunity, index) => { const outgoing = playerById.get(opportunity.outgoingPlayerId); const incoming = playerById.get(opportunity.incomingPlayerId); return <button className="opportunity-row" key={`${opportunity.outgoingPlayerId}-${opportunity.incomingPlayerId}`} onClick={() => store.setSelectedPlayer(opportunity.incomingPlayerId)}><span className="rank">0{index + 1}</span><span className="opportunity-name">{outgoing?.displayName ?? "—"} → {incoming?.displayName ?? "—"}<small>{opportunity.reason}</small></span><span className="opportunity-value">+{opportunity.projectedDelta.toFixed(1)} xP</span><span className="arrow">›</span></button>; }) : <div className="empty-copy">Complete enough of the squad to scan deterministic replacements.</div>}</section>
-          <PanelResizer panel="analysis" onResizeStart={beginPanelResize} />
-        </section>
-
         <section id="terminal-panel-ai" data-panel="ai" className={`ai-column ${collapsedPanels.ai ? "panel-collapsed" : ""} ${store.activeMobileTab === "AI" ? "mobile-visible" : ""}`} aria-label="AI analyst">
-          <AnalystPanel messages={aiMessages} busy={aiBusy} online={aiOnline} prompt={aiPrompt} setPrompt={setAiPrompt} onAsk={askAI} onQuick={(label) => { if (label === "OPTIMIZE" || label === "FINISH SQUAD") { runOptimize(label === "FINISH SQUAD"); store.setMobileTab("SQUAD"); return; } if (label === "CAPTAIN") { setCaptainDeterministically(); return; } if (label === "WEAK LINK") { store.setMobileTab("ANALYSIS"); if (weakest[0]) store.setSelectedPlayer(weakest[0].id); return; } if (label === "ANALYZE") { store.setMobileTab("ANALYSIS"); return; } askAI(label.toLowerCase()); }} textareaRef={aiRef} collapsed={collapsedPanels.ai} onToggle={() => togglePanel("ai")} />
+          <AnalystPanel messages={aiMessages} busy={aiBusy} online={aiOnline} prompt={aiPrompt} setPrompt={setAiPrompt} onAsk={askAI} onAction={handleAnalystAction} lockedCheck={(id) => store.lockedPlayerIds.includes(id)} playerById={playerById} onQuick={(label) => { if (label === "OPTIMIZE" || label === "FINISH SQUAD") { runOptimize(label === "FINISH SQUAD"); store.setMobileTab("SQUAD"); return; } if (label === "CAPTAIN") { setCaptainDeterministically(); return; } if (label === "WEAK LINK") { store.setMobileTab("SQUAD"); if (weakest[0]) store.setSelectedPlayer(weakest[0].id); return; } if (label === "ANALYZE") { store.setMobileTab("SQUAD"); return; } askAI(label.toLowerCase()); }} textareaRef={aiRef} collapsed={collapsedPanels.ai} onToggle={() => togglePanel("ai")} />
           <PanelResizer panel="ai" onResizeStart={beginPanelResize} />
         </section>
       </div>
@@ -1038,79 +1035,132 @@ function PlayerDetail({ player, locked, freshness, source, onClose, onAdd, onTog
 
 function Metric({ label, value, tone }: { label: string; value: string; tone?: string }) { return <div><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
 
-function SquadSlot({ player, locked, captain, vice, onRemove, onToggleLock, onSelect, onCaptain }: { player: TerminalPlayer; locked: boolean; captain: boolean; vice: boolean; onRemove: () => void; onToggleLock: () => void; onSelect: () => void; onCaptain: () => void }) { return <article className="squad-slot filled"><button className="slot-main" onClick={onSelect}><span className="slot-player">{player.displayName}</span><span className="slot-sub">{player.teamShortName} · {money(player.priceTenths)}</span><span className="slot-xp">{points(player.projection?.nextGW)} <small>xP</small></span></button><div className="slot-flags">{locked && <span className="lock-label">LOCKED</span>}{captain && <button className="captain-flag" onClick={onCaptain} aria-label={`Remove captain from ${player.displayName}`}>C</button>}{vice && <button className="captain-flag" onClick={onCaptain} aria-label={`Remove vice captain from ${player.displayName}`}>V</button>}<button className={`lock-flag ${locked ? "on" : ""}`} onClick={onToggleLock} aria-label={`${locked ? "Unlock" : "Lock"} ${player.displayName}`}>{locked ? "▣" : "□"}</button><button className="remove-flag" onClick={onRemove} disabled={locked} aria-label={`Remove ${player.displayName}`}>×</button></div><button className="captain-toggle" onClick={onCaptain}>{captain ? "captain" : vice ? "vice" : "set C/V"}</button></article>; }
+function SquadSlot({ player, locked, captain, vice, starter, benchLabel, benchIndex, lineupActive, swapSelected, onRemove, onToggleLock, onSelect, onSwap, onCaptain, onViceCaptain, onMoveBench }: { player: TerminalPlayer; locked: boolean; captain: boolean; vice: boolean; starter: boolean; benchLabel?: string; benchIndex: number; lineupActive: boolean; swapSelected: boolean; onRemove: () => void; onToggleLock: () => void; onSelect: () => void; onSwap: () => void; onCaptain: () => void; onViceCaptain: () => void; onMoveBench: (direction: -1 | 1) => void }) {
+  const benched = Boolean(benchLabel);
+  return <article className={`squad-slot filled ${locked ? "locked" : ""} ${benched ? "benched" : ""} ${swapSelected ? "lineup-selected" : ""}`}>
+    <button className="slot-main" onClick={onSelect}><span className="slot-player">{player.displayName}</span><span className="slot-sub">{player.teamShortName} · {money(player.priceTenths)}</span><span className="slot-xp">{points(player.projection?.nextGW)} <small>xP</small></span></button>
+    <div className="slot-flags"><button className={`lock-flag ${locked ? "on" : ""}`} onClick={onToggleLock} aria-label={`${locked ? "Unlock" : "Lock"} ${player.displayName}`} aria-pressed={locked}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d="M4 7V5a4 4 0 0 1 8 0v2" /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button>{!locked && <button className="remove-flag" onClick={onRemove} aria-label={`Remove ${player.displayName}`}>×</button>}</div>
+    {lineupActive && <div className="lineup-controls">{starter ? <><button className={`role-button captain ${captain ? "active" : ""}`} onClick={onCaptain} aria-label={`Make ${player.displayName} captain`} aria-pressed={captain}>C</button><button className={`role-button vice ${vice ? "active" : ""}`} onClick={onViceCaptain} aria-label={`Make ${player.displayName} vice-captain`} aria-pressed={vice}>VC</button><button className="role-button bench-toggle" onClick={onSwap} aria-label={`Select ${player.displayName} to move to bench`} aria-pressed={swapSelected}>B</button></> : <><button className="role-button bench-toggle active" onClick={onSwap} aria-label={`Select ${player.displayName} to move into the starting XI`} aria-pressed={swapSelected}>{benchLabel}</button>{benchIndex >= 0 && <><button className="role-button bench-order" disabled={benchIndex === 0} onClick={() => onMoveBench(-1)} aria-label={`Move ${player.displayName} up the bench order`}>↑</button><button className="role-button bench-order" disabled={benchIndex === 2} onClick={() => onMoveBench(1)} aria-label={`Move ${player.displayName} down the bench order`}>↓</button></>}</>}</div>}
+  </article>;
+}
 
 function EmptySlot({ position, maxPriceTenths, onChoose }: { position: Position; maxPriceTenths: number; onChoose: () => void }) { return <button className="squad-slot empty-slot" onClick={onChoose}><span className="empty-plus">+</span><span className="slot-player">Open {position}</span><span className="slot-sub">Max {money(maxPriceTenths)}</span><span className="suggest-label">SUGGEST →</span></button>; }
 
 function MetricStrip({ spent, projected, risk }: { spent: number; projected: { nextGW?: number; next3?: number; next5?: number }; risk?: number }) { return <div className="metric-strip"><Metric label="COST" value={money(spent)} /><Metric label="ITB" value={money(1000 - spent)} tone={spent <= 1000 ? "green" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" /><Metric label="3GW" value={points(projected.next3)} /><Metric label="5GW" value={points(projected.next5)} /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} /></div>; }
 
-function FeasibilityRail({ selected, spent, feasibility }: { selected: TerminalPlayer[]; spent: number; feasibility: { minimumRequiredTenths: number; flexibleTenths: number; feasible: boolean } }) { const minimum = Number.isFinite(feasibility.minimumRequiredTenths) ? feasibility.minimumRequiredTenths : undefined; return <div className={`feasibility-rail ${spent > 1000 || (selected.length && !feasibility.feasible) ? "bad" : ""}`}><div className="rail-head"><span>FEASIBILITY</span><strong>{spent > 1000 ? "OVER BUDGET" : selected.length === 15 ? (feasibility.feasible ? "LEGALITY CHECK" : "NO LEGAL COMPLETION") : "INCOMPLETE SQUAD"}</strong></div><div className="rail-track"><span style={{ width: `${Math.min(100, Math.max(0, spent / 10))}%` }} /></div><div className="rail-foot"><span>{selected.length}/15 players</span><span>{minimum === undefined ? "Minimum required —" : `Minimum required ${money(minimum)}`} · flexible {Number.isFinite(feasibility.flexibleTenths) ? money(feasibility.flexibleTenths) : "—"}</span></div></div>; }
+function StrategyControls({ horizon, riskMode, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5; riskMode: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5; riskMode?: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">RISK</span><div className="segmented">{(["SAFE", "BALANCED", "AGGRESSIVE"] as const).map((value) => <button key={value} className={riskMode === value ? "active" : ""} onClick={() => setStrategy({ riskMode: value })}>{value.slice(0, 4)}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value.slice(0, 4)}</button>)}</div></div></div>; }
 
-function StrategyControls({ horizon, riskMode, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5; riskMode: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5; riskMode?: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><div><span className="section-kicker">STRATEGY</span><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">RISK</span><div className="segmented">{(["SAFE", "BALANCED", "AGGRESSIVE"] as const).map((value) => <button key={value} className={riskMode === value ? "active" : ""} onClick={() => setStrategy({ riskMode: value })}>{value.slice(0, 4)}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value.slice(0, 4)}</button>)}</div></div></div>; }
+function TransferSuggestionsPanel({ outgoingId, candidates, playerById, onSimulate }: { outgoingId?: number; candidates: ReplacementCandidate[]; playerById: Map<number, TerminalPlayer>; onSimulate: (outId: number, inId: number) => void }) { return <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions"><div className="subsection-head"><div><span className="section-kicker">TRANSFER SUGGESTIONS</span><span className="panel-count">DETERMINISTIC</span></div></div><div className="replacement-scroll">{candidates.length && outgoingId ? candidates.map((candidate) => { const incoming = playerById.get(candidate.playerId); return <div className="replacement-row" key={candidate.playerId}><div><strong>{incoming?.displayName ?? `Player ${candidate.playerId}`}</strong><small>{incoming?.teamShortName ?? "—"} · {money(candidate.priceTenths)} · {candidate.reason}</small></div><span className={candidate.projectedDelta >= 0 ? "green" : "red"}>{candidate.projectedDelta >= 0 ? "+" : ""}{candidate.projectedDelta.toFixed(1)} xP</span><button className="compact-action" onClick={() => onSimulate(outgoingId, candidate.playerId)}>SIMULATE</button></div>; }) : <div className="empty-copy">No transfer suggestions are available from the current squad and model inputs.</div>}</div></section>; }
 
-function GWTeamPanel({ status, selectedCount, current, proposed, currentPoints, proposedPoints, playerById, dirty, lineupApplied, lineupStale, swapSelection, onPick, onSwap, onMoveBench, onCaptain, onViceCaptain, onApply, onDiscard }: {
-  status: DataState;
-  selectedCount: number;
-  current: WeeklyLineupPlan | null;
-  proposed: WeeklyLineupPlan | null;
-  currentPoints: number;
-  proposedPoints: number;
-  playerById: Map<number, TerminalPlayer>;
-  dirty: boolean;
-  lineupApplied: boolean;
-  lineupStale?: boolean;
-  swapSelection: { starterId?: number; benchId?: number };
-  onPick: () => void;
-  onSwap: (role: "starter" | "bench", id: number) => void;
-  onMoveBench: (id: number, direction: -1 | 1) => void;
-  onCaptain: (id: number) => void;
-  onViceCaptain: (id: number) => void;
-  onApply: () => void;
-  onDiscard: () => void;
-}) {
-  const gain = proposed && current ? proposedPoints - currentPoints : 0;
-  const stale = lineupStale || status === "STALE" || status === "SNAPSHOT";
-  return <div className="gw-team-panel">
-    <div className="gw-team-heading"><div><span className="section-kicker">GW TEAM PICK PREVIEW</span><p>Set the starting XI, captaincy, and bench order for the next gameweek.</p></div><div className="gw-heading-actions"><span className={`data-badge ${stale ? "snapshot" : "model"}`}>{stale ? "REVIEW" : lineupApplied ? "APPLIED" : "MODEL"}</span><button className="compact-action" onClick={onPick}>PICK GW TEAM</button></div></div>
-    {!proposed ? <div className="gw-empty" role="status"><strong>NO WEEKLY PICK TO REVIEW</strong><span>Pick a deterministic GW TEAM preview once the squad has 15 legal players. You can edit it before applying.</span><button className="primary-button" onClick={onPick}>PICK GW TEAM</button></div> : <>
-    <div className="gw-comparison" aria-label="Current and proposed gameweek team comparison">
-      <div><span>CURRENT</span><strong>{current ? formationLabel(current) : "—"}</strong><small>{current ? `${points(currentPoints)} xPts` : "No applied lineup"}</small></div>
-      <div><span>PROPOSED</span><strong>{formationLabel(proposed)}</strong><small>{points(proposedPoints)} xPts</small></div>
-      <div className={gain >= 0 ? "gain-positive" : "gain-negative"}><span>GAIN</span><strong>{gain >= 0 ? "+" : ""}{gain.toFixed(1)}</strong><small>xPts</small></div>
-    </div>
-    <div className="gw-model-values"><span>CAPTAIN BONUS <strong>+{proposed.captainBonus.toFixed(1)} xPts</strong></span><span>AUTOSUB VALUE · MODEL ESTIMATE <strong>+{proposed.autosubValue.toFixed(1)} xPts</strong></span></div>
-    {stale && <div className="gw-stale-warning" role="alert">{lineupStale ? "LINEUP OUTDATED — RE-PICK" : "DATA IS A SNAPSHOT · review this team before applying."}</div>}
-    {(selectedCount < 15 || proposed.starterIds.length !== 11 || proposed.benchOrder.length !== 3 || proposed.benchGoalkeeperId === 0) && <div className="gw-incomplete" role="status">Complete a legal 15-player squad to apply a weekly team. The preview will update as picks are added.</div>}
-    <div className="gw-section-head"><span className="section-kicker">STARTERS</span><span>{proposed.starterIds.length}/11 · {formationLabel(proposed)}</span></div>
-    <div className="gw-starters">{POSITIONS.map((position) => {
-      const ids = proposed.starterIds.filter((id) => playerById.get(id)?.position === position);
-      return <section className="gw-position-group" key={position} aria-label={`${position} starters`}><div className="gw-position-heading"><span>{position}</span><span>{ids.length}</span></div>{ids.map((id) => {
-        const player = playerById.get(id);
-        if (!player) return null;
-        const captain = proposed.captainId === id;
-        const vice = proposed.viceCaptainId === id;
-        return <article className={`gw-player-row ${swapSelection.starterId === id ? "selected" : ""}`} key={id}><div><strong>{player.displayName}</strong><small>{player.teamShortName} · {points(player.projection?.nextGW)} xP {captain ? "· C" : vice ? "· VC" : ""}</small></div><div className="gw-row-actions"><button className="gw-team-button" onClick={() => onSwap("starter", id)} aria-label={`Select ${player.displayName} to move to bench`}>BENCH</button><button className={`gw-mark-button ${captain ? "active" : ""}`} onClick={() => onCaptain(id)} aria-label={`Make ${player.displayName} captain`} aria-pressed={captain}>C</button><button className={`gw-mark-button ${vice ? "active" : ""}`} onClick={() => onViceCaptain(id)} aria-label={`Make ${player.displayName} vice-captain`} aria-pressed={vice}>VC</button></div></article>;
-      })}</section>;
-    })}</div>
-    <div className="gw-section-head bench-head"><span className="section-kicker">ORDERED BENCH</span><span>GK · 1 · 2 · 3</span></div>
-    <div className="gw-bench-list">{[proposed.benchGoalkeeperId, ...proposed.benchOrder].map((id, index) => {
-      const player = playerById.get(id);
-      if (!player) return null;
-      const goalkeeper = player.position === "GK";
-      return <article className={`gw-player-row bench-row ${swapSelection.benchId === id ? "selected" : ""}`} key={id}><span className="bench-number">{goalkeeper ? "GK" : index}</span><div><strong>{player.displayName}</strong><small>{player.teamShortName} · {points(player.projection?.nextGW)} xP</small></div><div className="gw-row-actions"><button className="gw-team-button" onClick={() => onSwap("bench", id)} aria-label={`Select ${player.displayName} to move into starters`}>START</button><button className="gw-mark-button" disabled={goalkeeper || index === 1} onClick={() => onMoveBench(id, -1)} aria-label={`Move ${player.displayName} bench up`}>↑</button><button className="gw-mark-button" disabled={goalkeeper || index === proposed.benchOrder.length} onClick={() => onMoveBench(id, 1)} aria-label={`Move ${player.displayName} bench down`}>↓</button></div></article>;
-    })}</div>
-    <div className="gw-team-actions"><button className="primary-button" onClick={onApply} disabled={!dirty}>APPLY LINEUP</button><button className="secondary-button" onClick={onDiscard} disabled={!dirty}>DISCARD</button></div>
-    </>}
-  </div>;
+function SimulationPanel({ result, move, playerById, onApply, onDiscard }: { result: SimulationResult; move: { outId: number; inId: number }; playerById: Map<number, TerminalPlayer>; onApply: () => void; onDiscard: () => void }) { return <section className="panel simulation-panel"><div className="panel-header"><div><span className="section-kicker">SIMULATION</span><span className="panel-count">{result.legal ? "LEGAL" : "CHECK REQUIRED"}</span></div><button className="icon-button" onClick={onDiscard} aria-label="Close simulation">×</button></div><div className="simulation-move">{playerById.get(move.outId)?.displayName ?? "Outgoing"} <span>→</span> {playerById.get(move.inId)?.displayName ?? "Incoming"}</div><div className="simulation-grid"><div><span>CURRENT 5GW xP</span><strong>{points(result.before.projectedNext5)}</strong></div><div><span>SIMULATED 5GW xP</span><strong>{points(result.after.projectedNext5)}</strong></div><div><span>PRICE EFFECT</span><strong>{money(result.priceDeltaTenths)}</strong></div><div><span>GW EFFECT</span><strong className={result.projectedDelta5 >= 0 ? "green" : "red"}>{result.projectedDelta5 >= 0 ? "+" : ""}{result.projectedDelta5.toFixed(1)}</strong></div></div><p className="simulation-note">{result.explanationFactors[0] ?? "Model comparison complete."}{!result.legal && " The current selection still has a squad-rules issue."}</p><div className="simulation-actions"><button className="primary-button" onClick={onApply}>APPLY CHANGES</button><button className="secondary-button" onClick={onDiscard}>DISCARD</button></div></section>; }
+
+const PROMPT_CARDS: Array<{ title: string; detail: string; prompt: string }> = [
+  { title: "ANALYZE SQUAD", detail: "Strengths, weak links and the next move", prompt: "Analyze my current squad and suggest the next move" },
+  { title: "WEAKEST LINK", detail: "Who is holding the squad back", prompt: "Who is my weakest link and who should replace them?" },
+  { title: "CAPTAIN PICK", detail: "Best captaincy for the next gameweek", prompt: "Who should I captain this gameweek?" },
+  { title: "BENCH CHECK", detail: "Is my bench strong enough?", prompt: "Is my bench strong enough for the next gameweek?" },
+];
+
+type AssistantActionHint = { type?: string; playerId?: unknown; outId?: unknown; inId?: unknown };
+
+function clockLabel(at: number): string {
+  return new Date(at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-function AnalysisPanel({ selected, weakest, projected, risk, playerById, analysis, onSelect, onOpenReplacements, collapsed, onToggle }: { selected: TerminalPlayer[]; weakest: TerminalPlayer[]; projected: { nextGW?: number; next3?: number; next5?: number }; risk?: number; playerById: Map<number, TerminalPlayer>; analysis: ReturnType<typeof analyzeSquad>; onSelect: (id: number) => void; onOpenReplacements: () => void; collapsed: boolean; onToggle: () => void }) { const byWeakness = new Map(analysis.weaknesses.map((weakness) => [weakness.playerId, weakness])); return <section className={`panel analysis-panel ${collapsed ? "panel-collapsed" : ""}`}><div className="panel-header"><div><span className="section-kicker">SQUAD ANALYSIS</span><span className="panel-count">{selected.length === 15 ? "READY" : "PARTIAL"}</span></div><div className="header-actions"><span className="data-badge model">MODEL</span><button className="compact-action" onClick={onOpenReplacements}>REPLACEMENTS</button><PanelToggle panel="analysis" collapsed={collapsed} onToggle={onToggle} /></div></div><div className="analysis-hero"><div><span>5GW xPTS</span><strong>{points(projected.next5)}</strong></div><div><span>MINUTES SECURITY</span><strong>{risk === undefined ? "—" : risk < 30 ? "HIGH" : risk < 60 ? "MED" : "LOW"}</strong></div></div><div className="analysis-lines"><div><span>TOTAL COST</span><strong>{money(analysis.totalCostTenths)}</strong></div><div><span>BANK</span><strong>{money(analysis.bankTenths)}</strong></div><div><span>FIXTURE SCORE</span><strong>—</strong></div></div><div className="weak-links"><div className="subsection-head"><span className="section-kicker">WEAKEST LINKS</span><span className="data-badge model">MODEL</span></div>{weakest.length ? weakest.map((player, index) => { const weakness = byWeakness.get(player.id); return <button className="weak-row" key={player.id} onClick={() => onSelect(player.id)}><span className="weak-rank">{index + 1}</span><span><strong>{player.displayName}</strong><small>{weakness?.reasons[0] ?? "Projection unavailable"}</small></span><b>{weakness?.score ?? "—"}</b></button>; }) : <div className="empty-copy">No model weak links yet. Add players with projection data to evaluate trade-offs.</div>}</div><div className="formation-note">{playerById.size ? `Live universe: ${playerById.size} players.` : "No live player universe loaded."}<br />Stats marked MODEL are estimates, not official FPL values.</div></section>; }
-
-function ReplacementPanel({ outgoingId, candidates, playerById, onClose, onSimulate }: { outgoingId?: number; candidates: ReplacementCandidate[]; playerById: Map<number, TerminalPlayer>; onClose: () => void; onSimulate: (outId: number, inId: number) => void }) { return <section className="panel replacement-panel"><div className="panel-header"><div><span className="section-kicker">REPLACEMENTS</span><span className="panel-count">DETERMINISTIC</span></div><button className="icon-button" onClick={onClose} aria-label="Close replacements">×</button></div>{candidates.length && outgoingId ? candidates.map((candidate) => { const incoming = playerById.get(candidate.playerId); return <div className="replacement-row" key={candidate.playerId}><div><strong>{incoming?.displayName ?? `Player ${candidate.playerId}`}</strong><small>{incoming?.teamShortName ?? "—"} · {money(candidate.priceTenths)} · {candidate.reason}</small></div><span className={candidate.projectedDelta >= 0 ? "green" : "red"}>{candidate.projectedDelta >= 0 ? "+" : ""}{candidate.projectedDelta.toFixed(1)} xP</span><button className="compact-action" onClick={() => onSimulate(outgoingId, candidate.playerId)}>SIMULATE</button></div>; }) : <div className="empty-copy">No replacement candidates are available from the current squad and model inputs.</div>}</section>; }
-
-function SimulationPanel({ result, move, playerById, onApply, onDiscard }: { result: SimulationResult; move: { outId: number; inId: number }; playerById: Map<number, TerminalPlayer>; onApply: () => void; onDiscard: () => void }) { return <section className="panel simulation-panel"><div className="panel-header"><div><span className="section-kicker">SIMULATION</span><span className="panel-count">{result.legal ? "LEGAL" : "CHECK REQUIRED"}</span></div><button className="icon-button" onClick={onDiscard} aria-label="Close simulation">×</button></div><div className="simulation-move">{playerById.get(move.outId)?.displayName ?? "Outgoing"} <span>→</span> {playerById.get(move.inId)?.displayName ?? "Incoming"}</div><div className="simulation-grid"><div><span>CURRENT 5GW xP</span><strong>{points(result.before.projectedNext5)}</strong></div><div><span>SIMULATED 5GW xP</span><strong>{points(result.after.projectedNext5)}</strong></div><div><span>PRICE EFFECT</span><strong>{money(result.priceDeltaTenths)}</strong></div><div><span>GW EFFECT</span><strong className={result.projectedDelta5 >= 0 ? "green" : "red"}>{result.projectedDelta5 >= 0 ? "+" : ""}{result.projectedDelta5.toFixed(1)}</strong></div></div><p className="simulation-note">{result.explanationFactors[0] ?? "Model comparison complete."}{!result.legal && " The current selection still has a rules issue; review the feasibility rail after applying."}</p><div className="simulation-actions"><button className="primary-button" onClick={onApply}>APPLY CHANGES</button><button className="secondary-button" onClick={onDiscard}>DISCARD</button></div></section>; }
-
-function AnalystPanel({ messages, busy, online, prompt, setPrompt, onAsk, onQuick, textareaRef, collapsed, onToggle }: { messages: Array<{ role: "user" | "assistant"; text: string }>; busy: boolean; online: boolean | null; prompt: string; setPrompt: (value: string) => void; onAsk: (prompt: string) => void; onQuick: (label: string) => void; textareaRef: React.RefObject<HTMLTextAreaElement | null>; collapsed: boolean; onToggle: () => void }) { const defaultCopy = online === false ? "AI analyst offline. Add DEEPSEEK_API_KEY to .env.local to enable conversational analysis." : "The analyst reads the current squad context and explains trade-offs. It cannot change picks without your action."; return <section className={`panel analyst-panel ${collapsed ? "panel-collapsed" : ""}`}><div className="panel-header"><div><span className="section-kicker">AI ANALYST</span><span className="panel-count">{online === true ? "ONLINE" : online === false ? "OFFLINE SHELL" : "CHECKING"}</span></div><div className="header-actions"><span className={`data-badge ${online === true ? "green" : "model"}`}>{online === false ? "OFFLINE" : "DEEPSEEK"}</span><PanelToggle panel="ai" collapsed={collapsed} onToggle={onToggle} /></div></div><div className="analyst-scroll"><div className="analyst-block"><span className="section-kicker">SQUAD DIAGNOSIS</span><p>{defaultCopy}</p></div>{messages.map((message, index) => <div className={`message ${message.role}`} key={`${message.role}-${index}`}><span className="message-label">{message.role === "user" ? "> YOU" : "ANALYST"}</span><p>{message.text}</p></div>)}{busy && <div className="message assistant"><span className="message-label">ANALYST</span><p className="loading-line">CHECKING CONTEXT…</p></div>}</div><div className="quick-commands"><span className="section-kicker">QUICK COMMANDS</span><div>{["ANALYZE", "OPTIMIZE", "WEAK LINK", "FINISH SQUAD", "CHEAPEN BENCH", "CAPTAIN"].map((label) => <button key={label} onClick={() => onQuick(label)}>{label}</button>)}</div></div><form className="ai-input" onSubmit={(event) => { event.preventDefault(); onAsk(prompt); }}><span>&gt;</span><textarea ref={textareaRef} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Ask about this squad..." rows={2} aria-label="Ask the AI analyst" /><button type="submit" disabled={!prompt.trim() || busy} aria-label="Send analyst query">↗</button></form></section>; }
+function AnalystPanel({ messages, busy, online, prompt, setPrompt, onAsk, onQuick, onAction, lockedCheck, playerById, textareaRef, collapsed, onToggle }: {
+  messages: Array<{ role: "user" | "assistant"; text: string; at?: number; actions?: AssistantActionHint[] }>;
+  busy: boolean;
+  online: boolean | null;
+  prompt: string;
+  setPrompt: (value: string) => void;
+  onAsk: (prompt: string) => void;
+  onQuick: (label: string) => void;
+  onAction: (action: AssistantActionHint) => void;
+  lockedCheck: (id: number) => boolean;
+  playerById: Map<number, TerminalPlayer>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const offlineCopy = online === false ? "AI analyst offline. Add DEEPSEEK_API_KEY to .env.local to enable conversational analysis." : null;
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages.length, busy]);
+  const actionLabel = (action: AssistantActionHint): string | null => {
+    const playerId = numberOf(action.playerId);
+    if (action.type === "VIEW_PLAYER" && playerId !== undefined) return `VIEW ${playerById.get(playerId)?.displayName ?? "#" + playerId}`;
+    if (action.type === "LOCK_PLAYER" && playerId !== undefined) return `${lockedCheck(playerId) ? "UNLOCK" : "LOCK"} ${playerById.get(playerId)?.displayName ?? "#" + playerId}`;
+    if (action.type === "OPTIMIZE") return "RUN OPTIMIZER";
+    const outId = numberOf(action.outId);
+    const inId = numberOf(action.inId);
+    if (action.type === "SIMULATE_TRANSFER" && outId !== undefined && inId !== undefined) return `PREVIEW ${playerById.get(outId)?.displayName ?? "#" + outId} → ${playerById.get(inId)?.displayName ?? "#" + inId}`;
+    return null;
+  };
+  return (
+    <section className={`panel analyst-panel ${collapsed ? "panel-collapsed" : ""}`}>
+      <div className="panel-header">
+        <div>
+          <span className="section-kicker">AI ANALYST</span>
+          <span className="panel-count">{online === true ? "ONLINE" : online === false ? "OFFLINE SHELL" : "CHECKING"}</span>
+        </div>
+        <div className="header-actions">
+          <span className={`data-badge ${online === true ? "green" : "model"}`}>{online === false ? "OFFLINE" : "DEEPSEEK"}</span>
+          <PanelToggle panel="ai" collapsed={collapsed} onToggle={onToggle} />
+        </div>
+      </div>
+      <div className="analyst-scroll" ref={scrollRef}>
+        {!messages.length && !busy && offlineCopy && <div className="analyst-block"><p>{offlineCopy}</p></div>}
+        {!messages.length && !busy && !offlineCopy && (
+          <div className="prompt-cards">
+            {PROMPT_CARDS.map((card) => (
+              <button key={card.title} type="button" className="prompt-card" onClick={() => onAsk(card.prompt)}>
+                <strong>{card.title}</strong>
+                <span>{card.detail}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {messages.map((message, index) => (
+          <div className={`message ${message.role}`} key={`${message.role}-${index}`}>
+            <span className="message-label">
+              {message.role === "user" ? "> YOU" : "ANALYST"}
+              {message.at ? <time className="message-time">{clockLabel(message.at)}</time> : null}
+            </span>
+            <p>{message.text}</p>
+            {message.role === "assistant" && message.actions?.length ? (
+              <div className="message-actions">
+                {message.actions.map((action, actionIndex) => {
+                  const label = actionLabel(action);
+                  return label ? <button key={`${action.type}-${actionIndex}`} type="button" onClick={() => onAction(action)}>{label}</button> : null;
+                })}
+              </div>
+            ) : null}
+          </div>
+        ))}
+        {busy && (
+          <div className="message assistant">
+            <span className="message-label">ANALYST</span>
+            <p className="thinking" aria-label="Analyst thinking"><i /><i /><i /></p>
+          </div>
+        )}
+      </div>
+      <form className="ai-composer" onSubmit={(event) => { event.preventDefault(); onAsk(prompt); }}>
+        <div className="command-chips" role="toolbar" aria-label="Quick commands">
+          {["ANALYZE", "OPTIMIZE", "WEAK LINK", "FINISH SQUAD", "CHEAPEN BENCH", "CAPTAIN"].map((label) => (
+            <button key={label} type="button" onClick={() => onQuick(label)}>{label}</button>
+          ))}
+        </div>
+        <div className="ai-input">
+          <span>&gt;</span>
+          <textarea ref={textareaRef} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Ask about this squad..." rows={2} aria-label="Ask the AI analyst" />
+          <button type="submit" disabled={!prompt.trim() || busy} aria-label="Send analyst query">↗</button>
+        </div>
+      </form>
+    </section>
+  );
+}
 
 function probability(value: number): string { return `${Math.round(clamp(value, 0, 1) * 100)}%`; }
 export function formatSelectionUpdatedAt(value: string): string {

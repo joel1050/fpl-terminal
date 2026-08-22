@@ -55,16 +55,16 @@ test.describe("weekly lineup acceptance", () => {
   }
 
   function weeklyRegion(page: Page) {
-    return page.getByRole("region", { name: /gw team picker|weekly lineup|gw team/i }).first();
+    return page.getByRole("region", { name: /squad builder and analysis/i }).first();
   }
 
   async function openWeeklyTeam(page: Page, generate = true) {
-    await clickButton(page, /^GW TEAM$/i);
     const region = weeklyRegion(page);
-    await expect(region, "GW TEAM should expose an accessible picker region").toBeVisible();
-    const pickButton = region.getByRole("button", { name: /^PICK GW TEAM$/i }).first();
+    await expect(region, "the unified squad panel should expose the weekly controls").toBeVisible();
+    const pickButton = region.getByRole("button", { name: /^PICK TEAM$/i }).first();
     if (generate && await pickButton.isVisible().catch(() => false)) {
       await pickButton.click();
+      await expect(page.getByText(/team picked and saved/i)).toBeVisible();
     }
     return region;
   }
@@ -114,26 +114,23 @@ test.describe("weekly lineup acceptance", () => {
     throw new Error("the three-player outfield bench must expose an enabled order control");
   }
 
-  async function applyWeeklyTeam(page: Page, region: ReturnType<typeof weeklyRegion>) {
+  async function editWeeklyTeam(region: ReturnType<typeof weeklyRegion>) {
     await chooseCaptainAndVice(region);
     await reorderBench(region);
-    await expect(region.getByText(/apply|save|draft|proposed|changes/i).first()).toBeVisible();
-    await clickButton(page, /^APPLY LINEUP$/i);
-    await expect(page.getByText(/GW TEAM pick applied|lineup.*(?:applied|saved|updated)/i).first()).toBeVisible();
   }
 
-  test("builds a legal 15, previews GW TEAM, edits captaincy and bench order, applies, and reloads", async ({ page }) => {
+  test("builds a legal 15, picks and edits the weekly team, and reloads", async ({ page }) => {
     await pasteLegalSquad(page);
     const region = await openWeeklyTeam(page);
 
-    await expect(region).toContainText(/starters/i);
-    await expect(region).toContainText(/11\s*\/\s*11/i);
     await expect(region.getByRole("article")).toHaveCount(15);
-    await expect(region).toContainText(/ordered bench/i);
-    await expect(region).toContainText(/GK\s*·\s*1\s*·\s*2\s*·\s*3/i);
-    await applyWeeklyTeam(page, region);
+    await expect(region.getByRole("region", { name: /^starting xi$/i })).toBeVisible();
+    await expect(region.getByRole("region", { name: /^bench$/i })).toBeVisible();
+    await expect(region.getByRole("button", { name: /select .* to move to bench/i })).toHaveCount(11);
+    await expect(region.getByRole("button", { name: /select .* to move into the starting xi/i })).toHaveCount(4);
+    await editWeeklyTeam(region);
 
-    await expect(region).toContainText(/applied|saved|current|captain|vice/i);
+    await expect(region).toContainText(/GW \d+ · \d-\d-\d · .* xP/i);
     const saved = await page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");
       return state && {
@@ -151,12 +148,13 @@ test.describe("weekly lineup acceptance", () => {
     await chooseMode(page, /analyze (?:a )?team/i);
     await waitForMarket(page);
     const reloadedRegion = await openWeeklyTeam(page, false);
-    await expect(reloadedRegion).toContainText(/11\s*\/\s*11|starters/i);
+    await expect(reloadedRegion.getByRole("button", { name: /select .* to move to bench/i })).toHaveCount(11);
+    await expect(reloadedRegion.getByRole("button", { name: /select .* to move into the starting xi/i })).toHaveCount(4);
     await expect(reloadedRegion.locator('button[aria-label$=" captain"][aria-pressed="true"]')).toHaveCount(1);
     await expect(reloadedRegion.locator('button[aria-label$=" vice-captain"][aria-pressed="true"]')).toHaveCount(1);
     await expect(reloadedRegion.getByRole("button", { name: /make .* captain/i }).first()).toBeVisible();
     await expect(reloadedRegion.getByRole("button", { name: /make .* vice-captain/i }).first()).toBeVisible();
-    await expect(reloadedRegion).toContainText(/bench|substitutes/i);
+    await expect(reloadedRegion.getByText(/^B[123]$/).first()).toBeVisible();
     const reloaded = await page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");
       return state && {
@@ -171,16 +169,29 @@ test.describe("weekly lineup acceptance", () => {
     expect(reloaded).toEqual(saved);
   });
 
-  test("pastes a legal 15 and makes the weekly lineup preview available", async ({ page }) => {
+  test("pastes a legal 15 and exposes the applied lineup on the roster", async ({ page }) => {
     await pasteLegalSquad(page);
     const region = await openWeeklyTeam(page);
-    await expect(region).toContainText(/starters/i);
-    await expect(region).toContainText(/11\s*\/\s*11/i);
+    await page.setViewportSize({ width: 1280, height: 720 });
     await expect(region.getByRole("article")).toHaveCount(15);
-    await expect(region).toContainText(/ordered bench/i);
-    await expect(region).toContainText(/GK\s*·\s*1\s*·\s*2\s*·\s*3/i);
+    await expect(region.getByRole("button", { name: /select .* to move to bench/i })).toHaveCount(11);
+    await expect(region.getByRole("button", { name: /select .* to move into the starting xi/i })).toHaveCount(4);
     await expect(region.getByRole("button", { name: /make .* captain/i }).first()).toBeVisible();
     await expect(region.getByRole("button", { name: /make .* vice-captain/i }).first()).toBeVisible();
+    const layout = await region.evaluate((panel) => {
+      const roster = panel.querySelector<HTMLElement>('[data-testid="squad-roster"]')!;
+      const rosterRect = roster.getBoundingClientRect();
+      const cards = [...roster.querySelectorAll<HTMLElement>("article")].map((card) => card.getBoundingClientRect());
+      const cardGroup = (element: Element) => {
+        const rects = [...element.querySelectorAll<HTMLElement>("article")].map((card) => card.getBoundingClientRect());
+        return { left: Math.min(...rects.map((rect) => rect.left)), right: Math.max(...rects.map((rect) => rect.right)) };
+      };
+      const centered = (rect: { left: number; right: number }) => Math.abs((rect.left + rect.right) / 2 - (rosterRect.left + rosterRect.right) / 2) < 1;
+      const positionGroups = [...roster.querySelectorAll(".starting-position")].map(cardGroup);
+      const goalkeeper = roster.querySelector<HTMLElement>(".starting-position article")!.getBoundingClientRect();
+      return { centeredRows: positionGroups.every(centered), centeredBench: centered(cardGroup(roster.querySelector(".bench-section")!)), goalkeeperWideEnough: goalkeeper.width >= 120, cardsInsidePanel: cards.every((card) => card.top >= rosterRect.top && card.bottom <= panel.getBoundingClientRect().bottom) };
+    });
+    expect(layout).toEqual({ centeredRows: true, centeredBench: true, goalkeeperWideEnough: true, cardsInsidePanel: true });
   });
 
   test("surfaces stale FPL data after a gameweek refresh", async ({ page }) => {

@@ -1,0 +1,339 @@
+{
+  "generated_at": "2026-08-22T04:39:14.019943+00:00",
+  "nodes": {
+    "lib_ai_tools": {
+      "code_fingerprint": "ee2fd2bd8d685bd5b2fe21a7fab7cb1e4c16c058bd4c06bc0c2ade2e877db184",
+      "label": "tools.ts",
+      "last": "2026-08-21T08:17:07.022508+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-21T08:17:07.022508+00:00",
+          "outcome": "useful",
+          "q": "ok integraye into the app"
+        }
+      ],
+      "score": 0.980582054,
+      "source_file": "lib/ai/tools.ts",
+      "status": "tentative",
+      "uses": 1
+    },
+    "lib_analysis_context_playeruniverse": {
+      "code_fingerprint": "9024a11efed3f14060a66cf5fecaa528d7003c205566c9cafc2848bf37c03431",
+      "label": "PlayerUniverse",
+      "last": "2026-08-21T06:41:36.322395+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-21T06:41:36.322395+00:00",
+          "outcome": "useful",
+          "q": "How does TerminalApp compose the player universe squad weekly lineup analysis and analyst panels while preserving API store and projection behavior?"
+        },
+        {
+          "date": "2026-08-21T06:25:28.410850+00:00",
+          "outcome": "useful",
+          "q": "fix the clean-sheet calculation and whatever causes all player xminutes to be 73 min"
+        },
+        {
+          "date": "2026-08-21T06:15:21.656669+00:00",
+          "outcome": "useful",
+          "q": "look at the pts/pound does it look more accurate"
+        }
+      ],
+      "score": 2.936575825,
+      "source_file": "lib/analysis/context.ts",
+      "status": "preferred",
+      "uses": 3
+    },
+    "lib_historical_enrichplayers": {
+      "code_fingerprint": "ca89248c084d87597bab849df983ef36d1098f1dc0f30452d809d67662f9d8b8",
+      "label": "enrichPlayers.ts",
+      "last": "2026-08-22T04:36:26.631134+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-22T04:36:26.631134+00:00",
+          "outcome": "useful",
+          "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
+        },
+        {
+          "date": "2026-08-22T04:04:37.299189+00:00",
+          "outcome": "useful",
+          "q": "try shaw and calafiori"
+        },
+        {
+          "date": "2026-08-22T04:02:34.197546+00:00",
+          "outcome": "useful",
+          "q": "what about average xp vs last seasons points per week"
+        },
+        {
+          "date": "2026-08-22T03:59:07.265070+00:00",
+          "outcome": "useful",
+          "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
+        }
+      ],
+      "score": 3.998168539,
+      "source_file": "lib/historical/enrichPlayers.ts",
+      "status": "preferred",
+      "uses": 4
+    },
+    "lib_historical_ingest": {
+      "code_fingerprint": "a5699a7f44cb305640be60004f8234c31db8aa7197897440e9ef3e769194bf45",
+      "label": "ingest.ts",
+      "last": "2026-08-21T23:58:13.659896+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-21T23:58:13.659896+00:00",
+          "outcome": "useful",
+          "q": "1. this mostly fine 2. yeah how do we make this more realistic, it should be closer to zero, do we have access to last seasons stats 3. thats whatever its fine 4. look at betting odds for recent matches for clean sheets match it against our strength rating system and design appropriate clean sheet odds, it should be closer to 0 for ars - cov"
+        }
+      ],
+      "score": 0.995501387,
+      "source_file": "lib/historical/ingest.ts",
+      "status": "tentative",
+      "uses": 1
+    },
+    "lib_historical_types_historicalbundle": {
+      "code_fingerprint": "82869795a1ed07bc1d87c36ac837024f78552a1d35cfdc6a41b2a055bb5b1cd8",
+      "label": "HistoricalBundle",
+      "last": "2026-08-22T04:36:26.631134+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-22T04:36:26.631134+00:00",
+          "outcome": "useful",
+          "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
+        },
+        {
+          "date": "2026-08-22T04:04:37.299189+00:00",
+          "outcome": "useful",
+          "q": "try shaw and calafiori"
+        },
+        {
+          "date": "2026-08-22T04:02:34.197546+00:00",
+          "outcome": "useful",
+          "q": "what about average xp vs last seasons points per week"
+        },
+        {
+          "date": "2026-08-22T03:59:07.265070+00:00",
+          "outcome": "useful",
+          "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
+        },
+        {
+          "date": "2026-08-22T03:53:22.686492+00:00",
+          "outcome": "useful",
+          "q": "can you recap how xmin is calculated"
+        }
+      ],
+      "score": 5.992934441,
+      "source_file": "lib/historical/types.ts",
+      "status": "preferred",
+      "uses": 6
+    },
+    "lib_optimizer_optimizer": {
+      "code_fingerprint": "063244ad25dd8aa0fd4576e507e6ba871d28b348bf85ef2c03e56170c54b040e",
+      "label": "optimizer.ts",
+      "last": "2026-08-21T08:17:07.022508+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-21T08:17:07.022508+00:00",
+          "outcome": "useful",
+          "q": "ok integraye into the app"
+        },
+        {
+          "date": "2026-08-21T07:50:36.891387+00:00",
+          "outcome": "useful",
+          "q": "the optimizer has a few problems: 1. the second goalkeeper should always be at 4.0m because thats the optimal strategy 2. it does not rate good forwards like haaland, joao pedro, thiago fix 1, find out solutions to two"
+        },
+        {
+          "date": "2026-08-21T07:38:14.618836+00:00",
+          "outcome": "useful",
+          "q": "what algorithm do you use for optimized lineups, will it always determine the highest xp for gw"
+        }
+      ],
+      "score": 2.940717853,
+      "source_file": "lib/optimizer/optimizer.ts",
+      "status": "preferred",
+      "uses": 3
+    },
+    "lib_projections_expectedminutes": {
+      "code_fingerprint": "31e5768debcef521565ef23888ca752682edc5458eafe0b317472205f620821d",
+      "label": "expectedMinutes.ts",
+      "last": "2026-08-22T04:36:26.631134+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-22T04:36:26.631134+00:00",
+          "outcome": "useful",
+          "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
+        },
+        {
+          "date": "2026-08-22T04:04:37.299189+00:00",
+          "outcome": "useful",
+          "q": "try shaw and calafiori"
+        },
+        {
+          "date": "2026-08-22T03:59:07.265070+00:00",
+          "outcome": "useful",
+          "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
+        },
+        {
+          "date": "2026-08-22T03:53:22.686492+00:00",
+          "outcome": "useful",
+          "q": "can you recap how xmin is calculated"
+        },
+        {
+          "date": "2026-08-21T06:25:28.410850+00:00",
+          "outcome": "useful",
+          "q": "fix the clean-sheet calculation and whatever causes all player xminutes to be 73 min"
+        }
+      ],
+      "score": 4.976848234,
+      "source_file": "lib/projections/expectedMinutes.ts",
+      "status": "preferred",
+      "uses": 5
+    },
+    "lib_projections_fixtureadjustment": {
+      "code_fingerprint": "656b06d241251a53d2274351270082f355de1f7fd035ed0bb110cfb6de5070cd",
+      "label": "fixtureAdjustment.ts",
+      "last": "2026-08-22T00:07:34.722253+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-22T00:07:34.722253+00:00",
+          "outcome": "useful",
+          "q": "Implement conservative unmapped-defender xG/xA priors and market-calibrated clean-sheet probabilities using Luna xhigh subagents"
+        },
+        {
+          "date": "2026-08-21T23:58:13.659896+00:00",
+          "outcome": "useful",
+          "q": "1. this mostly fine 2. yeah how do we make this more realistic, it should be closer to zero, do we have access to last seasons stats 3. thats whatever its fine 4. look at betting odds for recent matches for clean sheets match it against our strength rating system and design appropriate clean sheet odds, it should be closer to 0 for ars - cov"
+        },
+        {
+          "date": "2026-08-21T18:50:12.393862+00:00",
+          "outcome": "useful",
+          "q": "we have a problem with xp calculations, if you sort by xp/pound you see a lot of bottom tier team players/defenders having a fairly high xp, there is something wrong diagnose the issue i think the problem is with clean sheet calculations for all teams"
+        },
+        {
+          "date": "2026-08-21T06:25:28.410850+00:00",
+          "outcome": "useful",
+          "q": "fix the clean-sheet calculation and whatever causes all player xminutes to be 73 min"
+        },
+        {
+          "date": "2026-08-21T06:15:21.656669+00:00",
+          "outcome": "useful",
+          "q": "look at the pts/pound does it look more accurate"
+        }
+      ],
+      "score": 4.93924104,
+      "source_file": "lib/projections/fixtureAdjustment.ts",
+      "status": "preferred",
+      "uses": 5
+    },
+    "lib_projections_metrics_valuepermillion": {
+      "code_fingerprint": "00e37d154107202797b1c907e2eb5345d0f2d375b34e05ad2c53753b9f5ec20d",
+      "label": "valuePerMillion()",
+      "last": "2026-08-22T04:36:26.631134+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-22T04:36:26.631134+00:00",
+          "outcome": "useful",
+          "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
+        }
+      ],
+      "score": 0.999955238,
+      "source_file": "lib/projections/metrics.ts",
+      "status": "tentative",
+      "uses": 1
+    },
+    "lib_projections_projectplayer": {
+      "code_fingerprint": "88ce9bf05ed71c1e353ef5f06ace42017785741beb11217f81e94d781b7977eb",
+      "label": "projectPlayer.ts",
+      "last": "2026-08-22T04:02:34.197546+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-22T04:02:34.197546+00:00",
+          "outcome": "useful",
+          "q": "what about average xp vs last seasons points per week"
+        },
+        {
+          "date": "2026-08-22T00:07:34.722253+00:00",
+          "outcome": "useful",
+          "q": "Implement conservative unmapped-defender xG/xA priors and market-calibrated clean-sheet probabilities using Luna xhigh subagents"
+        }
+      ],
+      "score": 1.995062663,
+      "source_file": "lib/projections/projectPlayer.ts",
+      "status": "preferred",
+      "uses": 2
+    },
+    "lib_projections_projectplayer_projectplayer": {
+      "code_fingerprint": "88ce9bf05ed71c1e353ef5f06ace42017785741beb11217f81e94d781b7977eb",
+      "label": "projectPlayer()",
+      "last": "2026-08-22T04:36:26.631134+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-22T04:36:26.631134+00:00",
+          "outcome": "useful",
+          "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
+        },
+        {
+          "date": "2026-08-22T04:04:37.299189+00:00",
+          "outcome": "useful",
+          "q": "try shaw and calafiori"
+        },
+        {
+          "date": "2026-08-22T04:02:34.197546+00:00",
+          "outcome": "useful",
+          "q": "what about average xp vs last seasons points per week"
+        },
+        {
+          "date": "2026-08-22T03:59:07.265070+00:00",
+          "outcome": "useful",
+          "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
+        },
+        {
+          "date": "2026-08-22T03:53:22.686492+00:00",
+          "outcome": "useful",
+          "q": "can you recap how xmin is calculated"
+        }
+      ],
+      "score": 6.954928408,
+      "source_file": "lib/projections/projectPlayer.ts",
+      "status": "preferred",
+      "uses": 7
+    },
+    "lib_projections_value": {
+      "code_fingerprint": "006022c24fa3722b26214c2d1475a87013338d8065f65186763817fd8f5e42bb",
+      "label": "value.ts",
+      "last": "2026-08-21T06:15:21.656669+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-21T06:15:21.656669+00:00",
+          "outcome": "useful",
+          "q": "look at the pts/pound does it look more accurate"
+        }
+      ],
+      "score": 0.978668273,
+      "source_file": "lib/projections/value.ts",
+      "status": "tentative",
+      "uses": 1
+    },
+    "lib_squad_weeklylineup": {
+      "code_fingerprint": "0350bbd945d33a2d579eb50f2c09df2bb75de42a4de87d6bfa7dbdd44a09a107",
+      "label": "weeklyLineup.ts",
+      "last": "2026-08-21T07:38:14.618836+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-21T07:38:14.618836+00:00",
+          "outcome": "useful",
+          "q": "what algorithm do you use for optimized lineups, will it always determine the highest xp for gw"
+        },
+        {
+          "date": "2026-08-21T06:41:36.322395+00:00",
+          "outcome": "useful",
+          "q": "How does TerminalApp compose the player universe squad weekly lineup analysis and analyst panels while preserving API store and projection behavior?"
+        }
+      ],
+      "score": 1.9590511,
+      "source_file": "lib/squad/weeklyLineup.ts",
+      "status": "preferred",
+      "uses": 2
+    }
+  },
+  "version": 1
+}

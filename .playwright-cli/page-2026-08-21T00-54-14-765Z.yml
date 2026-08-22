@@ -1,0 +1,3376 @@
+- generic [ref=f2e1]:
+  - button "Open Next.js Dev Tools" [ref=f2e29] [cursor=pointer]
+  - alert [ref=f2e33]
+  - main [ref=f2e34]:
+    - generic [ref=f2e35]:
+      - button "Return to mode chooser" [ref=f2e36] [cursor=pointer]:
+        - generic [ref=f2e37]: FPL
+        - generic [ref=f2e38]: TERMINAL
+      - generic "Terminal status" [ref=f2e39]:
+        - generic [ref=f2e40]:
+          - generic [ref=f2e41]: GW
+          - strong [ref=f2e42]: —
+        - generic [ref=f2e43]:
+          - generic [ref=f2e44]: DEADLINE
+          - strong [ref=f2e45]: —
+        - generic [ref=f2e46]:
+          - generic [ref=f2e47]: DATA
+          - strong [ref=f2e48]: LIVE
+        - generic [ref=f2e49]:
+          - generic [ref=f2e50]: UPDATED
+          - strong [ref=f2e51]: 2m ago
+        - generic [ref=f2e52]:
+          - generic [ref=f2e53]: ITB
+          - strong [ref=f2e54]: £100.0
+        - generic [ref=f2e55]:
+          - generic [ref=f2e56]: 5GW xP
+          - strong [ref=f2e57]: —
+        - generic [ref=f2e58]:
+          - generic [ref=f2e59]: RISK
+          - strong [ref=f2e60]: —
+      - generic [ref=f2e61]:
+        - button "REFRESH" [ref=f2e62] [cursor=pointer]
+        - button "EXPORT" [ref=f2e63] [cursor=pointer]
+        - button "IMPORT" [ref=f2e64] [cursor=pointer]
+        - button "RESET" [ref=f2e65] [cursor=pointer]
+    - generic [ref=f2e66]:
+      - region "Player universe" [ref=f2e67]:
+        - generic [ref=f2e68]:
+          - generic [ref=f2e69]:
+            - text: PLAYER UNIVERSE
+            - generic [ref=f2e70]: 599 records
+          - generic [ref=f2e71]: LIVE FPL
+        - generic [ref=f2e72]:
+          - generic [ref=f2e73]: /
+          - textbox "Search players" [ref=f2e74]:
+            - /placeholder: Search player, club...
+          - generic [ref=f2e75]: /
+        - generic [ref=f2e76]:
+          - generic [ref=f2e77]:
+            - combobox "Filter by position" [ref=f2e78]:
+              - option "ALL POS" [selected]
+              - option "GK"
+              - option "DEF"
+              - option "MID"
+              - option "FWD"
+            - combobox "Filter by club" [ref=f2e79]:
+              - option "ALL CLUBS" [selected]
+              - option "ARS"
+              - option "AVL"
+              - option "BHA"
+              - option "BOU"
+              - option "BRE"
+              - option "CHE"
+              - option "COV"
+              - option "CRY"
+              - option "EVE"
+              - option "FUL"
+              - option "HUL"
+              - option "IPS"
+              - option "LEE"
+              - option "LIV"
+              - option "MCI"
+              - option "MUN"
+              - option "NEW"
+              - option "NFO"
+              - option "SUN"
+              - option "TOT"
+            - textbox "Minimum price" [ref=f2e80]:
+              - /placeholder: MIN £
+            - textbox "Maximum price" [ref=f2e81]:
+              - /placeholder: MAX £
+          - generic [ref=f2e82]:
+            - button "ALL" [ref=f2e83] [cursor=pointer]
+            - button "VALUE" [ref=f2e84] [cursor=pointer]
+            - button "PREMIUM" [ref=f2e85] [cursor=pointer]
+            - button "DIFFERENTIAL" [ref=f2e86] [cursor=pointer]
+            - button "NAILED" [ref=f2e87] [cursor=pointer]
+            - button "CHEAP" [ref=f2e88] [cursor=pointer]
+          - generic [ref=f2e89]:
+            - checkbox "affordable only" [ref=f2e90]
+            - text: affordable only
+          - generic [ref=f2e91]:
+            - checkbox "hide selected" [ref=f2e92]
+            - text: hide selected
+        - table [ref=f2e94]:
+          - rowgroup [ref=f2e95]:
+            - row [ref=f2e96]:
+              - columnheader [ref=f2e97]:
+                - button "PLAYER" [ref=f2e98] [cursor=pointer]
+              - columnheader "POS" [ref=f2e99]
+              - columnheader [ref=f2e100]:
+                - button "PRICE" [ref=f2e101] [cursor=pointer]
+              - columnheader [ref=f2e102]:
+                - button "5GW xP ↓" [ref=f2e103] [cursor=pointer]
+              - columnheader [ref=f2e104]:
+                - button "xP/£" [ref=f2e105] [cursor=pointer]
+              - columnheader [ref=f2e106]:
+                - button "MIN" [ref=f2e107] [cursor=pointer]
+              - columnheader "ADD" [ref=f2e108]
+          - rowgroup [ref=f2e109]:
+            - row [ref=f2e110]:
+              - cell [ref=f2e111]:
+                - button "Haaland MCI" [active] [ref=f2e112] [cursor=pointer]:
+                  - strong [ref=f2e113]: Haaland
+                  - generic [ref=f2e114]: MCI
+              - cell "FWD" [ref=f2e115]
+              - cell "£15.5" [ref=f2e117]
+              - cell "29.5" [ref=f2e118]
+              - cell "1.9" [ref=f2e119]
+              - cell "88′" [ref=f2e120]
+              - cell [ref=f2e121]:
+                - button "Add Haaland" [ref=f2e122] [cursor=pointer]: +
+            - row [ref=f2e123]:
+              - cell [ref=f2e124]:
+                - button "B.Fernandes MUN" [ref=f2e125] [cursor=pointer]:
+                  - strong [ref=f2e126]: B.Fernandes
+                  - generic [ref=f2e127]: MUN
+              - cell "MID" [ref=f2e128]
+              - cell "£12.0" [ref=f2e130]
+              - cell "27.9" [ref=f2e131]
+              - cell "2.3" [ref=f2e132]
+              - cell "88′" [ref=f2e133]
+              - cell [ref=f2e134]:
+                - button "Add B.Fernandes" [ref=f2e135] [cursor=pointer]: +
+            - row [ref=f2e136]:
+              - cell [ref=f2e137]:
+                - button "O'Reilly MCI" [ref=f2e138] [cursor=pointer]:
+                  - strong [ref=f2e139]: O'Reilly
+                  - generic [ref=f2e140]: MCI
+              - cell "DEF" [ref=f2e141]
+              - cell "£6.5" [ref=f2e143]
+              - cell "27.0" [ref=f2e144]
+              - cell "4.2" [ref=f2e145]
+              - cell "88′" [ref=f2e146]
+              - cell [ref=f2e147]:
+                - button "Add O'Reilly" [ref=f2e148] [cursor=pointer]: +
+            - row [ref=f2e149]:
+              - cell [ref=f2e150]:
+                - button "Palmer CHE" [ref=f2e151] [cursor=pointer]:
+                  - strong [ref=f2e152]: Palmer
+                  - generic [ref=f2e153]: CHE
+              - cell "MID" [ref=f2e154]
+              - cell "£9.5" [ref=f2e156]
+              - cell "26.9" [ref=f2e157]
+              - cell "2.8" [ref=f2e158]
+              - cell "88′" [ref=f2e159]
+              - cell [ref=f2e160]:
+                - button "Add Palmer" [ref=f2e161] [cursor=pointer]: +
+            - row [ref=f2e162]:
+              - cell [ref=f2e163]:
+                - button "Mbeumo MUN" [ref=f2e164] [cursor=pointer]:
+                  - strong [ref=f2e165]: Mbeumo
+                  - generic [ref=f2e166]: MUN
+              - cell "MID" [ref=f2e167]
+              - cell "£8.0" [ref=f2e169]
+              - cell "26.7" [ref=f2e170]
+              - cell "3.3" [ref=f2e171]
+              - cell "88′" [ref=f2e172]
+              - cell [ref=f2e173]:
+                - button "Add Mbeumo" [ref=f2e174] [cursor=pointer]: +
+            - row [ref=f2e175]:
+              - cell [ref=f2e176]:
+                - button "De Cuyper BHA" [ref=f2e177] [cursor=pointer]:
+                  - strong [ref=f2e178]: De Cuyper
+                  - generic [ref=f2e179]: BHA
+              - cell "DEF" [ref=f2e180]
+              - cell "£4.5" [ref=f2e182]
+              - cell "26.3" [ref=f2e183]
+              - cell "5.8" [ref=f2e184]
+              - cell "88′" [ref=f2e185]
+              - cell [ref=f2e186]:
+                - button "Add De Cuyper" [ref=f2e187] [cursor=pointer]: +
+            - row [ref=f2e188]:
+              - cell [ref=f2e189]:
+                - button "Cherki MCI" [ref=f2e190] [cursor=pointer]:
+                  - strong [ref=f2e191]: Cherki
+                  - generic [ref=f2e192]: MCI
+              - cell "MID" [ref=f2e193]
+              - cell "£7.5" [ref=f2e195]
+              - cell "26.0" [ref=f2e196]
+              - cell "3.5" [ref=f2e197]
+              - cell "87′" [ref=f2e198]
+              - cell [ref=f2e199]:
+                - button "Add Cherki" [ref=f2e200] [cursor=pointer]: +
+            - row [ref=f2e201]:
+              - cell [ref=f2e202]:
+                - button "Saka ARS" [ref=f2e203] [cursor=pointer]:
+                  - strong [ref=f2e204]: Saka
+                  - generic [ref=f2e205]: ARS
+              - cell "MID" [ref=f2e206]
+              - cell "£9.5" [ref=f2e208]
+              - cell "25.7" [ref=f2e209]
+              - cell "2.7" [ref=f2e210]
+              - cell "88′" [ref=f2e211]
+              - cell [ref=f2e212]:
+                - button "Add Saka" [ref=f2e213] [cursor=pointer]: +
+            - row [ref=f2e214]:
+              - cell [ref=f2e215]:
+                - button "Sarr CRY" [ref=f2e216] [cursor=pointer]:
+                  - strong [ref=f2e217]: Sarr
+                  - generic [ref=f2e218]: CRY
+              - cell "MID" [ref=f2e219]
+              - cell "£6.5" [ref=f2e221]
+              - cell "25.5" [ref=f2e222]
+              - cell "3.9" [ref=f2e223]
+              - cell "88′" [ref=f2e224]
+              - cell [ref=f2e225]:
+                - button "Add Sarr" [ref=f2e226] [cursor=pointer]: +
+            - row [ref=f2e227]:
+              - cell [ref=f2e228]:
+                - button "Enzo CHE" [ref=f2e229] [cursor=pointer]:
+                  - strong [ref=f2e230]: Enzo
+                  - generic [ref=f2e231]: CHE
+              - cell "MID" [ref=f2e232]
+              - cell "£7.0" [ref=f2e234]
+              - cell "25.4" [ref=f2e235]
+              - cell "3.6" [ref=f2e236]
+              - cell "88′" [ref=f2e237]
+              - cell [ref=f2e238]:
+                - button "Add Enzo" [ref=f2e239] [cursor=pointer]: +
+            - row [ref=f2e240]:
+              - cell [ref=f2e241]:
+                - button "Calafiori ARS" [ref=f2e242] [cursor=pointer]:
+                  - strong [ref=f2e243]: Calafiori
+                  - generic [ref=f2e244]: ARS
+              - cell "DEF" [ref=f2e245]
+              - cell "£5.5" [ref=f2e247]
+              - cell "25.1" [ref=f2e248]
+              - cell "4.6" [ref=f2e249]
+              - cell "88′" [ref=f2e250]
+              - cell [ref=f2e251]:
+                - button "Add Calafiori" [ref=f2e252] [cursor=pointer]: +
+            - row [ref=f2e253]:
+              - cell [ref=f2e254]:
+                - button "Gvardiol MCI" [ref=f2e255] [cursor=pointer]:
+                  - strong [ref=f2e256]: Gvardiol
+                  - generic [ref=f2e257]: MCI
+              - cell "DEF" [ref=f2e258]
+              - cell "£5.5" [ref=f2e260]
+              - cell "25.0" [ref=f2e261]
+              - cell "4.5" [ref=f2e262]
+              - cell "88′" [ref=f2e263]
+              - cell [ref=f2e264]:
+                - button "Add Gvardiol" [ref=f2e265] [cursor=pointer]: +
+            - row [ref=f2e266]:
+              - cell [ref=f2e267]:
+                - button "Davies TOT" [ref=f2e268] [cursor=pointer]:
+                  - strong [ref=f2e269]: Davies
+                  - generic [ref=f2e270]: TOT
+              - cell "DEF" [ref=f2e271]
+              - cell "£4.0" [ref=f2e273]
+              - cell "24.9" [ref=f2e274]
+              - cell "6.2" [ref=f2e275]
+              - cell "88′" [ref=f2e276]
+              - cell [ref=f2e277]:
+                - button "Add Davies" [ref=f2e278] [cursor=pointer]: +
+            - row [ref=f2e279]:
+              - cell [ref=f2e280]:
+                - button "Thiaw NEW" [ref=f2e281] [cursor=pointer]:
+                  - strong [ref=f2e282]: Thiaw
+                  - generic [ref=f2e283]: NEW
+              - cell "DEF" [ref=f2e284]
+              - cell "£5.0" [ref=f2e286]
+              - cell "24.9" [ref=f2e287]
+              - cell "5.0" [ref=f2e288]
+              - cell "88′" [ref=f2e289]
+              - cell [ref=f2e290]:
+                - button "Add Thiaw" [ref=f2e291] [cursor=pointer]: +
+            - row [ref=f2e292]:
+              - cell [ref=f2e293]:
+                - button "Guéhi MCI" [ref=f2e294] [cursor=pointer]:
+                  - strong [ref=f2e295]: Guéhi
+                  - generic [ref=f2e296]: MCI
+              - cell "DEF" [ref=f2e297]
+              - cell "£6.0" [ref=f2e299]
+              - cell "24.9" [ref=f2e300]
+              - cell "4.1" [ref=f2e301]
+              - cell "88′" [ref=f2e302]
+              - cell [ref=f2e303]:
+                - button "Add Guéhi" [ref=f2e304] [cursor=pointer]: +
+            - row [ref=f2e305]:
+              - cell [ref=f2e306]:
+                - button "Mateta CRY" [ref=f2e307] [cursor=pointer]:
+                  - strong [ref=f2e308]: Mateta
+                  - generic [ref=f2e309]: CRY
+              - cell "FWD" [ref=f2e310]
+              - cell "£6.5" [ref=f2e312]
+              - cell "24.8" [ref=f2e313]
+              - cell "3.8" [ref=f2e314]
+              - cell "88′" [ref=f2e315]
+              - cell [ref=f2e316]:
+                - button "Add Mateta" [ref=f2e317] [cursor=pointer]: +
+            - row [ref=f2e318]:
+              - cell [ref=f2e319]:
+                - button "Thiago BRE" [ref=f2e320] [cursor=pointer]:
+                  - strong [ref=f2e321]: Thiago
+                  - generic [ref=f2e322]: BRE
+              - cell "FWD" [ref=f2e323]
+              - cell "£8.0" [ref=f2e325]
+              - cell "24.8" [ref=f2e326]
+              - cell "3.1" [ref=f2e327]
+              - cell "88′" [ref=f2e328]
+              - cell [ref=f2e329]:
+                - button "Add Thiago" [ref=f2e330] [cursor=pointer]: +
+            - row [ref=f2e331]:
+              - cell [ref=f2e332]:
+                - button "Muñoz CRY" [ref=f2e333] [cursor=pointer]:
+                  - strong [ref=f2e334]: Muñoz
+                  - generic [ref=f2e335]: CRY
+              - cell "DEF" [ref=f2e336]
+              - cell "£5.5" [ref=f2e338]
+              - cell "24.8" [ref=f2e339]
+              - cell "4.5" [ref=f2e340]
+              - cell "88′" [ref=f2e341]
+              - cell [ref=f2e342]:
+                - button "Add Muñoz" [ref=f2e343] [cursor=pointer]: +
+            - row [ref=f2e344]:
+              - cell [ref=f2e345]:
+                - button "Aït-Nouri MCI" [ref=f2e346] [cursor=pointer]:
+                  - strong [ref=f2e347]: Aït-Nouri
+                  - generic [ref=f2e348]: MCI
+              - cell "DEF" [ref=f2e349]
+              - cell "£5.5" [ref=f2e351]
+              - cell "24.8" [ref=f2e352]
+              - cell "4.5" [ref=f2e353]
+              - cell "88′" [ref=f2e354]
+              - cell [ref=f2e355]:
+                - button "Add Aït-Nouri" [ref=f2e356] [cursor=pointer]: +
+            - row [ref=f2e357]:
+              - cell [ref=f2e358]:
+                - button "Schade BRE" [ref=f2e359] [cursor=pointer]:
+                  - strong [ref=f2e360]: Schade
+                  - generic [ref=f2e361]: BRE
+              - cell "MID" [ref=f2e362]
+              - cell "£6.0" [ref=f2e364]
+              - cell "24.7" [ref=f2e365]
+              - cell "4.1" [ref=f2e366]
+              - cell "88′" [ref=f2e367]
+              - cell [ref=f2e368]:
+                - button "Add Schade" [ref=f2e369] [cursor=pointer]: +
+            - row [ref=f2e370]:
+              - cell [ref=f2e371]:
+                - button "Nmecha LEE" [ref=f2e372] [cursor=pointer]:
+                  - strong [ref=f2e373]: Nmecha
+                  - generic [ref=f2e374]: LEE
+              - cell "FWD" [ref=f2e375]
+              - cell "£5.5" [ref=f2e377]
+              - cell "24.7" [ref=f2e378]
+              - cell "4.5" [ref=f2e379]
+              - cell "83′" [ref=f2e380]
+              - cell [ref=f2e381]:
+                - button "Add Nmecha" [ref=f2e382] [cursor=pointer]: +
+            - row [ref=f2e383]:
+              - cell [ref=f2e384]:
+                - button "O.Dango BRE" [ref=f2e385] [cursor=pointer]:
+                  - strong [ref=f2e386]: O.Dango
+                  - generic [ref=f2e387]: BRE
+              - cell "MID" [ref=f2e388]
+              - cell "£6.5" [ref=f2e390]
+              - cell "24.7" [ref=f2e391]
+              - cell "3.8" [ref=f2e392]
+              - cell "88′" [ref=f2e393]
+              - cell [ref=f2e394]:
+                - button "Add O.Dango" [ref=f2e395] [cursor=pointer]: +
+            - row [ref=f2e396]:
+              - cell [ref=f2e397]:
+                - button "Estêvão CHE" [ref=f2e398] [cursor=pointer]:
+                  - strong [ref=f2e399]: Estêvão
+                  - generic [ref=f2e400]: CHE
+              - cell "MID" [ref=f2e401]
+              - cell "£6.5" [ref=f2e403]
+              - cell "24.5" [ref=f2e404]
+              - cell "3.8" [ref=f2e405]
+              - cell "88′" [ref=f2e406]
+              - cell [ref=f2e407]:
+                - button "Add Estêvão" [ref=f2e408] [cursor=pointer]: +
+            - row [ref=f2e409]:
+              - cell [ref=f2e410]:
+                - button "João Pedro CHE" [ref=f2e411] [cursor=pointer]:
+                  - strong [ref=f2e412]: João Pedro
+                  - generic [ref=f2e413]: CHE
+              - cell "FWD" [ref=f2e414]
+              - cell "£7.5" [ref=f2e416]
+              - cell "24.4" [ref=f2e417]
+              - cell "3.3" [ref=f2e418]
+              - cell "88′" [ref=f2e419]
+              - cell [ref=f2e420]:
+                - button "Add João Pedro" [ref=f2e421] [cursor=pointer]: +
+            - row [ref=f2e422]:
+              - cell [ref=f2e423]:
+                - button "Gabriel ARS" [ref=f2e424] [cursor=pointer]:
+                  - strong [ref=f2e425]: Gabriel
+                  - generic [ref=f2e426]: ARS
+              - cell "DEF" [ref=f2e427]
+              - cell "£8.0" [ref=f2e429]
+              - cell "24.3" [ref=f2e430]
+              - cell "3.0" [ref=f2e431]
+              - cell "88′" [ref=f2e432]
+              - cell [ref=f2e433]:
+                - button "Add Gabriel" [ref=f2e434] [cursor=pointer]: +
+            - row [ref=f2e435]:
+              - cell [ref=f2e436]:
+                - button "Wirtz LIV" [ref=f2e437] [cursor=pointer]:
+                  - strong [ref=f2e438]: Wirtz
+                  - generic [ref=f2e439]: LIV
+              - cell "MID" [ref=f2e440]
+              - cell "£7.5" [ref=f2e442]
+              - cell "24.3" [ref=f2e443]
+              - cell "3.2" [ref=f2e444]
+              - cell "88′" [ref=f2e445]
+              - cell [ref=f2e446]:
+                - button "Add Wirtz" [ref=f2e447] [cursor=pointer]: +
+            - row [ref=f2e448]:
+              - cell [ref=f2e449]:
+                - button "Foden MCI" [ref=f2e450] [cursor=pointer]:
+                  - strong [ref=f2e451]: Foden
+                  - generic [ref=f2e452]: MCI
+              - cell "MID" [ref=f2e453]
+              - cell "£7.0" [ref=f2e455]
+              - cell "24.3" [ref=f2e456]
+              - cell "3.5" [ref=f2e457]
+              - cell "88′" [ref=f2e458]
+              - cell [ref=f2e459]:
+                - button "Add Foden" [ref=f2e460] [cursor=pointer]: +
+            - row [ref=f2e461]:
+              - cell [ref=f2e462]:
+                - button "Wieffer BHA" [ref=f2e463] [cursor=pointer]:
+                  - strong [ref=f2e464]: Wieffer
+                  - generic [ref=f2e465]: BHA
+              - cell "DEF" [ref=f2e466]
+              - cell "£5.0" [ref=f2e468]
+              - cell "24.1" [ref=f2e469]
+              - cell "4.8" [ref=f2e470]
+              - cell "88′" [ref=f2e471]
+              - cell [ref=f2e472]:
+                - button "Add Wieffer" [ref=f2e473] [cursor=pointer]: +
+            - row [ref=f2e474]:
+              - cell [ref=f2e475]:
+                - button "Justin LEE" [ref=f2e476] [cursor=pointer]:
+                  - strong [ref=f2e477]: Justin
+                  - generic [ref=f2e478]: LEE
+              - cell "DEF" [ref=f2e479]
+              - cell "£4.5" [ref=f2e481]
+              - cell "24.0" [ref=f2e482]
+              - cell "5.3" [ref=f2e483]
+              - cell "88′" [ref=f2e484]
+              - cell [ref=f2e485]:
+                - button "Add Justin" [ref=f2e486] [cursor=pointer]: +
+            - row [ref=f2e487]:
+              - cell [ref=f2e488]:
+                - button "Calvert-Lewin LEE" [ref=f2e489] [cursor=pointer]:
+                  - strong [ref=f2e490]: Calvert-Lewin
+                  - generic [ref=f2e491]: LEE
+              - cell "FWD" [ref=f2e492]
+              - cell "£6.0" [ref=f2e494]
+              - cell "24.0" [ref=f2e495]
+              - cell "4.0" [ref=f2e496]
+              - cell "88′" [ref=f2e497]
+              - cell [ref=f2e498]:
+                - button "Add Calvert-Lewin" [ref=f2e499] [cursor=pointer]: +
+            - row [ref=f2e500]:
+              - cell [ref=f2e501]:
+                - button "Virgil LIV" [ref=f2e502] [cursor=pointer]:
+                  - strong [ref=f2e503]: Virgil
+                  - generic [ref=f2e504]: LIV
+              - cell "DEF" [ref=f2e505]
+              - cell "£6.5" [ref=f2e507]
+              - cell "24.0" [ref=f2e508]
+              - cell "3.7" [ref=f2e509]
+              - cell "88′" [ref=f2e510]
+              - cell [ref=f2e511]:
+                - button "Add Virgil" [ref=f2e512] [cursor=pointer]: +
+            - row [ref=f2e513]:
+              - cell [ref=f2e514]:
+                - button "Lewis MCI" [ref=f2e515] [cursor=pointer]:
+                  - strong [ref=f2e516]: Lewis
+                  - generic [ref=f2e517]: MCI
+              - cell "DEF" [ref=f2e518]
+              - cell "£4.5" [ref=f2e520]
+              - cell "24.0" [ref=f2e521]
+              - cell "5.3" [ref=f2e522]
+              - cell "85′" [ref=f2e523]
+              - cell [ref=f2e524]:
+                - button "Add Lewis" [ref=f2e525] [cursor=pointer]: +
+            - row [ref=f2e526]:
+              - cell [ref=f2e527]:
+                - button "Semenyo MCI" [ref=f2e528] [cursor=pointer]:
+                  - strong [ref=f2e529]: Semenyo
+                  - generic [ref=f2e530]: MCI
+              - cell "MID" [ref=f2e531]
+              - cell "£8.5" [ref=f2e533]
+              - cell "23.9" [ref=f2e534]
+              - cell "2.8" [ref=f2e535]
+              - cell "88′" [ref=f2e536]
+              - cell [ref=f2e537]:
+                - button "Add Semenyo" [ref=f2e538] [cursor=pointer]: +
+            - row [ref=f2e539]:
+              - cell [ref=f2e540]:
+                - button "O'Riley BHA" [ref=f2e541] [cursor=pointer]:
+                  - strong [ref=f2e542]: O'Riley
+                  - generic [ref=f2e543]: BHA
+              - cell "MID" [ref=f2e544]
+              - cell "£5.5" [ref=f2e546]
+              - cell "23.9" [ref=f2e547]
+              - cell "4.3" [ref=f2e548]
+              - cell "85′" [ref=f2e549]
+              - cell [ref=f2e550]:
+                - button "Add O'Riley" [ref=f2e551] [cursor=pointer]: +
+            - row [ref=f2e552]:
+              - cell [ref=f2e553]:
+                - button "Garnacho AVL" [ref=f2e554] [cursor=pointer]:
+                  - strong [ref=f2e555]: Garnacho
+                  - generic [ref=f2e556]: AVL
+              - cell "MID" [ref=f2e557]
+              - cell "£6.0" [ref=f2e559]
+              - cell "23.9" [ref=f2e560]
+              - cell "4.0" [ref=f2e561]
+              - cell "88′" [ref=f2e562]
+              - cell [ref=f2e563]:
+                - button "Add Garnacho" [ref=f2e564] [cursor=pointer]: +
+            - row [ref=f2e565]:
+              - cell [ref=f2e566]:
+                - button "Van Hecke TOT" [ref=f2e567] [cursor=pointer]:
+                  - strong [ref=f2e568]: Van Hecke
+                  - generic [ref=f2e569]: TOT
+              - cell "DEF" [ref=f2e570]
+              - cell "£5.0" [ref=f2e572]
+              - cell "23.8" [ref=f2e573]
+              - cell "4.8" [ref=f2e574]
+              - cell "88′" [ref=f2e575]
+              - cell [ref=f2e576]:
+                - button "Add Van Hecke" [ref=f2e577] [cursor=pointer]: +
+            - row [ref=f2e578]:
+              - cell [ref=f2e579]:
+                - button "N.Williams NFO" [ref=f2e580] [cursor=pointer]:
+                  - strong [ref=f2e581]: N.Williams
+                  - generic [ref=f2e582]: NFO
+              - cell "DEF" [ref=f2e583]
+              - cell "£5.0" [ref=f2e585]
+              - cell "23.8" [ref=f2e586]
+              - cell "4.8" [ref=f2e587]
+              - cell "88′" [ref=f2e588]
+              - cell [ref=f2e589]:
+                - button "Add N.Williams" [ref=f2e590] [cursor=pointer]: +
+            - row [ref=f2e591]:
+              - cell [ref=f2e592]:
+                - button "Senesi TOT" [ref=f2e593] [cursor=pointer]:
+                  - strong [ref=f2e594]: Senesi
+                  - generic [ref=f2e595]: TOT
+              - cell "DEF" [ref=f2e596]
+              - cell "£6.0" [ref=f2e598]
+              - cell "23.8" [ref=f2e599]
+              - cell "4.0" [ref=f2e600]
+              - cell "88′" [ref=f2e601]
+              - cell [ref=f2e602]:
+                - button "Add Senesi" [ref=f2e603] [cursor=pointer]: +
+            - row [ref=f2e604]:
+              - cell [ref=f2e605]:
+                - button "Gyökeres ARS" [ref=f2e606] [cursor=pointer]:
+                  - strong [ref=f2e607]: Gyökeres
+                  - generic [ref=f2e608]: ARS
+              - cell "FWD" [ref=f2e609]
+              - cell "£7.5" [ref=f2e611]
+              - cell "23.8" [ref=f2e612]
+              - cell "3.2" [ref=f2e613]
+              - cell "88′" [ref=f2e614]
+              - cell [ref=f2e615]:
+                - button "Add Gyökeres" [ref=f2e616] [cursor=pointer]: +
+            - row [ref=f2e617]:
+              - cell [ref=f2e618]:
+                - button "Gibbs-White NFO" [ref=f2e619] [cursor=pointer]:
+                  - strong [ref=f2e620]: Gibbs-White
+                  - generic [ref=f2e621]: NFO
+              - cell "MID" [ref=f2e622]
+              - cell "£8.0" [ref=f2e624]
+              - cell "23.8" [ref=f2e625]
+              - cell "3.0" [ref=f2e626]
+              - cell "88′" [ref=f2e627]
+              - cell [ref=f2e628]:
+                - button "Add Gibbs-White" [ref=f2e629] [cursor=pointer]: +
+            - row [ref=f2e630]:
+              - cell [ref=f2e631]:
+                - button "Okafor LEE" [ref=f2e632] [cursor=pointer]:
+                  - strong [ref=f2e633]: Okafor
+                  - generic [ref=f2e634]: LEE
+              - cell "MID" [ref=f2e635]
+              - cell "£6.0" [ref=f2e637]
+              - cell "23.8" [ref=f2e638]
+              - cell "4.0" [ref=f2e639]
+              - cell "88′" [ref=f2e640]
+              - cell [ref=f2e641]:
+                - button "Add Okafor" [ref=f2e642] [cursor=pointer]: +
+            - row [ref=f2e643]:
+              - cell [ref=f2e644]:
+                - button "Beto EVE" [ref=f2e645] [cursor=pointer]:
+                  - strong [ref=f2e646]: Beto
+                  - generic [ref=f2e647]: EVE
+              - cell "FWD" [ref=f2e648]
+              - cell "£5.5" [ref=f2e650]
+              - cell "23.8" [ref=f2e651]
+              - cell "4.3" [ref=f2e652]
+              - cell "88′" [ref=f2e653]
+              - cell [ref=f2e654]:
+                - button "Add Beto" [ref=f2e655] [cursor=pointer]: +
+            - row [ref=f2e656]:
+              - cell [ref=f2e657]:
+                - button "Havertz ARS" [ref=f2e658] [cursor=pointer]:
+                  - strong [ref=f2e659]: Havertz
+                  - generic [ref=f2e660]: ARS
+              - cell "FWD" [ref=f2e661]
+              - cell "£7.5" [ref=f2e663]
+              - cell "23.8" [ref=f2e664]
+              - cell "3.2" [ref=f2e665]
+              - cell "88′" [ref=f2e666]
+              - cell [ref=f2e667]:
+                - button "Add Havertz" [ref=f2e668] [cursor=pointer]: +
+            - row [ref=f2e669]:
+              - cell [ref=f2e670]:
+                - button "Gusto CHE" [ref=f2e671] [cursor=pointer]:
+                  - strong [ref=f2e672]: Gusto
+                  - generic [ref=f2e673]: CHE
+              - cell "DEF" [ref=f2e674]
+              - cell "£5.0" [ref=f2e676]
+              - cell "23.7" [ref=f2e677]
+              - cell "4.7" [ref=f2e678]
+              - cell "88′" [ref=f2e679]
+              - cell [ref=f2e680]:
+                - button "Add Gusto" [ref=f2e681] [cursor=pointer]: +
+            - row [ref=f2e682]:
+              - cell [ref=f2e683]:
+                - button "Dalot MUN" [ref=f2e684] [cursor=pointer]:
+                  - strong [ref=f2e685]: Dalot
+                  - generic [ref=f2e686]: MUN
+              - cell "DEF" [ref=f2e687]
+              - cell "£5.0" [ref=f2e689]
+              - cell "23.7" [ref=f2e690]
+              - cell "4.7" [ref=f2e691]
+              - cell "88′" [ref=f2e692]
+              - cell [ref=f2e693]:
+                - button "Add Dalot" [ref=f2e694] [cursor=pointer]: +
+            - row [ref=f2e695]:
+              - cell [ref=f2e696]:
+                - button "Frimpong LIV" [ref=f2e697] [cursor=pointer]:
+                  - strong [ref=f2e698]: Frimpong
+                  - generic [ref=f2e699]: LIV
+              - cell "DEF" [ref=f2e700]
+              - cell "£5.5" [ref=f2e702]
+              - cell "23.7" [ref=f2e703]
+              - cell "4.3" [ref=f2e704]
+              - cell "88′" [ref=f2e705]
+              - cell [ref=f2e706]:
+                - button "Add Frimpong" [ref=f2e707] [cursor=pointer]: +
+            - row [ref=f2e708]:
+              - cell [ref=f2e709]:
+                - button "Bogle LEE" [ref=f2e710] [cursor=pointer]:
+                  - strong [ref=f2e711]: Bogle
+                  - generic [ref=f2e712]: LEE
+              - cell "DEF" [ref=f2e713]
+              - cell "£4.5" [ref=f2e715]
+              - cell "23.7" [ref=f2e716]
+              - cell "5.3" [ref=f2e717]
+              - cell "88′" [ref=f2e718]
+              - cell [ref=f2e719]:
+                - button "Add Bogle" [ref=f2e720] [cursor=pointer]: +
+            - row [ref=f2e721]:
+              - cell [ref=f2e722]:
+                - button "Tavernier BOU" [ref=f2e723] [cursor=pointer]:
+                  - strong [ref=f2e724]: Tavernier
+                  - generic [ref=f2e725]: BOU
+              - cell "MID" [ref=f2e726]
+              - cell "£6.0" [ref=f2e728]
+              - cell "23.7" [ref=f2e729]
+              - cell "3.9" [ref=f2e730]
+              - cell "88′" [ref=f2e731]
+              - cell [ref=f2e732]:
+                - button "Add Tavernier" [ref=f2e733] [cursor=pointer]: +
+            - row [ref=f2e734]:
+              - cell [ref=f2e735]:
+                - button "Pedro Porro TOT" [ref=f2e736] [cursor=pointer]:
+                  - strong [ref=f2e737]: Pedro Porro
+                  - generic [ref=f2e738]: TOT
+              - cell "DEF" [ref=f2e739]
+              - cell "£5.5" [ref=f2e741]
+              - cell "23.6" [ref=f2e742]
+              - cell "4.3" [ref=f2e743]
+              - cell "88′" [ref=f2e744]
+              - cell [ref=f2e745]:
+                - button "Add Pedro Porro" [ref=f2e746] [cursor=pointer]: +
+            - row [ref=f2e747]:
+              - cell [ref=f2e748]:
+                - button "Gakpo LIV" [ref=f2e749] [cursor=pointer]:
+                  - strong [ref=f2e750]: Gakpo
+                  - generic [ref=f2e751]: LIV
+              - cell "MID" [ref=f2e752]
+              - cell "£7.0" [ref=f2e754]
+              - cell "23.6" [ref=f2e755]
+              - cell "3.4" [ref=f2e756]
+              - cell "88′" [ref=f2e757]
+              - cell [ref=f2e758]:
+                - button "Add Gakpo" [ref=f2e759] [cursor=pointer]: +
+            - row [ref=f2e760]:
+              - cell [ref=f2e761]:
+                - button "Watkins AVL" [ref=f2e762] [cursor=pointer]:
+                  - strong [ref=f2e763]: Watkins
+                  - generic [ref=f2e764]: AVL
+              - cell "FWD" [ref=f2e765]
+              - cell "£8.0" [ref=f2e767]
+              - cell "23.6" [ref=f2e768]
+              - cell "2.9" [ref=f2e769]
+              - cell "88′" [ref=f2e770]
+              - cell [ref=f2e771]:
+                - button "Add Watkins" [ref=f2e772] [cursor=pointer]: +
+            - row [ref=f2e773]:
+              - cell [ref=f2e774]:
+                - button "Acheampong CHE" [ref=f2e775] [cursor=pointer]:
+                  - strong [ref=f2e776]: Acheampong
+                  - generic [ref=f2e777]: CHE
+              - cell "DEF" [ref=f2e778]
+              - cell "£4.5" [ref=f2e780]
+              - cell "23.6" [ref=f2e781]
+              - cell "5.2" [ref=f2e782]
+              - cell "88′" [ref=f2e783]
+              - cell [ref=f2e784]:
+                - button "Add Acheampong" [ref=f2e785] [cursor=pointer]: +
+            - row [ref=f2e786]:
+              - cell [ref=f2e787]:
+                - button "Botman NEW" [ref=f2e788] [cursor=pointer]:
+                  - strong [ref=f2e789]: Botman
+                  - generic [ref=f2e790]: NEW
+              - cell "DEF" [ref=f2e791]
+              - cell "£5.0" [ref=f2e793]
+              - cell "23.6" [ref=f2e794]
+              - cell "4.7" [ref=f2e795]
+              - cell "88′" [ref=f2e796]
+              - cell [ref=f2e797]:
+                - button "Add Botman" [ref=f2e798] [cursor=pointer]: +
+            - row [ref=f2e799]:
+              - cell [ref=f2e800]:
+                - button "Maatsen AVL" [ref=f2e801] [cursor=pointer]:
+                  - strong [ref=f2e802]: Maatsen
+                  - generic [ref=f2e803]: AVL
+              - cell "DEF" [ref=f2e804]
+              - cell "£4.5" [ref=f2e806]
+              - cell "23.6" [ref=f2e807]
+              - cell "5.2" [ref=f2e808]
+              - cell "87′" [ref=f2e809]
+              - cell [ref=f2e810]:
+                - button "Add Maatsen" [ref=f2e811] [cursor=pointer]: +
+            - row [ref=f2e812]:
+              - cell [ref=f2e813]:
+                - button "Ballard SUN" [ref=f2e814] [cursor=pointer]:
+                  - strong [ref=f2e815]: Ballard
+                  - generic [ref=f2e816]: SUN
+              - cell "DEF" [ref=f2e817]
+              - cell "£5.0" [ref=f2e819]
+              - cell "23.6" [ref=f2e820]
+              - cell "4.7" [ref=f2e821]
+              - cell "88′" [ref=f2e822]
+              - cell [ref=f2e823]:
+                - button "Add Ballard" [ref=f2e824] [cursor=pointer]: +
+            - row [ref=f2e825]:
+              - cell [ref=f2e826]:
+                - button "Osula NEW" [ref=f2e827] [cursor=pointer]:
+                  - strong [ref=f2e828]: Osula
+                  - generic [ref=f2e829]: NEW
+              - cell "FWD" [ref=f2e830]
+              - cell "£6.0" [ref=f2e832]
+              - cell "23.5" [ref=f2e833]
+              - cell "3.9" [ref=f2e834]
+              - cell "85′" [ref=f2e835]
+              - cell [ref=f2e836]:
+                - button "Add Osula" [ref=f2e837] [cursor=pointer]: +
+            - row [ref=f2e838]:
+              - cell [ref=f2e839]:
+                - button "Sessegnon FUL" [ref=f2e840] [cursor=pointer]:
+                  - strong [ref=f2e841]: Sessegnon
+                  - generic [ref=f2e842]: FUL
+              - cell "DEF" [ref=f2e843]
+              - cell "£4.5" [ref=f2e845]
+              - cell "23.5" [ref=f2e846]
+              - cell "5.2" [ref=f2e847]
+              - cell "88′" [ref=f2e848]
+              - cell [ref=f2e849]:
+                - button "Add Sessegnon" [ref=f2e850] [cursor=pointer]: +
+            - row [ref=f2e851]:
+              - cell [ref=f2e852]:
+                - button "Canvot CRY" [ref=f2e853] [cursor=pointer]:
+                  - strong [ref=f2e854]: Canvot
+                  - generic [ref=f2e855]: CRY
+              - cell "DEF" [ref=f2e856]
+              - cell "£5.0" [ref=f2e858]
+              - cell "23.4" [ref=f2e859]
+              - cell "4.7" [ref=f2e860]
+              - cell "87′" [ref=f2e861]
+              - cell [ref=f2e862]:
+                - button "Add Canvot" [ref=f2e863] [cursor=pointer]: +
+            - row [ref=f2e864]:
+              - cell [ref=f2e865]:
+                - button "M.Sarr CHE" [ref=f2e866] [cursor=pointer]:
+                  - strong [ref=f2e867]: M.Sarr
+                  - generic [ref=f2e868]: CHE
+              - cell "DEF" [ref=f2e869]
+              - cell "£4.5" [ref=f2e871]
+              - cell "23.4" [ref=f2e872]
+              - cell "5.2" [ref=f2e873]
+              - cell "85′" [ref=f2e874]
+              - cell [ref=f2e875]:
+                - button "Add M.Sarr" [ref=f2e876] [cursor=pointer]: +
+            - row [ref=f2e877]:
+              - cell [ref=f2e878]:
+                - button "James CHE" [ref=f2e879] [cursor=pointer]:
+                  - strong [ref=f2e880]: James
+                  - generic [ref=f2e881]: CHE
+              - cell "DEF" [ref=f2e882]
+              - cell "£5.5" [ref=f2e884]
+              - cell "23.4" [ref=f2e885]
+              - cell "4.3" [ref=f2e886]
+              - cell "86′" [ref=f2e887]
+              - cell [ref=f2e888]:
+                - button "Add James" [ref=f2e889] [cursor=pointer]: +
+            - row [ref=f2e890]:
+              - cell [ref=f2e891]:
+                - button "Souza TOT" [ref=f2e892] [cursor=pointer]:
+                  - strong [ref=f2e893]: Souza
+                  - generic [ref=f2e894]: TOT
+              - cell "DEF" [ref=f2e895]
+              - cell "£4.0" [ref=f2e897]
+              - cell "23.4" [ref=f2e898]
+              - cell "5.8" [ref=f2e899]
+              - cell "88′" [ref=f2e900]
+              - cell [ref=f2e901]:
+                - button "Add Souza" [ref=f2e902] [cursor=pointer]: +
+            - row [ref=f2e903]:
+              - cell [ref=f2e904]:
+                - button "Mings AVL" [ref=f2e905] [cursor=pointer]:
+                  - strong [ref=f2e906]: Mings
+                  - generic [ref=f2e907]: AVL
+              - cell "DEF" [ref=f2e908]
+              - cell "£4.5" [ref=f2e910]
+              - cell "23.4" [ref=f2e911]
+              - cell "5.2" [ref=f2e912]
+              - cell "88′" [ref=f2e913]
+              - cell [ref=f2e914]:
+                - button "Add Mings" [ref=f2e915] [cursor=pointer]: +
+            - row [ref=f2e916]:
+              - cell [ref=f2e917]:
+                - button "Tarkowski EVE" [ref=f2e918] [cursor=pointer]:
+                  - strong [ref=f2e919]: Tarkowski
+                  - generic [ref=f2e920]: EVE
+              - cell "DEF" [ref=f2e921]
+              - cell "£6.0" [ref=f2e923]
+              - cell "23.4" [ref=f2e924]
+              - cell "3.9" [ref=f2e925]
+              - cell "88′" [ref=f2e926]
+              - cell [ref=f2e927]:
+                - button "Add Tarkowski" [ref=f2e928] [cursor=pointer]: +
+            - row [ref=f2e929]:
+              - cell [ref=f2e930]:
+                - button "Robinson FUL" [ref=f2e931] [cursor=pointer]:
+                  - strong [ref=f2e932]: Robinson
+                  - generic [ref=f2e933]: FUL
+              - cell "DEF" [ref=f2e934]
+              - cell "£4.5" [ref=f2e936]
+              - cell "23.3" [ref=f2e937]
+              - cell "5.2" [ref=f2e938]
+              - cell "88′" [ref=f2e939]
+              - cell [ref=f2e940]:
+                - button "Add Robinson" [ref=f2e941] [cursor=pointer]: +
+            - row [ref=f2e942]:
+              - cell [ref=f2e943]:
+                - button "White ARS" [ref=f2e944] [cursor=pointer]:
+                  - strong [ref=f2e945]: White
+                  - generic [ref=f2e946]: ARS
+              - cell "DEF" [ref=f2e947]
+              - cell "£5.5" [ref=f2e949]
+              - cell "23.3" [ref=f2e950]
+              - cell "4.2" [ref=f2e951]
+              - cell "88′" [ref=f2e952]
+              - cell [ref=f2e953]:
+                - button "Add White" [ref=f2e954] [cursor=pointer]: +
+            - row [ref=f2e955]:
+              - cell [ref=f2e956]:
+                - button "Struijk BHA" [ref=f2e957] [cursor=pointer]:
+                  - strong [ref=f2e958]: Struijk
+                  - generic [ref=f2e959]: BHA
+              - cell "DEF" [ref=f2e960]
+              - cell "£5.0" [ref=f2e962]
+              - cell "23.3" [ref=f2e963]
+              - cell "4.7" [ref=f2e964]
+              - cell "88′" [ref=f2e965]
+              - cell [ref=f2e966]:
+                - button "Add Struijk" [ref=f2e967] [cursor=pointer]: +
+            - row [ref=f2e968]:
+              - cell [ref=f2e969]:
+                - button "Van de Ven TOT" [ref=f2e970] [cursor=pointer]:
+                  - strong [ref=f2e971]: Van de Ven
+                  - generic [ref=f2e972]: TOT
+              - cell "DEF" [ref=f2e973]
+              - cell "£5.0" [ref=f2e975]
+              - cell "23.3" [ref=f2e976]
+              - cell "4.7" [ref=f2e977]
+              - cell "88′" [ref=f2e978]
+              - cell [ref=f2e979]:
+                - button "Add Van de Ven" [ref=f2e980] [cursor=pointer]: +
+            - row [ref=f2e981]:
+              - cell [ref=f2e982]:
+                - button "Martinelli ARS" [ref=f2e983] [cursor=pointer]:
+                  - strong [ref=f2e984]: Martinelli
+                  - generic [ref=f2e985]: ARS
+              - cell "MID" [ref=f2e986]
+              - cell "£6.5" [ref=f2e988]
+              - cell "23.3" [ref=f2e989]
+              - cell "3.6" [ref=f2e990]
+              - cell "86′" [ref=f2e991]
+              - cell [ref=f2e992]:
+                - button "Add Martinelli" [ref=f2e993] [cursor=pointer]: +
+            - row [ref=f2e994]:
+              - cell [ref=f2e995]:
+                - button "F.Kadıoğlu BHA" [ref=f2e996] [cursor=pointer]:
+                  - strong [ref=f2e997]: F.Kadıoğlu
+                  - generic [ref=f2e998]: BHA
+              - cell "DEF" [ref=f2e999]
+              - cell "£4.5" [ref=f2e1001]
+              - cell "23.3" [ref=f2e1002]
+              - cell "5.2" [ref=f2e1003]
+              - cell "88′" [ref=f2e1004]
+              - cell [ref=f2e1005]:
+                - button "Add F.Kadıoğlu" [ref=f2e1006] [cursor=pointer]: +
+            - row [ref=f2e1007]:
+              - cell [ref=f2e1008]:
+                - button "Reed FUL" [ref=f2e1009] [cursor=pointer]:
+                  - strong [ref=f2e1010]: Reed
+                  - generic [ref=f2e1011]: FUL
+              - cell "MID" [ref=f2e1012]
+              - cell "£4.5" [ref=f2e1014]
+              - cell "23.2" [ref=f2e1015]
+              - cell "5.2" [ref=f2e1016]
+              - cell "88′" [ref=f2e1017]
+              - cell [ref=f2e1018]:
+                - button "Add Reed" [ref=f2e1019] [cursor=pointer]: +
+            - row [ref=f2e1020]:
+              - cell [ref=f2e1021]:
+                - button "Hall NEW" [ref=f2e1022] [cursor=pointer]:
+                  - strong [ref=f2e1023]: Hall
+                  - generic [ref=f2e1024]: NEW
+              - cell "DEF" [ref=f2e1025]
+              - cell "£5.0" [ref=f2e1027]
+              - cell "23.2" [ref=f2e1028]
+              - cell "4.6" [ref=f2e1029]
+              - cell "88′" [ref=f2e1030]
+              - cell [ref=f2e1031]:
+                - button "Add Hall" [ref=f2e1032] [cursor=pointer]: +
+            - row [ref=f2e1033]:
+              - cell [ref=f2e1034]:
+                - button "Robertson TOT" [ref=f2e1035] [cursor=pointer]:
+                  - strong [ref=f2e1036]: Robertson
+                  - generic [ref=f2e1037]: TOT
+              - cell "DEF" [ref=f2e1038]
+              - cell "£4.5" [ref=f2e1040]
+              - cell "23.2" [ref=f2e1041]
+              - cell "5.2" [ref=f2e1042]
+              - cell "83′" [ref=f2e1043]
+              - cell [ref=f2e1044]:
+                - button "Add Robertson" [ref=f2e1045] [cursor=pointer]: +
+            - row [ref=f2e1046]:
+              - cell [ref=f2e1047]:
+                - button "Barnes NEW" [ref=f2e1048] [cursor=pointer]:
+                  - strong [ref=f2e1049]: Barnes
+                  - generic [ref=f2e1050]: NEW
+              - cell "MID" [ref=f2e1051]
+              - cell "£6.0" [ref=f2e1053]
+              - cell "23.2" [ref=f2e1054]
+              - cell "3.9" [ref=f2e1055]
+              - cell "84′" [ref=f2e1056]
+              - cell [ref=f2e1057]:
+                - button "Add Barnes" [ref=f2e1058] [cursor=pointer]: +
+            - row [ref=f2e1059]:
+              - cell [ref=f2e1060]:
+                - button "Keane EVE" [ref=f2e1061] [cursor=pointer]:
+                  - strong [ref=f2e1062]: Keane
+                  - generic [ref=f2e1063]: EVE
+              - cell "DEF" [ref=f2e1064]
+              - cell "£5.0" [ref=f2e1066]
+              - cell "23.1" [ref=f2e1067]
+              - cell "4.6" [ref=f2e1068]
+              - cell "88′" [ref=f2e1069]
+              - cell [ref=f2e1070]:
+                - button "Add Keane" [ref=f2e1071] [cursor=pointer]: +
+            - row [ref=f2e1072]:
+              - cell [ref=f2e1073]:
+                - button "Ngumoha LIV" [ref=f2e1074] [cursor=pointer]:
+                  - strong [ref=f2e1075]: Ngumoha
+                  - generic [ref=f2e1076]: LIV
+              - cell "MID" [ref=f2e1077]
+              - cell "£6.0" [ref=f2e1079]
+              - cell "23.1" [ref=f2e1080]
+              - cell "3.9" [ref=f2e1081]
+              - cell "82′" [ref=f2e1082]
+              - cell [ref=f2e1083]:
+                - button "Add Ngumoha" [ref=f2e1084] [cursor=pointer]: +
+            - row [ref=f2e1085]:
+              - cell [ref=f2e1086]:
+                - button "Richards CRY" [ref=f2e1087] [cursor=pointer]:
+                  - strong [ref=f2e1088]: Richards
+                  - generic [ref=f2e1089]: CRY
+              - cell "DEF" [ref=f2e1090]
+              - cell "£5.0" [ref=f2e1092]
+              - cell "23.1" [ref=f2e1093]
+              - cell "4.6" [ref=f2e1094]
+              - cell "88′" [ref=f2e1095]
+              - cell [ref=f2e1096]:
+                - button "Add Richards" [ref=f2e1097] [cursor=pointer]: +
+            - row [ref=f2e1098]:
+              - cell [ref=f2e1099]:
+                - button "Mukiele SUN" [ref=f2e1100] [cursor=pointer]:
+                  - strong [ref=f2e1101]: Mukiele
+                  - generic [ref=f2e1102]: SUN
+              - cell "DEF" [ref=f2e1103]
+              - cell "£5.5" [ref=f2e1105]
+              - cell "23.1" [ref=f2e1106]
+              - cell "4.2" [ref=f2e1107]
+              - cell "88′" [ref=f2e1108]
+              - cell [ref=f2e1109]:
+                - button "Add Mukiele" [ref=f2e1110] [cursor=pointer]: +
+            - row [ref=f2e1111]:
+              - cell [ref=f2e1112]:
+                - button "Yeremy CRY" [ref=f2e1113] [cursor=pointer]:
+                  - strong [ref=f2e1114]: Yeremy
+                  - generic [ref=f2e1115]: CRY
+              - cell "MID" [ref=f2e1116]
+              - cell "£5.5" [ref=f2e1118]
+              - cell "23.1" [ref=f2e1119]
+              - cell "4.2" [ref=f2e1120]
+              - cell "88′" [ref=f2e1121]
+              - cell [ref=f2e1122]:
+                - button "Add Yeremy" [ref=f2e1123] [cursor=pointer]: +
+            - row [ref=f2e1124]:
+              - cell [ref=f2e1125]:
+                - button "Abbott NFO" [ref=f2e1126] [cursor=pointer]:
+                  - strong [ref=f2e1127]: Abbott
+                  - generic [ref=f2e1128]: NFO
+              - cell "DEF" [ref=f2e1129]
+              - cell "£4.0" [ref=f2e1131]
+              - cell "23.1" [ref=f2e1132]
+              - cell "5.8" [ref=f2e1133]
+              - cell "88′" [ref=f2e1134]
+              - cell [ref=f2e1135]:
+                - button "Add Abbott" [ref=f2e1136] [cursor=pointer]: +
+            - row [ref=f2e1137]:
+              - cell [ref=f2e1138]:
+                - button "Marmoush MCI" [ref=f2e1139] [cursor=pointer]:
+                  - strong [ref=f2e1140]: Marmoush
+                  - generic [ref=f2e1141]: MCI
+              - cell "FWD" [ref=f2e1142]
+              - cell "£7.0" [ref=f2e1144]
+              - cell "23.0" [ref=f2e1145]
+              - cell "3.3" [ref=f2e1146]
+              - cell "88′" [ref=f2e1147]
+              - cell [ref=f2e1148]:
+                - button "Add Marmoush" [ref=f2e1149] [cursor=pointer]: +
+            - row [ref=f2e1150]:
+              - cell [ref=f2e1151]:
+                - button "A.García AVL" [ref=f2e1152] [cursor=pointer]:
+                  - strong [ref=f2e1153]: A.García
+                  - generic [ref=f2e1154]: AVL
+              - cell "DEF" [ref=f2e1155]
+              - cell "£4.0" [ref=f2e1157]
+              - cell "23.0" [ref=f2e1158]
+              - cell "5.7" [ref=f2e1159]
+              - cell "87′" [ref=f2e1160]
+              - cell [ref=f2e1161]:
+                - button "Add A.García" [ref=f2e1162] [cursor=pointer]: +
+            - row [ref=f2e1163]:
+              - cell [ref=f2e1164]:
+                - button "Cunha MUN" [ref=f2e1165] [cursor=pointer]:
+                  - strong [ref=f2e1166]: Cunha
+                  - generic [ref=f2e1167]: MUN
+              - cell "MID" [ref=f2e1168]
+              - cell "£8.0" [ref=f2e1170]
+              - cell "23.0" [ref=f2e1171]
+              - cell "2.9" [ref=f2e1172]
+              - cell "88′" [ref=f2e1173]
+              - cell [ref=f2e1174]:
+                - button "Add Cunha" [ref=f2e1175] [cursor=pointer]: +
+            - row [ref=f2e1176]:
+              - cell [ref=f2e1177]:
+                - button "Collins BRE" [ref=f2e1178] [cursor=pointer]:
+                  - strong [ref=f2e1179]: Collins
+                  - generic [ref=f2e1180]: BRE
+              - cell "DEF" [ref=f2e1181]
+              - cell "£5.5" [ref=f2e1183]
+              - cell "23.0" [ref=f2e1184]
+              - cell "4.2" [ref=f2e1185]
+              - cell "87′" [ref=f2e1186]
+              - cell [ref=f2e1187]:
+                - button "Add Collins" [ref=f2e1188] [cursor=pointer]: +
+            - row [ref=f2e1189]:
+              - cell [ref=f2e1190]:
+                - button "Patterson EVE" [ref=f2e1191] [cursor=pointer]:
+                  - strong [ref=f2e1192]: Patterson
+                  - generic [ref=f2e1193]: EVE
+              - cell "DEF" [ref=f2e1194]
+              - cell "£4.5" [ref=f2e1196]
+              - cell "23.0" [ref=f2e1197]
+              - cell "5.1" [ref=f2e1198]
+              - cell "88′" [ref=f2e1199]
+              - cell [ref=f2e1200]:
+                - button "Add Patterson" [ref=f2e1201] [cursor=pointer]: +
+            - row [ref=f2e1202]:
+              - cell [ref=f2e1203]:
+                - button "Pinnock BRE" [ref=f2e1204] [cursor=pointer]:
+                  - strong [ref=f2e1205]: Pinnock
+                  - generic [ref=f2e1206]: BRE
+              - cell "DEF" [ref=f2e1207]
+              - cell "£4.5" [ref=f2e1209]
+              - cell "22.9" [ref=f2e1210]
+              - cell "5.1" [ref=f2e1211]
+              - cell "88′" [ref=f2e1212]
+              - cell [ref=f2e1213]:
+                - button "Add Pinnock" [ref=f2e1214] [cursor=pointer]: +
+            - row [ref=f2e1215]:
+              - cell [ref=f2e1216]:
+                - button "Maguire MUN" [ref=f2e1217] [cursor=pointer]:
+                  - strong [ref=f2e1218]: Maguire
+                  - generic [ref=f2e1219]: MUN
+              - cell "DEF" [ref=f2e1220]
+              - cell "£5.0" [ref=f2e1222]
+              - cell "22.9" [ref=f2e1223]
+              - cell "4.6" [ref=f2e1224]
+              - cell "88′" [ref=f2e1225]
+              - cell [ref=f2e1226]:
+                - button "Add Maguire" [ref=f2e1227] [cursor=pointer]: +
+            - row [ref=f2e1228]:
+              - cell [ref=f2e1229]:
+                - button "Lacroix CHE" [ref=f2e1230] [cursor=pointer]:
+                  - strong [ref=f2e1231]: Lacroix
+                  - generic [ref=f2e1232]: CHE
+              - cell "DEF" [ref=f2e1233]
+              - cell "£6.0" [ref=f2e1235]
+              - cell "22.9" [ref=f2e1236]
+              - cell "3.8" [ref=f2e1237]
+              - cell "88′" [ref=f2e1238]
+              - cell [ref=f2e1239]:
+                - button "Add Lacroix" [ref=f2e1240] [cursor=pointer]: +
+            - row [ref=f2e1241]:
+              - cell [ref=f2e1242]:
+                - button "Hume SUN" [ref=f2e1243] [cursor=pointer]:
+                  - strong [ref=f2e1244]: Hume
+                  - generic [ref=f2e1245]: SUN
+              - cell "DEF" [ref=f2e1246]
+              - cell "£4.5" [ref=f2e1248]
+              - cell "22.9" [ref=f2e1249]
+              - cell "5.1" [ref=f2e1250]
+              - cell "88′" [ref=f2e1251]
+              - cell [ref=f2e1252]:
+                - button "Add Hume" [ref=f2e1253] [cursor=pointer]: +
+            - row [ref=f2e1254]:
+              - cell [ref=f2e1255]:
+                - button "Hickey BRE" [ref=f2e1256] [cursor=pointer]:
+                  - strong [ref=f2e1257]: Hickey
+                  - generic [ref=f2e1258]: BRE
+              - cell "DEF" [ref=f2e1259]
+              - cell "£4.5" [ref=f2e1261]
+              - cell "22.9" [ref=f2e1262]
+              - cell "5.1" [ref=f2e1263]
+              - cell "88′" [ref=f2e1264]
+              - cell [ref=f2e1265]:
+                - button "Add Hickey" [ref=f2e1266] [cursor=pointer]: +
+            - row [ref=f2e1267]:
+              - cell [ref=f2e1268]:
+                - button "Kerkez LIV" [ref=f2e1269] [cursor=pointer]:
+                  - strong [ref=f2e1270]: Kerkez
+                  - generic [ref=f2e1271]: LIV
+              - cell "DEF" [ref=f2e1272]
+              - cell "£5.5" [ref=f2e1274]
+              - cell "22.9" [ref=f2e1275]
+              - cell "4.2" [ref=f2e1276]
+              - cell "88′" [ref=f2e1277]
+              - cell [ref=f2e1278]:
+                - button "Add Kerkez" [ref=f2e1279] [cursor=pointer]: +
+            - row [ref=f2e1280]:
+              - cell [ref=f2e1281]:
+                - button "Castagne FUL" [ref=f2e1282] [cursor=pointer]:
+                  - strong [ref=f2e1283]: Castagne
+                  - generic [ref=f2e1284]: FUL
+              - cell "DEF" [ref=f2e1285]
+              - cell "£4.5" [ref=f2e1287]
+              - cell "22.9" [ref=f2e1288]
+              - cell "5.1" [ref=f2e1289]
+              - cell "88′" [ref=f2e1290]
+              - cell [ref=f2e1291]:
+                - button "Add Castagne" [ref=f2e1292] [cursor=pointer]: +
+            - row [ref=f2e1293]:
+              - cell [ref=f2e1294]:
+                - button "Jair Cunha NFO" [ref=f2e1295] [cursor=pointer]:
+                  - strong [ref=f2e1296]: Jair Cunha
+                  - generic [ref=f2e1297]: NFO
+              - cell "DEF" [ref=f2e1298]
+              - cell "£4.5" [ref=f2e1300]
+              - cell "22.8" [ref=f2e1301]
+              - cell "5.1" [ref=f2e1302]
+              - cell "88′" [ref=f2e1303]
+              - cell [ref=f2e1304]:
+                - button "Add Jair Cunha" [ref=f2e1305] [cursor=pointer]: +
+            - row [ref=f2e1306]:
+              - cell [ref=f2e1307]:
+                - button "Wilson LEE" [ref=f2e1308] [cursor=pointer]:
+                  - strong [ref=f2e1309]: Wilson
+                  - generic [ref=f2e1310]: LEE
+              - cell "MID" [ref=f2e1311]
+              - cell "£6.5" [ref=f2e1313]
+              - cell "22.8" [ref=f2e1314]
+              - cell "3.5" [ref=f2e1315]
+              - cell "88′" [ref=f2e1316]
+              - cell [ref=f2e1317]:
+                - button "Add Wilson" [ref=f2e1318] [cursor=pointer]: +
+            - row [ref=f2e1319]:
+              - cell [ref=f2e1320]:
+                - button "Trafford LEE" [ref=f2e1321] [cursor=pointer]:
+                  - strong [ref=f2e1322]: Trafford
+                  - generic [ref=f2e1323]: LEE
+              - cell "GK" [ref=f2e1324]
+              - cell "£5.0" [ref=f2e1326]
+              - cell "22.8" [ref=f2e1327]
+              - cell "4.6" [ref=f2e1328]
+              - cell "88′" [ref=f2e1329]
+              - cell [ref=f2e1330]:
+                - button "Add Trafford" [ref=f2e1331] [cursor=pointer]: +
+            - row [ref=f2e1332]:
+              - cell [ref=f2e1333]:
+                - button "Mamardashvili LIV" [ref=f2e1334] [cursor=pointer]:
+                  - strong [ref=f2e1335]: Mamardashvili
+                  - generic [ref=f2e1336]: LIV
+              - cell "GK" [ref=f2e1337]
+              - cell "£5.0" [ref=f2e1339]
+              - cell "22.8" [ref=f2e1340]
+              - cell "4.6" [ref=f2e1341]
+              - cell "88′" [ref=f2e1342]
+              - cell [ref=f2e1343]:
+                - button "Add Mamardashvili" [ref=f2e1344] [cursor=pointer]: +
+            - row [ref=f2e1345]:
+              - cell [ref=f2e1346]:
+                - button "Bijol LEE" [ref=f2e1347] [cursor=pointer]:
+                  - strong [ref=f2e1348]: Bijol
+                  - generic [ref=f2e1349]: LEE
+              - cell "DEF" [ref=f2e1350]
+              - cell "£5.0" [ref=f2e1352]
+              - cell "22.8" [ref=f2e1353]
+              - cell "4.6" [ref=f2e1354]
+              - cell "88′" [ref=f2e1355]
+              - cell [ref=f2e1356]:
+                - button "Add Bijol" [ref=f2e1357] [cursor=pointer]: +
+            - row [ref=f2e1358]:
+              - cell [ref=f2e1359]:
+                - button "Kayode BRE" [ref=f2e1360] [cursor=pointer]:
+                  - strong [ref=f2e1361]: Kayode
+                  - generic [ref=f2e1362]: BRE
+              - cell "DEF" [ref=f2e1363]
+              - cell "£4.5" [ref=f2e1365]
+              - cell "22.8" [ref=f2e1366]
+              - cell "5.1" [ref=f2e1367]
+              - cell "88′" [ref=f2e1368]
+              - cell [ref=f2e1369]:
+                - button "Add Kayode" [ref=f2e1370] [cursor=pointer]: +
+            - row [ref=f2e1371]:
+              - cell [ref=f2e1372]:
+                - button "Khusanov MCI" [ref=f2e1373] [cursor=pointer]:
+                  - strong [ref=f2e1374]: Khusanov
+                  - generic [ref=f2e1375]: MCI
+              - cell "DEF" [ref=f2e1376]
+              - cell "£5.5" [ref=f2e1378]
+              - cell "22.7" [ref=f2e1379]
+              - cell "4.1" [ref=f2e1380]
+              - cell "87′" [ref=f2e1381]
+              - cell [ref=f2e1382]:
+                - button "Add Khusanov" [ref=f2e1383] [cursor=pointer]: +
+            - row [ref=f2e1384]:
+              - cell [ref=f2e1385]:
+                - button "Morato NFO" [ref=f2e1386] [cursor=pointer]:
+                  - strong [ref=f2e1387]: Morato
+                  - generic [ref=f2e1388]: NFO
+              - cell "DEF" [ref=f2e1389]
+              - cell "£5.0" [ref=f2e1391]
+              - cell "22.7" [ref=f2e1392]
+              - cell "4.5" [ref=f2e1393]
+              - cell "86′" [ref=f2e1394]
+              - cell [ref=f2e1395]:
+                - button "Add Morato" [ref=f2e1396] [cursor=pointer]: +
+            - row [ref=f2e1397]:
+              - cell [ref=f2e1398]:
+                - button "Chadi Riad CRY" [ref=f2e1399] [cursor=pointer]:
+                  - strong [ref=f2e1400]: Chadi Riad
+                  - generic [ref=f2e1401]: CRY
+              - cell "DEF" [ref=f2e1402]
+              - cell "£4.5" [ref=f2e1404]
+              - cell "22.7" [ref=f2e1405]
+              - cell "5.0" [ref=f2e1406]
+              - cell "88′" [ref=f2e1407]
+              - cell [ref=f2e1408]:
+                - button "Add Chadi Riad" [ref=f2e1409] [cursor=pointer]: +
+            - row [ref=f2e1410]:
+              - cell [ref=f2e1411]:
+                - button "Hinshelwood BHA" [ref=f2e1412] [cursor=pointer]:
+                  - strong [ref=f2e1413]: Hinshelwood
+                  - generic [ref=f2e1414]: BHA
+              - cell "MID" [ref=f2e1415]
+              - cell "£6.0" [ref=f2e1417]
+              - cell "22.7" [ref=f2e1418]
+              - cell "3.8" [ref=f2e1419]
+              - cell "88′" [ref=f2e1420]
+              - cell [ref=f2e1421]:
+                - button "Add Hinshelwood" [ref=f2e1422] [cursor=pointer]: +
+            - row [ref=f2e1423]:
+              - cell [ref=f2e1424]:
+                - button "Wood NFO" [ref=f2e1425] [cursor=pointer]:
+                  - strong [ref=f2e1426]: Wood
+                  - generic [ref=f2e1427]: NFO
+              - cell "FWD" [ref=f2e1428]
+              - cell "£6.0" [ref=f2e1430]
+              - cell "22.7" [ref=f2e1431]
+              - cell "3.8" [ref=f2e1432]
+              - cell "88′" [ref=f2e1433]
+              - cell [ref=f2e1434]:
+                - button "Add Wood" [ref=f2e1435] [cursor=pointer]: +
+            - row [ref=f2e1436]:
+              - cell [ref=f2e1437]:
+                - button "Mitchell CRY" [ref=f2e1438] [cursor=pointer]:
+                  - strong [ref=f2e1439]: Mitchell
+                  - generic [ref=f2e1440]: CRY
+              - cell "DEF" [ref=f2e1441]
+              - cell "£4.5" [ref=f2e1443]
+              - cell "22.7" [ref=f2e1444]
+              - cell "5.0" [ref=f2e1445]
+              - cell "88′" [ref=f2e1446]
+              - cell [ref=f2e1447]:
+                - button "Add Mitchell" [ref=f2e1448] [cursor=pointer]: +
+            - row [ref=f2e1449]:
+              - cell [ref=f2e1450]:
+                - button "Amad MUN" [ref=f2e1451] [cursor=pointer]:
+                  - strong [ref=f2e1452]: Amad
+                  - generic [ref=f2e1453]: MUN
+              - cell "MID" [ref=f2e1454]
+              - cell "£6.0" [ref=f2e1456]
+              - cell "22.7" [ref=f2e1457]
+              - cell "3.8" [ref=f2e1458]
+              - cell "88′" [ref=f2e1459]
+              - cell [ref=f2e1460]:
+                - button "Add Amad" [ref=f2e1461] [cursor=pointer]: +
+            - row [ref=f2e1462]:
+              - cell [ref=f2e1463]:
+                - button "Schär NEW" [ref=f2e1464] [cursor=pointer]:
+                  - strong [ref=f2e1465]: Schär
+                  - generic [ref=f2e1466]: NEW
+              - cell "DEF" [ref=f2e1467]
+              - cell "£5.0" [ref=f2e1469]
+              - cell "22.7" [ref=f2e1470]
+              - cell "4.5" [ref=f2e1471]
+              - cell "85′" [ref=f2e1472]
+              - cell [ref=f2e1473]:
+                - button "Add Schär" [ref=f2e1474] [cursor=pointer]: +
+            - row [ref=f2e1475]:
+              - cell [ref=f2e1476]:
+                - button "Cash AVL" [ref=f2e1477] [cursor=pointer]:
+                  - strong [ref=f2e1478]: Cash
+                  - generic [ref=f2e1479]: AVL
+              - cell "DEF" [ref=f2e1480]
+              - cell "£4.5" [ref=f2e1482]
+              - cell "22.7" [ref=f2e1483]
+              - cell "5.0" [ref=f2e1484]
+              - cell "88′" [ref=f2e1485]
+              - cell [ref=f2e1486]:
+                - button "Add Cash" [ref=f2e1487] [cursor=pointer]: +
+            - row [ref=f2e1488]:
+              - cell [ref=f2e1489]:
+                - button "Truffert BOU" [ref=f2e1490] [cursor=pointer]:
+                  - strong [ref=f2e1491]: Truffert
+                  - generic [ref=f2e1492]: BOU
+              - cell "DEF" [ref=f2e1493]
+              - cell "£5.5" [ref=f2e1495]
+              - cell "22.7" [ref=f2e1496]
+              - cell "4.1" [ref=f2e1497]
+              - cell "88′" [ref=f2e1498]
+              - cell [ref=f2e1499]:
+                - button "Add Truffert" [ref=f2e1500] [cursor=pointer]: +
+            - row [ref=f2e1501]:
+              - cell [ref=f2e1502]:
+                - button "Mazraoui MUN" [ref=f2e1503] [cursor=pointer]:
+                  - strong [ref=f2e1504]: Mazraoui
+                  - generic [ref=f2e1505]: MUN
+              - cell "DEF" [ref=f2e1506]
+              - cell "£4.5" [ref=f2e1508]
+              - cell "22.6" [ref=f2e1509]
+              - cell "5.0" [ref=f2e1510]
+              - cell "88′" [ref=f2e1511]
+              - cell [ref=f2e1512]:
+                - button "Add Mazraoui" [ref=f2e1513] [cursor=pointer]: +
+            - row [ref=f2e1514]:
+              - cell [ref=f2e1515]:
+                - button "Eze ARS" [ref=f2e1516] [cursor=pointer]:
+                  - strong [ref=f2e1517]: Eze
+                  - generic [ref=f2e1518]: ARS
+              - cell "MID" [ref=f2e1519]
+              - cell "£6.5" [ref=f2e1521]
+              - cell "22.6" [ref=f2e1522]
+              - cell "3.5" [ref=f2e1523]
+              - cell "88′" [ref=f2e1524]
+              - cell [ref=f2e1525]:
+                - button "Add Eze" [ref=f2e1526] [cursor=pointer]: +
+            - row [ref=f2e1527]:
+              - cell [ref=f2e1528]:
+                - button "Boscagli BHA" [ref=f2e1529] [cursor=pointer]:
+                  - strong [ref=f2e1530]: Boscagli
+                  - generic [ref=f2e1531]: BHA
+              - cell "DEF" [ref=f2e1532]
+              - cell "£4.5" [ref=f2e1534]
+              - cell "22.6" [ref=f2e1535]
+              - cell "5.0" [ref=f2e1536]
+              - cell "88′" [ref=f2e1537]
+              - cell [ref=f2e1538]:
+                - button "Add Boscagli" [ref=f2e1539] [cursor=pointer]: +
+            - row [ref=f2e1540]:
+              - cell [ref=f2e1541]:
+                - button "Gomez BHA" [ref=f2e1542] [cursor=pointer]:
+                  - strong [ref=f2e1543]: Gomez
+                  - generic [ref=f2e1544]: BHA
+              - cell "MID" [ref=f2e1545]
+              - cell "£5.0" [ref=f2e1547]
+              - cell "22.6" [ref=f2e1548]
+              - cell "4.5" [ref=f2e1549]
+              - cell "88′" [ref=f2e1550]
+              - cell [ref=f2e1551]:
+                - button "Add Gomez" [ref=f2e1552] [cursor=pointer]: +
+            - row [ref=f2e1553]:
+              - cell [ref=f2e1554]:
+                - button "Heaven MUN" [ref=f2e1555] [cursor=pointer]:
+                  - strong [ref=f2e1556]: Heaven
+                  - generic [ref=f2e1557]: MUN
+              - cell "DEF" [ref=f2e1558]
+              - cell "£4.5" [ref=f2e1560]
+              - cell "22.6" [ref=f2e1561]
+              - cell "5.0" [ref=f2e1562]
+              - cell "88′" [ref=f2e1563]
+              - cell [ref=f2e1564]:
+                - button "Add Heaven" [ref=f2e1565] [cursor=pointer]: +
+            - row [ref=f2e1566]:
+              - cell [ref=f2e1567]:
+                - button "Tete FUL" [ref=f2e1568] [cursor=pointer]:
+                  - strong [ref=f2e1569]: Tete
+                  - generic [ref=f2e1570]: FUL
+              - cell "DEF" [ref=f2e1571]
+              - cell "£4.5" [ref=f2e1573]
+              - cell "22.6" [ref=f2e1574]
+              - cell "5.0" [ref=f2e1575]
+              - cell "88′" [ref=f2e1576]
+              - cell [ref=f2e1577]:
+                - button "Add Tete" [ref=f2e1578] [cursor=pointer]: +
+            - row [ref=f2e1579]:
+              - cell [ref=f2e1580]:
+                - button "Dubravka TOT" [ref=f2e1581] [cursor=pointer]:
+                  - strong [ref=f2e1582]: Dubravka
+                  - generic [ref=f2e1583]: TOT
+              - cell "GK" [ref=f2e1584]
+              - cell "£4.0" [ref=f2e1586]
+              - cell "22.6" [ref=f2e1587]
+              - cell "5.6" [ref=f2e1588]
+              - cell "88′" [ref=f2e1589]
+              - cell [ref=f2e1590]:
+                - button "Add Dubravka" [ref=f2e1591] [cursor=pointer]: +
+            - row [ref=f2e1592]:
+              - cell [ref=f2e1593]:
+                - button "Ellborg SUN" [ref=f2e1594] [cursor=pointer]:
+                  - strong [ref=f2e1595]: Ellborg
+                  - generic [ref=f2e1596]: SUN
+              - cell "GK" [ref=f2e1597]
+              - cell "£4.5" [ref=f2e1599]
+              - cell "22.6" [ref=f2e1600]
+              - cell "5.0" [ref=f2e1601]
+              - cell "88′" [ref=f2e1602]
+              - cell [ref=f2e1603]:
+                - button "Add Ellborg" [ref=f2e1604] [cursor=pointer]: +
+            - row [ref=f2e1605]:
+              - cell [ref=f2e1606]:
+                - button "Merino ARS" [ref=f2e1607] [cursor=pointer]:
+                  - strong [ref=f2e1608]: Merino
+                  - generic [ref=f2e1609]: ARS
+              - cell "MID" [ref=f2e1610]
+              - cell "£6.0" [ref=f2e1612]
+              - cell "22.6" [ref=f2e1613]
+              - cell "3.8" [ref=f2e1614]
+              - cell "84′" [ref=f2e1615]
+              - cell [ref=f2e1616]:
+                - button "Add Merino" [ref=f2e1617] [cursor=pointer]: +
+            - row [ref=f2e1618]:
+              - cell [ref=f2e1619]:
+                - button "Pau AVL" [ref=f2e1620] [cursor=pointer]:
+                  - strong [ref=f2e1621]: Pau
+                  - generic [ref=f2e1622]: AVL
+              - cell "DEF" [ref=f2e1623]
+              - cell "£4.5" [ref=f2e1625]
+              - cell "22.6" [ref=f2e1626]
+              - cell "5.0" [ref=f2e1627]
+              - cell "87′" [ref=f2e1628]
+              - cell [ref=f2e1629]:
+                - button "Add Pau" [ref=f2e1630] [cursor=pointer]: +
+            - row [ref=f2e1631]:
+              - cell [ref=f2e1632]:
+                - button "Pope NEW" [ref=f2e1633] [cursor=pointer]:
+                  - strong [ref=f2e1634]: Pope
+                  - generic [ref=f2e1635]: NEW
+              - cell "GK" [ref=f2e1636]
+              - cell "£5.0" [ref=f2e1638]
+              - cell "22.5" [ref=f2e1639]
+              - cell "4.5" [ref=f2e1640]
+              - cell "88′" [ref=f2e1641]
+              - cell [ref=f2e1642]:
+                - button "Add Pope" [ref=f2e1643] [cursor=pointer]: +
+            - row [ref=f2e1644]:
+              - cell [ref=f2e1645]:
+                - button "Coppola BHA" [ref=f2e1646] [cursor=pointer]:
+                  - strong [ref=f2e1647]: Coppola
+                  - generic [ref=f2e1648]: BHA
+              - cell "DEF" [ref=f2e1649]
+              - cell "£4.5" [ref=f2e1651]
+              - cell "22.5" [ref=f2e1652]
+              - cell "5.0" [ref=f2e1653]
+              - cell "86′" [ref=f2e1654]
+              - cell [ref=f2e1655]:
+                - button "Add Coppola" [ref=f2e1656] [cursor=pointer]: +
+            - row [ref=f2e1657]:
+              - cell [ref=f2e1658]:
+                - button "Yoro MUN" [ref=f2e1659] [cursor=pointer]:
+                  - strong [ref=f2e1660]: Yoro
+                  - generic [ref=f2e1661]: MUN
+              - cell "DEF" [ref=f2e1662]
+              - cell "£5.0" [ref=f2e1664]
+              - cell "22.5" [ref=f2e1665]
+              - cell "4.5" [ref=f2e1666]
+              - cell "86′" [ref=f2e1667]
+              - cell [ref=f2e1668]:
+                - button "Add Yoro" [ref=f2e1669] [cursor=pointer]: +
+            - row [ref=f2e1670]:
+              - cell [ref=f2e1671]:
+                - button "Hincapie ARS" [ref=f2e1672] [cursor=pointer]:
+                  - strong [ref=f2e1673]: Hincapie
+                  - generic [ref=f2e1674]: ARS
+              - cell "DEF" [ref=f2e1675]
+              - cell "£5.5" [ref=f2e1677]
+              - cell "22.4" [ref=f2e1678]
+              - cell "4.1" [ref=f2e1679]
+              - cell "88′" [ref=f2e1680]
+              - cell [ref=f2e1681]:
+                - button "Add Hincapie" [ref=f2e1682] [cursor=pointer]: +
+            - row [ref=f2e1683]:
+              - cell [ref=f2e1684]:
+                - button "Kelleher BRE" [ref=f2e1685] [cursor=pointer]:
+                  - strong [ref=f2e1686]: Kelleher
+                  - generic [ref=f2e1687]: BRE
+              - cell "GK" [ref=f2e1688]
+              - cell "£5.0" [ref=f2e1690]
+              - cell "22.4" [ref=f2e1691]
+              - cell "4.5" [ref=f2e1692]
+              - cell "88′" [ref=f2e1693]
+              - cell [ref=f2e1694]:
+                - button "Add Kelleher" [ref=f2e1695] [cursor=pointer]: +
+            - row [ref=f2e1696]:
+              - cell [ref=f2e1697]:
+                - button "Aina NFO" [ref=f2e1698] [cursor=pointer]:
+                  - strong [ref=f2e1699]: Aina
+                  - generic [ref=f2e1700]: NFO
+              - cell "DEF" [ref=f2e1701]
+              - cell "£4.5" [ref=f2e1703]
+              - cell "22.4" [ref=f2e1704]
+              - cell "5.0" [ref=f2e1705]
+              - cell "88′" [ref=f2e1706]
+              - cell [ref=f2e1707]:
+                - button "Add Aina" [ref=f2e1708] [cursor=pointer]: +
+            - row [ref=f2e1709]:
+              - cell [ref=f2e1710]:
+                - button "Martinez AVL" [ref=f2e1711] [cursor=pointer]:
+                  - strong [ref=f2e1712]: Martinez
+                  - generic [ref=f2e1713]: AVL
+              - cell "GK" [ref=f2e1714]
+              - cell "£5.0" [ref=f2e1716]
+              - cell "22.4" [ref=f2e1717]
+              - cell "4.5" [ref=f2e1718]
+              - cell "88′" [ref=f2e1719]
+              - cell [ref=f2e1720]:
+                - button "Add Martinez" [ref=f2e1721] [cursor=pointer]: +
+            - row [ref=f2e1722]:
+              - cell [ref=f2e1723]:
+                - button "Dunk BHA" [ref=f2e1724] [cursor=pointer]:
+                  - strong [ref=f2e1725]: Dunk
+                  - generic [ref=f2e1726]: BHA
+              - cell "DEF" [ref=f2e1727]
+              - cell "£4.5" [ref=f2e1729]
+              - cell "22.4" [ref=f2e1730]
+              - cell "5.0" [ref=f2e1731]
+              - cell "88′" [ref=f2e1732]
+              - cell [ref=f2e1733]:
+                - button "Add Dunk" [ref=f2e1734] [cursor=pointer]: +
+            - row [ref=f2e1735]:
+              - cell [ref=f2e1736]:
+                - button "Tóth.A BOU" [ref=f2e1737] [cursor=pointer]:
+                  - strong [ref=f2e1738]: Tóth.A
+                  - generic [ref=f2e1739]: BOU
+              - cell "MID" [ref=f2e1740]
+              - cell "£5.0" [ref=f2e1742]
+              - cell "22.4" [ref=f2e1743]
+              - cell "4.5" [ref=f2e1744]
+              - cell "88′" [ref=f2e1745]
+              - cell [ref=f2e1746]:
+                - button "Add Tóth.A" [ref=f2e1747] [cursor=pointer]: +
+            - row [ref=f2e1748]:
+              - cell [ref=f2e1749]:
+                - button "Benitez CRY" [ref=f2e1750] [cursor=pointer]:
+                  - strong [ref=f2e1751]: Benitez
+                  - generic [ref=f2e1752]: CRY
+              - cell "GK" [ref=f2e1753]
+              - cell "£4.5" [ref=f2e1755]
+              - cell "22.3" [ref=f2e1756]
+              - cell "5.0" [ref=f2e1757]
+              - cell "88′" [ref=f2e1758]
+              - cell [ref=f2e1759]:
+                - button "Add Benitez" [ref=f2e1760] [cursor=pointer]: +
+            - row [ref=f2e1761]:
+              - cell [ref=f2e1762]:
+                - button "Danso TOT" [ref=f2e1763] [cursor=pointer]:
+                  - strong [ref=f2e1764]: Danso
+                  - generic [ref=f2e1765]: TOT
+              - cell "DEF" [ref=f2e1766]
+              - cell "£5.0" [ref=f2e1768]
+              - cell "22.3" [ref=f2e1769]
+              - cell "4.5" [ref=f2e1770]
+              - cell "88′" [ref=f2e1771]
+              - cell [ref=f2e1772]:
+                - button "Add Danso" [ref=f2e1773] [cursor=pointer]: +
+            - row [ref=f2e1774]:
+              - cell [ref=f2e1775]:
+                - button "Igor BHA" [ref=f2e1776] [cursor=pointer]:
+                  - strong [ref=f2e1777]: Igor
+                  - generic [ref=f2e1778]: BHA
+              - cell "DEF" [ref=f2e1779]
+              - cell "£4.5" [ref=f2e1781]
+              - cell "22.3" [ref=f2e1782]
+              - cell "5.0" [ref=f2e1783]
+              - cell "84′" [ref=f2e1784]
+              - cell [ref=f2e1785]:
+                - button "Add Igor" [ref=f2e1786] [cursor=pointer]: +
+            - row [ref=f2e1787]:
+              - cell [ref=f2e1788]:
+                - button "Richarlison TOT" [ref=f2e1789] [cursor=pointer]:
+                  - strong [ref=f2e1790]: Richarlison
+                  - generic [ref=f2e1791]: TOT
+              - cell "FWD" [ref=f2e1792]
+              - cell "£6.0" [ref=f2e1794]
+              - cell "22.3" [ref=f2e1795]
+              - cell "3.7" [ref=f2e1796]
+              - cell "86′" [ref=f2e1797]
+              - cell [ref=f2e1798]:
+                - button "Add Richarlison" [ref=f2e1799] [cursor=pointer]: +
+            - row [ref=f2e1800]:
+              - cell [ref=f2e1801]:
+                - button "Diop IPS" [ref=f2e1802] [cursor=pointer]:
+                  - strong [ref=f2e1803]: Diop
+                  - generic [ref=f2e1804]: IPS
+              - cell "DEF" [ref=f2e1805]
+              - cell "£4.0" [ref=f2e1807]
+              - cell "22.3" [ref=f2e1808]
+              - cell "5.6" [ref=f2e1809]
+              - cell "84′" [ref=f2e1810]
+              - cell [ref=f2e1811]:
+                - button "Add Diop" [ref=f2e1812] [cursor=pointer]: +
+            - row [ref=f2e1813]:
+              - cell [ref=f2e1814]:
+                - button "Burn NEW" [ref=f2e1815] [cursor=pointer]:
+                  - strong [ref=f2e1816]: Burn
+                  - generic [ref=f2e1817]: NEW
+              - cell "DEF" [ref=f2e1818]
+              - cell "£5.0" [ref=f2e1820]
+              - cell "22.3" [ref=f2e1821]
+              - cell "4.5" [ref=f2e1822]
+              - cell "88′" [ref=f2e1823]
+              - cell [ref=f2e1824]:
+                - button "Add Burn" [ref=f2e1825] [cursor=pointer]: +
+            - row [ref=f2e1826]:
+              - cell [ref=f2e1827]:
+                - button "Sels NFO" [ref=f2e1828] [cursor=pointer]:
+                  - strong [ref=f2e1829]: Sels
+                  - generic [ref=f2e1830]: NFO
+              - cell "GK" [ref=f2e1831]
+              - cell "£5.0" [ref=f2e1833]
+              - cell "22.3" [ref=f2e1834]
+              - cell "4.5" [ref=f2e1835]
+              - cell "88′" [ref=f2e1836]
+              - cell [ref=f2e1837]:
+                - button "Add Sels" [ref=f2e1838] [cursor=pointer]: +
+            - row [ref=f2e1839]:
+              - cell [ref=f2e1840]:
+                - button "Rodon LEE" [ref=f2e1841] [cursor=pointer]:
+                  - strong [ref=f2e1842]: Rodon
+                  - generic [ref=f2e1843]: LEE
+              - cell "DEF" [ref=f2e1844]
+              - cell "£4.5" [ref=f2e1846]
+              - cell "22.3" [ref=f2e1847]
+              - cell "4.9" [ref=f2e1848]
+              - cell "88′" [ref=f2e1849]
+              - cell [ref=f2e1850]:
+                - button "Add Rodon" [ref=f2e1851] [cursor=pointer]: +
+            - row [ref=f2e1852]:
+              - cell [ref=f2e1853]:
+                - button "B.Badiashile CHE" [ref=f2e1854] [cursor=pointer]:
+                  - strong [ref=f2e1855]: B.Badiashile
+                  - generic [ref=f2e1856]: CHE
+              - cell "DEF" [ref=f2e1857]
+              - cell "£4.5" [ref=f2e1859]
+              - cell "22.3" [ref=f2e1860]
+              - cell "4.9" [ref=f2e1861]
+              - cell "88′" [ref=f2e1862]
+              - cell [ref=f2e1863]:
+                - button "Add B.Badiashile" [ref=f2e1864] [cursor=pointer]: +
+            - row [ref=f2e1865]:
+              - cell [ref=f2e1866]:
+                - button "O'Brien EVE" [ref=f2e1867] [cursor=pointer]:
+                  - strong [ref=f2e1868]: O'Brien
+                  - generic [ref=f2e1869]: EVE
+              - cell "DEF" [ref=f2e1870]
+              - cell "£5.0" [ref=f2e1872]
+              - cell "22.2" [ref=f2e1873]
+              - cell "4.5" [ref=f2e1874]
+              - cell "88′" [ref=f2e1875]
+              - cell [ref=f2e1876]:
+                - button "Add O'Brien" [ref=f2e1877] [cursor=pointer]: +
+            - row [ref=f2e1878]:
+              - cell [ref=f2e1879]:
+                - button "Ndiaye EVE" [ref=f2e1880] [cursor=pointer]:
+                  - strong [ref=f2e1881]: Ndiaye
+                  - generic [ref=f2e1882]: EVE
+              - cell "MID" [ref=f2e1883]
+              - cell "£6.0" [ref=f2e1885]
+              - cell "22.2" [ref=f2e1886]
+              - cell "3.7" [ref=f2e1887]
+              - cell "88′" [ref=f2e1888]
+              - cell [ref=f2e1889]:
+                - button "Add Ndiaye" [ref=f2e1890] [cursor=pointer]: +
+            - row [ref=f2e1891]:
+              - cell [ref=f2e1892]:
+                - button "Bassey FUL" [ref=f2e1893] [cursor=pointer]:
+                  - strong [ref=f2e1894]: Bassey
+                  - generic [ref=f2e1895]: FUL
+              - cell "DEF" [ref=f2e1896]
+              - cell "£4.5" [ref=f2e1898]
+              - cell "22.2" [ref=f2e1899]
+              - cell "4.9" [ref=f2e1900]
+              - cell "88′" [ref=f2e1901]
+              - cell [ref=f2e1902]:
+                - button "Add Bassey" [ref=f2e1903] [cursor=pointer]: +
+            - row [ref=f2e1904]:
+              - cell [ref=f2e1905]:
+                - button "Alderete SUN" [ref=f2e1906] [cursor=pointer]:
+                  - strong [ref=f2e1907]: Alderete
+                  - generic [ref=f2e1908]: SUN
+              - cell "DEF" [ref=f2e1909]
+              - cell "£5.0" [ref=f2e1911]
+              - cell "22.2" [ref=f2e1912]
+              - cell "4.4" [ref=f2e1913]
+              - cell "88′" [ref=f2e1914]
+              - cell [ref=f2e1915]:
+                - button "Add Alderete" [ref=f2e1916] [cursor=pointer]: +
+            - row [ref=f2e1917]:
+              - cell [ref=f2e1918]:
+                - button "Ajer BRE" [ref=f2e1919] [cursor=pointer]:
+                  - strong [ref=f2e1920]: Ajer
+                  - generic [ref=f2e1921]: BRE
+              - cell "DEF" [ref=f2e1922]
+              - cell "£4.5" [ref=f2e1924]
+              - cell "22.2" [ref=f2e1925]
+              - cell "4.9" [ref=f2e1926]
+              - cell "88′" [ref=f2e1927]
+              - cell [ref=f2e1928]:
+                - button "Add Ajer" [ref=f2e1929] [cursor=pointer]: +
+            - row [ref=f2e1930]:
+              - cell [ref=f2e1931]:
+                - button "Branthwaite EVE" [ref=f2e1932] [cursor=pointer]:
+                  - strong [ref=f2e1933]: Branthwaite
+                  - generic [ref=f2e1934]: EVE
+              - cell "DEF" [ref=f2e1935]
+              - cell "£5.5" [ref=f2e1937]
+              - cell "22.2" [ref=f2e1938]
+              - cell "4.0" [ref=f2e1939]
+              - cell "86′" [ref=f2e1940]
+              - cell [ref=f2e1941]:
+                - button "Add Branthwaite" [ref=f2e1942] [cursor=pointer]: +
+            - row [ref=f2e1943]:
+              - cell [ref=f2e1944]:
+                - button "Roefs SUN" [ref=f2e1945] [cursor=pointer]:
+                  - strong [ref=f2e1946]: Roefs
+                  - generic [ref=f2e1947]: SUN
+              - cell "GK" [ref=f2e1948]
+              - cell "£5.0" [ref=f2e1950]
+              - cell "22.2" [ref=f2e1951]
+              - cell "4.4" [ref=f2e1952]
+              - cell "88′" [ref=f2e1953]
+              - cell [ref=f2e1954]:
+                - button "Add Roefs" [ref=f2e1955] [cursor=pointer]: +
+            - row [ref=f2e1956]:
+              - cell [ref=f2e1957]:
+                - button "Valdimarsson BRE" [ref=f2e1958] [cursor=pointer]:
+                  - strong [ref=f2e1959]: Valdimarsson
+                  - generic [ref=f2e1960]: BRE
+              - cell "GK" [ref=f2e1961]
+              - cell "£4.5" [ref=f2e1963]
+              - cell "22.2" [ref=f2e1964]
+              - cell "4.9" [ref=f2e1965]
+              - cell "88′" [ref=f2e1966]
+              - cell [ref=f2e1967]:
+                - button "Add Valdimarsson" [ref=f2e1968] [cursor=pointer]: +
+            - row [ref=f2e1969]:
+              - cell [ref=f2e1970]:
+                - button "Rayan BOU" [ref=f2e1971] [cursor=pointer]:
+                  - strong [ref=f2e1972]: Rayan
+                  - generic [ref=f2e1973]: BOU
+              - cell "MID" [ref=f2e1974]
+              - cell "£6.5" [ref=f2e1976]
+              - cell "22.2" [ref=f2e1977]
+              - cell "3.4" [ref=f2e1978]
+              - cell "88′" [ref=f2e1979]
+              - cell [ref=f2e1980]:
+                - button "Add Rayan" [ref=f2e1981] [cursor=pointer]: +
+            - row [ref=f2e1982]:
+              - cell [ref=f2e1983]:
+                - button "Neto CHE" [ref=f2e1984] [cursor=pointer]:
+                  - strong [ref=f2e1985]: Neto
+                  - generic [ref=f2e1986]: CHE
+              - cell "MID" [ref=f2e1987]
+              - cell "£6.5" [ref=f2e1989]
+              - cell "22.2" [ref=f2e1990]
+              - cell "3.4" [ref=f2e1991]
+              - cell "88′" [ref=f2e1992]
+              - cell [ref=f2e1993]:
+                - button "Add Neto" [ref=f2e1994] [cursor=pointer]: +
+            - row [ref=f2e1995]:
+              - cell [ref=f2e1996]:
+                - button "Rúben MCI" [ref=f2e1997] [cursor=pointer]:
+                  - strong [ref=f2e1998]: Rúben
+                  - generic [ref=f2e1999]: MCI
+              - cell "DEF" [ref=f2e2000]
+              - cell "£5.5" [ref=f2e2002]
+              - cell "22.1" [ref=f2e2003]
+              - cell "4.0" [ref=f2e2004]
+              - cell "88′" [ref=f2e2005]
+              - cell [ref=f2e2006]:
+                - button "Add Rúben" [ref=f2e2007] [cursor=pointer]: +
+            - row [ref=f2e2008]:
+              - cell [ref=f2e2009]:
+                - button "Isak LIV" [ref=f2e2010] [cursor=pointer]:
+                  - strong [ref=f2e2011]: Isak
+                  - generic [ref=f2e2012]: LIV
+              - cell "FWD" [ref=f2e2013]
+              - cell "£9.0" [ref=f2e2015]
+              - cell "22.1" [ref=f2e2016]
+              - cell "2.5" [ref=f2e2017]
+              - cell "88′" [ref=f2e2018]
+              - cell [ref=f2e2019]:
+                - button "Add Isak" [ref=f2e2020] [cursor=pointer]: +
+            - row [ref=f2e2021]:
+              - cell [ref=f2e2022]:
+                - button "Savinho MCI" [ref=f2e2023] [cursor=pointer]:
+                  - strong [ref=f2e2024]: Savinho
+                  - generic [ref=f2e2025]: MCI
+              - cell "MID" [ref=f2e2026]
+              - cell "£6.5" [ref=f2e2028]
+              - cell "22.1" [ref=f2e2029]
+              - cell "3.4" [ref=f2e2030]
+              - cell "81′" [ref=f2e2031]
+              - cell [ref=f2e2032]:
+                - button "Add Savinho" [ref=f2e2033] [cursor=pointer]: +
+            - row [ref=f2e2034]:
+              - cell [ref=f2e2035]:
+                - button "Lindelöf AVL" [ref=f2e2036] [cursor=pointer]:
+                  - strong [ref=f2e2037]: Lindelöf
+                  - generic [ref=f2e2038]: AVL
+              - cell "DEF" [ref=f2e2039]
+              - cell "£4.5" [ref=f2e2041]
+              - cell "22.1" [ref=f2e2042]
+              - cell "4.9" [ref=f2e2043]
+              - cell "88′" [ref=f2e2044]
+              - cell [ref=f2e2045]:
+                - button "Add Lindelöf" [ref=f2e2046] [cursor=pointer]: +
+            - row [ref=f2e2047]:
+              - cell [ref=f2e2048]:
+                - button "Sánchez CHE" [ref=f2e2049] [cursor=pointer]:
+                  - strong [ref=f2e2050]: Sánchez
+                  - generic [ref=f2e2051]: CHE
+              - cell "GK" [ref=f2e2052]
+              - cell "£5.0" [ref=f2e2054]
+              - cell "22.0" [ref=f2e2055]
+              - cell "4.4" [ref=f2e2056]
+              - cell "88′" [ref=f2e2057]
+              - cell [ref=f2e2058]:
+                - button "Add Sánchez" [ref=f2e2059] [cursor=pointer]: +
+            - row [ref=f2e2060]:
+              - cell [ref=f2e2061]:
+                - button "Elliott LIV" [ref=f2e2062] [cursor=pointer]:
+                  - strong [ref=f2e2063]: Elliott
+                  - generic [ref=f2e2064]: LIV
+              - cell "MID" [ref=f2e2065]
+              - cell "£5.5" [ref=f2e2067]
+              - cell "22.0" [ref=f2e2068]
+              - cell "4.0" [ref=f2e2069]
+              - cell "82′" [ref=f2e2070]
+              - cell [ref=f2e2071]:
+                - button "Add Elliott" [ref=f2e2072] [cursor=pointer]: +
+            - row [ref=f2e2073]:
+              - cell [ref=f2e2074]:
+                - button "Arrizabalaga ARS" [ref=f2e2075] [cursor=pointer]:
+                  - strong [ref=f2e2076]: Arrizabalaga
+                  - generic [ref=f2e2077]: ARS
+              - cell "GK" [ref=f2e2078]
+              - cell "£5.0" [ref=f2e2080]
+              - cell "22.0" [ref=f2e2081]
+              - cell "4.4" [ref=f2e2082]
+              - cell "88′" [ref=f2e2083]
+              - cell [ref=f2e2084]:
+                - button "Add Arrizabalaga" [ref=f2e2085] [cursor=pointer]: +
+            - row [ref=f2e2086]:
+              - cell [ref=f2e2087]:
+                - button "Murillo NFO" [ref=f2e2088] [cursor=pointer]:
+                  - strong [ref=f2e2089]: Murillo
+                  - generic [ref=f2e2090]: NFO
+              - cell "DEF" [ref=f2e2091]
+              - cell "£5.5" [ref=f2e2093]
+              - cell "22.0" [ref=f2e2094]
+              - cell "4.0" [ref=f2e2095]
+              - cell "88′" [ref=f2e2096]
+              - cell [ref=f2e2097]:
+                - button "Add Murillo" [ref=f2e2098] [cursor=pointer]: +
+            - row [ref=f2e2099]:
+              - cell [ref=f2e2100]:
+                - button "Kluivert BOU" [ref=f2e2101] [cursor=pointer]:
+                  - strong [ref=f2e2102]: Kluivert
+                  - generic [ref=f2e2103]: BOU
+              - cell "MID" [ref=f2e2104]
+              - cell "£6.0" [ref=f2e2106]
+              - cell "22.0" [ref=f2e2107]
+              - cell "3.7" [ref=f2e2108]
+              - cell "87′" [ref=f2e2109]
+              - cell [ref=f2e2110]:
+                - button "Add Kluivert" [ref=f2e2111] [cursor=pointer]: +
+            - row [ref=f2e2112]:
+              - cell [ref=f2e2113]:
+                - button "Pickford EVE" [ref=f2e2114] [cursor=pointer]:
+                  - strong [ref=f2e2115]: Pickford
+                  - generic [ref=f2e2116]: EVE
+              - cell "GK" [ref=f2e2117]
+              - cell "£5.5" [ref=f2e2119]
+              - cell "22.0" [ref=f2e2120]
+              - cell "4.0" [ref=f2e2121]
+              - cell "88′" [ref=f2e2122]
+              - cell [ref=f2e2123]:
+                - button "Add Pickford" [ref=f2e2124] [cursor=pointer]: +
+            - row [ref=f2e2125]:
+              - cell [ref=f2e2126]:
+                - button "Verbruggen BHA" [ref=f2e2127] [cursor=pointer]:
+                  - strong [ref=f2e2128]: Verbruggen
+                  - generic [ref=f2e2129]: BHA
+              - cell "GK" [ref=f2e2130]
+              - cell "£4.5" [ref=f2e2132]
+              - cell "21.9" [ref=f2e2133]
+              - cell "4.9" [ref=f2e2134]
+              - cell "88′" [ref=f2e2135]
+              - cell [ref=f2e2136]:
+                - button "Add Verbruggen" [ref=f2e2137] [cursor=pointer]: +
+            - row [ref=f2e2138]:
+              - cell [ref=f2e2139]:
+                - button "James LEE" [ref=f2e2140] [cursor=pointer]:
+                  - strong [ref=f2e2141]: James
+                  - generic [ref=f2e2142]: LEE
+              - cell "MID" [ref=f2e2143]
+              - cell "£5.0" [ref=f2e2145]
+              - cell "21.9" [ref=f2e2146]
+              - cell "4.4" [ref=f2e2147]
+              - cell "88′" [ref=f2e2148]
+              - cell [ref=f2e2149]:
+                - button "Add James" [ref=f2e2150] [cursor=pointer]: +
+            - row [ref=f2e2151]:
+              - cell [ref=f2e2152]:
+                - button "Shaw MUN" [ref=f2e2153] [cursor=pointer]:
+                  - strong [ref=f2e2154]: Shaw
+                  - generic [ref=f2e2155]: MUN
+              - cell "DEF" [ref=f2e2156]
+              - cell "£4.5" [ref=f2e2158]
+              - cell "21.9" [ref=f2e2159]
+              - cell "4.9" [ref=f2e2160]
+              - cell "88′" [ref=f2e2161]
+              - cell [ref=f2e2162]:
+                - button "Add Shaw" [ref=f2e2163] [cursor=pointer]: +
+            - row [ref=f2e2164]:
+              - cell [ref=f2e2165]:
+                - button "Martinez MUN" [ref=f2e2166] [cursor=pointer]:
+                  - strong [ref=f2e2167]: Martinez
+                  - generic [ref=f2e2168]: MUN
+              - cell "DEF" [ref=f2e2169]
+              - cell "£5.0" [ref=f2e2171]
+              - cell "21.9" [ref=f2e2172]
+              - cell "4.4" [ref=f2e2173]
+              - cell "87′" [ref=f2e2174]
+              - cell [ref=f2e2175]:
+                - button "Add Martinez" [ref=f2e2176] [cursor=pointer]: +
+            - row [ref=f2e2177]:
+              - cell [ref=f2e2178]:
+                - button "Dewsbury-Hall EVE" [ref=f2e2179] [cursor=pointer]:
+                  - strong [ref=f2e2180]: Dewsbury-Hall
+                  - generic [ref=f2e2181]: EVE
+              - cell "MID" [ref=f2e2182]
+              - cell "£6.5" [ref=f2e2184]
+              - cell "21.9" [ref=f2e2185]
+              - cell "3.4" [ref=f2e2186]
+              - cell "88′" [ref=f2e2187]
+              - cell [ref=f2e2188]:
+                - button "Add Dewsbury-Hall" [ref=f2e2189] [cursor=pointer]: +
+            - row [ref=f2e2190]:
+              - cell [ref=f2e2191]:
+                - button "Mykolenko EVE" [ref=f2e2192] [cursor=pointer]:
+                  - strong [ref=f2e2193]: Mykolenko
+                  - generic [ref=f2e2194]: EVE
+              - cell "DEF" [ref=f2e2195]
+              - cell "£4.5" [ref=f2e2197]
+              - cell "21.9" [ref=f2e2198]
+              - cell "4.9" [ref=f2e2199]
+              - cell "88′" [ref=f2e2200]
+              - cell [ref=f2e2201]:
+                - button "Add Mykolenko" [ref=f2e2202] [cursor=pointer]: +
+            - row [ref=f2e2203]:
+              - cell [ref=f2e2204]:
+                - button "Woodman LIV" [ref=f2e2205] [cursor=pointer]:
+                  - strong [ref=f2e2206]: Woodman
+                  - generic [ref=f2e2207]: LIV
+              - cell "GK" [ref=f2e2208]
+              - cell "£4.0" [ref=f2e2210]
+              - cell "21.9" [ref=f2e2211]
+              - cell "5.5" [ref=f2e2212]
+              - cell "83′" [ref=f2e2213]
+              - cell [ref=f2e2214]:
+                - button "Add Woodman" [ref=f2e2215] [cursor=pointer]: +
+            - row [ref=f2e2216]:
+              - cell [ref=f2e2217]:
+                - button "Perri LEE" [ref=f2e2218] [cursor=pointer]:
+                  - strong [ref=f2e2219]: Perri
+                  - generic [ref=f2e2220]: LEE
+              - cell "GK" [ref=f2e2221]
+              - cell "£4.5" [ref=f2e2223]
+              - cell "21.9" [ref=f2e2224]
+              - cell "4.9" [ref=f2e2225]
+              - cell "88′" [ref=f2e2226]
+              - cell [ref=f2e2227]:
+                - button "Add Perri" [ref=f2e2228] [cursor=pointer]: +
+            - row [ref=f2e2229]:
+              - cell [ref=f2e2230]:
+                - button "Udogie TOT" [ref=f2e2231] [cursor=pointer]:
+                  - strong [ref=f2e2232]: Udogie
+                  - generic [ref=f2e2233]: TOT
+              - cell "DEF" [ref=f2e2234]
+              - cell "£4.5" [ref=f2e2236]
+              - cell "21.9" [ref=f2e2237]
+              - cell "4.9" [ref=f2e2238]
+              - cell "86′" [ref=f2e2239]
+              - cell [ref=f2e2240]:
+                - button "Add Udogie" [ref=f2e2241] [cursor=pointer]: +
+            - row [ref=f2e2242]:
+              - cell [ref=f2e2243]:
+                - button "Hato CHE" [ref=f2e2244] [cursor=pointer]:
+                  - strong [ref=f2e2245]: Hato
+                  - generic [ref=f2e2246]: CHE
+              - cell "DEF" [ref=f2e2247]
+              - cell "£4.5" [ref=f2e2249]
+              - cell "21.9" [ref=f2e2250]
+              - cell "4.9" [ref=f2e2251]
+              - cell "87′" [ref=f2e2252]
+              - cell [ref=f2e2253]:
+                - button "Add Hato" [ref=f2e2254] [cursor=pointer]: +
+            - row [ref=f2e2255]:
+              - cell [ref=f2e2256]:
+                - button "Tosin CHE" [ref=f2e2257] [cursor=pointer]:
+                  - strong [ref=f2e2258]: Tosin
+                  - generic [ref=f2e2259]: CHE
+              - cell "DEF" [ref=f2e2260]
+              - cell "£4.5" [ref=f2e2262]
+              - cell "21.8" [ref=f2e2263]
+              - cell "4.9" [ref=f2e2264]
+              - cell "85′" [ref=f2e2265]
+              - cell [ref=f2e2266]:
+                - button "Add Tosin" [ref=f2e2267] [cursor=pointer]: +
+            - row [ref=f2e2268]:
+              - cell [ref=f2e2269]:
+                - button "J.Cuenca FUL" [ref=f2e2270] [cursor=pointer]:
+                  - strong [ref=f2e2271]: J.Cuenca
+                  - generic [ref=f2e2272]: FUL
+              - cell "DEF" [ref=f2e2273]
+              - cell "£4.5" [ref=f2e2275]
+              - cell "21.8" [ref=f2e2276]
+              - cell "4.8" [ref=f2e2277]
+              - cell "88′" [ref=f2e2278]
+              - cell [ref=f2e2279]:
+                - button "Add J.Cuenca" [ref=f2e2280] [cursor=pointer]: +
+            - row [ref=f2e2281]:
+              - cell [ref=f2e2282]:
+                - button "J.Murphy NEW" [ref=f2e2283] [cursor=pointer]:
+                  - strong [ref=f2e2284]: J.Murphy
+                  - generic [ref=f2e2285]: NEW
+              - cell "MID" [ref=f2e2286]
+              - cell "£6.0" [ref=f2e2288]
+              - cell "21.8" [ref=f2e2289]
+              - cell "3.6" [ref=f2e2290]
+              - cell "88′" [ref=f2e2291]
+              - cell [ref=f2e2292]:
+                - button "Add J.Murphy" [ref=f2e2293] [cursor=pointer]: +
+            - row [ref=f2e2294]:
+              - cell [ref=f2e2295]:
+                - button "Konsa AVL" [ref=f2e2296] [cursor=pointer]:
+                  - strong [ref=f2e2297]: Konsa
+                  - generic [ref=f2e2298]: AVL
+              - cell "DEF" [ref=f2e2299]
+              - cell "£4.5" [ref=f2e2301]
+              - cell "21.8" [ref=f2e2302]
+              - cell "4.8" [ref=f2e2303]
+              - cell "88′" [ref=f2e2304]
+              - cell [ref=f2e2305]:
+                - button "Add Konsa" [ref=f2e2306] [cursor=pointer]: +
+            - row [ref=f2e2307]:
+              - cell [ref=f2e2308]:
+                - button "Lammens MUN" [ref=f2e2309] [cursor=pointer]:
+                  - strong [ref=f2e2310]: Lammens
+                  - generic [ref=f2e2311]: MUN
+              - cell "GK" [ref=f2e2312]
+              - cell "£5.0" [ref=f2e2314]
+              - cell "21.8" [ref=f2e2315]
+              - cell "4.4" [ref=f2e2316]
+              - cell "88′" [ref=f2e2317]
+              - cell [ref=f2e2318]:
+                - button "Add Lammens" [ref=f2e2319] [cursor=pointer]: +
+            - row [ref=f2e2320]:
+              - cell [ref=f2e2321]:
+                - button "Damsgaard BRE" [ref=f2e2322] [cursor=pointer]:
+                  - strong [ref=f2e2323]: Damsgaard
+                  - generic [ref=f2e2324]: BRE
+              - cell "MID" [ref=f2e2325]
+              - cell "£5.5" [ref=f2e2327]
+              - cell "21.7" [ref=f2e2328]
+              - cell "4.0" [ref=f2e2329]
+              - cell "88′" [ref=f2e2330]
+              - cell [ref=f2e2331]:
+                - button "Add Damsgaard" [ref=f2e2332] [cursor=pointer]: +
+            - row [ref=f2e2333]:
+              - cell [ref=f2e2334]:
+                - button "Wissa NEW" [ref=f2e2335] [cursor=pointer]:
+                  - strong [ref=f2e2336]: Wissa
+                  - generic [ref=f2e2337]: NEW
+              - cell "FWD" [ref=f2e2338]
+              - cell "£6.0" [ref=f2e2340]
+              - cell "21.7" [ref=f2e2341]
+              - cell "3.6" [ref=f2e2342]
+              - cell "78′" [ref=f2e2343]
+              - cell [ref=f2e2344]:
+                - button "Add Wissa" [ref=f2e2345] [cursor=pointer]: +
+            - row [ref=f2e2346]:
+              - cell [ref=f2e2347]:
+                - button "Awoniyi COV" [ref=f2e2348] [cursor=pointer]:
+                  - strong [ref=f2e2349]: Awoniyi
+                  - generic [ref=f2e2350]: COV
+              - cell "FWD" [ref=f2e2351]
+              - cell "£5.5" [ref=f2e2353]
+              - cell "21.7" [ref=f2e2354]
+              - cell "4.0" [ref=f2e2355]
+              - cell "73′" [ref=f2e2356]
+              - cell [ref=f2e2357]:
+                - button "Add Awoniyi" [ref=f2e2358] [cursor=pointer]: +
+            - row [ref=f2e2359]:
+              - cell [ref=f2e2360]:
+                - button "Barry EVE" [ref=f2e2361] [cursor=pointer]:
+                  - strong [ref=f2e2362]: Barry
+                  - generic [ref=f2e2363]: EVE
+              - cell "FWD" [ref=f2e2364]
+              - cell "£5.5" [ref=f2e2366]
+              - cell "21.7" [ref=f2e2367]
+              - cell "3.9" [ref=f2e2368]
+              - cell "88′" [ref=f2e2369]
+              - cell [ref=f2e2370]:
+                - button "Add Barry" [ref=f2e2371] [cursor=pointer]: +
+            - row [ref=f2e2372]:
+              - cell [ref=f2e2373]:
+                - button "Szoboszlai LIV" [ref=f2e2374] [cursor=pointer]:
+                  - strong [ref=f2e2375]: Szoboszlai
+                  - generic [ref=f2e2376]: LIV
+              - cell "MID" [ref=f2e2377]
+              - cell "£7.0" [ref=f2e2379]
+              - cell "21.7" [ref=f2e2380]
+              - cell "3.1" [ref=f2e2381]
+              - cell "88′" [ref=f2e2382]
+              - cell [ref=f2e2383]:
+                - button "Add Szoboszlai" [ref=f2e2384] [cursor=pointer]: +
+            - row [ref=f2e2385]:
+              - cell [ref=f2e2386]:
+                - button "Grealish MCI" [ref=f2e2387] [cursor=pointer]:
+                  - strong [ref=f2e2388]: Grealish
+                  - generic [ref=f2e2389]: MCI
+              - cell "MID" [ref=f2e2390]
+              - cell "£6.5" [ref=f2e2392]
+              - cell "21.7" [ref=f2e2393]
+              - cell "3.3" [ref=f2e2394]
+              - cell "88′" [ref=f2e2395]
+              - cell [ref=f2e2396]:
+                - button "Add Grealish" [ref=f2e2397] [cursor=pointer]: +
+            - row [ref=f2e2398]:
+              - cell [ref=f2e2399]:
+                - button "Hill BOU" [ref=f2e2400] [cursor=pointer]:
+                  - strong [ref=f2e2401]: Hill
+                  - generic [ref=f2e2402]: BOU
+              - cell "DEF" [ref=f2e2403]
+              - cell "£5.5" [ref=f2e2405]
+              - cell "21.7" [ref=f2e2406]
+              - cell "3.9" [ref=f2e2407]
+              - cell "86′" [ref=f2e2408]
+              - cell [ref=f2e2409]:
+                - button "Add Hill" [ref=f2e2410] [cursor=pointer]: +
+            - row [ref=f2e2411]:
+              - cell [ref=f2e2412]:
+                - button "Gittens CHE" [ref=f2e2413] [cursor=pointer]:
+                  - strong [ref=f2e2414]: Gittens
+                  - generic [ref=f2e2415]: CHE
+              - cell "MID" [ref=f2e2416]
+              - cell "£6.0" [ref=f2e2418]
+              - cell "21.7" [ref=f2e2419]
+              - cell "3.6" [ref=f2e2420]
+              - cell "86′" [ref=f2e2421]
+              - cell [ref=f2e2422]:
+                - button "Add Gittens" [ref=f2e2423] [cursor=pointer]: +
+            - row [ref=f2e2424]:
+              - cell [ref=f2e2425]:
+                - button "E.Le Fée SUN" [ref=f2e2426] [cursor=pointer]:
+                  - strong [ref=f2e2427]: E.Le Fée
+                  - generic [ref=f2e2428]: SUN
+              - cell "MID" [ref=f2e2429]
+              - cell "£6.0" [ref=f2e2431]
+              - cell "21.7" [ref=f2e2432]
+              - cell "3.6" [ref=f2e2433]
+              - cell "88′" [ref=f2e2434]
+              - cell [ref=f2e2435]:
+                - button "Add E.Le Fée" [ref=f2e2436] [cursor=pointer]: +
+            - row [ref=f2e2437]:
+              - cell [ref=f2e2438]:
+                - button "A.Becker LIV" [ref=f2e2439] [cursor=pointer]:
+                  - strong [ref=f2e2440]: A.Becker
+                  - generic [ref=f2e2441]: LIV
+              - cell "GK" [ref=f2e2442]
+              - cell "£5.5" [ref=f2e2444]
+              - cell "21.7" [ref=f2e2445]
+              - cell "3.9" [ref=f2e2446]
+              - cell "88′" [ref=f2e2447]
+              - cell [ref=f2e2448]:
+                - button "Add A.Becker" [ref=f2e2449] [cursor=pointer]: +
+            - row [ref=f2e2450]:
+              - cell [ref=f2e2451]:
+                - button "Dowman ARS" [ref=f2e2452] [cursor=pointer]:
+                  - strong [ref=f2e2453]: Dowman
+                  - generic [ref=f2e2454]: ARS
+              - cell "MID" [ref=f2e2455]
+              - cell "£5.5" [ref=f2e2457]
+              - cell "21.6" [ref=f2e2458]
+              - cell "3.9" [ref=f2e2459]
+              - cell "74′" [ref=f2e2460]
+              - cell [ref=f2e2461]:
+                - button "Add Dowman" [ref=f2e2462] [cursor=pointer]: +
+            - row [ref=f2e2463]:
+              - cell [ref=f2e2464]:
+                - button "Angulo SUN" [ref=f2e2465] [cursor=pointer]:
+                  - strong [ref=f2e2466]: Angulo
+                  - generic [ref=f2e2467]: SUN
+              - cell "MID" [ref=f2e2468]
+              - cell "£5.0" [ref=f2e2470]
+              - cell "21.6" [ref=f2e2471]
+              - cell "4.3" [ref=f2e2472]
+              - cell "88′" [ref=f2e2473]
+              - cell [ref=f2e2474]:
+                - button "Add Angulo" [ref=f2e2475] [cursor=pointer]: +
+            - row [ref=f2e2476]:
+              - cell [ref=f2e2477]:
+                - button "Henry BRE" [ref=f2e2478] [cursor=pointer]:
+                  - strong [ref=f2e2479]: Henry
+                  - generic [ref=f2e2480]: BRE
+              - cell "DEF" [ref=f2e2481]
+              - cell "£4.5" [ref=f2e2483]
+              - cell "21.6" [ref=f2e2484]
+              - cell "4.8" [ref=f2e2485]
+              - cell "87′" [ref=f2e2486]
+              - cell [ref=f2e2487]:
+                - button "Add Henry" [ref=f2e2488] [cursor=pointer]: +
+            - row [ref=f2e2489]:
+              - cell [ref=f2e2490]:
+                - button "Smith BOU" [ref=f2e2491] [cursor=pointer]:
+                  - strong [ref=f2e2492]: Smith
+                  - generic [ref=f2e2493]: BOU
+              - cell "DEF" [ref=f2e2494]
+              - cell "£4.5" [ref=f2e2496]
+              - cell "21.6" [ref=f2e2497]
+              - cell "4.8" [ref=f2e2498]
+              - cell "88′" [ref=f2e2499]
+              - cell [ref=f2e2500]:
+                - button "Add Smith" [ref=f2e2501] [cursor=pointer]: +
+            - row [ref=f2e2502]:
+              - cell [ref=f2e2503]:
+                - button "M.Bizot AVL" [ref=f2e2504] [cursor=pointer]:
+                  - strong [ref=f2e2505]: M.Bizot
+                  - generic [ref=f2e2506]: AVL
+              - cell "GK" [ref=f2e2507]
+              - cell "£4.5" [ref=f2e2509]
+              - cell "21.6" [ref=f2e2510]
+              - cell "4.8" [ref=f2e2511]
+              - cell "86′" [ref=f2e2512]
+              - cell [ref=f2e2513]:
+                - button "Add M.Bizot" [ref=f2e2514] [cursor=pointer]: +
+            - row [ref=f2e2515]:
+              - cell [ref=f2e2516]:
+                - button "Buendía AVL" [ref=f2e2517] [cursor=pointer]:
+                  - strong [ref=f2e2518]: Buendía
+                  - generic [ref=f2e2519]: AVL
+              - cell "MID" [ref=f2e2520]
+              - cell "£6.0" [ref=f2e2522]
+              - cell "21.6" [ref=f2e2523]
+              - cell "3.6" [ref=f2e2524]
+              - cell "88′" [ref=f2e2525]
+              - cell [ref=f2e2526]:
+                - button "Add Buendía" [ref=f2e2527] [cursor=pointer]: +
+            - row [ref=f2e2528]:
+              - cell [ref=f2e2529]:
+                - button "Bakwa NFO" [ref=f2e2530] [cursor=pointer]:
+                  - strong [ref=f2e2531]: Bakwa
+                  - generic [ref=f2e2532]: NFO
+              - cell "MID" [ref=f2e2533]
+              - cell "£5.5" [ref=f2e2535]
+              - cell "21.5" [ref=f2e2536]
+              - cell "3.9" [ref=f2e2537]
+              - cell "88′" [ref=f2e2538]
+              - cell [ref=f2e2539]:
+                - button "Add Bakwa" [ref=f2e2540] [cursor=pointer]: +
+            - row [ref=f2e2541]:
+              - cell [ref=f2e2542]:
+                - button "Rogers CHE" [ref=f2e2543] [cursor=pointer]:
+                  - strong [ref=f2e2544]: Rogers
+                  - generic [ref=f2e2545]: CHE
+              - cell "MID" [ref=f2e2546]
+              - cell "£7.5" [ref=f2e2548]
+              - cell "21.5" [ref=f2e2549]
+              - cell "2.9" [ref=f2e2550]
+              - cell "88′" [ref=f2e2551]
+              - cell [ref=f2e2552]:
+                - button "Add Rogers" [ref=f2e2553] [cursor=pointer]: +
+            - row [ref=f2e2554]:
+              - cell [ref=f2e2555]:
+                - button "Donnarumma MCI" [ref=f2e2556] [cursor=pointer]:
+                  - strong [ref=f2e2557]: Donnarumma
+                  - generic [ref=f2e2558]: MCI
+              - cell "GK" [ref=f2e2559]
+              - cell "£5.5" [ref=f2e2561]
+              - cell "21.5" [ref=f2e2562]
+              - cell "3.9" [ref=f2e2563]
+              - cell "88′" [ref=f2e2564]
+              - cell [ref=f2e2565]:
+                - button "Add Donnarumma" [ref=f2e2566] [cursor=pointer]: +
+            - row [ref=f2e2567]:
+              - cell [ref=f2e2568]:
+                - button "Colwill CHE" [ref=f2e2569] [cursor=pointer]:
+                  - strong [ref=f2e2570]: Colwill
+                  - generic [ref=f2e2571]: CHE
+              - cell "DEF" [ref=f2e2572]
+              - cell "£5.0" [ref=f2e2574]
+              - cell "21.5" [ref=f2e2575]
+              - cell "4.3" [ref=f2e2576]
+              - cell "82′" [ref=f2e2577]
+              - cell [ref=f2e2578]:
+                - button "Add Colwill" [ref=f2e2579] [cursor=pointer]: +
+            - row [ref=f2e2580]:
+              - cell [ref=f2e2581]:
+                - button "Reinildo SUN" [ref=f2e2582] [cursor=pointer]:
+                  - strong [ref=f2e2583]: Reinildo
+                  - generic [ref=f2e2584]: SUN
+              - cell "DEF" [ref=f2e2585]
+              - cell "£4.5" [ref=f2e2587]
+              - cell "21.5" [ref=f2e2588]
+              - cell "4.8" [ref=f2e2589]
+              - cell "88′" [ref=f2e2590]
+              - cell [ref=f2e2591]:
+                - button "Add Reinildo" [ref=f2e2592] [cursor=pointer]: +
+            - row [ref=f2e2593]:
+              - cell [ref=f2e2594]:
+                - button "Petrović BOU" [ref=f2e2595] [cursor=pointer]:
+                  - strong [ref=f2e2596]: Petrović
+                  - generic [ref=f2e2597]: BOU
+              - cell "GK" [ref=f2e2598]
+              - cell "£4.5" [ref=f2e2600]
+              - cell "21.5" [ref=f2e2601]
+              - cell "4.8" [ref=f2e2602]
+              - cell "88′" [ref=f2e2603]
+              - cell [ref=f2e2604]:
+                - button "Add Petrović" [ref=f2e2605] [cursor=pointer]: +
+            - row [ref=f2e2606]:
+              - cell [ref=f2e2607]:
+                - button "Tel TOT" [ref=f2e2608] [cursor=pointer]:
+                  - strong [ref=f2e2609]: Tel
+                  - generic [ref=f2e2610]: TOT
+              - cell "MID" [ref=f2e2611]
+              - cell "£6.0" [ref=f2e2613]
+              - cell "21.5" [ref=f2e2614]
+              - cell "3.6" [ref=f2e2615]
+              - cell "84′" [ref=f2e2616]
+              - cell [ref=f2e2617]:
+                - button "Add Tel" [ref=f2e2618] [cursor=pointer]: +
+            - row [ref=f2e2619]:
+              - cell [ref=f2e2620]:
+                - button "Madueke ARS" [ref=f2e2621] [cursor=pointer]:
+                  - strong [ref=f2e2622]: Madueke
+                  - generic [ref=f2e2623]: ARS
+              - cell "MID" [ref=f2e2624]
+              - cell "£6.5" [ref=f2e2626]
+              - cell "21.5" [ref=f2e2627]
+              - cell "3.3" [ref=f2e2628]
+              - cell "88′" [ref=f2e2629]
+              - cell [ref=f2e2630]:
+                - button "Add Madueke" [ref=f2e2631] [cursor=pointer]: +
+            - row [ref=f2e2632]:
+              - cell [ref=f2e2633]:
+                - button "Delap CHE" [ref=f2e2634] [cursor=pointer]:
+                  - strong [ref=f2e2635]: Delap
+                  - generic [ref=f2e2636]: CHE
+              - cell "FWD" [ref=f2e2637]
+              - cell "£5.5" [ref=f2e2639]
+              - cell "21.4" [ref=f2e2640]
+              - cell "3.9" [ref=f2e2641]
+              - cell "88′" [ref=f2e2642]
+              - cell [ref=f2e2643]:
+                - button "Add Delap" [ref=f2e2644] [cursor=pointer]: +
+            - row [ref=f2e2645]:
+              - cell [ref=f2e2646]:
+                - button "Woltemade NEW" [ref=f2e2647] [cursor=pointer]:
+                  - strong [ref=f2e2648]: Woltemade
+                  - generic [ref=f2e2649]: NEW
+              - cell "FWD" [ref=f2e2650]
+              - cell "£6.0" [ref=f2e2652]
+              - cell "21.4" [ref=f2e2653]
+              - cell "3.6" [ref=f2e2654]
+              - cell "88′" [ref=f2e2655]
+              - cell [ref=f2e2656]:
+                - button "Add Woltemade" [ref=f2e2657] [cursor=pointer]: +
+            - row [ref=f2e2658]:
+              - cell [ref=f2e2659]:
+                - button "Milenković NFO" [ref=f2e2660] [cursor=pointer]:
+                  - strong [ref=f2e2661]: Milenković
+                  - generic [ref=f2e2662]: NFO
+              - cell "DEF" [ref=f2e2663]
+              - cell "£5.5" [ref=f2e2665]
+              - cell "21.4" [ref=f2e2666]
+              - cell "3.9" [ref=f2e2667]
+              - cell "88′" [ref=f2e2668]
+              - cell [ref=f2e2669]:
+                - button "Add Milenković" [ref=f2e2670] [cursor=pointer]: +
+            - row [ref=f2e2671]:
+              - cell [ref=f2e2672]:
+                - button "Netz NFO" [ref=f2e2673] [cursor=pointer]:
+                  - strong [ref=f2e2674]: Netz
+                  - generic [ref=f2e2675]: NFO
+              - cell "DEF" [ref=f2e2676]
+              - cell "£4.5" [ref=f2e2678]
+              - cell "21.4" [ref=f2e2679]
+              - cell "4.8" [ref=f2e2680]
+              - cell "80′" [ref=f2e2681]
+              - cell [ref=f2e2682]:
+                - button "Add Netz" [ref=f2e2683] [cursor=pointer]: +
+            - row [ref=f2e2684]:
+              - cell [ref=f2e2685]:
+                - button "Kinsky TOT" [ref=f2e2686] [cursor=pointer]:
+                  - strong [ref=f2e2687]: Kinsky
+                  - generic [ref=f2e2688]: TOT
+              - cell "GK" [ref=f2e2689]
+              - cell "£4.5" [ref=f2e2691]
+              - cell "21.3" [ref=f2e2692]
+              - cell "4.7" [ref=f2e2693]
+              - cell "88′" [ref=f2e2694]
+              - cell [ref=f2e2695]:
+                - button "Add Kinsky" [ref=f2e2696] [cursor=pointer]: +
+            - row [ref=f2e2697]:
+              - cell [ref=f2e2698]:
+                - button "Aaronson LEE" [ref=f2e2699] [cursor=pointer]:
+                  - strong [ref=f2e2700]: Aaronson
+                  - generic [ref=f2e2701]: LEE
+              - cell "MID" [ref=f2e2702]
+              - cell "£5.5" [ref=f2e2704]
+              - cell "21.3" [ref=f2e2705]
+              - cell "3.9" [ref=f2e2706]
+              - cell "88′" [ref=f2e2707]
+              - cell [ref=f2e2708]:
+                - button "Add Aaronson" [ref=f2e2709] [cursor=pointer]: +
+            - row [ref=f2e2710]:
+              - cell [ref=f2e2711]:
+                - button "John NFO" [ref=f2e2712] [cursor=pointer]:
+                  - strong [ref=f2e2713]: John
+                  - generic [ref=f2e2714]: NFO
+              - cell "GK" [ref=f2e2715]
+              - cell "£4.5" [ref=f2e2717]
+              - cell "21.3" [ref=f2e2718]
+              - cell "4.7" [ref=f2e2719]
+              - cell "88′" [ref=f2e2720]
+              - cell [ref=f2e2721]:
+                - button "Add John" [ref=f2e2722] [cursor=pointer]: +
+            - row [ref=f2e2723]:
+              - cell [ref=f2e2724]:
+                - button "Zirkzee MUN" [ref=f2e2725] [cursor=pointer]:
+                  - strong [ref=f2e2726]: Zirkzee
+                  - generic [ref=f2e2727]: MUN
+              - cell "FWD" [ref=f2e2728]
+              - cell "£5.5" [ref=f2e2730]
+              - cell "21.3" [ref=f2e2731]
+              - cell "3.9" [ref=f2e2732]
+              - cell "80′" [ref=f2e2733]
+              - cell [ref=f2e2734]:
+                - button "Add Zirkzee" [ref=f2e2735] [cursor=pointer]: +
+            - row [ref=f2e2736]:
+              - cell [ref=f2e2737]:
+                - button "Armstrong EVE" [ref=f2e2738] [cursor=pointer]:
+                  - strong [ref=f2e2739]: Armstrong
+                  - generic [ref=f2e2740]: EVE
+              - cell "MID" [ref=f2e2741]
+              - cell "£5.0" [ref=f2e2743]
+              - cell "21.3" [ref=f2e2744]
+              - cell "4.3" [ref=f2e2745]
+              - cell "88′" [ref=f2e2746]
+              - cell [ref=f2e2747]:
+                - button "Add Armstrong" [ref=f2e2748] [cursor=pointer]: +
+            - row [ref=f2e2749]:
+              - cell [ref=f2e2750]:
+                - button "Kovačić MCI" [ref=f2e2751] [cursor=pointer]:
+                  - strong [ref=f2e2752]: Kovačić
+                  - generic [ref=f2e2753]: MCI
+              - cell "MID" [ref=f2e2754]
+              - cell "£5.5" [ref=f2e2756]
+              - cell "21.3" [ref=f2e2757]
+              - cell "3.9" [ref=f2e2758]
+              - cell "79′" [ref=f2e2759]
+              - cell [ref=f2e2760]:
+                - button "Add Kovačić" [ref=f2e2761] [cursor=pointer]: +
+            - row [ref=f2e2762]:
+              - cell [ref=f2e2763]:
+                - button "Diakité BOU" [ref=f2e2764] [cursor=pointer]:
+                  - strong [ref=f2e2765]: Diakité
+                  - generic [ref=f2e2766]: BOU
+              - cell "DEF" [ref=f2e2767]
+              - cell "£5.0" [ref=f2e2769]
+              - cell "21.3" [ref=f2e2770]
+              - cell "4.3" [ref=f2e2771]
+              - cell "88′" [ref=f2e2772]
+              - cell [ref=f2e2773]:
+                - button "Add Diakité" [ref=f2e2774] [cursor=pointer]: +
+            - row [ref=f2e2775]:
+              - cell [ref=f2e2776]:
+                - button "Hudson-Odoi NFO" [ref=f2e2777] [cursor=pointer]:
+                  - strong [ref=f2e2778]: Hudson-Odoi
+                  - generic [ref=f2e2779]: NFO
+              - cell "MID" [ref=f2e2780]
+              - cell "£6.0" [ref=f2e2782]
+              - cell "21.2" [ref=f2e2783]
+              - cell "3.5" [ref=f2e2784]
+              - cell "88′" [ref=f2e2785]
+              - cell [ref=f2e2786]:
+                - button "Add Hudson-Odoi" [ref=f2e2787] [cursor=pointer]: +
+            - row [ref=f2e2788]:
+              - cell [ref=f2e2789]:
+                - button "Leno FUL" [ref=f2e2790] [cursor=pointer]:
+                  - strong [ref=f2e2791]: Leno
+                  - generic [ref=f2e2792]: FUL
+              - cell "GK" [ref=f2e2793]
+              - cell "£4.5" [ref=f2e2795]
+              - cell "21.2" [ref=f2e2796]
+              - cell "4.7" [ref=f2e2797]
+              - cell "88′" [ref=f2e2798]
+              - cell [ref=f2e2799]:
+                - button "Add Leno" [ref=f2e2800] [cursor=pointer]: +
+            - row [ref=f2e2801]:
+              - cell [ref=f2e2802]:
+                - button "Jocelin.T SUN" [ref=f2e2803] [cursor=pointer]:
+                  - strong [ref=f2e2804]: Jocelin.T
+                  - generic [ref=f2e2805]: SUN
+              - cell "MID" [ref=f2e2806]
+              - cell "£5.0" [ref=f2e2808]
+              - cell "21.2" [ref=f2e2809]
+              - cell "4.2" [ref=f2e2810]
+              - cell "81′" [ref=f2e2811]
+              - cell [ref=f2e2812]:
+                - button "Add Jocelin.T" [ref=f2e2813] [cursor=pointer]: +
+            - row [ref=f2e2814]:
+              - cell [ref=f2e2815]:
+                - button "Dorgu MUN" [ref=f2e2816] [cursor=pointer]:
+                  - strong [ref=f2e2817]: Dorgu
+                  - generic [ref=f2e2818]: MUN
+              - cell "MID" [ref=f2e2819]
+              - cell "£6.0" [ref=f2e2821]
+              - cell "21.2" [ref=f2e2822]
+              - cell "3.5" [ref=f2e2823]
+              - cell "86′" [ref=f2e2824]
+              - cell [ref=f2e2825]:
+                - button "Add Dorgu" [ref=f2e2826] [cursor=pointer]: +
+            - row [ref=f2e2827]:
+              - cell [ref=f2e2828]:
+                - button "Dibling EVE" [ref=f2e2829] [cursor=pointer]:
+                  - strong [ref=f2e2830]: Dibling
+                  - generic [ref=f2e2831]: EVE
+              - cell "MID" [ref=f2e2832]
+              - cell "£5.5" [ref=f2e2834]
+              - cell "21.2" [ref=f2e2835]
+              - cell "3.9" [ref=f2e2836]
+              - cell "88′" [ref=f2e2837]
+              - cell [ref=f2e2838]:
+                - button "Add Dibling" [ref=f2e2839] [cursor=pointer]: +
+            - row [ref=f2e2840]:
+              - cell [ref=f2e2841]:
+                - button "Ødegaard ARS" [ref=f2e2842] [cursor=pointer]:
+                  - strong [ref=f2e2843]: Ødegaard
+                  - generic [ref=f2e2844]: ARS
+              - cell "MID" [ref=f2e2845]
+              - cell "£6.5" [ref=f2e2847]
+              - cell "21.2" [ref=f2e2848]
+              - cell "3.3" [ref=f2e2849]
+              - cell "88′" [ref=f2e2850]
+              - cell [ref=f2e2851]:
+                - button "Add Ødegaard" [ref=f2e2852] [cursor=pointer]: +
+            - row [ref=f2e2853]:
+              - cell [ref=f2e2854]:
+                - button "Lavia CHE" [ref=f2e2855] [cursor=pointer]:
+                  - strong [ref=f2e2856]: Lavia
+                  - generic [ref=f2e2857]: CHE
+              - cell "MID" [ref=f2e2858]
+              - cell "£5.0" [ref=f2e2860]
+              - cell "21.2" [ref=f2e2861]
+              - cell "4.2" [ref=f2e2862]
+              - cell "87′" [ref=f2e2863]
+              - cell [ref=f2e2864]:
+                - button "Add Lavia" [ref=f2e2865] [cursor=pointer]: +
+            - row [ref=f2e2866]:
+              - cell [ref=f2e2867]:
+                - button "G.Jesus ARS" [ref=f2e2868] [cursor=pointer]:
+                  - strong [ref=f2e2869]: G.Jesus
+                  - generic [ref=f2e2870]: ARS
+              - cell "FWD" [ref=f2e2871]
+              - cell "£6.0" [ref=f2e2873]
+              - cell "21.1" [ref=f2e2874]
+              - cell "3.5" [ref=f2e2875]
+              - cell "76′" [ref=f2e2876]
+              - cell [ref=f2e2877]:
+                - button "Add G.Jesus" [ref=f2e2878] [cursor=pointer]: +
+            - row [ref=f2e2879]:
+              - cell [ref=f2e2880]:
+                - button "Stach LEE" [ref=f2e2881] [cursor=pointer]:
+                  - strong [ref=f2e2882]: Stach
+                  - generic [ref=f2e2883]: LEE
+              - cell "MID" [ref=f2e2884]
+              - cell "£6.0" [ref=f2e2886]
+              - cell "21.1" [ref=f2e2887]
+              - cell "3.5" [ref=f2e2888]
+              - cell "88′" [ref=f2e2889]
+              - cell [ref=f2e2890]:
+                - button "Add Stach" [ref=f2e2891] [cursor=pointer]: +
+            - row [ref=f2e2892]:
+              - cell [ref=f2e2893]:
+                - button "Groß BHA" [ref=f2e2894] [cursor=pointer]:
+                  - strong [ref=f2e2895]: Groß
+                  - generic [ref=f2e2896]: BHA
+              - cell "MID" [ref=f2e2897]
+              - cell "£5.5" [ref=f2e2899]
+              - cell "21.1" [ref=f2e2900]
+              - cell "3.8" [ref=f2e2901]
+              - cell "88′" [ref=f2e2902]
+              - cell [ref=f2e2903]:
+                - button "Add Groß" [ref=f2e2904] [cursor=pointer]: +
+            - row [ref=f2e2905]:
+              - cell [ref=f2e2906]:
+                - button "Devenny CRY" [ref=f2e2907] [cursor=pointer]:
+                  - strong [ref=f2e2908]: Devenny
+                  - generic [ref=f2e2909]: CRY
+              - cell "MID" [ref=f2e2910]
+              - cell "£5.0" [ref=f2e2912]
+              - cell "21.0" [ref=f2e2913]
+              - cell "4.2" [ref=f2e2914]
+              - cell "82′" [ref=f2e2915]
+              - cell [ref=f2e2916]:
+                - button "Add Devenny" [ref=f2e2917] [cursor=pointer]: +
+            - row [ref=f2e2918]:
+              - cell [ref=f2e2919]:
+                - button "O'Nien SUN" [ref=f2e2920] [cursor=pointer]:
+                  - strong [ref=f2e2921]: O'Nien
+                  - generic [ref=f2e2922]: SUN
+              - cell "DEF" [ref=f2e2923]
+              - cell "£4.0" [ref=f2e2925]
+              - cell "21.0" [ref=f2e2926]
+              - cell "5.3" [ref=f2e2927]
+              - cell "81′" [ref=f2e2928]
+              - cell [ref=f2e2929]:
+                - button "Add O'Nien" [ref=f2e2930] [cursor=pointer]: +
+            - row [ref=f2e2931]:
+              - cell [ref=f2e2932]:
+                - button "Longstaff LEE" [ref=f2e2933] [cursor=pointer]:
+                  - strong [ref=f2e2934]: Longstaff
+                  - generic [ref=f2e2935]: LEE
+              - cell "MID" [ref=f2e2936]
+              - cell "£5.0" [ref=f2e2938]
+              - cell "21.0" [ref=f2e2939]
+              - cell "4.2" [ref=f2e2940]
+              - cell "85′" [ref=f2e2941]
+              - cell [ref=f2e2942]:
+                - button "Add Longstaff" [ref=f2e2943] [cursor=pointer]: +
+            - row [ref=f2e2944]:
+              - cell [ref=f2e2945]:
+                - button "Diarra SUN" [ref=f2e2946] [cursor=pointer]:
+                  - strong [ref=f2e2947]: Diarra
+                  - generic [ref=f2e2948]: SUN
+              - cell "MID" [ref=f2e2949]
+              - cell "£5.5" [ref=f2e2951]
+              - cell "21.0" [ref=f2e2952]
+              - cell "3.8" [ref=f2e2953]
+              - cell "87′" [ref=f2e2954]
+              - cell [ref=f2e2955]:
+                - button "Add Diarra" [ref=f2e2956] [cursor=pointer]: +
+            - row [ref=f2e2957]:
+              - cell [ref=f2e2958]:
+                - button "Solanke TOT" [ref=f2e2959] [cursor=pointer]:
+                  - strong [ref=f2e2960]: Solanke
+                  - generic [ref=f2e2961]: TOT
+              - cell "FWD" [ref=f2e2962]
+              - cell "£6.0" [ref=f2e2964]
+              - cell "21.0" [ref=f2e2965]
+              - cell "3.5" [ref=f2e2966]
+              - cell "88′" [ref=f2e2967]
+              - cell [ref=f2e2968]:
+                - button "Add Solanke" [ref=f2e2969] [cursor=pointer]: +
+            - row [ref=f2e2970]:
+              - cell [ref=f2e2971]:
+                - button "McGinn AVL" [ref=f2e2972] [cursor=pointer]:
+                  - strong [ref=f2e2973]: McGinn
+                  - generic [ref=f2e2974]: AVL
+              - cell "MID" [ref=f2e2975]
+              - cell "£5.5" [ref=f2e2977]
+              - cell "21.0" [ref=f2e2978]
+              - cell "3.8" [ref=f2e2979]
+              - cell "88′" [ref=f2e2980]
+              - cell [ref=f2e2981]:
+                - button "Add McGinn" [ref=f2e2982] [cursor=pointer]: +
+            - row [ref=f2e2983]:
+              - cell [ref=f2e2984]:
+                - button "Smith Rowe FUL" [ref=f2e2985] [cursor=pointer]:
+                  - strong [ref=f2e2986]: Smith Rowe
+                  - generic [ref=f2e2987]: FUL
+              - cell "MID" [ref=f2e2988]
+              - cell "£5.5" [ref=f2e2990]
+              - cell "20.9" [ref=f2e2991]
+              - cell "3.8" [ref=f2e2992]
+              - cell "88′" [ref=f2e2993]
+              - cell [ref=f2e2994]:
+                - button "Add Smith Rowe" [ref=f2e2995] [cursor=pointer]: +
+            - row [ref=f2e2996]:
+              - cell [ref=f2e2997]:
+                - button "Rice ARS" [ref=f2e2998] [cursor=pointer]:
+                  - strong [ref=f2e2999]: Rice
+                  - generic [ref=f2e3000]: ARS
+              - cell "MID" [ref=f2e3001]
+              - cell "£7.5" [ref=f2e3003]
+              - cell "20.9" [ref=f2e3004]
+              - cell "2.8" [ref=f2e3005]
+              - cell "88′" [ref=f2e3006]
+              - cell [ref=f2e3007]:
+                - button "Add Rice" [ref=f2e3008] [cursor=pointer]: +
+            - row [ref=f2e3009]:
+              - cell [ref=f2e3010]:
+                - button "Jensen BRE" [ref=f2e3011] [cursor=pointer]:
+                  - strong [ref=f2e3012]: Jensen
+                  - generic [ref=f2e3013]: BRE
+              - cell "MID" [ref=f2e3014]
+              - cell "£5.5" [ref=f2e3016]
+              - cell "20.9" [ref=f2e3017]
+              - cell "3.8" [ref=f2e3018]
+              - cell "88′" [ref=f2e3019]
+              - cell [ref=f2e3020]:
+                - button "Add Jensen" [ref=f2e3021] [cursor=pointer]: +
+            - row [ref=f2e3022]:
+              - cell [ref=f2e3023]:
+                - button "Mosquera ARS" [ref=f2e3024] [cursor=pointer]:
+                  - strong [ref=f2e3025]: Mosquera
+                  - generic [ref=f2e3026]: ARS
+              - cell "DEF" [ref=f2e3027]
+              - cell "£5.5" [ref=f2e3029]
+              - cell "20.9" [ref=f2e3030]
+              - cell "3.8" [ref=f2e3031]
+              - cell "82′" [ref=f2e3032]
+              - cell [ref=f2e3033]:
+                - button "Add Mosquera" [ref=f2e3034] [cursor=pointer]: +
+            - row [ref=f2e3035]:
+              - cell [ref=f2e3036]:
+                - button "Bobb FUL" [ref=f2e3037] [cursor=pointer]:
+                  - strong [ref=f2e3038]: Bobb
+                  - generic [ref=f2e3039]: FUL
+              - cell "MID" [ref=f2e3040]
+              - cell "£5.5" [ref=f2e3042]
+              - cell "20.9" [ref=f2e3043]
+              - cell "3.8" [ref=f2e3044]
+              - cell "87′" [ref=f2e3045]
+              - cell [ref=f2e3046]:
+                - button "Add Bobb" [ref=f2e3047] [cursor=pointer]: +
+            - row [ref=f2e3048]:
+              - cell [ref=f2e3049]:
+                - button "Isidor SUN" [ref=f2e3050] [cursor=pointer]:
+                  - strong [ref=f2e3051]: Isidor
+                  - generic [ref=f2e3052]: SUN
+              - cell "FWD" [ref=f2e3053]
+              - cell "£5.5" [ref=f2e3055]
+              - cell "20.9" [ref=f2e3056]
+              - cell "3.8" [ref=f2e3057]
+              - cell "84′" [ref=f2e3058]
+              - cell [ref=f2e3059]:
+                - button "Add Isidor" [ref=f2e3060] [cursor=pointer]: +
+            - row [ref=f2e3061]:
+              - cell [ref=f2e3062]:
+                - button "Rigg SUN" [ref=f2e3063] [cursor=pointer]:
+                  - strong [ref=f2e3064]: Rigg
+                  - generic [ref=f2e3065]: SUN
+              - cell "MID" [ref=f2e3066]
+              - cell "£5.0" [ref=f2e3068]
+              - cell "20.8" [ref=f2e3069]
+              - cell "4.2" [ref=f2e3070]
+              - cell "88′" [ref=f2e3071]
+              - cell [ref=f2e3072]:
+                - button "Add Rigg" [ref=f2e3073] [cursor=pointer]: +
+            - row [ref=f2e3074]:
+              - cell [ref=f2e3075]:
+                - button "McNeil CRY" [ref=f2e3076] [cursor=pointer]:
+                  - strong [ref=f2e3077]: McNeil
+                  - generic [ref=f2e3078]: CRY
+              - cell "MID" [ref=f2e3079]
+              - cell "£5.5" [ref=f2e3081]
+              - cell "20.8" [ref=f2e3082]
+              - cell "3.8" [ref=f2e3083]
+              - cell "88′" [ref=f2e3084]
+              - cell [ref=f2e3085]:
+                - button "Add McNeil" [ref=f2e3086] [cursor=pointer]: +
+            - row [ref=f2e3087]:
+              - cell [ref=f2e3088]:
+                - button "Kostoulas BHA" [ref=f2e3089] [cursor=pointer]:
+                  - strong [ref=f2e3090]: Kostoulas
+                  - generic [ref=f2e3091]: BHA
+              - cell "FWD" [ref=f2e3092]
+              - cell "£5.5" [ref=f2e3094]
+              - cell "20.7" [ref=f2e3095]
+              - cell "3.8" [ref=f2e3096]
+              - cell "72′" [ref=f2e3097]
+              - cell [ref=f2e3098]:
+                - button "Add Kostoulas" [ref=f2e3099] [cursor=pointer]: +
+            - row [ref=f2e3100]:
+              - cell [ref=f2e3101]:
+                - button "Lewis-Potter BRE" [ref=f2e3102] [cursor=pointer]:
+                  - strong [ref=f2e3103]: Lewis-Potter
+                  - generic [ref=f2e3104]: BRE
+              - cell "MID" [ref=f2e3105]
+              - cell "£5.5" [ref=f2e3107]
+              - cell "20.7" [ref=f2e3108]
+              - cell "3.8" [ref=f2e3109]
+              - cell "88′" [ref=f2e3110]
+              - cell [ref=f2e3111]:
+                - button "Add Lewis-Potter" [ref=f2e3112] [cursor=pointer]: +
+            - row [ref=f2e3113]:
+              - cell [ref=f2e3114]:
+                - button "Evanilson BOU" [ref=f2e3115] [cursor=pointer]:
+                  - strong [ref=f2e3116]: Evanilson
+                  - generic [ref=f2e3117]: BOU
+              - cell "FWD" [ref=f2e3118]
+              - cell "£6.0" [ref=f2e3120]
+              - cell "20.6" [ref=f2e3121]
+              - cell "3.4" [ref=f2e3122]
+              - cell "88′" [ref=f2e3123]
+              - cell [ref=f2e3124]:
+                - button "Add Evanilson" [ref=f2e3125] [cursor=pointer]: +
+            - row [ref=f2e3126]:
+              - cell [ref=f2e3127]:
+                - button "Hutchinson NFO" [ref=f2e3128] [cursor=pointer]:
+                  - strong [ref=f2e3129]: Hutchinson
+                  - generic [ref=f2e3130]: NFO
+              - cell "MID" [ref=f2e3131]
+              - cell "£5.5" [ref=f2e3133]
+              - cell "20.6" [ref=f2e3134]
+              - cell "3.8" [ref=f2e3135]
+              - cell "85′" [ref=f2e3136]
+              - cell [ref=f2e3137]:
+                - button "Add Hutchinson" [ref=f2e3138] [cursor=pointer]: +
+            - row [ref=f2e3139]:
+              - cell [ref=f2e3140]:
+                - button "Seelt SUN" [ref=f2e3141] [cursor=pointer]:
+                  - strong [ref=f2e3142]: Seelt
+                  - generic [ref=f2e3143]: SUN
+              - cell "DEF" [ref=f2e3144]
+              - cell "£4.5" [ref=f2e3146]
+              - cell "20.6" [ref=f2e3147]
+              - cell "4.6" [ref=f2e3148]
+              - cell "77′" [ref=f2e3149]
+              - cell [ref=f2e3150]:
+                - button "Add Seelt" [ref=f2e3151] [cursor=pointer]: +
+            - row [ref=f2e3152]:
+              - cell [ref=f2e3153]:
+                - button "Wharton CRY" [ref=f2e3154] [cursor=pointer]:
+                  - strong [ref=f2e3155]: Wharton
+                  - generic [ref=f2e3156]: CRY
+              - cell "MID" [ref=f2e3157]
+              - cell "£5.5" [ref=f2e3159]
+              - cell "20.6" [ref=f2e3160]
+              - cell "3.7" [ref=f2e3161]
+              - cell "88′" [ref=f2e3162]
+              - cell [ref=f2e3163]:
+                - button "Add Wharton" [ref=f2e3164] [cursor=pointer]: +
+            - row [ref=f2e3165]:
+              - cell [ref=f2e3166]:
+                - button "King FUL" [ref=f2e3167] [cursor=pointer]:
+                  - strong [ref=f2e3168]: King
+                  - generic [ref=f2e3169]: FUL
+              - cell "MID" [ref=f2e3170]
+              - cell "£5.5" [ref=f2e3172]
+              - cell "20.6" [ref=f2e3173]
+              - cell "3.7" [ref=f2e3174]
+              - cell "88′" [ref=f2e3175]
+              - cell [ref=f2e3176]:
+                - button "Add King" [ref=f2e3177] [cursor=pointer]: +
+            - row [ref=f2e3178]:
+              - cell [ref=f2e3179]:
+                - button "Barkley AVL" [ref=f2e3180] [cursor=pointer]:
+                  - strong [ref=f2e3181]: Barkley
+                  - generic [ref=f2e3182]: AVL
+              - cell "MID" [ref=f2e3183]
+              - cell "£5.0" [ref=f2e3185]
+              - cell "20.4" [ref=f2e3186]
+              - cell "4.1" [ref=f2e3187]
+              - cell "80′" [ref=f2e3188]
+              - cell [ref=f2e3189]:
+                - button "Add Barkley" [ref=f2e3190] [cursor=pointer]: +
+            - row [ref=f2e3191]:
+              - cell [ref=f2e3192]:
+                - button "Ndoye NFO" [ref=f2e3193] [cursor=pointer]:
+                  - strong [ref=f2e3194]: Ndoye
+                  - generic [ref=f2e3195]: NFO
+              - cell "MID" [ref=f2e3196]
+              - cell "£5.5" [ref=f2e3198]
+              - cell "20.4" [ref=f2e3199]
+              - cell "3.7" [ref=f2e3200]
+              - cell "88′" [ref=f2e3201]
+              - cell [ref=f2e3202]:
+                - button "Add Ndoye" [ref=f2e3203] [cursor=pointer]: +
+            - row [ref=f2e3204]:
+              - cell [ref=f2e3205]:
+                - button "Guessand CRY" [ref=f2e3206] [cursor=pointer]:
+                  - strong [ref=f2e3207]: Guessand
+                  - generic [ref=f2e3208]: CRY
+              - cell "MID" [ref=f2e3209]
+              - cell "£5.5" [ref=f2e3211]
+              - cell "20.4" [ref=f2e3212]
+              - cell "3.7" [ref=f2e3213]
+              - cell "85′" [ref=f2e3214]
+              - cell [ref=f2e3215]:
+                - button "Add Guessand" [ref=f2e3216] [cursor=pointer]: +
+            - row [ref=f2e3217]:
+              - cell [ref=f2e3218]:
+                - button "Bergvall TOT" [ref=f2e3219] [cursor=pointer]:
+                  - strong [ref=f2e3220]: Bergvall
+                  - generic [ref=f2e3221]: TOT
+              - cell "MID" [ref=f2e3222]
+              - cell "£5.5" [ref=f2e3224]
+              - cell "20.4" [ref=f2e3225]
+              - cell "3.7" [ref=f2e3226]
+              - cell "88′" [ref=f2e3227]
+              - cell [ref=f2e3228]:
+                - button "Add Bergvall" [ref=f2e3229] [cursor=pointer]: +
+            - row [ref=f2e3230]:
+              - cell [ref=f2e3231]:
+                - button "Andrey Santos MUN" [ref=f2e3232] [cursor=pointer]:
+                  - strong [ref=f2e3233]: Andrey Santos
+                  - generic [ref=f2e3234]: MUN
+              - cell "MID" [ref=f2e3235]
+              - cell "£5.0" [ref=f2e3237]
+              - cell "20.4" [ref=f2e3238]
+              - cell "4.1" [ref=f2e3239]
+              - cell "86′" [ref=f2e3240]
+              - cell [ref=f2e3241]:
+                - button "Add Andrey Santos" [ref=f2e3242] [cursor=pointer]: +
+            - row [ref=f2e3243]:
+              - cell [ref=f2e3244]:
+                - button "Elanga NEW" [ref=f2e3245] [cursor=pointer]:
+                  - strong [ref=f2e3246]: Elanga
+                  - generic [ref=f2e3247]: NEW
+              - cell "MID" [ref=f2e3248]
+              - cell "£6.0" [ref=f2e3250]
+              - cell "20.3" [ref=f2e3251]
+              - cell "3.4" [ref=f2e3252]
+              - cell "87′" [ref=f2e3253]
+              - cell [ref=f2e3254]:
+                - button "Add Elanga" [ref=f2e3255] [cursor=pointer]: +
+            - row [ref=f2e3256]:
+              - cell [ref=f2e3257]:
+                - button "Raya ARS" [ref=f2e3258] [cursor=pointer]:
+                  - strong [ref=f2e3259]: Raya
+                  - generic [ref=f2e3260]: ARS
+              - cell "GK" [ref=f2e3261]
+              - cell "£6.0" [ref=f2e3263]
+              - cell "20.3" [ref=f2e3264]
+              - cell "3.4" [ref=f2e3265]
+              - cell "88′" [ref=f2e3266]
+              - cell [ref=f2e3267]:
+                - button "Add Raya" [ref=f2e3268] [cursor=pointer]: +
+            - row [ref=f2e3269]:
+              - cell [ref=f2e3270]:
+                - button "Dominguez NFO" [ref=f2e3271] [cursor=pointer]:
+                  - strong [ref=f2e3272]: Dominguez
+                  - generic [ref=f2e3273]: NFO
+              - cell "MID" [ref=f2e3274]
+              - cell "£5.0" [ref=f2e3276]
+              - cell "20.3" [ref=f2e3277]
+              - cell "4.1" [ref=f2e3278]
+              - cell "88′" [ref=f2e3279]
+              - cell [ref=f2e3280]:
+                - button "Add Dominguez" [ref=f2e3281] [cursor=pointer]: +
+            - row [ref=f2e3282]:
+              - cell [ref=f2e3283]:
+                - button "Brobbey SUN" [ref=f2e3284] [cursor=pointer]:
+                  - strong [ref=f2e3285]: Brobbey
+                  - generic [ref=f2e3286]: SUN
+              - cell "FWD" [ref=f2e3287]
+              - cell "£6.0" [ref=f2e3289]
+              - cell "20.3" [ref=f2e3290]
+              - cell "3.4" [ref=f2e3291]
+              - cell "88′" [ref=f2e3292]
+              - cell [ref=f2e3293]:
+                - button "Add Brobbey" [ref=f2e3294] [cursor=pointer]: +
+            - row [ref=f2e3295]:
+              - cell [ref=f2e3296]:
+                - button "Willock NEW" [ref=f2e3297] [cursor=pointer]:
+                  - strong [ref=f2e3298]: Willock
+                  - generic [ref=f2e3299]: NEW
+              - cell "MID" [ref=f2e3300]
+              - cell "£5.0" [ref=f2e3302]
+              - cell "20.3" [ref=f2e3303]
+              - cell "4.1" [ref=f2e3304]
+              - cell "86′" [ref=f2e3305]
+              - cell [ref=f2e3306]:
+                - button "Add Willock" [ref=f2e3307] [cursor=pointer]: +
+            - row [ref=f2e3308]:
+              - cell [ref=f2e3309]:
+                - button "Tanaka LEE" [ref=f2e3310] [cursor=pointer]:
+                  - strong [ref=f2e3311]: Tanaka
+                  - generic [ref=f2e3312]: LEE
+              - cell "MID" [ref=f2e3313]
+              - cell "£5.0" [ref=f2e3315]
+              - cell "20.2" [ref=f2e3316]
+              - cell "4.0" [ref=f2e3317]
+              - cell "87′" [ref=f2e3318]
+              - cell [ref=f2e3319]:
+                - button "Add Tanaka" [ref=f2e3320] [cursor=pointer]: +
+            - row [ref=f2e3321]:
+              - cell [ref=f2e3322]:
+                - button "Alcaraz EVE" [ref=f2e3323] [cursor=pointer]:
+                  - strong [ref=f2e3324]: Alcaraz
+                  - generic [ref=f2e3325]: EVE
+              - cell "MID" [ref=f2e3326]
+              - cell "£5.0" [ref=f2e3328]
+              - cell "20.1" [ref=f2e3329]
+              - cell "4.0" [ref=f2e3330]
+              - cell "81′" [ref=f2e3331]
+              - cell [ref=f2e3332]:
+                - button "Add Alcaraz" [ref=f2e3333] [cursor=pointer]: +
+            - row [ref=f2e3334]:
+              - cell [ref=f2e3335]:
+                - button "Gray TOT" [ref=f2e3336] [cursor=pointer]:
+                  - strong [ref=f2e3337]: Gray
+                  - generic [ref=f2e3338]: TOT
+              - cell "MID" [ref=f2e3339]
+              - cell "£5.0" [ref=f2e3341]
+              - cell "20.1" [ref=f2e3342]
+              - cell "4.0" [ref=f2e3343]
+              - cell "88′" [ref=f2e3344]
+              - cell [ref=f2e3345]:
+                - button "Add Gray" [ref=f2e3346] [cursor=pointer]: +
+            - row [ref=f2e3347]:
+              - cell [ref=f2e3348]:
+                - button "Muniz FUL" [ref=f2e3349] [cursor=pointer]:
+                  - strong [ref=f2e3350]: Muniz
+                  - generic [ref=f2e3351]: FUL
+              - cell "FWD" [ref=f2e3352]
+              - cell "£5.5" [ref=f2e3354]
+              - cell "20.1" [ref=f2e3355]
+              - cell "3.7" [ref=f2e3356]
+              - cell "85′" [ref=f2e3357]
+              - cell [ref=f2e3358]:
+                - button "Add Muniz" [ref=f2e3359] [cursor=pointer]: +
+        - complementary "Haaland detail" [ref=f2e3575]:
+          - generic [ref=f2e3576]:
+            - generic [ref=f2e3577]:
+              - text: PLAYER DETAIL
+              - heading "Haaland" [level=2] [ref=f2e3578]
+              - paragraph [ref=f2e3579]: MCI · FWD · 69.4% own
+            - button "Close player detail" [ref=f2e3580] [cursor=pointer]: ×
+          - generic [ref=f2e3581]:
+            - generic [ref=f2e3582]:
+              - generic [ref=f2e3583]: NEXT GW xP
+              - strong [ref=f2e3584]: "5.9"
+            - generic [ref=f2e3585]:
+              - generic [ref=f2e3586]: 5GW xP
+              - strong [ref=f2e3587]: "29.5"
+            - generic [ref=f2e3588]:
+              - generic [ref=f2e3589]: VALUE
+              - strong [ref=f2e3590]: "1.9"
+            - generic [ref=f2e3591]:
+              - generic [ref=f2e3592]: EXP MIN
+              - strong [ref=f2e3593]: 88′
+          - generic [ref=f2e3594]:
+            - generic [ref=f2e3595]:
+              - generic [ref=f2e3596]: PRICE
+              - strong [ref=f2e3597]: £15.5
+            - generic [ref=f2e3598]:
+              - generic [ref=f2e3599]: CONFIDENCE
+              - strong [ref=f2e3600]: HIGH
+            - generic [ref=f2e3601]:
+              - generic [ref=f2e3602]: RISK
+              - strong [ref=f2e3603]: 1/100
+            - generic [ref=f2e3604]:
+              - generic [ref=f2e3605]: FORM / POINTS
+              - strong [ref=f2e3606]: "239"
+          - generic [ref=f2e3607]:
+            - generic [ref=f2e3608]: FIXTURES · NEXT 5
+            - generic [ref=f2e3609]:
+              - generic [ref=f2e3610]: BOU(H)
+              - generic [ref=f2e3611]: CRY(A)
+              - generic [ref=f2e3612]: COV(H)
+              - generic [ref=f2e3613]: MUN(A)
+              - generic [ref=f2e3614]: SUN(H)
+          - generic [ref=f2e3615]:
+            - button "ADD TO SQUAD" [ref=f2e3616] [cursor=pointer]
+            - button "LOCK PLAYER" [ref=f2e3617] [cursor=pointer]
+          - generic [ref=f2e3618]:
+            - generic [ref=f2e3619]: LIVE
+            - text: Price, status, ownership and current points come from the FPL feed.
+            - generic [ref=f2e3620]: MODEL
+            - text: Projection fields are FPL Terminal estimates when present.
+      - region "Squad builder" [ref=f2e3360]:
+        - generic [ref=f2e3361]:
+          - generic [ref=f2e3362]:
+            - text: SQUAD BUILDER
+            - generic [ref=f2e3363]: 0/15 selected
+          - generic [ref=f2e3364]:
+            - generic [ref=f2e3365]: BUILD
+            - button "COMPLETE SQUAD" [ref=f2e3366] [cursor=pointer]
+        - generic [ref=f2e3367]:
+          - generic [ref=f2e3368]:
+            - generic [ref=f2e3369]: SPENT
+            - strong [ref=f2e3370]: £0.0
+          - generic [ref=f2e3371]:
+            - generic [ref=f2e3372]: ITB
+            - strong [ref=f2e3373]: £100.0
+          - generic [ref=f2e3374]:
+            - generic [ref=f2e3375]: LOCKED
+            - strong [ref=f2e3376]: "0"
+        - generic [ref=f2e3377]:
+          - generic [ref=f2e3378]:
+            - generic [ref=f2e3379]:
+              - generic [ref=f2e3380]: GK
+              - generic [ref=f2e3381]: 0/2
+            - generic [ref=f2e3382]:
+              - button "+ Open GK Max £6.0 SUGGEST →" [ref=f2e3383] [cursor=pointer]:
+                - generic [ref=f2e3384]: +
+                - generic [ref=f2e3385]: Open GK
+                - generic [ref=f2e3386]: Max £6.0
+                - generic [ref=f2e3387]: SUGGEST →
+              - button "+ Open GK Max £6.0 SUGGEST →" [ref=f2e3388] [cursor=pointer]:
+                - generic [ref=f2e3389]: +
+                - generic [ref=f2e3390]: Open GK
+                - generic [ref=f2e3391]: Max £6.0
+                - generic [ref=f2e3392]: SUGGEST →
+          - generic [ref=f2e3393]:
+            - generic [ref=f2e3394]:
+              - generic [ref=f2e3395]: DEF
+              - generic [ref=f2e3396]: 0/5
+            - generic [ref=f2e3397]:
+              - button "+ Open DEF Max £8.0 SUGGEST →" [ref=f2e3398] [cursor=pointer]:
+                - generic [ref=f2e3399]: +
+                - generic [ref=f2e3400]: Open DEF
+                - generic [ref=f2e3401]: Max £8.0
+                - generic [ref=f2e3402]: SUGGEST →
+              - button "+ Open DEF Max £8.0 SUGGEST →" [ref=f2e3403] [cursor=pointer]:
+                - generic [ref=f2e3404]: +
+                - generic [ref=f2e3405]: Open DEF
+                - generic [ref=f2e3406]: Max £8.0
+                - generic [ref=f2e3407]: SUGGEST →
+              - button "+ Open DEF Max £8.0 SUGGEST →" [ref=f2e3408] [cursor=pointer]:
+                - generic [ref=f2e3409]: +
+                - generic [ref=f2e3410]: Open DEF
+                - generic [ref=f2e3411]: Max £8.0
+                - generic [ref=f2e3412]: SUGGEST →
+              - button "+ Open DEF Max £8.0 SUGGEST →" [ref=f2e3413] [cursor=pointer]:
+                - generic [ref=f2e3414]: +
+                - generic [ref=f2e3415]: Open DEF
+                - generic [ref=f2e3416]: Max £8.0
+                - generic [ref=f2e3417]: SUGGEST →
+              - button "+ Open DEF Max £8.0 SUGGEST →" [ref=f2e3418] [cursor=pointer]:
+                - generic [ref=f2e3419]: +
+                - generic [ref=f2e3420]: Open DEF
+                - generic [ref=f2e3421]: Max £8.0
+                - generic [ref=f2e3422]: SUGGEST →
+          - generic [ref=f2e3423]:
+            - generic [ref=f2e3424]:
+              - generic [ref=f2e3425]: MID
+              - generic [ref=f2e3426]: 0/5
+            - generic [ref=f2e3427]:
+              - button "+ Open MID Max £12.0 SUGGEST →" [ref=f2e3428] [cursor=pointer]:
+                - generic [ref=f2e3429]: +
+                - generic [ref=f2e3430]: Open MID
+                - generic [ref=f2e3431]: Max £12.0
+                - generic [ref=f2e3432]: SUGGEST →
+              - button "+ Open MID Max £12.0 SUGGEST →" [ref=f2e3433] [cursor=pointer]:
+                - generic [ref=f2e3434]: +
+                - generic [ref=f2e3435]: Open MID
+                - generic [ref=f2e3436]: Max £12.0
+                - generic [ref=f2e3437]: SUGGEST →
+              - button "+ Open MID Max £12.0 SUGGEST →" [ref=f2e3438] [cursor=pointer]:
+                - generic [ref=f2e3439]: +
+                - generic [ref=f2e3440]: Open MID
+                - generic [ref=f2e3441]: Max £12.0
+                - generic [ref=f2e3442]: SUGGEST →
+              - button "+ Open MID Max £12.0 SUGGEST →" [ref=f2e3443] [cursor=pointer]:
+                - generic [ref=f2e3444]: +
+                - generic [ref=f2e3445]: Open MID
+                - generic [ref=f2e3446]: Max £12.0
+                - generic [ref=f2e3447]: SUGGEST →
+              - button "+ Open MID Max £12.0 SUGGEST →" [ref=f2e3448] [cursor=pointer]:
+                - generic [ref=f2e3449]: +
+                - generic [ref=f2e3450]: Open MID
+                - generic [ref=f2e3451]: Max £12.0
+                - generic [ref=f2e3452]: SUGGEST →
+          - generic [ref=f2e3453]:
+            - generic [ref=f2e3454]:
+              - generic [ref=f2e3455]: FWD
+              - generic [ref=f2e3456]: 0/3
+            - generic [ref=f2e3457]:
+              - button "+ Open FWD Max £15.5 SUGGEST →" [ref=f2e3458] [cursor=pointer]:
+                - generic [ref=f2e3459]: +
+                - generic [ref=f2e3460]: Open FWD
+                - generic [ref=f2e3461]: Max £15.5
+                - generic [ref=f2e3462]: SUGGEST →
+              - button "+ Open FWD Max £15.5 SUGGEST →" [ref=f2e3463] [cursor=pointer]:
+                - generic [ref=f2e3464]: +
+                - generic [ref=f2e3465]: Open FWD
+                - generic [ref=f2e3466]: Max £15.5
+                - generic [ref=f2e3467]: SUGGEST →
+              - button "+ Open FWD Max £15.5 SUGGEST →" [ref=f2e3468] [cursor=pointer]:
+                - generic [ref=f2e3469]: +
+                - generic [ref=f2e3470]: Open FWD
+                - generic [ref=f2e3471]: Max £15.5
+                - generic [ref=f2e3472]: SUGGEST →
+        - generic [ref=f2e3473]:
+          - generic [ref=f2e3474]:
+            - generic [ref=f2e3475]: COST
+            - strong [ref=f2e3476]: £0.0
+          - generic [ref=f2e3477]:
+            - generic [ref=f2e3478]: ITB
+            - strong [ref=f2e3479]: £100.0
+          - generic [ref=f2e3480]:
+            - generic [ref=f2e3481]: GW xP
+            - strong [ref=f2e3482]: —
+          - generic [ref=f2e3483]:
+            - generic [ref=f2e3484]: 3GW
+            - strong [ref=f2e3485]: —
+          - generic [ref=f2e3486]:
+            - generic [ref=f2e3487]: 5GW
+            - strong [ref=f2e3488]: —
+          - generic [ref=f2e3489]:
+            - generic [ref=f2e3490]: RISK
+            - strong [ref=f2e3491]: —
+        - generic [ref=f2e3492]:
+          - generic [ref=f2e3493]:
+            - generic [ref=f2e3494]: FEASIBILITY
+            - strong [ref=f2e3495]: INCOMPLETE SQUAD
+          - generic [ref=f2e3497]:
+            - generic [ref=f2e3498]: 0/15 players
+            - generic [ref=f2e3499]: Minimum required £64.0 · flexible £36.0
+        - generic [ref=f2e3500]:
+          - generic [ref=f2e3501]:
+            - generic [ref=f2e3502]: STRATEGY
+            - generic [ref=f2e3503]: HORIZON
+            - generic [ref=f2e3504]:
+              - button "GW" [ref=f2e3505] [cursor=pointer]
+              - button "3GW" [ref=f2e3506] [cursor=pointer]
+              - button "5GW" [ref=f2e3507] [cursor=pointer]
+          - generic [ref=f2e3508]:
+            - generic [ref=f2e3509]: RISK
+            - generic [ref=f2e3510]:
+              - button "SAFE" [ref=f2e3511] [cursor=pointer]
+              - button "BALA" [ref=f2e3512] [cursor=pointer]
+              - button "AGGR" [ref=f2e3513] [cursor=pointer]
+          - generic [ref=f2e3514]:
+            - generic [ref=f2e3515]: BENCH
+            - generic [ref=f2e3516]:
+              - button "CHEA" [ref=f2e3517] [cursor=pointer]
+              - button "BALA" [ref=f2e3518] [cursor=pointer]
+              - button "STRO" [ref=f2e3519] [cursor=pointer]
+      - region "Squad analysis" [ref=f2e3520]:
+        - generic [ref=f2e3521]:
+          - generic [ref=f2e3522]:
+            - generic [ref=f2e3523]: SQUAD ANALYSISPARTIAL
+            - generic [ref=f2e3524]:
+              - generic [ref=f2e3525]: MODEL
+              - button "REPLACEMENTS" [ref=f2e3526] [cursor=pointer]
+          - generic [ref=f2e3527]:
+            - generic [ref=f2e3528]:
+              - generic [ref=f2e3529]: 5GW xPTS
+              - strong [ref=f2e3530]: —
+            - generic [ref=f2e3531]:
+              - generic [ref=f2e3532]: MINUTES SECURITY
+              - strong [ref=f2e3533]: —
+          - generic [ref=f2e3534]:
+            - generic [ref=f2e3535]:
+              - generic [ref=f2e3536]: TOTAL COST
+              - strong [ref=f2e3537]: £0.0
+            - generic [ref=f2e3538]:
+              - generic [ref=f2e3539]: BANK
+              - strong [ref=f2e3540]: £100.0
+            - generic [ref=f2e3541]:
+              - generic [ref=f2e3542]: FIXTURE SCORE
+              - strong [ref=f2e3543]: —
+          - generic [ref=f2e3544]:
+            - generic [ref=f2e3545]:
+              - generic [ref=f2e3546]: WEAKEST LINKS
+              - generic [ref=f2e3547]: MODEL
+            - generic [ref=f2e3548]: No model weak links yet. Add players with projection data to evaluate trade-offs.
+          - generic [ref=f2e3549]: "Live universe: 599 players.Stats marked MODEL are estimates, not official FPL values."
+        - generic [ref=f2e3550]:
+          - generic [ref=f2e3551]:
+            - generic [ref=f2e3552]: MARKET OPPORTUNITIES
+            - generic [ref=f2e3553]: MODEL
+          - generic [ref=f2e3554]: Complete enough of the squad to scan deterministic replacements.
+      - region "AI analyst" [ref=f2e3555]:
+        - generic [ref=f2e3556]:
+          - generic [ref=f2e3557]:
+            - generic [ref=f2e3558]: AI ANALYSTOFFLINE SHELL
+            - generic [ref=f2e3559]: OFFLINE
+          - generic [ref=f2e3561]:
+            - text: SQUAD DIAGNOSIS
+            - paragraph [ref=f2e3562]: AI analyst offline. Add DEEPSEEK_API_KEY to .env.local to enable conversational analysis.
+          - generic [ref=f2e3563]:
+            - text: QUICK COMMANDS
+            - generic [ref=f2e3564]:
+              - button "ANALYZE" [ref=f2e3565] [cursor=pointer]
+              - button "OPTIMIZE" [ref=f2e3566] [cursor=pointer]
+              - button "WEAK LINK" [ref=f2e3567] [cursor=pointer]
+              - button "FINISH SQUAD" [ref=f2e3568] [cursor=pointer]
+              - button "CHEAPEN BENCH" [ref=f2e3569] [cursor=pointer]
+              - button "CAPTAIN" [ref=f2e3570] [cursor=pointer]
+          - generic [ref=f2e3571]:
+            - generic [ref=f2e3572]: ">"
+            - textbox "Ask the AI analyst" [ref=f2e3573]:
+              - /placeholder: Ask about this squad...
+            - button "Send analyst query" [disabled] [ref=f2e3574]: ↗

@@ -1,0 +1,25 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - heading "FPL TERMINAL" [level=1] [ref=e7]
+        - paragraph [ref=e8]: Quantitative FPL squad intelligence
+      - generic [ref=e9]:
+        - button "MODE A → BUILD FROM SCRATCH Start with £100.0m and construct your squad player by player, with live projections reacting to every pick." [ref=e10]:
+          - generic [ref=e11]:
+            - generic [ref=e12]: MODE A
+            - generic [ref=e13]: →
+          - generic [ref=e14]:
+            - generic [ref=e15]: BUILD FROM SCRATCH
+            - paragraph [ref=e16]: Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.
+        - 'button "MODE B → ANALYZE A TEAM Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, upgrade opportunities." [ref=e17]':
+          - generic [ref=e18]:
+            - generic [ref=e19]: MODE B
+            - generic [ref=e20]: →
+          - generic [ref=e21]:
+            - generic [ref=e22]: ANALYZE A TEAM
+            - paragraph [ref=e23]: "Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, upgrade opportunities."
+      - generic [ref=e24]: LIVE DATA · MODEL ESTIMATES · SQUAD RULES ENFORCED LOCALLY
+  - button "Open Next.js Dev Tools" [ref=e30] [cursor=pointer]:
+    - img [ref=e31]
+  - alert [ref=e34]

@@ -20,6 +20,15 @@ export async function interceptFplData(page: Page) {
       return;
     }
 
+    if (pathname.includes("/api/optimizer") && route.request().method() === "POST") {
+      const squad = {
+        playerIds: [5, 16, 6, 9, 10, 17, 18, 2, 3, 12, 13, 22, 1, 14, 15],
+        byPosition: { GK: [5, 16], DEF: [6, 9, 10, 17, 18], MID: [2, 3, 12, 13, 22], FWD: [1, 14, 15] },
+      };
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ legal: true, squad, playerIds: squad.playerIds, errors: [], warnings: [] }) });
+      return;
+    }
+
     if (/(?:ai|analyst|chat)/.test(pathname) && route.request().method() !== "GET") {
       // The acceptance test models a missing key without making a production API call.
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "DEEPSEEK_API_KEY is not configured" }) });
@@ -29,4 +38,3 @@ export async function interceptFplData(page: Page) {
     await route.continue();
   });
 }
-

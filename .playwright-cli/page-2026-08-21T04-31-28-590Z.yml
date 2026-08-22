@@ -1,0 +1,25 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: FPL
+      - generic [ref=e5]: TERMINAL
+    - generic [ref=e7]:
+      - text: QUANTITATIVE SQUAD INTELLIGENCE
+      - heading "Build with the numbers in view." [level=1] [ref=e8]
+      - paragraph [ref=e9]: The manager stays in control. The terminal keeps the budget, projections, fixtures, and trade-offs visible.
+    - generic [ref=e10]:
+      - button "01 / BUILD Build from scratch Start with £100.0m and fill the squad one slot at a time. OPEN WORKSTATION →" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: 01 / BUILD
+        - strong [ref=e13]: Build from scratch
+        - generic [ref=e14]: Start with £100.0m and fill the squad one slot at a time.
+        - emphasis [ref=e15]: OPEN WORKSTATION →
+      - button "02 / ANALYZE Analyze a team Paste an existing 15-player squad and inspect its weak links. OPEN WORKSTATION →" [ref=e16] [cursor=pointer]:
+        - generic [ref=e17]: 02 / ANALYZE
+        - strong [ref=e18]: Analyze a team
+        - generic [ref=e19]: Paste an existing 15-player squad and inspect its weak links.
+        - emphasis [ref=e20]: OPEN WORKSTATION →
+    - generic [ref=e21]:
+      - text: SYNCING FPL MARKET…
+      - generic [ref=e23]: SHORTCUTS / SEARCH · A ANALYST
+  - button "Open Next.js Dev Tools" [ref=e29] [cursor=pointer]
+  - alert [ref=e33]

@@ -1,0 +1,796 @@
+{
+  "communities": {
+    "0": [
+      "lib_analysis_analyzesquad",
+      "lib_analysis_analyzesquad_analyzesquad",
+      "lib_analysis_analyzesquad_analyzesquadinput",
+      "lib_analysis_analyzesquad_analyzesquadoptions",
+      "lib_analysis_analyzesquad_buildstrengths",
+      "lib_analysis_analyzesquad_buildwarnings",
+      "lib_analysis_analyzesquad_choosestartingxi",
+      "lib_analysis_analyzesquad_parseinput",
+      "lib_analysis_analyzesquad_projectionfor",
+      "lib_analysis_budget",
+      "lib_analysis_context",
+      "lib_analysis_context_analysisstrategy",
+      "lib_analysis_context_asplayers",
+      "lib_analysis_context_availabilityrisk",
+      "lib_analysis_context_clubcounts",
+      "lib_analysis_context_commonoptions",
+      "lib_analysis_context_confidenceweight",
+      "lib_analysis_context_costof",
+      "lib_analysis_context_expectedminutes",
+      "lib_analysis_context_fixturedifficulty",
+      "lib_analysis_context_formatprice",
+      "lib_analysis_context_hasavailabilityrisk",
+      "lib_analysis_context_horizonvalue",
+      "lib_analysis_context_idsfromsquad",
+      "lib_analysis_context_ispositioncomplete",
+      "lib_analysis_context_legalsquad",
+      "lib_analysis_context_nextgameweekvalue",
+      "lib_analysis_context_normalizedsquad",
+      "lib_analysis_context_normalizesquad",
+      "lib_analysis_context_playermap",
+      "lib_analysis_context_playeruniverse",
+      "lib_analysis_context_position_limits",
+      "lib_analysis_context_position_minimums",
+      "lib_analysis_context_positions",
+      "lib_analysis_context_squadreference",
+      "lib_analysis_context_utilityvalue",
+      "lib_analysis_index",
+      "lib_analysis_replacements",
+      "lib_analysis_replacements_aslist",
+      "lib_analysis_replacements_budgetfeasibility",
+      "lib_analysis_replacements_budgetrequest",
+      "lib_analysis_replacements_cheapcompletioncost",
+      "lib_analysis_replacements_findreplacements",
+      "lib_analysis_replacements_maxaffordableprice",
+      "lib_analysis_replacements_minimumrequiredspend",
+      "lib_analysis_replacements_playereligible",
+      "lib_analysis_replacements_replacementlist",
+      "lib_analysis_replacements_replacementrequest",
+      "lib_analysis_replacements_requestplayers",
+      "lib_analysis_replacements_richreplacementcandidate",
+      "lib_analysis_replacements_slotsuggestionrequest",
+      "lib_analysis_replacements_strategyoptions",
+      "lib_analysis_replacements_suggestforslot",
+      "lib_analysis_simulatechange",
+      "lib_analysis_simulatechange_idsof",
+      "lib_analysis_simulatechange_proposedsecondarymoves",
+      "lib_analysis_simulatechange_simulatechange",
+      "lib_analysis_simulatechange_simulatechangeinput",
+      "lib_analysis_weakness",
+      "lib_analysis_weakness_percentiledeficit",
+      "lib_analysis_weakness_rankweaknesses",
+      "lib_analysis_weakness_scoreweakness",
+      "lib_analysis_weakness_statuslabel",
+      "lib_analysis_weakness_weaknessforplayer",
+      "lib_analysis_weakness_weaknessoptions",
+      "lib_analysis_weakness_weaknessscore",
+      "lib_optimizer_candidatepool",
+      "lib_optimizer_index",
+      "lib_optimizer_objective",
+      "lib_optimizer_optimizer",
+      "lib_optimizer_optimizer_beamconstruct",
+      "lib_optimizer_optimizer_buildsquad",
+      "lib_optimizer_optimizer_candidatepool",
+      "lib_optimizer_optimizer_candidatestate",
+      "lib_optimizer_optimizer_failure",
+      "lib_optimizer_optimizer_minimumcheapcost",
+      "lib_optimizer_optimizer_objectivescore",
+      "lib_optimizer_optimizer_optimize",
+      "lib_optimizer_optimizer_optimizearoundlockedplayers",
+      "lib_optimizer_optimizer_optimizearoundplayer",
+      "lib_optimizer_optimizer_optimizerinput",
+      "lib_optimizer_optimizer_optimizerresult",
+      "lib_optimizer_optimizer_optimizestartingxi"
+    ],
+    "1": [
+      "lib_ai_agent",
+      "lib_ai_agent_analystchat",
+      "lib_ai_agent_analystchatrequest",
+      "lib_ai_agent_analystrunresult",
+      "lib_ai_agent_cleanassistanttext",
+      "lib_ai_agent_normalizerequest",
+      "lib_ai_agent_offlineresult",
+      "lib_ai_agent_parseassistantresponse",
+      "lib_ai_agent_parsejsoncandidate",
+      "lib_ai_agent_runanalyst",
+      "lib_ai_agent_runanalystoptions",
+      "lib_ai_agent_thinkingmode",
+      "lib_ai_deepseek",
+      "lib_ai_deepseek_chatmessage",
+      "lib_ai_deepseek_chattooldefinition",
+      "lib_ai_deepseek_deepseekchatcompletion",
+      "lib_ai_deepseek_deepseekchatrequest",
+      "lib_ai_deepseek_deepseekchatresponse",
+      "lib_ai_deepseek_deepseekrequesterror",
+      "lib_ai_deepseek_deepseekrequesterror_constructor",
+      "lib_ai_deepseek_deepseekthinkingmode",
+      "lib_ai_deepseek_deepseekunavailableerror",
+      "lib_ai_deepseek_deepseekunavailableerror_constructor",
+      "lib_ai_deepseek_getdeepseekmodel",
+      "lib_ai_deepseek_hasdeepseekkey",
+      "lib_ai_schemas",
+      "lib_ai_schemas_airequest",
+      "lib_ai_schemas_airequestschema",
+      "lib_ai_schemas_analystaction",
+      "lib_ai_schemas_analystactionschema",
+      "lib_ai_schemas_analystcontextinput",
+      "lib_ai_schemas_analystcontextschema",
+      "lib_ai_schemas_analystresponse",
+      "lib_ai_schemas_analystresponseschema",
+      "lib_ai_schemas_compactfixtureschema",
+      "lib_ai_schemas_compactplayerschema",
+      "lib_ai_schemas_deepseekmessageschema",
+      "lib_ai_schemas_deepseektoolcallschema",
+      "lib_ai_schemas_default_analyst_context",
+      "lib_ai_schemas_idschema",
+      "lib_ai_schemas_positionschema",
+      "lib_ai_schemas_priceschema",
+      "lib_ai_schemas_toolinputschemas",
+      "lib_ai_schemas_toolname",
+      "lib_ai_systemprompt",
+      "lib_ai_systemprompt_compactcontextprompt",
+      "lib_ai_tools",
+      "lib_ai_tools_aidataadapters",
+      "lib_ai_tools_compactanalysis",
+      "lib_ai_tools_compactoptimizer",
+      "lib_ai_tools_compactplayer",
+      "lib_ai_tools_createfpltooladapters",
+      "lib_ai_tools_createtoolregistry",
+      "lib_ai_tools_defaulthandlers",
+      "lib_ai_tools_descriptions",
+      "lib_ai_tools_executetool",
+      "lib_ai_tools_findplayer",
+      "lib_ai_tools_json_tool_output",
+      "lib_ai_tools_playersfrom",
+      "lib_ai_tools_projectionfor",
+      "lib_ai_tools_tool_definitions",
+      "lib_ai_tools_tool_names",
+      "lib_ai_tools_tooldefinition",
+      "lib_ai_tools_toolexecutionresult",
+      "lib_ai_tools_toolhandler",
+      "lib_ai_tools_toolinput",
+      "lib_ai_tools_toolparameters",
+      "lib_ai_tools_toolregistry",
+      "lib_ai_tools_withadapter",
+      "lib_optimizer_beamsearch",
+      "lib_optimizer_optimizer_completepartialsquad",
+      "lib_optimizer_optimizer_currentids",
+      "lib_optimizer_optimizer_optimizefullsquad"
+    ],
+    "2": [
+      "lib_fixtures_index",
+      "lib_projections_components",
+      "lib_projections_confidence",
+      "lib_projections_expectedminutes",
+      "lib_projections_expectedminutes_clamp",
+      "lib_projections_expectedminutes_estimateexpectedminutes",
+      "lib_projections_expectedminutes_expectedminutesoptions",
+      "lib_projections_expectedminutes_observedrecentminutes",
+      "lib_projections_expectedminutes_priorminutes",
+      "lib_projections_expectedminutes_statusavailability",
+      "lib_projections_fixtureadjustment",
+      "lib_projections_fixtureadjustment_calculatefixtureadjustment",
+      "lib_projections_fixtureadjustment_clamp",
+      "lib_projections_fixtureadjustment_difficultymultiplier",
+      "lib_projections_fixtureadjustment_fixtureadjustment",
+      "lib_projections_fixtureadjustment_fixtureadjustmentoptions",
+      "lib_projections_fixtureadjustment_fixtureadjustmentresult",
+      "lib_projections_index",
+      "lib_projections_metrics",
+      "lib_projections_metrics_availability",
+      "lib_projections_metrics_calculateprojectionconfidence",
+      "lib_projections_metrics_calculateriskscore",
+      "lib_projections_metrics_calculatevalue",
+      "lib_projections_metrics_clamp",
+      "lib_projections_metrics_percentile",
+      "lib_projections_metrics_projectedvalue",
+      "lib_projections_metrics_projectionconfidence",
+      "lib_projections_metrics_riskscore",
+      "lib_projections_metrics_valuepermillion",
+      "lib_projections_projectplayer",
+      "lib_projections_projectplayer_addcomponents",
+      "lib_projections_projectplayer_aggregatefixturepointsbygameweek",
+      "lib_projections_projectplayer_calculateplayerprojection",
+      "lib_projections_projectplayer_clamp",
+      "lib_projections_projectplayer_clean_sheet_points",
+      "lib_projections_projectplayer_currentrate",
+      "lib_projections_projectplayer_factors",
+      "lib_projections_projectplayer_fixturecomponents",
+      "lib_projections_projectplayer_fixturefor",
+      "lib_projections_projectplayer_fixturepointsforgameweek",
+      "lib_projections_projectplayer_fixturepointsforgameweeks",
+      "lib_projections_projectplayer_goal_points",
+      "lib_projections_projectplayer_historicalrate",
+      "lib_projections_projectplayer_prior_xa",
+      "lib_projections_projectplayer_prior_xg",
+      "lib_projections_projectplayer_projectplayer",
+      "lib_projections_projectplayer_projectplayeroptions",
+      "lib_projections_projectplayer_projectplayers",
+      "lib_projections_projectplayer_regressedplayerrate",
+      "lib_projections_projectplayer_rounded",
+      "lib_projections_projectplayer_teamfor",
+      "lib_projections_projectplayer_zerocomponents",
+      "lib_projections_regression",
+      "lib_projections_regression_regress",
+      "lib_projections_regression_regressioninput",
+      "lib_projections_regression_regressper90",
+      "lib_projections_risk",
+      "lib_projections_value"
+    ],
+    "3": [
+      "lib_squad_budget",
+      "lib_squad_budget_availablecandidates",
+      "lib_squad_budget_budgetoptions",
+      "lib_squad_budget_budgetrequest",
+      "lib_squad_budget_calculatebudgetfeasibility",
+      "lib_squad_budget_explainillegalselection",
+      "lib_squad_budget_illegalselectionexplanation",
+      "lib_squad_budget_maxsafepriceforposition",
+      "lib_squad_budget_minimumremainingspend",
+      "lib_squad_budget_parsedbudgetinput",
+      "lib_squad_budget_parseinput",
+      "lib_squad_budget_positions",
+      "lib_squad_captain",
+      "lib_squad_captain_captainplan",
+      "lib_squad_captain_choosecaptainvice",
+      "lib_squad_captain_starterids",
+      "lib_squad_captain_validatecaptainvice",
+      "lib_squad_constraints",
+      "lib_squad_index",
+      "lib_squad_rules",
+      "lib_squad_startingxi",
+      "lib_squad_startingxi_compareids",
+      "lib_squad_startingxi_displayorder",
+      "lib_squad_startingxi_playerscore",
+      "lib_squad_startingxi_positionorder",
+      "lib_squad_startingxi_scoresquad",
+      "lib_squad_startingxi_selectstartingxi",
+      "lib_squad_startingxi_startingxioptions",
+      "lib_squad_validation",
+      "lib_squad_validation_counts",
+      "lib_squad_validation_default_squad_constraints",
+      "lib_squad_validation_duplicateids",
+      "lib_squad_validation_formatprice",
+      "lib_squad_validation_islegalpartialsquad",
+      "lib_squad_validation_islegalsquad",
+      "lib_squad_validation_mergeconstraints",
+      "lib_squad_validation_positions",
+      "lib_squad_validation_squadclubcounts",
+      "lib_squad_validation_squadcosttenths",
+      "lib_squad_validation_squadplayers",
+      "lib_squad_validation_squadpositioncounts",
+      "lib_squad_validation_tosquadstate",
+      "lib_squad_validation_validatepartialsquad",
+      "lib_squad_validation_validatesquad"
+    ],
+    "4": [
+      "lib_availability_rotowire",
+      "lib_availability_rotowire_capture",
+      "lib_availability_rotowire_decodehtml",
+      "lib_availability_rotowire_entities",
+      "lib_availability_rotowire_fetchrotowirelineups",
+      "lib_availability_rotowire_fixtureblocks",
+      "lib_availability_rotowire_parserotowirelineups",
+      "lib_availability_rotowire_parseteamlist",
+      "lib_availability_rotowire_playerrows",
+      "lib_availability_rotowire_rotowireavailabilitystatus",
+      "lib_availability_rotowire_rotowirefixturelineup",
+      "lib_availability_rotowire_rotowirelineupsnapshot",
+      "lib_availability_rotowire_rotowirelineupstatus",
+      "lib_availability_rotowire_rotowireplayer",
+      "lib_availability_rotowire_rotowireteamlineup",
+      "lib_availability_rotowire_rotowireunavailableplayer",
+      "lib_availability_rotowire_text",
+      "lib_availability_rotowiremapping",
+      "lib_availability_rotowiremapping_autoclubids",
+      "lib_availability_rotowiremapping_candidatenames",
+      "lib_availability_rotowiremapping_clublookup",
+      "lib_availability_rotowiremapping_confirmedlookup",
+      "lib_availability_rotowiremapping_initialisedfullnamematch",
+      "lib_availability_rotowiremapping_maprotowirelineups",
+      "lib_availability_rotowiremapping_normalizerotowirename",
+      "lib_availability_rotowiremapping_playercandidate",
+      "lib_availability_rotowiremapping_playerfullname",
+      "lib_availability_rotowiremapping_resolveclubid",
+      "lib_availability_rotowiremapping_rotowireclubmapping",
+      "lib_availability_rotowiremapping_rotowireclubmappings",
+      "lib_availability_rotowiremapping_rotowireconfirmedmappings",
+      "lib_availability_rotowiremapping_rotowiremappedrecord",
+      "lib_availability_rotowiremapping_rotowiremappingcandidate",
+      "lib_availability_rotowiremapping_rotowiremappingmethod",
+      "lib_availability_rotowiremapping_rotowiremappingoptions",
+      "lib_availability_rotowiremapping_rotowiremappingresult",
+      "lib_availability_rotowiremapping_rotowiresourcerecord",
+      "lib_availability_rotowiremapping_rotowireunresolvedreason",
+      "lib_availability_rotowiremapping_rotowireunresolvedrecord",
+      "lib_availability_rotowiremapping_singletokenaliasmatch",
+      "lib_availability_rotowiremapping_sortcandidates",
+      "lib_availability_rotowiremapping_sourcerecords",
+      "lib_availability_rotowiremapping_tokens"
+    ],
+    "5": [
+      "lib_fpl_schemas_parseexternal",
+      "lib_historical_ingest",
+      "lib_historical_ingest_aggregatehistoricalplayers",
+      "lib_historical_ingest_csvrow",
+      "lib_historical_ingest_download",
+      "lib_historical_ingest_ingesthistoricaldata",
+      "lib_historical_ingest_ingestoptions",
+      "lib_historical_ingest_maphistoricalplayers",
+      "lib_historical_ingest_normalizedname",
+      "lib_historical_ingest_normalizehistoricalmatchstats",
+      "lib_historical_ingest_normalizeteamstrength",
+      "lib_historical_ingest_number",
+      "lib_historical_ingest_parsecsv",
+      "lib_historical_ingest_playeraccumulator",
+      "lib_historical_ingest_position",
+      "lib_historical_ingest_requirednumber",
+      "lib_historical_load",
+      "lib_historical_load_generated_dir",
+      "lib_historical_load_historicaldatastatus",
+      "lib_historical_load_loadhistoricalbundle",
+      "lib_historical_schemas",
+      "lib_historical_schemas_historicalbundleschema",
+      "lib_historical_schemas_historicalmatchstatschema",
+      "lib_historical_schemas_historicalplayerschema",
+      "lib_historical_schemas_historicalstatsschema",
+      "lib_historical_schemas_historicalteamstrengthschema",
+      "lib_historical_schemas_nullablenumber",
+      "lib_historical_schemas_playermappingschema",
+      "lib_historical_types",
+      "lib_historical_types_historicalbundle",
+      "lib_historical_types_historicaldatastatus",
+      "lib_historical_types_historicalmatchstat",
+      "lib_historical_types_historicalplayerrecord",
+      "lib_historical_types_historicalteamstrength"
+    ],
+    "6": [
+      "lib_squad_weeklylineup",
+      "lib_squad_weeklylineup_appearanceprobability",
+      "lib_squad_weeklylineup_applymask",
+      "lib_squad_weeklylineup_basepoints",
+      "lib_squad_weeklylineup_benchisvalid",
+      "lib_squad_weeklylineup_candidatefor",
+      "lib_squad_weeklylineup_captainpair",
+      "lib_squad_weeklylineup_clamp",
+      "lib_squad_weeklylineup_comparecandidates",
+      "lib_squad_weeklylineup_compareids",
+      "lib_squad_weeklylineup_enumeratelegalstartingxis",
+      "lib_squad_weeklylineup_expectedautosubvalue",
+      "lib_squad_weeklylineup_fingerprint",
+      "lib_squad_weeklylineup_fixtureprojections",
+      "lib_squad_weeklylineup_formationcounts",
+      "lib_squad_weeklylineup_formationstring",
+      "lib_squad_weeklylineup_hasfixtureschedule",
+      "lib_squad_weeklylineup_invalidplan",
+      "lib_squad_weeklylineup_legalformation",
+      "lib_squad_weeklylineup_lineupcandidate",
+      "lib_squad_weeklylineup_metrics",
+      "lib_squad_weeklylineup_minutes",
+      "lib_squad_weeklylineup_orderedplayers",
+      "lib_squad_weeklylineup_permutations",
+      "lib_squad_weeklylineup_pickweeklyteam",
+      "lib_squad_weeklylineup_playedmaskvalue",
+      "lib_squad_weeklylineup_playerweekmetrics",
+      "lib_squad_weeklylineup_positionorder",
+      "lib_squad_weeklylineup_probabilitydidnotplay",
+      "lib_squad_weeklylineup_round",
+      "lib_squad_weeklylineup_validateweeklylineup",
+      "lib_squad_weeklylineup_weeklylineupvalidation"
+    ],
+    "7": [
+      "lib_fpl_normalize",
+      "lib_fpl_normalize_bootstrapprojectionmetadata",
+      "lib_fpl_normalize_normalizebootstrap",
+      "lib_fpl_normalize_normalizedbootstrap",
+      "lib_fpl_normalize_normalizedevent",
+      "lib_fpl_normalize_normalizedfixture",
+      "lib_fpl_normalize_normalizedliveelement",
+      "lib_fpl_normalize_normalizedlivegameweek",
+      "lib_fpl_normalize_normalizedplayerdetail",
+      "lib_fpl_normalize_normalizedteam",
+      "lib_fpl_normalize_normalizefixtures",
+      "lib_fpl_normalize_normalizelivegameweek",
+      "lib_fpl_normalize_normalizeplayer",
+      "lib_fpl_normalize_normalizeplayerdetail",
+      "lib_fpl_normalize_optionalnumber",
+      "lib_fpl_normalize_playerfixtures",
+      "lib_fpl_normalize_position_by_element_type",
+      "lib_fpl_normalize_teammap",
+      "lib_fpl_normalize_tonumber",
+      "lib_fpl_schemas_fplfixturepayload",
+      "lib_fpl_schemas_fplplayersummarypayload"
+    ],
+    "8": [
+      "lib_fpl_cache_getmemorycache",
+      "lib_fpl_cache_iscachefresh",
+      "lib_fpl_cache_setmemorycache",
+      "lib_fpl_client",
+      "lib_fpl_client_errormessage",
+      "lib_fpl_client_fpl_base_url",
+      "lib_fpl_client_fplrequestoptions",
+      "lib_fpl_client_getbootstrap",
+      "lib_fpl_client_getfixtures",
+      "lib_fpl_client_getlivegameweek",
+      "lib_fpl_client_getplayersummary",
+      "lib_fpl_client_requestjson",
+      "lib_fpl_client_requestoptions",
+      "lib_fpl_schemas_fplbootstrapschema",
+      "lib_fpl_schemas_fplfixturesschema",
+      "lib_fpl_schemas_fplliveresponsepayload",
+      "lib_fpl_schemas_fplplayersummaryschema"
+    ],
+    "9": [
+      "lib_fpl_schemas",
+      "lib_fpl_schemas_fplbootstrappayload",
+      "lib_fpl_schemas_fplelementschema",
+      "lib_fpl_schemas_fplelementtypeschema",
+      "lib_fpl_schemas_fpleventschema",
+      "lib_fpl_schemas_fplfixtureschema",
+      "lib_fpl_schemas_fplhistoryrowschema",
+      "lib_fpl_schemas_fplliveelementschema",
+      "lib_fpl_schemas_fplliveresponseschema",
+      "lib_fpl_schemas_fplpastseasonrowschema",
+      "lib_fpl_schemas_fplplayerfixtureschema",
+      "lib_fpl_schemas_fplteamschema",
+      "lib_fpl_schemas_nullablenumberlike",
+      "lib_fpl_schemas_numberlike"
+    ],
+    "10": [
+      "lib_fpl_cache",
+      "lib_fpl_cache_clearfplcache",
+      "lib_fpl_cache_datasource",
+      "lib_fpl_cache_fpl_cache_ttls_ms",
+      "lib_fpl_cache_fplresponse",
+      "lib_fpl_cache_getfreshness",
+      "lib_fpl_cache_memory",
+      "lib_fpl_cache_memoryentry",
+      "lib_fpl_cache_readsnapshot",
+      "lib_fpl_cache_snapshot",
+      "lib_fpl_cache_snapshotdirectory",
+      "lib_fpl_cache_snapshotfile",
+      "lib_fpl_cache_writesnapshot"
+    ],
+    "11": [
+      "lib_fpl_normalize_enrichbootstrapwithprojections",
+      "lib_historical_enrichplayers",
+      "lib_historical_enrichplayers_currentgameweek",
+      "lib_historical_enrichplayers_deriveteamstrengths",
+      "lib_historical_enrichplayers_enrichedplayers",
+      "lib_historical_enrichplayers_enrichmentevent",
+      "lib_historical_enrichplayers_enrichmentteam",
+      "lib_historical_enrichplayers_enrichplayerswithhistory",
+      "lib_historical_enrichplayers_finiteor",
+      "lib_historical_enrichplayers_mean",
+      "lib_historical_enrichplayers_playerenrichmentmetadata"
+    ],
+    "12": [
+      "lib_fpl_cache_freshnessmetadata",
+      "lib_fpl_http",
+      "lib_fpl_http_errorlist",
+      "lib_fpl_http_fpljson",
+      "lib_fpl_http_latestfreshness",
+      "lib_fpl_http_refreshrequested"
+    ],
+    "13": [
+      "lib_ai_agent_runagent"
+    ],
+    "14": [
+      "lib_ai_schemas_aiactionschema"
+    ],
+    "15": [
+      "lib_ai_schemas_airesponseschema"
+    ],
+    "16": [
+      "lib_ai_tools_ai_tools"
+    ],
+    "17": [
+      "lib_ai_tools_createdefaulttooladapters"
+    ],
+    "18": [
+      "lib_analysis_replacements_calculatebudgetfeasibility"
+    ],
+    "19": [
+      "lib_analysis_replacements_maximumsafeprice"
+    ],
+    "20": [
+      "lib_analysis_replacements_maxsafepriceforposition"
+    ],
+    "21": [
+      "lib_analysis_replacements_minimumremainingspend"
+    ],
+    "22": [
+      "lib_availability_rotowiremapping_maprotowiresnapshot"
+    ],
+    "23": [
+      "lib_fpl_client_fetchbootstrap"
+    ],
+    "24": [
+      "lib_fpl_client_fetchfixtures"
+    ],
+    "25": [
+      "lib_fpl_client_fetchlivegameweek"
+    ],
+    "26": [
+      "lib_fpl_client_fetchplayersummary"
+    ],
+    "27": [
+      "lib_fpl_client_getbootstrapstatic"
+    ],
+    "28": [
+      "lib_fpl_client_getelementsummary"
+    ],
+    "29": [
+      "lib_fpl_client_getfixturelist"
+    ],
+    "30": [
+      "lib_fpl_schemas_bootstrapstaticschema"
+    ],
+    "31": [
+      "lib_fpl_schemas_fixturesschema"
+    ],
+    "32": [
+      "lib_fpl_schemas_livegameweekschema"
+    ],
+    "33": [
+      "lib_fpl_schemas_playersummaryschema"
+    ],
+    "34": [
+      "lib_projections_expectedminutes_expectedminutes"
+    ],
+    "35": [
+      "lib_projections_fixtureadjustment_adjustfixture"
+    ],
+    "36": [
+      "lib_projections_fixtureadjustment_fixturemultiplier"
+    ],
+    "37": [
+      "lib_projections_regression_regressrate"
+    ],
+    "38": [
+      "lib_projections_regression_regresstowardsprior"
+    ],
+    "39": [
+      "lib_squad_budget_budgetfeasibility"
+    ],
+    "40": [
+      "lib_squad_budget_calculatemaxsafeprice"
+    ],
+    "41": [
+      "lib_squad_budget_calculateminimumremainingspend"
+    ],
+    "42": [
+      "lib_squad_budget_explainillegaladd"
+    ],
+    "43": [
+      "lib_squad_budget_maxaffordableprice"
+    ],
+    "44": [
+      "lib_squad_budget_maximumsafeprice"
+    ],
+    "45": [
+      "lib_squad_budget_minimumrequiredspend"
+    ],
+    "46": [
+      "lib_squad_captain_selectcaptainvice"
+    ],
+    "47": [
+      "lib_squad_captain_validatecaptaincy"
+    ],
+    "48": [
+      "lib_squad_startingxi_deterministicstartingxi"
+    ],
+    "49": [
+      "lib_squad_startingxi_getstartingxi"
+    ],
+    "50": [
+      "lib_squad_validation_legalsquad"
+    ],
+    "51": [
+      "lib_squad_weeklylineup_enumeratelegalxis"
+    ]
+  },
+  "cohesion": {
+    "0": 0.08610049955921247,
+    "1": 0.05517503805175038,
+    "2": 0.06957047791893527,
+    "3": 0.1226215644820296,
+    "4": 0.09302325581395349,
+    "5": 0.10338680926916222,
+    "6": 0.14919354838709678,
+    "7": 0.13333333333333333,
+    "8": 0.17647058823529413,
+    "9": 0.14285714285714285,
+    "10": 0.20512820512820512,
+    "11": 0.2545454545454545,
+    "12": 0.3333333333333333,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0,
+    "23": 1.0,
+    "24": 1.0,
+    "25": 1.0,
+    "26": 1.0,
+    "27": 1.0,
+    "28": 1.0,
+    "29": 1.0,
+    "30": 1.0,
+    "31": 1.0,
+    "32": 1.0,
+    "33": 1.0,
+    "34": 1.0,
+    "35": 1.0,
+    "36": 1.0,
+    "37": 1.0,
+    "38": 1.0,
+    "39": 1.0,
+    "40": 1.0,
+    "41": 1.0,
+    "42": 1.0,
+    "43": 1.0,
+    "44": 1.0,
+    "45": 1.0,
+    "46": 1.0,
+    "47": 1.0,
+    "48": 1.0,
+    "49": 1.0,
+    "50": 1.0,
+    "51": 1.0
+  },
+  "gods": [
+    {
+      "id": "lib_projections_projectplayer_projectplayer",
+      "label": "projectPlayer()",
+      "degree": 22
+    },
+    {
+      "id": "lib_analysis_analyzesquad_analyzesquad",
+      "label": "analyzeSquad()",
+      "degree": 20
+    },
+    {
+      "id": "lib_analysis_context_playermap",
+      "label": "playerMap()",
+      "degree": 20
+    },
+    {
+      "id": "lib_analysis_replacements_suggestforslot",
+      "label": "suggestForSlot()",
+      "degree": 18
+    },
+    {
+      "id": "lib_ai_tools_createfpltooladapters",
+      "label": "createFplToolAdapters()",
+      "degree": 17
+    },
+    {
+      "id": "lib_analysis_context_playeruniverse",
+      "label": "PlayerUniverse",
+      "degree": 17
+    },
+    {
+      "id": "lib_analysis_replacements_findreplacements",
+      "label": "findReplacements()",
+      "degree": 17
+    },
+    {
+      "id": "lib_analysis_context_costof",
+      "label": "costOf()",
+      "degree": 15
+    },
+    {
+      "id": "lib_squad_validation_validatepartialsquad",
+      "label": "validatePartialSquad()",
+      "degree": 15
+    },
+    {
+      "id": "lib_ai_agent_runanalyst",
+      "label": "runAnalyst()",
+      "degree": 14
+    }
+  ],
+  "surprises": [
+    {
+      "source": "findReplacements()",
+      "target": "minutes()",
+      "source_files": [
+        "lib/analysis/replacements.ts",
+        "lib/squad/weeklyLineup.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "minimumCheapCost()",
+      "target": "position()",
+      "source_files": [
+        "lib/optimizer/optimizer.ts",
+        "lib/historical/ingest.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "minimumRemainingSpend()",
+      "target": "position()",
+      "source_files": [
+        "lib/squad/budget.ts",
+        "lib/historical/ingest.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "RunAnalystOptions",
+      "target": "AIDataAdapters",
+      "source_files": [
+        "lib/ai/agent.ts",
+        "lib/ai/tools.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "peripheral node `RunAnalystOptions` unexpectedly reaches hub `AIDataAdapters`"
+    },
+    {
+      "source": "compactPlayer()",
+      "target": "projectPlayer()",
+      "source_files": [
+        "lib/ai/tools.ts",
+        "lib/projections/projectPlayer.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `projectPlayer()` connect `Community 2` to `Community 0`, `Community 1`?",
+      "why": "High betweenness centrality (0.040) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `normalizeBootstrap()` connect `Community 7` to `Community 1`, `Community 5`?",
+      "why": "High betweenness centrality (0.023) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `pickWeeklyTeam()` connect `Community 6` to `Community 1`, `Community 3`?",
+      "why": "High betweenness centrality (0.022) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `AnalystChat`, `DeepSeekChatRequest`, `idSchema` to the rest of the system?",
+      "why": "135 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 0` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.08610049955921247 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 1` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.05517503805175038 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 2` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.06957047791893527 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

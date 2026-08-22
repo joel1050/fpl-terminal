@@ -137,7 +137,7 @@ export function isLineupStale(lineupGameweek: number | undefined, lineupProjecti
 
 export type TerminalState = {
   mode: TerminalMode | null;
-  activeMobileTab: "SQUAD" | "ANALYSIS" | "MARKET" | "AI";
+  activeMobileTab: "SQUAD" | "MARKET" | "AI";
   playerIds: number[];
   byPosition: SlotMap;
   benchGoalkeeperId?: number;
