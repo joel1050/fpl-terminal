@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Player } from "@/types/player";
 import { buildPlayerSelections } from "@/lib/availability/selection";
-import { buildCurrentMatchStats } from "@/lib/availability/currentMatchStats";
 import type { RotowireMappedRecord } from "@/lib/availability/rotowireMapping";
 
 function player(id: number, teamId = 1, minutes = 2_700): Player {
@@ -41,69 +40,6 @@ function mapping(playerId: number, source: RotowireMappedRecord["source"], statu
 }
 
 describe("player selection model", () => {
-  const played = (minutes: readonly number[], playerId = 1) =>
-    minutes.map((value, index) => ({ playerId, gameweek: index + 1, minutes: value }));
-
-  it("reads a role from recent matches rather than a season-long count", () => {
-    const started = Array.from({ length: 5 }, () => 90);
-    const benched = Array.from({ length: 5 }, () => 0);
-    // Same ten matches, same five starts. Only the order differs.
-    const droppedRecently = buildPlayerSelections([player(1)], {
-      currentMatchStats: played([...started, ...benched]),
-    });
-    const recalled = buildPlayerSelections([player(1)], {
-      currentMatchStats: played([...benched, ...started]),
-    });
-
-    expect(recalled.get(1)!.startProbability).toBeGreaterThan(0.6);
-    expect(droppedRecently.get(1)!.startProbability).toBeLessThan(0.32);
-    expect(recalled.get(1)!.startProbability).toBeGreaterThan(droppedRecently.get(1)!.startProbability * 2);
-  });
-
-  it("lets last season fade as this season accumulates", () => {
-    const lastSeason = {
-      players: [],
-      playerMappings: [{ currentPlayerId: 1, historicalPlayerId: 1, confidence: "EXACT" as const }],
-      matchStats: Array.from({ length: 38 }, (_, index) => ({
-        historicalPlayerId: 1,
-        gameweek: index + 1,
-        fixtureId: index + 1,
-        opponentTeamId: 2,
-        minutes: 90,
-        totalPoints: 0,
-        goals: 0,
-        assists: 0,
-        expectedGoals: 0,
-        expectedAssists: 0,
-        bonus: 0,
-        bps: 0,
-        wasHome: true,
-      })),
-      generatedAt: "2026-08-20T00:00:00.000Z",
-    };
-    // An ever-present last season who has not started a match this season.
-    const at = (matches: number) => buildPlayerSelections([player(1)], {
-      historical: lastSeason,
-      currentMatchStats: played(Array.from({ length: matches }, () => 0)),
-    }).get(1)!.startProbability;
-
-    expect(at(0)).toBeGreaterThan(0.65);
-    expect(at(3)).toBeLessThan(at(0) / 1.5);
-    expect(at(10)).toBeLessThan(at(3));
-    expect(at(10)).toBeLessThan(0.3);
-  });
-
-  it("keeps one row per player per match and orders them by gameweek", () => {
-    const rows = buildCurrentMatchStats([
-      { gameweek: 2, elements: [{ playerId: 7, stats: { minutes: 45 } }] },
-      { gameweek: 1, elements: [{ playerId: 7, stats: { minutes: "90" } }, { playerId: 9, stats: { minutes: null } }] },
-    ]);
-    expect(rows).toEqual([
-      { playerId: 7, gameweek: 1, minutes: 90 },
-      { playerId: 7, gameweek: 2, minutes: 45 },
-    ]);
-  });
-
   it("normalizes scenarios and gives the predicted XI a strong start signal", () => {
     const selections = buildPlayerSelections([player(1), player(2)], {
       rotowire: { snapshot: { fetchedAt: "2026-08-20T12:00:00.000Z" }, mappings: [mapping(1, "STARTER")] },

@@ -3,7 +3,6 @@ import type { TeamStrength } from "@/types/projection";
 import { projectPlayers } from "@/lib/projections/projectPlayer";
 import { loadRotowireSelectionData } from "@/lib/availability/loadSelectionData";
 import { buildPlayerSelections } from "@/lib/availability/selection";
-import { loadCurrentMatchStats } from "@/lib/availability/currentMatchStats";
 import type { HistoricalBundle } from "./types";
 
 export interface EnrichmentTeam {
@@ -150,7 +149,6 @@ export function enrichPlayersWithHistory(
   const gw = currentGameweek(events);
   const selections = buildPlayerSelections(enrichedPlayers, {
     rotowire: loadRotowireSelectionData(),
-    currentMatchStats: loadCurrentMatchStats(),
     historical,
   });
   const selectedPlayers = enrichedPlayers.map((player) => ({
