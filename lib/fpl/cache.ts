@@ -7,6 +7,7 @@ export const FPL_CACHE_TTLS_MS = {
   fixtures: 15 * 60 * 1000,
   player: 15 * 60 * 1000,
   live: 60 * 1000,
+  entry: 60 * 1000,
 } as const;
 
 export type DataSource = "live" | "snapshot";

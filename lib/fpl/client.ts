@@ -11,11 +11,15 @@ import {
 } from "./cache";
 import {
   FplBootstrapSchema,
+  FplEntryPicksSchema,
+  FplEntrySchema,
   FplFixturesSchema,
   FplLiveResponseSchema,
   FplPlayerSummarySchema,
   parseExternal,
   type FplBootstrapPayload,
+  type FplEntryPayload,
+  type FplEntryPicksPayload,
   type FplFixturePayload,
   type FplLiveResponsePayload,
   type FplPlayerSummaryPayload,
@@ -148,6 +152,32 @@ export function getLiveGameweek(
     schema: FplLiveResponseSchema,
     ttlMs: FPL_CACHE_TTLS_MS.live,
     ...options,
+  });
+}
+
+export function getEntry(entryId: number): Promise<FplResponse<FplEntryPayload>> {
+  if (!Number.isSafeInteger(entryId) || entryId < 1) {
+    return Promise.resolve({ data: null, freshness: null, error: "Team id must be a positive integer" });
+  }
+  return requestJson({
+    key: `entry-${entryId}`,
+    path: `entry/${entryId}/`,
+    schema: FplEntrySchema,
+    ttlMs: FPL_CACHE_TTLS_MS.entry,
+    persistSnapshot: false,
+  });
+}
+
+export function getEntryPicks(entryId: number): Promise<FplResponse<FplEntryPicksPayload>> {
+  if (!Number.isSafeInteger(entryId) || entryId < 1) {
+    return Promise.resolve({ data: null, freshness: null, error: "Team id must be a positive integer" });
+  }
+  return requestJson({
+    key: `entry-${entryId}-event-1-picks`,
+    path: `entry/${entryId}/event/1/picks/`,
+    schema: FplEntryPicksSchema,
+    ttlMs: FPL_CACHE_TTLS_MS.entry,
+    persistSnapshot: false,
   });
 }
 

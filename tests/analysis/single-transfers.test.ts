@@ -45,20 +45,15 @@ const selected = [
 ];
 
 describe("exact single-transfer optimizer", () => {
-  it("prices cash at 0.25 xP/GW per £1m and keeps the similarity boundary", () => {
-    const equalBench = player(16, "MID", 47, 4);
-    const atBoundary = player(17, "MID", 50, 4.5);
-    const belowBoundary = player(18, "MID", 40, 4.4);
-    const benchMove = findBestSingleTransfers({ squad: selected, players: [...selected, equalBench], gameweek: 1, horizon: 5, risk: "BALANCED", outgoingPlayerId: 12 })
-      .find((move) => move.incomingPlayerId === 16);
-    const boundaryMove = findBestSingleTransfers({ squad: selected, players: [...selected, atBoundary], gameweek: 1, horizon: 5, risk: "BALANCED", outgoingPlayerId: 11 })
-      .find((move) => move.incomingPlayerId === 17);
-    const rejected = findBestSingleTransfers({ squad: selected, players: [...selected, belowBoundary], gameweek: 1, horizon: 5, risk: "BALANCED", outgoingPlayerId: 11 })
-      .find((move) => move.incomingPlayerId === 18);
+  it("returns only xP gains and prices released cash at 0.25 xP/GW per £1m", () => {
+    const cashOnly = player(16, "MID", 47, 4);
+    const both = player(17, "MID", 54, 5.5);
+    const losing = player(18, "MID", 40, 4.5);
 
-    expect(benchMove).toMatchObject({ projectedDelta: 0, cashReleasedTenths: 15, score: 0.375, kind: "CASH_RELEASE" });
-    expect(boundaryMove?.projectedDeltaPerGW).toBe(-0.5);
-    expect(rejected).toBeUndefined();
+    expect(findBestSingleTransfers({ squad: selected, players: [...selected, cashOnly], gameweek: 1, horizon: 5, risk: "BALANCED", outgoingPlayerId: 12 })).toEqual([]);
+    expect(findBestSingleTransfers({ squad: selected, players: [...selected, losing], gameweek: 1, horizon: 5, risk: "BALANCED", outgoingPlayerId: 11 })).toEqual([]);
+    expect(findBestSingleTransfers({ squad: selected, players: [...selected, both], gameweek: 1, horizon: 5, risk: "BALANCED", outgoingPlayerId: 11 })[0])
+      .toMatchObject({ projectedDelta: 2.5, projectedDeltaPerGW: 0.5, cashReleasedTenths: 10, score: 0.75, kind: "BOTH" });
   });
 
   it("uses lineup and captain effects instead of direct player xP", () => {

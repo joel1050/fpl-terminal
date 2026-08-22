@@ -171,21 +171,3 @@ export const bootstrapStaticFixture = {
 };
 
 export const fixturesFixture = fixtures;
-
-export const fixtureSquadNames = [
-  "Raya",
-  "Areola",
-  "Gvardiol",
-  "Pau",
-  "Andersen",
-  "Faes",
-  "Konsa",
-  "Rice",
-  "Onana",
-  "Mbeumo",
-  "Gordon",
-  "Haaland",
-  "Watkins",
-  "Solanke",
-  "Rogers",
-];

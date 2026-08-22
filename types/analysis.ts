@@ -47,7 +47,7 @@ export interface ReplacementCandidate {
   reason: string;
 }
 
-export type SingleTransferKind = "XP_UPGRADE" | "CASH_RELEASE" | "BOTH";
+export type SingleTransferKind = "XP_UPGRADE" | "BOTH";
 
 export interface SingleTransferSuggestion {
   outgoingPlayerId: number;

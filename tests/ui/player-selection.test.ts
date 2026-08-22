@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatSelectionUpdatedAt, parsePlayerSelection } from "@/components/terminal/TerminalApp";
+import { formatSelectionUpdatedAt, normalizeBootstrap, parsePlayerSelection } from "@/components/terminal/TerminalApp";
 
 describe("player selection payloads", () => {
   it("parses probabilities, rating, freshness, and evidence from the API shape", () => {
@@ -34,5 +34,42 @@ describe("player selection payloads", () => {
     expect(parsePlayerSelection(undefined)).toBeUndefined();
     expect(parsePlayerSelection({})).toBeUndefined();
     expect(formatSelectionUpdatedAt("")).toBe("—");
+  });
+
+  it("preserves per-Gameweek projections used by transfer simulation", () => {
+    const [player] = normalizeBootstrap({
+      data: {
+        players: [{
+          id: 1,
+          firstName: "Test",
+          lastName: "Player",
+          displayName: "Test Player",
+          teamId: 1,
+          teamName: "Test",
+          teamShortName: "TST",
+          position: "DEF",
+          priceTenths: 50,
+          current: { totalPoints: 0, goals: 0, assists: 0, cleanSheets: 0, bonus: 0, minutes: 0 },
+          projection: {
+            nextGW: 1,
+            next3: 9,
+            next5: 15,
+            fixtures: [{
+              gameweek: 2,
+              expectedPoints: 4,
+              expectedMinutes: 80,
+              fixture: { gameweek: 2, opponentTeamId: 2, opponentShortName: "OPP", isHome: true },
+            }],
+          },
+        }],
+      },
+    }).players;
+
+    expect(player.projection.fixtures).toEqual([{
+      gameweek: 2,
+      expectedPoints: 4,
+      expectedMinutes: 80,
+      fixture: { gameweek: 2, opponentTeamId: 2, opponentShortName: "OPP", isHome: true, difficulty: undefined },
+    }]);
   });
 });

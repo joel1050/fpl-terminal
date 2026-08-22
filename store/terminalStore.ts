@@ -1,11 +1,25 @@
 "use client";
 
 import { create } from "zustand";
-import type { PersistentFPLState, Player, Position, WeeklyLineupPlan } from "@/types";
+import type { PersistentFPLState, Player, Position, SquadState, WeeklyLineupPlan } from "@/types";
 import { validateWeeklyLineup } from "@/lib/squad/weeklyLineup";
 
 type RiskMode = "SAFE" | "BALANCED" | "AGGRESSIVE";
 type BenchStrategy = "CHEAP" | "BALANCED" | "STRONG";
+
+export type DesktopPanel = "market" | "squad" | "ai";
+
+export const PANEL_RATIO_MAX = 1000;
+
+export function sanitizePanelRatios(ratios: Partial<Record<DesktopPanel, number>> | undefined): Partial<Record<DesktopPanel, number>> {
+  const cleaned: Partial<Record<DesktopPanel, number>> = {};
+  if (!ratios) return cleaned;
+  for (const panel of Object.keys(ratios) as DesktopPanel[]) {
+    const value = ratios[panel];
+    if (typeof value === "number" && Number.isFinite(value) && value >= 1 && value <= PANEL_RATIO_MAX) cleaned[panel] = Math.round(value);
+  }
+  return cleaned;
+}
 
 export type TerminalMode = "BUILD" | "ANALYZE";
 export type SortKey = "name" | "price" | "nextGW" | "next3" | "next5" | "value" | "ownership" | "risk";
@@ -37,9 +51,12 @@ export type ApplyLineupInput = {
 };
 
 export type PersistedTerminalState = PersistentFPLState & {
+  mode?: TerminalMode | null;
+  entryId?: number;
   benchGoalkeeperId?: number;
   lineupGameweek?: number;
   lineupProjectionFingerprint?: string;
+  panelRatios?: Partial<Record<DesktopPanel, number>>;
 };
 
 const emptySlots = (): SlotMap => ({ GK: [], DEF: [], MID: [], FWD: [] });
@@ -137,6 +154,7 @@ export function isLineupStale(lineupGameweek: number | undefined, lineupProjecti
 
 export type TerminalState = {
   mode: TerminalMode | null;
+  entryId?: number;
   activeMobileTab: "SQUAD" | "MARKET" | "AI";
   playerIds: number[];
   byPosition: SlotMap;
@@ -155,6 +173,7 @@ export type TerminalState = {
   horizon: 1 | 3 | 5;
   riskMode: RiskMode;
   benchStrategy: BenchStrategy;
+  panelRatios: Partial<Record<DesktopPanel, number>>;
   isHydrated: boolean;
   setMode: (mode: TerminalMode | null) => void;
   setMobileTab: (tab: TerminalState["activeMobileTab"]) => void;
@@ -164,9 +183,11 @@ export type TerminalState = {
   addPlayer: (id: number, position: Position) => boolean;
   removePlayer: (id: number) => boolean;
   replacePlayer: (outgoingId: number, incomingId: number, position: Position) => boolean;
+  replaceSquad: (squad: SquadState, lineup: ApplyLineupInput, entryId: number) => boolean;
   toggleLock: (id: number) => void;
   setSelectedPlayer: (id?: number) => void;
   setStrategy: (strategy: Partial<Pick<TerminalState, "horizon" | "riskMode" | "benchStrategy">>) => void;
+  setPanelRatios: (ratios: Partial<Record<DesktopPanel, number>>) => void;
   setCaptain: (id?: number) => boolean;
   setViceCaptain: (id?: number) => boolean;
   applyLineup: (input: ApplyLineupInput) => boolean;
@@ -178,6 +199,7 @@ export type TerminalState = {
 
 const initial = {
   mode: null,
+  entryId: undefined,
   activeMobileTab: "SQUAD" as const,
   playerIds: [],
   byPosition: emptySlots(),
@@ -209,6 +231,7 @@ const initial = {
   horizon: 5 as const,
   riskMode: "BALANCED" as const,
   benchStrategy: "BALANCED" as const,
+  panelRatios: {},
   isHydrated: false,
 };
 
@@ -263,6 +286,42 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     });
     return true;
   },
+  replaceSquad: (squad, lineup, entryId) => {
+    const counts: Record<Position, number> = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
+    const listed = (Object.keys(counts) as Position[]).flatMap((position) => squad.byPosition[position]);
+    if (squad.playerIds.length !== 15
+      || new Set(squad.playerIds).size !== 15
+      || listed.length !== 15
+      || new Set(listed).size !== 15
+      || listed.some((id) => !squad.playerIds.includes(id))
+      || (Object.keys(counts) as Position[]).some((position) => squad.byPosition[position].length !== counts[position])
+      || !Number.isSafeInteger(entryId)
+      || entryId < 1) return false;
+    const byPosition = Object.fromEntries((Object.keys(counts) as Position[]).map((position) => [position, [...squad.byPosition[position]]])) as SlotMap;
+    const checked = validLineup({
+      playerIds: squad.playerIds,
+      byPosition,
+      benchGoalkeeperId: lineup.benchGoalkeeperId,
+      benchOrder: lineup.benchOrder ?? [],
+      captainId: lineup.captainId,
+      viceCaptainId: lineup.viceCaptainId,
+    }, lineup);
+    if (!checked.valid || checked.benchGoalkeeperId === undefined) return false;
+    set({
+      playerIds: [...squad.playerIds],
+      byPosition,
+      benchGoalkeeperId: checked.benchGoalkeeperId,
+      benchOrder: checked.benchOrder,
+      lineupGameweek: lineup.gameweek,
+      lineupProjectionFingerprint: lineup.lineupProjectionFingerprint.trim(),
+      lockedPlayerIds: [],
+      captainId: checked.captainId,
+      viceCaptainId: checked.viceCaptainId,
+      selectedPlayerId: undefined,
+      entryId,
+    });
+    return true;
+  },
   toggleLock: (id) => set((state) => ({
     lockedPlayerIds: state.lockedPlayerIds.includes(id)
       ? state.lockedPlayerIds.filter((playerId) => playerId !== id)
@@ -270,6 +329,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   })),
   setSelectedPlayer: (selectedPlayerId) => set({ selectedPlayerId }),
   setStrategy: (strategy) => set(strategy),
+  setPanelRatios: (ratios) => set({ panelRatios: sanitizePanelRatios(ratios) }),
   setCaptain: (captainId) => {
     const state = get();
     const startingXI = deriveStartingXI(state.playerIds, state.benchGoalkeeperId, state.benchOrder);
@@ -346,6 +406,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const metadataValid = !incomingMetadata || (candidateLineupGameweek !== undefined && typeof candidateLineupProjectionFingerprint === "string" && Boolean(candidateLineupProjectionFingerprint) && validLineup({ playerIds, byPosition, benchGoalkeeperId: candidateBenchGoalkeeperId, benchOrder: candidateBenchOrder, captainId: candidateCaptainId, viceCaptainId: candidateViceCaptainId }, { gameweek: candidateLineupGameweek, lineupProjectionFingerprint: candidateLineupProjectionFingerprint, benchGoalkeeperId: candidateBenchGoalkeeperId, benchOrder: candidateBenchOrder }).valid);
     const preserveCurrentLineup = currentLineupApplied && (!incomingMetadata || !metadataValid);
     set({
+      mode: state.mode === "BUILD" || state.mode === "ANALYZE" || state.mode === null ? state.mode : current.mode,
+      entryId: Number.isSafeInteger(state.entryId) && Number(state.entryId) > 0 ? state.entryId : current.entryId,
       playerIds,
       byPosition,
       benchGoalkeeperId: preserveCurrentLineup ? current.benchGoalkeeperId : candidateBenchGoalkeeperId,
@@ -358,6 +420,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       horizon: state.horizon ?? 5,
       riskMode: state.riskMode ?? "BALANCED",
       benchStrategy: state.benchStrategy ?? "BALANCED",
+      panelRatios: sanitizePanelRatios(state.panelRatios),
       isHydrated: true,
     });
   },
@@ -366,6 +429,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
 
 export function exportTerminalState(state: TerminalState): PersistedTerminalState {
   return {
+    mode: state.mode,
+    entryId: state.entryId,
     squad: { playerIds: state.playerIds, byPosition: state.byPosition },
     lockedPlayerIds: state.lockedPlayerIds,
     captainId: state.captainId,
@@ -377,6 +442,7 @@ export function exportTerminalState(state: TerminalState): PersistedTerminalStat
     horizon: state.horizon,
     riskMode: state.riskMode,
     benchStrategy: state.benchStrategy,
+    panelRatios: state.panelRatios,
     excludedPlayerIds: [],
   };
 }

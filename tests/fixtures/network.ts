@@ -20,6 +20,16 @@ export async function interceptFplData(page: Page) {
       return;
     }
 
+    if (pathname.includes("/api/fpl/entry/4827193")) {
+      const squad = {
+        playerIds: [4, 7, 9, 10, 21, 22, 11, 12, 13, 1, 14, 16, 17, 18, 15],
+        byPosition: { GK: [4, 16], DEF: [7, 9, 10, 17, 18], MID: [21, 22, 11, 12, 13], FWD: [1, 14, 15] },
+      };
+      const lineup = { gameweek: 1, benchGoalkeeperId: 16, benchOrder: [17, 18, 15], captainId: 1, viceCaptainId: 14 };
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { entryId: 4827193, teamName: "Test XI", managerName: "Test Manager", squad, lineup } }) });
+      return;
+    }
+
     if (pathname.includes("/api/optimizer") && route.request().method() === "POST") {
       const squad = {
         playerIds: [5, 16, 6, 9, 10, 17, 18, 2, 3, 12, 13, 22, 1, 14, 15],
@@ -37,19 +47,19 @@ export async function interceptFplData(page: Page) {
           gameweek: 1,
           horizon: 5,
           suggestions: [{
-            outgoingPlayerId: 17,
-            incomingPlayerId: 20,
+            outgoingPlayerId: 21,
+            incomingPlayerId: 2,
             horizon: 5,
             beforeXp: 250,
-            afterXp: 248,
-            projectedDelta: -2,
-            projectedDeltaPerGW: -0.4,
-            cashReleasedTenths: 6,
+            afterXp: 255,
+            projectedDelta: 5,
+            projectedDeltaPerGW: 1,
+            cashReleasedTenths: -50,
             score: -0.25,
-            kind: "CASH_RELEASE",
+            kind: "XP_UPGRADE",
             incomingRisk: 0.05,
             confidence: "HIGH",
-            reason: "cash release: -2.0 xP over 5GW, releases £0.6m",
+            reason: "xP upgrade: +5.0 xP over 5GW, costs £5.0m",
           }],
         }),
       });

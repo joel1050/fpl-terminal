@@ -141,4 +141,25 @@ describe("persisted weekly lineup state", () => {
     const saved = exportTerminalState(useTerminalStore.getState());
     expect(parseSavedState(JSON.stringify(saved))).toMatchObject({ benchOrder: [] });
   });
+
+  it("replaces a complete imported squad atomically", () => {
+    const store = useTerminalStore.getState();
+    store.setMode("ANALYZE");
+    expect(store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "old", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 })).toBe(true);
+    const imported = {
+      playerIds: squad.playerIds.map((id) => id + 20),
+      byPosition: Object.fromEntries(Object.entries(squad.byPosition).map(([position, ids]) => [position, ids.map((id) => id + 20)])) as typeof squad.byPosition,
+    };
+
+    const lineup = { gameweek: 1, lineupProjectionFingerprint: "imported", benchGoalkeeperId: 22, benchOrder: [27, 32, 35], captainId: 23, viceCaptainId: 24 };
+    expect(useTerminalStore.getState().replaceSquad(imported, lineup, 4827193)).toBe(true);
+    expect(useTerminalStore.getState()).toMatchObject({ ...imported, mode: "ANALYZE", entryId: 4827193, lockedPlayerIds: [], benchGoalkeeperId: 22, benchOrder: [27, 32, 35], captainId: 23, viceCaptainId: 24, lineupGameweek: 1, lineupProjectionFingerprint: "imported" });
+    const saved = exportTerminalState(useTerminalStore.getState());
+    useTerminalStore.getState().reset();
+    useTerminalStore.getState().hydrate(saved);
+    expect(useTerminalStore.getState()).toMatchObject({ mode: "ANALYZE", entryId: 4827193, playerIds: imported.playerIds });
+    const before = useTerminalStore.getState().playerIds;
+    expect(useTerminalStore.getState().replaceSquad({ ...imported, playerIds: imported.playerIds.slice(1) }, lineup, 4827193)).toBe(false);
+    expect(useTerminalStore.getState().playerIds).toEqual(before);
+  });
 });

@@ -1,5 +1,4 @@
 import { expect, type Page, test } from "@playwright/test";
-import { fixtureSquadNames } from "../fixtures/fpl";
 import { interceptFplData } from "../fixtures/network";
 
 test.describe("FPL Terminal acceptance", () => {
@@ -73,7 +72,39 @@ test.describe("FPL Terminal acceptance", () => {
       const chooser = page.getByRole("button", { name: mode }).first();
       if (await chooser.isVisible().catch(() => false)) await chooser.click();
     }
+    const entryId = page.getByLabel(/enter fpl id/i);
+    if (await entryId.isVisible().catch(() => false)) {
+      await entryId.fill("4827193");
+      await clickButton(page, /import team/i);
+    }
   }
+
+  test("imports an official FPL team by ID", async ({ page }) => {
+    let importRequests = 0;
+    page.on("request", (request) => { if (request.url().includes("/api/fpl/entry/")) importRequests += 1; });
+    await clickButton(page, /analyze (?:a )?team/i);
+    const input = page.getByLabel(/enter fpl id/i);
+    await expect(input).toBeVisible();
+    await input.fill("4827193");
+    await clickButton(page, /import team/i);
+    await waitForMarket(page);
+    const squad = page.getByRole("region", { name: /squad builder and analysis/i });
+    await expect(squad).toContainText(/15\/15 selected/i);
+    await expect(squad.getByTestId("squad-roster")).toContainText(/Haaland/i);
+    await expect(squad.getByRole("article").filter({ hasText: "Haaland" }).getByRole("button", { name: /make haaland captain/i })).toHaveAttribute("aria-pressed", "true");
+    await expect(squad.getByRole("article").filter({ hasText: "Watkins" }).getByRole("button", { name: /make watkins vice-captain/i })).toHaveAttribute("aria-pressed", "true");
+    const bench = squad.getByRole("region", { name: /^bench$/i });
+    await expect(bench.getByRole("article").nth(0)).toContainText(/Areola/i);
+    await expect(bench.getByRole("article").nth(1)).toContainText(/Faes/i);
+    await expect(bench.getByRole("article").nth(2)).toContainText(/Konsa/i);
+    await expect(bench.getByRole("article").nth(3)).toContainText(/Solanke/i);
+    await expect(page.getByText(/imported test xi/i)).toBeVisible();
+    await expect.poll(() => importRequests).toBe(1);
+    await page.reload();
+    await waitForMarket(page);
+    expect(importRequests).toBe(1);
+    await expect(page.getByLabel(/enter fpl id/i)).toHaveCount(0);
+  });
 
   test("builds and completes a legal squad while preserving locked premiums", async ({ page }) => {
     await chooseMode(page, /build from scratch/i);
@@ -97,20 +128,15 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByText(/£?100(?:\.0)?m|budget|bank|remaining/i).first()).toBeVisible();
   });
 
-  test("pastes an existing squad, inspects replacements, simulates, and applies a move", async ({ page }) => {
+  test("imports an existing squad, inspects replacements, simulates, and applies a move", async ({ page }) => {
     await chooseMode(page, /analyze (?:a )?team/i);
     await waitForMarket(page);
-
-    const paste = page.locator("textarea").first();
-    await expect(paste, "existing-team paste control should be a textarea").toBeVisible();
-    await paste.fill(fixtureSquadNames.join("\n"));
-    await clickButton(page, /(?:analyze|import|run).*squad|analyze team|resolve names/i);
 
     await expect(page.getByRole("region", { name: /weakest links/i })).toHaveCount(0);
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
     await expect(replacements).toBeVisible();
     await expect(replacements).toContainText(/EXACT/i);
-    await expect(replacements).toContainText(/Faes\s*→\s*Smith/i);
+    await expect(replacements).toContainText(/Rice\s*→\s*Saka/i);
 
     await clickButton(page, /^PICK TEAM$/i);
     await expect(page.getByText(/team picked and saved/i)).toBeVisible();
@@ -121,13 +147,12 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByText(/applied|updated|total cost|projected/i).first()).toBeVisible();
     const squadPanel = page.getByRole("region", { name: /squad builder and analysis/i });
     await expect(squadPanel.getByRole("button", { name: /pick team · outdated/i })).toBeVisible();
-    await expect(squadPanel.getByTestId("squad-roster")).toContainText(/Smith/i);
-    await expect(squadPanel.getByTestId("squad-roster")).not.toContainText(/Faes/i);
+    await expect(squadPanel.getByTestId("squad-roster")).toContainText(/Saka/i);
+    await expect(squadPanel.getByTestId("squad-roster")).not.toContainText(/Rice/i);
 
     await page.reload();
-    await chooseMode(page, /analyze (?:a )?team/i);
     await waitForMarket(page);
-    await expect(page.getByRole("region", { name: /squad builder and analysis/i }).getByTestId("squad-roster")).toContainText(/Smith/i);
+    await expect(page.getByRole("region", { name: /squad builder and analysis/i }).getByTestId("squad-roster")).toContainText(/Saka/i);
   });
 
   test("keeps the quantitative workspace usable and explains AI offline mode", async ({ page }) => {
@@ -185,9 +210,6 @@ test.describe("FPL Terminal acceptance", () => {
   test("keeps every roster card visible in the unified desktop panel", async ({ page }) => {
     await chooseMode(page, /analyze (?:a )?team/i);
     await waitForMarket(page);
-    const paste = page.getByRole("textbox", { name: /paste squad player names/i });
-    await paste.fill(fixtureSquadNames.join("\n"));
-    await clickButton(page, /resolve names/i);
     await expect(page.getByText(/15\s*\/\s*15 selected/i)).toBeVisible();
 
     for (const viewport of [

@@ -15,7 +15,6 @@ import {
 } from "./context";
 
 const CASH_XP_PER_MILLION = 0.25;
-const MAX_XP_LOSS_PER_GW = 0.5;
 const EPSILON = 0.000_001;
 
 export interface SingleTransferSearchInput extends CommonOptions {
@@ -45,7 +44,7 @@ function allowedByRisk(player: Player, risk: CommonOptions["risk"]): boolean {
 
 function kind(projectedDelta: number, cashReleasedTenths: number): SingleTransferKind {
   if (projectedDelta > EPSILON && cashReleasedTenths > 0) return "BOTH";
-  return projectedDelta > EPSILON ? "XP_UPGRADE" : "CASH_RELEASE";
+  return "XP_UPGRADE";
 }
 
 function dominates(left: SingleTransferSuggestion, right: SingleTransferSuggestion): boolean {
@@ -74,12 +73,18 @@ function dominatesIncoming(left: IncomingCandidate, right: IncomingCandidate): b
   return strictlyBetter || left.player.id < right.player.id;
 }
 
+function cannotImproveXp(outgoingWeeks: IncomingCandidate["weeks"], incomingWeeks: IncomingCandidate["weeks"]): boolean {
+  return outgoingWeeks.every((week, index) => week.points >= incomingWeeks[index].points - EPSILON
+    && week.pDNP <= incomingWeeks[index].pDNP + EPSILON
+    && week.minutes >= incomingWeeks[index].minutes - EPSILON);
+}
+
 function explanation(move: Pick<SingleTransferSuggestion, "projectedDelta" | "cashReleasedTenths" | "horizon" | "kind">): string {
   const xp = `${move.projectedDelta >= 0 ? "+" : ""}${move.projectedDelta.toFixed(1)} xP over ${move.horizon}GW`;
   const money = move.cashReleasedTenths >= 0
     ? `releases £${(move.cashReleasedTenths / 10).toFixed(1)}m`
     : `costs £${(-move.cashReleasedTenths / 10).toFixed(1)}m`;
-  const label = move.kind === "BOTH" ? "xP upgrade and cash release" : move.kind === "XP_UPGRADE" ? "xP upgrade" : "cash release";
+  const label = move.kind === "BOTH" ? "xP upgrade and cash release" : "xP upgrade";
   return `${label}: ${xp}, ${money}`;
 }
 
@@ -109,8 +114,10 @@ export function findBestSingleTransfers(input: SingleTransferSearchInput): Singl
     if ((input.outgoingPlayerId !== undefined && outgoingId !== input.outgoingPlayerId) || locked.has(outgoingId)) continue;
     const outgoing = byId.get(outgoingId);
     if (!outgoing) continue;
+    const outgoingWeeks = weeklyMetrics.get(outgoingId)!;
     const viable = universe.flatMap((incoming): IncomingCandidate[] => {
       if (incoming.position !== outgoing.position || selected.has(incoming.id) || excluded.has(incoming.id) || !allowedByRisk(incoming, riskMode)) return [];
+      if (cannotImproveXp(outgoingWeeks, weeklyMetrics.get(incoming.id)!)) return [];
       const afterIds = squadIds.map((id) => id === outgoingId ? incoming.id : id);
       if (!legalSquad(afterIds, byId, { budgetTenths, maxPlayersPerClub, excludedPlayerIds: input.excludedPlayerIds }).legal) return [];
       return [{ player: incoming, afterIds, weeks: weeklyMetrics.get(incoming.id)! }];
@@ -122,7 +129,7 @@ export function findBestSingleTransfers(input: SingleTransferSearchInput): Singl
       const projectedDelta = rounded(afterXp - beforeXp);
       const projectedDeltaPerGW = rounded(projectedDelta / horizon);
       const cashReleasedTenths = outgoing.priceTenths - incoming.priceTenths;
-      if (projectedDelta <= EPSILON && !(cashReleasedTenths > 0 && projectedDeltaPerGW >= -MAX_XP_LOSS_PER_GW - EPSILON)) continue;
+      if (projectedDelta <= EPSILON) continue;
       const moveKind = kind(projectedDelta, cashReleasedTenths);
       const move: SingleTransferSuggestion = {
         outgoingPlayerId: outgoingId,

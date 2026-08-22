@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
-import type { NailedRating, Player, PlayerFixture, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, WeeklyLineupPlan } from "@/types";
+import type { NailedRating, Player, PlayerFixture, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, WeeklyLineupPlan } from "@/types";
 import { analyzeSquad } from "@/lib/analysis/analyzeSquad";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
 import { chooseCaptainVice } from "@/lib/squad/captain";
@@ -14,6 +14,8 @@ import {
   parseSavedState,
   deriveStartingXI,
   useTerminalStore,
+  type ApplyLineupInput,
+  type DesktopPanel,
   type TerminalFilters,
   type TerminalMode,
   type SortKey,
@@ -24,7 +26,6 @@ type DataState = "SYNCING" | "LIVE" | "SNAPSHOT" | "STALE" | "EMPTY" | "ERROR";
 
 const POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
 const DRAFT_XI_COUNTS: Record<Position, number> = { GK: 1, DEF: 3, MID: 4, FWD: 3 };
-type DesktopPanel = "market" | "squad" | "ai";
 const DESKTOP_PANELS: DesktopPanel[] = ["market", "squad", "ai"];
 const PANEL_LABELS: Record<DesktopPanel, string> = { market: "Player universe", squad: "Squad builder and analysis", ai: "AI analyst" };
 
@@ -154,6 +155,26 @@ function readField(record: UnknownRecord | null | undefined, ...keys: string[]):
   return undefined;
 }
 
+function normalizeProjectionFixtures(value: unknown): NonNullable<Player["projection"]>["fixtures"] {
+  return arrayOf(value).flatMap((item) => {
+    const projection = objectOf(item);
+    const fixture = objectOf(readField(projection, "fixture"));
+    const gameweek = numberOf(readField(projection, "gameweek", "event")) ?? numberOf(readField(fixture, "gameweek", "event"));
+    const expectedPoints = numberOf(readField(projection, "expectedPoints", "expected_points"));
+    const expectedMinutes = numberOf(readField(projection, "expectedMinutes", "expected_minutes"));
+    const opponentTeamId = numberOf(readField(fixture, "opponentTeamId", "opponent_team_id"));
+    const opponentShortName = stringOf(readField(fixture, "opponentShortName", "opponent_short_name"));
+    const isHome = readField(fixture, "isHome", "is_home");
+    if (gameweek === undefined || expectedPoints === undefined || expectedMinutes === undefined || opponentTeamId === undefined || !opponentShortName || typeof isHome !== "boolean") return [];
+    return [{
+      gameweek,
+      expectedPoints,
+      expectedMinutes,
+      fixture: { gameweek, opponentTeamId, opponentShortName, isHome, difficulty: numberOf(readField(fixture, "difficulty")) },
+    }];
+  });
+}
+
 function normalizePlayer(value: unknown, index: number): TerminalPlayer | null {
   const raw = objectOf(value);
   if (!raw) return null;
@@ -177,7 +198,7 @@ function normalizePlayer(value: unknown, index: number): TerminalPlayer | null {
   const projectionRaw = firstObject(readField(raw, "projection"), readField(raw, "projections"));
   const projection = {
     playerId: id,
-    fixtures: [],
+    fixtures: normalizeProjectionFixtures(readField(projectionRaw, "fixtures")),
     nextGW: numberOf(readField(projectionRaw, "nextGW", "next_gw", "gw1")) ?? numberOf(readField(raw, "nextGW", "expected_points_next")) ?? 0,
     next3: numberOf(readField(projectionRaw, "next3", "next_3")) ?? 0,
     next5: numberOf(readField(projectionRaw, "next5", "next_5")) ?? 0,
@@ -230,7 +251,7 @@ function normalizePlayer(value: unknown, index: number): TerminalPlayer | null {
   };
 }
 
-function normalizeBootstrap(value: unknown): Bootstrap {
+export function normalizeBootstrap(value: unknown): Bootstrap {
   const root = firstObject(value);
   const data = firstObject(root.data, root.payload, root.bootstrap);
   const metadata = firstObject(root.metadata, data.metadata);
@@ -390,9 +411,6 @@ function useBootstrap() {
 export default function TerminalApp() {
   const bootstrap = useBootstrap();
   const store = useTerminalStore();
-  const [pasteText, setPasteText] = useState("");
-  const [pasteMessage, setPasteMessage] = useState<string | null>(null);
-  const [ambiguous, setAmbiguous] = useState<Array<{ name: string; matches: TerminalPlayer[] }>>([]);
   const [aiMessages, setAiMessages] = useState<Array<{ role: "user" | "assistant"; text: string; at: number; actions?: Array<{ type?: string; playerId?: unknown; outId?: unknown; inId?: unknown }> }>>([]);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiOnline, setAiOnline] = useState<boolean | null>(null);
@@ -420,10 +438,11 @@ export default function TerminalApp() {
   const importRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<ResizeState | null>(null);
   const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false, ai: false });
-  const [panelRatios, setPanelRatios] = useState<Partial<Record<DesktopPanel, number>>>({});
   const { data, status, message, refresh } = bootstrap;
 
   const togglePanel = (panel: DesktopPanel) => setCollapsedPanels((current) => ({ ...current, [panel]: !current[panel] }));
+
+  const ratioPercent = (width: number, available: number) => Math.round((width / available) * 100);
 
   const beginPanelResize = (panel: DesktopPanel, event: ReactPointerEvent<HTMLButtonElement>) => {
     if (window.innerWidth <= 900 || collapsedPanels[panel]) return;
@@ -439,9 +458,9 @@ export default function TerminalApp() {
     const availableWidth = grid.getBoundingClientRect().width - (DESKTOP_PANELS.length - 1);
     const widths = DESKTOP_PANELS.map((name) => grid.querySelector<HTMLElement>(`[data-panel="${name}"]`)?.getBoundingClientRect().width ?? 0);
     if (availableWidth <= 0 || widths.some((width) => width <= 0)) return;
-    const ratios = Object.fromEntries(DESKTOP_PANELS.map((name, index) => [name, widths[index] / availableWidth])) as Record<DesktopPanel, number>;
+    const ratios = Object.fromEntries(DESKTOP_PANELS.map((name, index) => [name, ratioPercent(widths[index], availableWidth)])) as Record<DesktopPanel, number>;
     resizeRef.current = { panel, neighbor, direction: panelIndex === DESKTOP_PANELS.length - 1 ? -1 : 1, startX: event.clientX, currentWidth: widths[panelIndex], neighborWidth: widths[neighborIndex], availableWidth, ratios };
-    setPanelRatios(ratios);
+    useTerminalStore.getState().setPanelRatios(ratios);
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
     event.preventDefault();
@@ -452,7 +471,7 @@ export default function TerminalApp() {
       const resize = resizeRef.current;
       if (!resize) return;
       const delta = clamp((event.clientX - resize.startX) * resize.direction, 260 - resize.currentWidth, resize.neighborWidth - 260);
-      setPanelRatios({ ...resize.ratios, [resize.panel]: (resize.currentWidth + delta) / resize.availableWidth, [resize.neighbor]: (resize.neighborWidth - delta) / resize.availableWidth });
+      useTerminalStore.getState().setPanelRatios({ ...resize.ratios, [resize.panel]: ratioPercent(resize.currentWidth + delta, resize.availableWidth), [resize.neighbor]: ratioPercent(resize.neighborWidth - delta, resize.availableWidth) });
     };
     const onPointerUp = () => {
       resizeRef.current = null;
@@ -495,7 +514,7 @@ export default function TerminalApp() {
     const state = useTerminalStore.getState();
     if (!state.isHydrated) return;
     window.localStorage.setItem("fpl-terminal-state", JSON.stringify(exportTerminalState(state)));
-  }, [store.isHydrated, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.riskMode, store.benchStrategy]);
+  }, [store.isHydrated, store.mode, store.entryId, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.riskMode, store.benchStrategy, store.panelRatios]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -655,25 +674,6 @@ export default function TerminalApp() {
       setNotice(`No open ${player.position} slot, or the squad already contains this player.`);
     }
   }, [data.players, selected, setNotice]);
-
-  const handlePaste = () => {
-    const names = pasteText.split(/[\n,]+/).map((name) => name.trim()).filter(Boolean);
-    if (!names.length) {
-      setPasteMessage("Paste names separated by commas or new lines.");
-      return;
-    }
-    const nextAmbiguous: Array<{ name: string; matches: TerminalPlayer[] }> = [];
-    let unresolved = 0;
-    for (const name of names) {
-      const token = normalizeName(name);
-      const matches = data.players.filter((player) => normalizeName(player.displayName) === token || normalizeName(player.lastName) === token || normalizeName(`${player.firstName}${player.lastName}`) === token);
-      if (matches.length === 1) addPlayer(matches[0]);
-      else if (matches.length > 1) nextAmbiguous.push({ name, matches });
-      else unresolved += 1;
-    }
-    setAmbiguous(nextAmbiguous);
-    setPasteMessage(`${names.length - unresolved - nextAmbiguous.length} added · ${nextAmbiguous.length} need selection · ${unresolved} not found`);
-  };
 
   const runOptimize = async (complete: boolean) => {
     if (!data.players.length) {
@@ -942,14 +942,27 @@ export default function TerminalApp() {
     }
   };
 
+  if (!store.isHydrated) return <main className="mode-screen" aria-busy="true" />;
   if (store.mode === null) {
-    return <ModeChooser status={status} message={message} gameweek={data.gameweek} onChoose={(mode) => store.setMode(mode)} />;
+    return <ModeChooser status={status} message={message} gameweek={data.gameweek} onChoose={store.setMode} />;
+  }
+  if (store.mode === "ANALYZE" && !store.entryId) {
+    return <TeamImportScreen
+      players={data.players}
+      onBack={() => store.setMode(null)}
+      onImport={(result) => {
+        const importedPlayers = data.players.filter((player) => result.squad.playerIds.includes(player.id));
+        const fingerprint = pickWeeklyTeam({ squad: importedPlayers, gameweek: result.lineup.gameweek, riskMode: store.riskMode }).projectionFingerprint;
+        if (!store.replaceSquad(result.squad, { ...result.lineup, lineupProjectionFingerprint: fingerprint }, result.entryId)) return false;
+        setNotice(`Imported ${result.teamName || result.managerName || `FPL team ${result.entryId}`}.`);
+        return true;
+      }}
+    />;
   }
 
   const selectedPlayer = store.selectedPlayerId ? playerById.get(store.selectedPlayerId) : undefined;
-  const isAnalyze = store.mode === "ANALYZE";
   const gridStyle = Object.fromEntries(DESKTOP_PANELS.flatMap((panel) => {
-    const value = collapsedPanels[panel] ? "52px" : panelRatios[panel] ? `${panelRatios[panel]}fr` : undefined;
+    const value = collapsedPanels[panel] ? "52px" : store.panelRatios[panel] ? `${store.panelRatios[panel]}fr` : undefined;
     return value ? [[`--${panel}-column`, value]] : [];
   })) as CSSProperties;
   const resetFilters = () => {
@@ -978,7 +991,7 @@ export default function TerminalApp() {
     : draftBenchSlots;
   const draftStarterCount = POSITIONS.reduce((sum, position) => sum + Math.min(store.byPosition[position].length, DRAFT_XI_COUNTS[position]), 0);
   return (
-    <main className={`terminal-app ${isAnalyze ? "has-paste-strip" : ""}`}>
+    <main className="terminal-app">
       <header className="topbar">
         <button className="brand" onClick={() => store.setMode(null)} aria-label="Return to mode chooser"><span className="brand-mark">FPL</span><span>TERMINAL</span></button>
         <div className="topbar-stats" aria-label="Terminal status">
@@ -994,9 +1007,6 @@ export default function TerminalApp() {
       </header>
 
       <nav className="mobile-tabs" aria-label="Terminal panels">{(["SQUAD", "MARKET", "AI"] as const).map((tab) => <button key={tab} className={store.activeMobileTab === tab ? "active" : ""} onClick={() => store.setMobileTab(tab)}>{tab}</button>)}</nav>
-
-      {isAnalyze && <section className="paste-strip panel"><div><span className="section-kicker">ANALYZE A TEAM</span><p>Paste names from your current squad. Matches stay local; uncertain names require a choice.</p></div><textarea value={pasteText} onChange={(event) => setPasteText(event.target.value)} placeholder="Raya\nGabriel, Haaland" aria-label="Paste squad player names" /><button className="primary-button" onClick={handlePaste}>RESOLVE NAMES</button>{pasteMessage && <span className="inline-note">{pasteMessage}</span>}</section>}
-      {ambiguous.length > 0 && <section className="ambiguity panel" aria-live="polite"><div className="section-kicker">SELECT AMBIGUOUS MATCHES</div>{ambiguous.map((item) => <div className="ambiguity-row" key={item.name}><span>{item.name}</span><div>{item.matches.map((player) => <button key={player.id} className="choice-button" onClick={() => { addPlayer(player); setAmbiguous((current) => current.filter((entry) => entry.name !== item.name)); }}>{player.displayName} · {player.teamShortName}</button>)}</div></div>)}</section>}
 
       <div className="terminal-grid" style={gridStyle}>
         <section id="terminal-panel-market" data-panel="market" className={`market-column ${collapsedPanels.market ? "panel-collapsed" : ""} ${store.activeMobileTab === "MARKET" ? "mobile-visible" : ""}`} aria-label="Player universe">
@@ -1042,6 +1052,34 @@ export default function TerminalApp() {
 
 function ModeChooser({ status, message, gameweek, onChoose }: { status: DataState; message?: string; gameweek: number | null; onChoose: (mode: TerminalMode) => void }) {
   return <main className="mode-screen"><div className="mode-brand"><span className="brand-mark" aria-hidden="true" /><span>FPL TERMINAL</span></div><p className="mode-tagline">QUANTITATIVE FPL SQUAD INTELLIGENCE</p><div className="mode-grid"><button className="mode-card" onClick={() => onChoose("BUILD")}><span className="mode-index">MODE A</span><strong>BUILD FROM SCRATCH</strong><span>Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.</span></button><button className="mode-card" onClick={() => onChoose("ANALYZE")}><span className="mode-index">MODE B</span><strong>ANALYZE A TEAM</strong><span>Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities.</span></button></div><div className="mode-footer"><span className={`status-pip ${status.toLowerCase()}`} />{status === "LIVE" ? `LIVE DATA · GAMEWEEK ${gameweek ?? "—"} · MODEL ESTIMATES · SQUAD RULES ENFORCED LOCALLY` : status === "SNAPSHOT" ? `SNAPSHOT DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "STALE" ? `STALE DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "SYNCING" ? "SYNCING FPL MARKET…" : message ?? "FPL data is unavailable."}</div></main>;
+}
+
+type ImportedTeam = { entryId: number; teamName?: string; managerName?: string; squad: SquadState; lineup: Omit<ApplyLineupInput, "lineupProjectionFingerprint"> };
+
+function TeamImportScreen({ players, onImport, onBack }: { players: TerminalPlayer[]; onImport: (result: ImportedTeam) => boolean; onBack: () => void }) {
+  const [entryId, setEntryId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const id = entryId.trim();
+    if (!/^\d+$/.test(id) || Number(id) < 1) return setError("Enter a valid FPL team ID.");
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/fpl/entry/${id}`, { headers: { accept: "application/json" } });
+      const body = await response.json() as { data?: ImportedTeam; errors?: string[] };
+      if (!response.ok || !body.data?.squad || !body.data.lineup) throw new Error(body.errors?.[0] ?? "FPL team import failed.");
+      const known = new Set(players.map((player) => player.id));
+      if (body.data.squad.playerIds.some((playerId) => !known.has(playerId))) throw new Error("This team contains players missing from the current FPL player data. Refresh and try again.");
+      if (!onImport(body.data)) throw new Error("FPL returned an invalid 15-player squad.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "FPL team import failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return <main className="mode-screen import-screen"><button type="button" className="import-back" onClick={onBack}>← BACK</button><div className="mode-brand"><span className="brand-mark" aria-hidden="true" /><span>FPL TERMINAL</span></div><p className="mode-tagline">IMPORT YOUR OFFICIAL FPL TEAM</p><form className="import-card" onSubmit={submit}><label htmlFor="fpl-entry-id">ENTER FPL ID</label><div className="import-controls"><input id="fpl-entry-id" inputMode="numeric" pattern="[0-9]*" autoFocus value={entryId} onChange={(event) => setEntryId(event.target.value)} placeholder="4827193" /><button className="primary-button" type="submit" disabled={busy || !players.length}>{busy ? "IMPORTING…" : "IMPORT TEAM"}</button></div><p>We’ll load Gameweek 1 picks from the official FPL API and fill all 15 squad positions.</p>{!players.length && <span className="import-error" role="status">Waiting for the FPL player list…</span>}{error && <span className="import-error" role="alert">{error}</span>}</form></main>;
 }
 
 function StatusCell({ label, value, tone }: { label: string; value: string; tone?: "amber" | "green" | "red" | "cyan" }) { return <div className="status-cell"><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
@@ -1106,7 +1144,7 @@ function MetricStrip({ spent, projected, risk }: { spent: number; projected: { n
 
 function StrategyControls({ horizon, riskMode, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5; riskMode: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5; riskMode?: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">RISK</span><div className="segmented">{(["SAFE", "BALANCED", "AGGRESSIVE"] as const).map((value) => <button key={value} className={riskMode === value ? "active" : ""} onClick={() => setStrategy({ riskMode: value })}>{value.slice(0, 4)}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value.slice(0, 4)}</button>)}</div></div></div>; }
 
-function TransferSuggestionsPanel({ suggestions, state, message, playerById, onSimulate }: { suggestions: SingleTransferSuggestion[]; state: "INCOMPLETE" | "LOADING" | "READY" | "ERROR"; message: string | null; playerById: Map<number, TerminalPlayer>; onSimulate: (outId: number, inId: number) => void }) { return <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions"><div className="subsection-head"><div><span className="section-kicker">TRANSFER SUGGESTIONS</span><span className="panel-count">EXACT</span></div></div><div className="replacement-scroll">{suggestions.length ? suggestions.map((suggestion) => { const outgoing = playerById.get(suggestion.outgoingPlayerId); const incoming = playerById.get(suggestion.incomingPlayerId); const kind = suggestion.kind === "BOTH" ? "xP + CASH" : suggestion.kind === "XP_UPGRADE" ? "xP UPGRADE" : "CASH RELEASE"; return <div className="replacement-row" key={`${suggestion.outgoingPlayerId}-${suggestion.incomingPlayerId}`}><div><strong>{outgoing?.displayName ?? `Player ${suggestion.outgoingPlayerId}`} → {incoming?.displayName ?? `Player ${suggestion.incomingPlayerId}`}</strong><small>{kind} · {incoming?.teamShortName ?? "—"} · {incoming ? money(incoming.priceTenths) : "—"}</small></div><div className="transfer-effects"><span className={suggestion.projectedDelta >= 0 ? "green" : "red"}>{suggestion.projectedDelta >= 0 ? "+" : ""}{suggestion.projectedDelta.toFixed(1)} xP</span><span>{suggestion.cashReleasedTenths >= 0 ? "+" : "−"}{money(Math.abs(suggestion.cashReleasedTenths))} ITB</span></div><button className="compact-action" onClick={() => onSimulate(suggestion.outgoingPlayerId, suggestion.incomingPlayerId)}>SIMULATE</button></div>; }) : <div className="empty-copy">{state === "LOADING" ? "CALCULATING EVERY LEGAL SINGLE TRANSFER…" : state === "INCOMPLETE" ? "Complete a legal 15-player squad to calculate exact transfers." : state === "ERROR" ? message ?? "Exact transfer search is unavailable." : "No transfer improves xP or releases cash within 0.5 xP per Gameweek."}</div>}</div></section>; }
+function TransferSuggestionsPanel({ suggestions, state, message, playerById, onSimulate }: { suggestions: SingleTransferSuggestion[]; state: "INCOMPLETE" | "LOADING" | "READY" | "ERROR"; message: string | null; playerById: Map<number, TerminalPlayer>; onSimulate: (outId: number, inId: number) => void }) { return <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions"><div className="subsection-head"><div><span className="section-kicker">TRANSFER SUGGESTIONS</span><span className="panel-count">EXACT</span></div></div><div className="replacement-scroll">{suggestions.length ? suggestions.map((suggestion) => { const outgoing = playerById.get(suggestion.outgoingPlayerId); const incoming = playerById.get(suggestion.incomingPlayerId); const kind = suggestion.kind === "BOTH" ? "xP + CASH" : "xP UPGRADE"; return <div className="replacement-row" key={`${suggestion.outgoingPlayerId}-${suggestion.incomingPlayerId}`}><div><strong>{outgoing?.displayName ?? `Player ${suggestion.outgoingPlayerId}`} → {incoming?.displayName ?? `Player ${suggestion.incomingPlayerId}`}</strong><small>{kind} · {incoming?.teamShortName ?? "—"} · {incoming ? money(incoming.priceTenths) : "—"}</small></div><div className="transfer-effects"><span className="green">+{suggestion.projectedDelta.toFixed(1)} xP</span><span>{suggestion.cashReleasedTenths >= 0 ? "+" : "−"}{money(Math.abs(suggestion.cashReleasedTenths))} ITB</span></div><button className="compact-action" onClick={() => onSimulate(suggestion.outgoingPlayerId, suggestion.incomingPlayerId)}>SIMULATE</button></div>; }) : <div className="empty-copy">{state === "LOADING" ? "CALCULATING LEGAL xP-INCREASING TRANSFERS…" : state === "INCOMPLETE" ? "Complete a legal 15-player squad to calculate exact transfers." : state === "ERROR" ? message ?? "Exact transfer search is unavailable." : "No legal single transfer increases optimized lineup xP."}</div>}</div></section>; }
 
 function SimulationPanel({ result, move, playerById, onApply, onDiscard }: { result: SimulationResult; move: { outId: number; inId: number }; playerById: Map<number, TerminalPlayer>; onApply: () => void; onDiscard: () => void }) { return <section className="panel simulation-panel"><div className="panel-header"><div><span className="section-kicker">SIMULATION</span><span className="panel-count">{result.legal ? "LEGAL" : "CHECK REQUIRED"}</span></div><button className="icon-button" onClick={onDiscard} aria-label="Close simulation">×</button></div><div className="simulation-move">{playerById.get(move.outId)?.displayName ?? "Outgoing"} <span>→</span> {playerById.get(move.inId)?.displayName ?? "Incoming"}</div><div className="simulation-grid"><div><span>CURRENT {result.horizon}GW xP</span><strong>{points(result.optimizedBeforeXp)}</strong></div><div><span>SIMULATED {result.horizon}GW xP</span><strong>{points(result.optimizedAfterXp)}</strong></div><div><span>PRICE EFFECT</span><strong>{money(result.priceDeltaTenths)}</strong></div><div><span>xP EFFECT</span><strong className={result.projectedDelta >= 0 ? "green" : "red"}>{result.projectedDelta >= 0 ? "+" : ""}{result.projectedDelta.toFixed(1)}</strong></div></div><p className="simulation-note">{result.explanationFactors[0] ?? "Model comparison complete."}{!result.legal && " The current selection still has a squad-rules issue."}</p><div className="simulation-actions"><button className="primary-button" onClick={onApply}>APPLY CHANGES</button><button className="secondary-button" onClick={onDiscard}>DISCARD</button></div></section>; }
 

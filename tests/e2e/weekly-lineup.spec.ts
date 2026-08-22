@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { bootstrapStaticFixture, fixtureSquadNames } from "../fixtures/fpl";
+import { bootstrapStaticFixture } from "../fixtures/fpl";
 import { interceptFplData } from "../fixtures/network";
 
 /**
@@ -36,6 +36,11 @@ test.describe("weekly lineup acceptance", () => {
       const chooser = page.getByRole("button", { name: mode }).first();
       if (await chooser.isVisible().catch(() => false)) await chooser.click();
     }
+    const entryId = page.getByLabel(/enter fpl id/i);
+    if (await entryId.isVisible().catch(() => false)) {
+      await entryId.fill("4827193");
+      await clickButton(page, /import team/i);
+    }
   }
 
   async function waitForMarket(page: Page) {
@@ -43,14 +48,9 @@ test.describe("weekly lineup acceptance", () => {
     await expect(page.getByRole("button", { name: /add haaland/i })).toBeVisible();
   }
 
-  async function pasteLegalSquad(page: Page) {
+  async function importLegalSquad(page: Page) {
     await chooseMode(page, /analyze (?:a )?team/i);
     await waitForMarket(page);
-    const paste = page.getByRole("textbox", { name: /paste squad player names/i });
-    await expect(paste).toBeVisible();
-    await paste.fill(fixtureSquadNames.join("\n"));
-    await clickButton(page, /resolve names/i);
-    await expect(page.getByText(/15 added|squad analysis|ready/i).first()).toBeVisible();
     await expect(page.getByText(/15\s*\/\s*15 selected/i).first()).toBeVisible();
   }
 
@@ -120,7 +120,7 @@ test.describe("weekly lineup acceptance", () => {
   }
 
   test("builds a legal 15, picks and edits the weekly team, and reloads", async ({ page }) => {
-    await pasteLegalSquad(page);
+    await importLegalSquad(page);
     const region = await openWeeklyTeam(page);
 
     await expect(region.getByRole("article")).toHaveCount(15);
@@ -146,7 +146,6 @@ test.describe("weekly lineup acceptance", () => {
     expect(saved?.benchOrder).toHaveLength(3);
     expect(saved?.captainId).not.toBe(saved?.viceCaptainId);
     await page.reload();
-    await chooseMode(page, /analyze (?:a )?team/i);
     await waitForMarket(page);
     const reloadedRegion = await openWeeklyTeam(page, false);
     await expect(reloadedRegion.getByRole("button", { name: /select .* to move to bench/i })).toHaveCount(11);
@@ -170,8 +169,8 @@ test.describe("weekly lineup acceptance", () => {
     expect(reloaded).toEqual(saved);
   });
 
-  test("pastes a legal 15 and exposes the applied lineup on the roster", async ({ page }) => {
-    await pasteLegalSquad(page);
+  test("imports a legal 15 and exposes the applied lineup on the roster", async ({ page }) => {
+    await importLegalSquad(page);
     const region = await openWeeklyTeam(page);
     await page.setViewportSize({ width: 1280, height: 720 });
     await expect(region.getByRole("article")).toHaveCount(15);
@@ -195,8 +194,8 @@ test.describe("weekly lineup acceptance", () => {
     expect(layout).toEqual({ centeredRows: true, centeredBench: true, goalkeeperWideEnough: true, cardsInsidePanel: true });
   });
 
-  test("shows the centered XI and bench before the lineup is applied", async ({ page }) => {
-    await pasteLegalSquad(page);
+  test("shows the imported centered XI and bench", async ({ page }) => {
+    await importLegalSquad(page);
     const region = weeklyRegion(page);
     await expect(region.getByRole("region", { name: /^starting xi$/i })).toBeVisible();
     await expect(region.getByRole("region", { name: /^bench$/i })).toBeVisible();
@@ -205,7 +204,7 @@ test.describe("weekly lineup acceptance", () => {
   });
 
   test("surfaces stale FPL data after a gameweek refresh", async ({ page }) => {
-    await pasteLegalSquad(page);
+    await importLegalSquad(page);
     await openWeeklyTeam(page);
 
     await page.route("**/api/fpl/bootstrap*", async (route) => {
@@ -239,7 +238,7 @@ test.describe("weekly lineup acceptance", () => {
   });
 
   test("keeps the weekly picker usable on a phone-sized screen", async ({ page }) => {
-    await pasteLegalSquad(page);
+    await importLegalSquad(page);
     const region = await openWeeklyTeam(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(region).toBeVisible();

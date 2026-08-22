@@ -167,6 +167,24 @@ export const FplLiveResponseSchema = z.object({
   elements: z.array(FplLiveElementSchema),
 });
 
+export const FplEntrySchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().optional(),
+  player_first_name: z.string().optional(),
+  player_last_name: z.string().optional(),
+}).passthrough();
+
+export const FplEntryPicksSchema = z.object({
+  picks: z.array(z.object({
+    element: z.number().int().positive(),
+    position: z.number().int().min(1).max(15),
+    element_type: z.number().int().min(1).max(4),
+    multiplier: z.number().int().optional(),
+    is_captain: z.boolean().optional(),
+    is_vice_captain: z.boolean().optional(),
+  }).passthrough()),
+}).passthrough();
+
 export const BootstrapStaticSchema = FplBootstrapSchema;
 export const FixturesSchema = FplFixturesSchema;
 export const PlayerSummarySchema = FplPlayerSummarySchema;
@@ -176,6 +194,8 @@ export type FplBootstrapPayload = z.infer<typeof FplBootstrapSchema>;
 export type FplFixturePayload = z.infer<typeof FplFixturesSchema>;
 export type FplPlayerSummaryPayload = z.infer<typeof FplPlayerSummarySchema>;
 export type FplLiveResponsePayload = z.infer<typeof FplLiveResponseSchema>;
+export type FplEntryPayload = z.infer<typeof FplEntrySchema>;
+export type FplEntryPicksPayload = z.infer<typeof FplEntryPicksSchema>;
 
 export function parseExternal<T>(
   schema: z.ZodType<T>,
