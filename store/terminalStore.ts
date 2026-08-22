@@ -253,7 +253,6 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     set({
       playerIds: [...state.playerIds, id],
       byPosition: { ...state.byPosition, [position]: [...state.byPosition[position], id] },
-      selectedPlayerId: id,
     });
     return true;
   },
