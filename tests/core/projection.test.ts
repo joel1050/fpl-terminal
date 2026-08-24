@@ -4,7 +4,6 @@ import {
   aggregateFixturePointsByGameweek,
   calculateFixtureAdjustment,
   estimateExpectedMinutes,
-  fixtureAdjustment,
   fixturePointsForGameweek,
   projectPlayer,
   regressPer90,
@@ -37,8 +36,8 @@ describe("transparent projection model", () => {
   });
 
   it("prefers an easy home fixture to an elite away fixture", () => {
-    expect(fixtureAdjustment({ gameweek: 1, opponentTeamId: 2, opponentShortName: "E", isHome: true, difficulty: 2 }))
-      .toBeGreaterThan(fixtureAdjustment({ gameweek: 1, opponentTeamId: 3, opponentShortName: "H", isHome: false, difficulty: 5 }));
+    expect(calculateFixtureAdjustment({ gameweek: 1, opponentTeamId: 2, opponentShortName: "E", isHome: true, difficulty: 2 }).attackMultiplier)
+      .toBeGreaterThan(calculateFixtureAdjustment({ gameweek: 1, opponentTeamId: 3, opponentShortName: "H", isHome: false, difficulty: 5 }).attackMultiplier);
   });
 
   it("does not give a relegation defence a 25% clean-sheet floor", () => {
@@ -46,11 +45,11 @@ describe("transparent projection model", () => {
     const weak = { teamId: 2, attackHome: 0.84, attackAway: 0.84, defenceHome: 0.84, defenceAway: 0.84, overall: 0.84 };
     const weakAway = calculateFixtureAdjustment(
       { gameweek: 1, opponentTeamId: 1, opponentShortName: "ARS", isHome: false, difficulty: 5 },
-      { ownTeam: weak, opponentTeam: elite, position: "DEF" },
+      { ownTeam: weak, opponentTeam: elite },
     );
     const eliteHome = calculateFixtureAdjustment(
       { gameweek: 1, opponentTeamId: 2, opponentShortName: "COV", isHome: true, difficulty: 1 },
-      { ownTeam: elite, opponentTeam: weak, position: "DEF" },
+      { ownTeam: elite, opponentTeam: weak },
     );
 
     expect(weakAway.cleanSheetProbability).toBeLessThan(0.12);
@@ -129,6 +128,24 @@ describe("transparent projection model", () => {
     };
     expect(estimateExpectedMinutes(lowStart)).toBeLessThan(30);
     expect(estimateExpectedMinutes(regularStarter)).toBeGreaterThan(80);
+  });
+
+  it("uses a doubtful player's chanceOfPlaying directly instead of stacking a flat penalty on top of it", () => {
+    const base = { ...player([]), status: "d" as const };
+    const highChance = { ...base, chanceOfPlaying: 90 };
+    const noChance = { ...base, chanceOfPlaying: null };
+    // FPL's own 90% estimate should leave this player *more* available than
+    // the generic 70% fallback used when no percentage is supplied - the
+    // old code applied a flat 0.75 factor for any doubtful player and then
+    // multiplied a *known* chance on top (0.75 * 0.9 = 0.675), which would
+    // have made a 90%-likely player look less available than one with no
+    // estimate at all (flat 0.75).
+    expect(estimateExpectedMinutes(highChance)).toBeGreaterThan(estimateExpectedMinutes(noChance));
+  });
+
+  it("discounts an unavailable player without a selection model as severely as officialAvailability does with one", () => {
+    const injured = { ...player([]), status: "i" as const };
+    expect(estimateExpectedMinutes(injured)).toBeLessThan(1);
   });
 
   it("aggregates doubles for nextGW and counts distinct gameweeks for horizons", () => {

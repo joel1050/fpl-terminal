@@ -23,7 +23,7 @@ Live FPL bootstrap data is normalized in `lib/fpl/normalize.ts`.
 
 ### 2.1 `current` stats (facts)
 
-From `normalizePlayer` (`lib/fpl/normalize.ts:192`):
+From `normalizePlayer` (`lib/fpl/normalize.ts:207`):
 
 | Field | Source |
 |---|---|
@@ -38,7 +38,7 @@ From `normalizePlayer` (`lib/fpl/normalize.ts:192`):
 
 ### 2.2 Fixtures and difficulty (facts)
 
-`playerFixtures` (`lib/fpl/normalize.ts:168`) builds each player's fixture list. `difficulty` is the FPL fixture difficulty rating (1–5) for the player's side (home uses `team_h_difficulty`, away uses `team_a_difficulty`).
+`playerFixtures` (`lib/fpl/normalize.ts:183`) builds each player's fixture list. `difficulty` is the FPL fixture difficulty rating (1–5) for the player's side (home uses `team_h_difficulty`, away uses `team_a_difficulty`).
 
 ### 2.3 Historical stats (evidence)
 
@@ -69,9 +69,9 @@ Team strength is a three-layer estimate: a preseason consensus, blended with las
 consensus = 0.76 + tier * 0.08        // tier in 1..5
 ```
 
-`0.76 + tier * 0.08` isn't an arbitrary rescale: it lands tier 1-5 exactly on `0.84, 0.92, 1.00, 1.08, 1.16` - the same five anchors the clean-sheet probability table (§7.4) was calibrated against. A raw 1-5 integer would both break every multiplier that assumes "1.0 = average" and make `nearestStrengthTier` (§7.1) snap almost every team to the wrong table row.
+`0.76 + tier * 0.08` isn't an arbitrary rescale: it lands tier 1-5 exactly on `0.84, 0.92, 1.00, 1.08, 1.16` - the same five anchors the clean-sheet probability table (§7.4) was calibrated against. A raw 1-5 integer would both break every multiplier that assumes "1.0 = average" and make `nearestStrengthTier` (§7.4) snap almost every team to the wrong table row.
 
-`consensusRatio` (`lib/historical/enrichPlayers.ts:60`) applies this to `rating` (overall), `attackRating`, and `defenceRating` independently (`lib/fpl/normalize.ts:23`, `NormalizedTeam.strength`). If a club has an overall tier but no separate attack/defence split yet, attack and defence both fall back to the overall tier rather than being left undefined.
+`consensusRatio` (`lib/historical/enrichPlayers.ts:60`) applies this to `rating` (overall), `attackRating`, and `defenceRating` independently (`lib/fpl/normalize.ts:34`, `NormalizedTeam.strength`). If a club has an overall tier but no separate attack/defence split yet, attack and defence both fall back to the overall tier rather than being left undefined.
 
 If no consensus tier exists at all for a dimension, the raw home/away/attack/defence strengths from the bootstrap payload are used instead (falling back to 1.0).
 
@@ -115,7 +115,7 @@ blended            = (prior * priorWeight + observed * effectiveMatches) / (prio
 
 ## 4. Selection / availability model
 
-`buildPlayerSelections` (`lib/availability/selection.ts:223`) produces a `PlayerSelection` for every player. It blends three signals: historical starts, RotoWire lineups, and official FPL status.
+`buildPlayerSelections` (`lib/availability/selection.ts:237`) produces a `PlayerSelection` for every player. It blends three signals: historical starts, RotoWire lineups, and official FPL status.
 
 ### 4.1 Historical signal
 
@@ -158,15 +158,17 @@ An `UNAVAILABLE` status then scales both: `QUES` multiplies start by `0.65` and 
 
 ### 4.4 Official status gate
 
-`officialAvailability` (`lib/availability/selection.ts:143`) applies a final factor:
+`officialAvailability` (`lib/availability/selection.ts:143`) applies a final factor, based only on `player.status`'s short FPL code (`i`, `d`, `s`, `u`, `n`, …) - never free text, so there is no separate wording-based path:
 
-- Unavailable (`i`, `u`, `n`, `s`, or injury/suspension wording): `factor = 0.01`, and start/cameo are capped at `0.01`.
-- Doubtful (`d`, or doubt/knock/ill wording): `factor = 0.7`.
-- Otherwise `factor = 1`, then multiplied by `chanceOfPlaying / 100` when present.
+- Unavailable (`i`, `u`, `n`, `s`): `factor = 0.01`, then multiplied by `chanceOfPlaying / 100` when present; start/cameo are additionally capped at `0.01`.
+- Doubtful (`d`): `factor = chanceOfPlaying / 100` directly when FPL has supplied a percentage - `chanceOfPlaying` is already FPL's specific estimate for this player, so it is used as-is rather than discounted further. `factor = 0.7` only when no percentage is available.
+- Otherwise `factor = 1`.
+
+`evidenceFor` (`lib/availability/selection.ts:183`) also surfaces `player.news` - FPL's free-text injury/return note - as an `FPL_STATUS` evidence entry when present, so it is visible even though it does not adjust any probability.
 
 ### 4.5 Scenario normalization
 
-`normalizeScenarios` (`lib/availability/selection.ts:200`) produces `startProbability`, `cameoProbability`, and `noAppearanceProbability`. If `start + cameo <= 1`, the remainder is "no appearance"; otherwise both are rescaled by their sum and no-appearance is 0.
+`normalizeScenarios` (`lib/availability/selection.ts:214`) produces `startProbability`, `cameoProbability`, and `noAppearanceProbability`. If `start + cameo <= 1`, the remainder is "no appearance"; otherwise both are rescaled by their sum and no-appearance is 0.
 
 ### 4.6 Expected minutes (selection model)
 
@@ -188,7 +190,7 @@ Position defaults (`lib/availability/selection.ts:45`):
 
 ### 4.7 Nailed rating
 
-`rating` (`lib/availability/selection.ts:153`) maps start probability to a 1–5 scale:
+`rating` (`lib/availability/selection.ts:164`) maps start probability to a 1–5 scale:
 
 ```
 >= 0.85 → 5     >= 0.70 → 4     >= 0.45 → 3     >= 0.15 → 2     else → 1
@@ -196,7 +198,7 @@ Position defaults (`lib/availability/selection.ts:45`):
 
 ### 4.8 Selection confidence
 
-`confidence` (`lib/availability/selection.ts:161`):
+`confidence` (`lib/availability/selection.ts:172`):
 
 - A RotoWire signal, a covered team, or `history.matches >= 10` → `HIGH`.
 - Any history, current minutes, or a known `chanceOfPlaying` → `MEDIUM`.
@@ -206,7 +208,9 @@ Position defaults (`lib/availability/selection.ts:45`):
 
 ## 5. Expected minutes (standalone)
 
-`estimateExpectedMinutes` (`lib/projections/expectedMinutes.ts:67`) is the fallback when no selection model exists.
+`estimateExpectedMinutes` (`lib/projections/expectedMinutes.ts:76`) short-circuits before any of the formula below runs: if `player.selection` already exists and carries a finite `expectedMinutes`, that value is returned immediately (`lib/projections/expectedMinutes.ts:81`). `enrichPlayersWithHistory` always attaches a selection to every player before projecting, so in the enriched pipeline this function's own logic never actually executes - it exists for any caller that hands it a player without a selection model (for example, a hand-built player in a test), not as a live fallback within the app's own request path.
+
+For such a player, without a selection:
 
 ```
 prior  = history.minutes <= 0 ? 0 : 22 + clamp(starts / 38, 0, 1) * 60
@@ -216,9 +220,11 @@ estimate = prior * (1 - weight) + recent * weight
 estimate *= statusAvailability(player)
 ```
 
-`statusAvailability` (`lib/projections/expectedMinutes.ts:17`) maps status to an availability factor (`0.25` unavailable, `0.75` doubtful, `0.5` suspended, `1` otherwise) and multiplies by `chanceOfPlaying / 100`.
+`statusAvailability` (`lib/projections/expectedMinutes.ts:21`) mirrors `officialAvailability` (§4.4) exactly, so a player without a selection model is discounted identically to one with a selection model for the same underlying fact:
 
-In practice, `projectPlayer` prefers `player.selection.expectedMinutes` when a selection exists, so the selection model of §4.6 is the authoritative minutes source in the enriched pipeline.
+- Unavailable (`i`, `u`, `n`, `s`): `factor = 0.01`, then multiplied by `chanceOfPlaying / 100` when present.
+- Doubtful (`d`): `factor = chanceOfPlaying / 100` directly when supplied, else `0.7`.
+- Otherwise `factor = 1`.
 
 ---
 
@@ -226,7 +232,7 @@ In practice, `projectPlayer` prefers `player.selection.expectedMinutes` when a s
 
 ### 6.1 Rate extraction
 
-`historicalRate` / `currentRate` (`lib/projections/projectPlayer.ts:48`) convert a raw count to a per-90 rate: `value / minutes * 90`.
+`historicalRate` / `currentRate` (`lib/projections/projectPlayer.ts:49`) convert a raw count to a per-90 rate: `value / minutes * 90`.
 
 ### 6.2 Regression toward a prior
 
@@ -240,7 +246,7 @@ rate = (observedPer90 * sampleMinutes + priorPer90 * 900) / (sampleMinutes + 900
 
 ### 6.3 Blending current + historical, then regressing
 
-`regressedPlayerRate` (`lib/projections/projectPlayer.ts:77`):
+`regressedPlayerRate` (`lib/projections/projectPlayer.ts:78`) is used for bonus, saves, and defensive contributions:
 
 ```
 rate   = historicalRate ?? prior
@@ -254,9 +260,25 @@ rate = clamp(regressPer90(rate, sample, prior, 900), 0, ceiling)
 
 The current season earns up to 60% weight as the season progresses.
 
+### 6.3.1 xG and xA: recency-weighted match history
+
+xG and xA use a different current-season blend, `regressedFormRate` (`lib/projections/projectPlayer.ts:110`). A player's own historical (or position-prior) rate still anchors the blend - `basePrior = historicalRate ?? prior`, unchanged from §6.3 - but the current-season half comes from `blendPlayerRate` (`lib/projections/playerForm.ts:32`), a recency-weighted average of the player's own match-by-match xG/xA this season, rather than a flat season-to-date average:
+
+```
+weight(i matches before the most recently played) = decay^i
+observedRate     = Σ(weight_i * matchRate_i) / Σ(weight_i)
+effectiveMatches = Σ(weight_i)
+blended          = (basePrior * priorWeightMatches + observedRate * effectiveMatches)
+                   / (priorWeightMatches + effectiveMatches)
+```
+
+`decay = 0.90`, `priorWeightMatches = 24` (`PLAYER_FORM_DECAY`/`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`, `lib/projections/playerForm.ts:21`) are backtested, not guessed: walking forward through 20,356 player-appearances across the 2023/24 and 2024/25 seasons, chasing a player's own most recent match or two performed far worse than trusting a stable prior heavily - correlation with actual next-match xG collapsed from ~0.46 to ~0.29 at a low prior weight. Individual match output is dominated by shot-quality variance a player doesn't control, so a formula that reacts hard to the last match is mostly reacting to randomness. Fitted separately, xG's optimum was ~26 matches (decay barely mattered) and xA's was ~40 matches (xA is noisier still, since it depends on a teammate finishing the chance); 24 is the deliberately shared, slightly conservative middle ground used for both rather than either stat's precise peak.
+
+This only applies once a player has an in-season match history (`options.playerForm`, populated by `loadInSeasonPlayerRates` in `lib/historical/loadInSeasonForm.ts` from FPL's live per-gameweek stats, one entry per finished gameweek the player actually featured in). Before any gameweek has finished, or for a caller that hasn't wired up the loader, xG/xA fall back to the exact §6.3 mechanism (cumulative `Player.current.expectedGoals`/`expectedAssists`, blended by calendar gameweek and regressed toward the prior at a 900-minute weight) so behaviour degrades gracefully rather than silently discarding those live totals.
+
 ### 6.4 Priors and ceilings
 
-Priors (`lib/projections/projectPlayer.ts:22`):
+Priors (`lib/projections/projectPlayer.ts:23`):
 
 | Stat | GK | DEF | MID | FWD |
 |---|---|---|---|---|
@@ -268,38 +290,58 @@ Priors (`lib/projections/projectPlayer.ts:22`):
 
 A defender with no usable goal/assist sample uses a special low prior (`0.02` each) rather than the position prior.
 
-Ceilings (`lib/projections/projectPlayer.ts:33`): goal involvement 3, saves 10, defensive contributions 30, bonus 3 (all per 90).
+Ceilings (`lib/projections/projectPlayer.ts:34`): goal involvement 3, saves 10, defensive contributions 30, bonus 3 (all per 90).
 
 ---
 
 ## 7. Fixture adjustment
 
-`calculateFixtureAdjustment` (`lib/projections/fixtureAdjustment.ts:69`) returns per-fixture multipliers and probabilities.
+`calculateFixtureAdjustment` (`lib/projections/fixtureAdjustment.ts:97`) returns one attacking multiplier and the fixture's clean-sheet pair (§7.5).
 
 ### 7.1 Base difficulty and venue
 
 ```
 difficulty       = clamp(round(fixture.difficulty ?? 3), 1, 5)
 base             = {1: 1.14, 2: 1.07, 3: 1.00, 4: 0.92, 5: 0.84}[difficulty]
-venue            = home ? 1.03 : 0.97
+venue            = home ? 1.102 : 0.898
 attackMultiplier = base * venue
-defenceMultiplier= base * (home ? 1.03 : 0.97)
-expectedGoalsAgainst = 1.35 * (home ? 0.9 : 1.1)
+expectedGoalsAgainst = 1.35 * (home ? 0.9 : 1.1)    // fallback only - see §7.3
 ```
+
+The venue pair is measured, not assumed. Across all 380 fixtures of 2025/26,
+home sides averaged 1.551 xG and away sides 1.264, so against the 1.408 league
+mean the multipliers are `1.102` and `0.898`; actual goals agree (1.453 against
+1.203). The earlier `1.03 / 0.97` was about a third of the real spread, and
+contradicted the `0.9 / 1.1` used on the goals-against side of the same fixture.
+Re-derive with `npx tsx scripts/backtest/sweep.ts`.
+
+In practice `base` moves far less than the table suggests: FPL only ever issued
+difficulty 2, 3 or 4 to home sides across the 380 fixtures of the current
+season, so `base` spans `1.07`-`0.92`, not `1.14`-`0.84`.
 
 ### 7.2 Strength-based adjustment
 
 When both own and opponent team strengths exist:
 
 ```
-attackMultiplier *= clamp(ownAttack / opponentDefence, 0.78, 1.22)
-defenceMultiplier *= clamp(ownDefence / opponentAttack, 0.78, 1.22)
-expectedGoalsAgainst *= clamp(opponentAttack / ownDefence, 0.55, 1.8)^1.5
+attackMultiplier *= clamp(ownAttack / opponentDefence, 0.70, 1.35)
 ```
 
 `cleanSheetProbability` is read from a market-calibrated table indexed by the nearest strength tier of the defending team and the opponent's attacking tier (see table in §7.4). Without strengths, `expectedGoalsAgainst` is divided by `base^2`.
 
-Both multipliers are clamped to `0.7`–`1.3`.
+The ratio window was `0.78`-`1.22`, which truncated a real signal: walk-forward
+strengths for 2025/26 produced ratios from `0.47` to `1.62`, so the old clamp bit
+on 24.5% of team-fixtures and could not tell a good matchup from a great one.
+Widening it to `0.70`-`1.35` lowered expected-points RMSE by 0.0008 with the
+paired confidence interval excluding zero, and won 24 of 33 gameweeks. The gain
+is flat from there all the way to unclamped, so this is the narrowest window
+that captures all of it - and a window is still wanted, because
+`blendInSeasonForm` floors a defence ratio at `0.05`, which would let an
+unclamped ratio reach about 25.
+
+`attackMultiplier` is then clamped to `0.7`-`1.3`. That outer guard is not
+slack: with `base` at `1.07` it binds on roughly 9% of fixtures, so it carries
+the top of the range. Widening it to `0.6`-`1.5` measured worse.
 
 ### 7.3 Consistent goals-against
 
@@ -313,7 +355,7 @@ This is the single Poisson parameter used by the goals-conceded deduction (§8).
 
 ### 7.4 Clean-sheet probability table
 
-Rows are the defending team's tier; columns are the opponent's attacking tier (`lib/projections/fixtureAdjustment.ts:34`). Home first, then away:
+Rows are the defending team's tier; columns are the opponent's attacking tier (`lib/projections/fixtureAdjustment.ts:62`). Home first, then away:
 
 | home | tier 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|
@@ -333,15 +375,35 @@ Rows are the defending team's tier; columns are the opponent's attacking tier (`
 
 Tiers are the `consensusStrengthTiers = [0.84, 0.92, 1.00, 1.08, 1.16]` mapped by nearest value.
 
-### 7.5 Overall multiplier
+Snapping a continuous strength to one of five anchors looks like it should cost
+accuracy, and it does not. Walked forward over 660 team-fixtures of 2025/26, the
+table scores a Brier of 0.1840 against 0.1907 for a constant league rate, with
+the paired confidence interval excluding zero - so the table carries real signal.
+Reading the same cells by bilinear interpolation scores 0.1839, and a continuous
+Poisson lambda scores 0.1839-0.1847 across three scales and three exponents.
+Every alternative sits inside the noise, and the Poisson was measurably *worse*
+for MID/FWD once run through §8. The table stays. Re-run with
+`npx tsx scripts/backtest/cleansheets.ts`.
 
-`overallMultiplier` is `defenceMultiplier` for GK/DEF and `attackMultiplier` for MID/FWD. This scalar feeds simple directional comparisons; the component projection (§8) uses the individual pieces directly.
+Calibration by band is good at the top and soft at the bottom: the strongest
+defences returned 0.326 clean sheets against 0.331 predicted, while the weakest
+returned 0.152 against 0.208 predicted. The weak-defence row is the one worth
+revisiting, not the resolution.
+
+### 7.5 What section 7 returns
+
+`attackMultiplier`, `cleanSheetProbability` and `expectedGoalsAgainst`, and
+nothing else. A `defenceMultiplier`, an `overallMultiplier` and the
+`fixtureAdjustment` / `fixtureMultiplier` / `adjustFixture` wrappers used to be
+returned as well; none of them had a single consumer anywhere in the app, so
+they were removed rather than documented. The component projection (§8) reads
+the three remaining values directly.
 
 ---
 
 ## 8. Expected points (xP) components
 
-`fixtureComponents` (`lib/projections/projectPlayer.ts:207`) computes the expected points for one fixture, decomposed into `ProjectionComponents` (`types/projection.ts:23`).
+`fixtureComponents` (`lib/projections/projectPlayer.ts:252`) computes the expected points for one fixture, decomposed into `ProjectionComponents` (`types/projection.ts:29`).
 
 The selection model is reconstructed as scenarios (§4.5): a **start** scenario and a **cameo** scenario. For each scenario with `weight = probability` and `minutesShare = clamp(minutes, 0, 90) / 90`:
 
@@ -418,7 +480,7 @@ bonus += weight * bonusRate * minutesShare
 
 ## 9. Aggregation: nextGW, next3, next5, value
 
-`projectPlayer` (`lib/projections/projectPlayer.ts:303`) projects every upcoming fixture (from `currentGameweek` out to `fixtureHorizon`, defaulting to the season's remaining weeks) and aggregates.
+`projectPlayer` (`lib/projections/projectPlayer.ts:348`) projects every upcoming fixture (from `currentGameweek` out to `fixtureHorizon`, defaulting to the season's remaining weeks) and aggregates.
 
 ```
 nextGW = sum of expectedPoints for fixtures in currentGameweek        (0 if blank)
@@ -426,13 +488,13 @@ next3  = sum over gameweeks [current, current+1, current+2]
 next5  = sum over gameweeks [current, ..., current+4]
 ```
 
-Aggregation is per **distinct gameweek** (`aggregateFixturePointsByGameweek`, `lib/projections/projectPlayer.ts:177`): a double gameweek sums all its fixtures, a blank gameweek contributes zero, and three/five-gameweek totals never double-count a fixture row.
+Aggregation is per **distinct gameweek** (`aggregateFixturePointsByGameweek`, `lib/projections/projectPlayer.ts:222`): a double gameweek sums all its fixtures, a blank gameweek contributes zero, and three/five-gameweek totals never double-count a fixture row.
 
 ```
 valueNext5 = next5 / (priceTenths / 10)
 ```
 
-`factors` (`lib/projections/projectPlayer.ts:269`) produces the display-only factor list (expected minutes, average fixture difficulty, confidence, position model).
+`factors` (`lib/projections/projectPlayer.ts:314`) produces the display-only factor list (expected minutes, average fixture difficulty, confidence, position model).
 
 ---
 
@@ -680,6 +742,13 @@ Team strength constants (`lib/historical/inSeasonForm.ts`):
 | In-season form prior weight | 10 "matches worth" |
 | xG floor (avoids divide-by-zero) | 0.15 |
 
+Player form constants (`lib/projections/playerForm.ts`):
+
+| Constant | Value |
+|---|---|
+| xG/xA in-season form decay (per match) | 0.90 |
+| xG/xA in-season form prior weight | 24 "matches worth" |
+
 Scoring constants (`lib/projections/projectPlayer.ts`):
 
 | Rule | Value |
@@ -697,7 +766,9 @@ Fixture constants (`lib/projections/fixtureAdjustment.ts`):
 |---|---|
 | League average goals against | 1.35 |
 | Difficulty multipliers | 1→1.14, 2→1.07, 3→1.00, 4→0.92, 5→0.84 |
-| Home / away venue | 1.03 / 0.97 |
+| Home / away attack venue | 1.102 / 0.898 (measured) |
+| Attack ratio clamp | 0.70 – 1.35 |
+| Attack multiplier clamp | 0.70 – 1.30 |
 | Strength tier anchors | 0.84, 0.92, 1.00, 1.08, 1.16 |
 
 Lineup constants (`lib/squad/weeklyLineup.ts`):

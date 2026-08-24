@@ -90,3 +90,79 @@ describe("loadInSeasonTeamXG", () => {
     expect(mocks.getLiveGameweek).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("loadInSeasonPlayerRates", () => {
+  let directory: string;
+  let previous: string | undefined;
+
+  beforeEach(async () => {
+    directory = await mkdtemp(path.join(tmpdir(), "fpl-in-season-player-rates-"));
+    previous = process.env.FPL_SNAPSHOT_DIR;
+    process.env.FPL_SNAPSHOT_DIR = directory;
+    mocks.getLiveGameweek.mockReset();
+  });
+
+  afterEach(async () => {
+    if (previous === undefined) delete process.env.FPL_SNAPSHOT_DIR;
+    else process.env.FPL_SNAPSHOT_DIR = previous;
+    await rm(directory, { recursive: true, force: true });
+  });
+
+  it("records only players who featured, in chronological order, and skips double gameweeks", async () => {
+    // gw1 and gw2 are both eligible here, so loadInSeasonPlayerRates fetches
+    // them concurrently via Promise.all - mockResolvedValueOnce only
+    // guarantees *call* order, not resolution order under concurrent
+    // awaits, so this must dispatch on the actual gameweek argument.
+    const responsesByGameweek: Record<number, unknown> = {
+      1: {
+        data: {
+          elements: [
+            { id: 1, stats: { expected_goals: "0.30", expected_assists: "0.10", minutes: "90" } },
+            { id: 2, stats: { expected_goals: "0.00", expected_assists: "0.00", minutes: "0" } }, // did not play
+          ],
+        },
+        freshness: null,
+      },
+      2: {
+        data: {
+          elements: [
+            { id: 1, stats: { expected_goals: "0.90", expected_assists: "0.05", minutes: "90" } },
+          ],
+        },
+        freshness: null,
+      },
+    };
+    mocks.getLiveGameweek.mockImplementation(async (gameweek: number) => responsesByGameweek[gameweek]);
+
+    const { loadInSeasonPlayerRates } = await import("@/lib/historical/loadInSeasonForm");
+    const fixtures = [
+      { gameweek: 1, teamHomeId: 1, teamAwayId: 2, finished: true },
+      { gameweek: 2, teamHomeId: 1, teamAwayId: 2, finished: true },
+      { gameweek: 2, teamHomeId: 3, teamAwayId: 4, finished: true }, // team 1 not doubled here, gw2 still single
+      { gameweek: 3, teamHomeId: 1, teamAwayId: 2, finished: false },
+    ];
+
+    const history = await loadInSeasonPlayerRates(fixtures);
+
+    expect(history[1]).toEqual([
+      { xg: 0.3, xa: 0.1, minutes: 90 },
+      { xg: 0.9, xa: 0.05, minutes: 90 },
+    ]);
+    expect(history[2]).toBeUndefined();
+    expect(mocks.getLiveGameweek).toHaveBeenCalledTimes(2);
+  });
+
+  it("never re-fetches a finished gameweek once its rates are persisted", async () => {
+    mocks.getLiveGameweek.mockResolvedValueOnce({
+      data: { elements: [{ id: 1, stats: { expected_goals: "0.5", expected_assists: "0.1", minutes: "90" } }] },
+      freshness: null,
+    });
+    const { loadInSeasonPlayerRates } = await import("@/lib/historical/loadInSeasonForm");
+    const fixtures = [{ gameweek: 1, teamHomeId: 1, teamAwayId: 2, finished: true }];
+
+    await loadInSeasonPlayerRates(fixtures);
+    await loadInSeasonPlayerRates(fixtures);
+
+    expect(mocks.getLiveGameweek).toHaveBeenCalledTimes(1);
+  });
+});

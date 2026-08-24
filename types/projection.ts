@@ -1,5 +1,11 @@
 import type { Position } from "./player";
 
+export interface PlayerMatchRate {
+  xg: number;
+  xa: number;
+  minutes: number;
+}
+
 export interface TeamStrength {
   teamId: number;
   attackHome: number;
@@ -42,4 +48,6 @@ export interface ProjectionOptions {
   positionPrior?: Partial<Record<Position, number>>;
   /** Optional explicit minutes are useful for tests and in-progress seasons. */
   expectedMinutes?: number;
+  /** Each player's chronological in-season xG/xA match history, keyed by player id. */
+  playerForm?: Record<number, readonly PlayerMatchRate[]>;
 }

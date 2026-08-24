@@ -9,7 +9,7 @@ import {
   enrichPlayersWithHistory,
   type PlayerEnrichmentMetadata,
 } from "@/lib/historical/enrichPlayers";
-import { loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
+import { loadInSeasonPlayerRates, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
 import {
   type FplBootstrapPayload,
   type FplFixturePayload,
@@ -287,13 +287,17 @@ export async function enrichBootstrapWithProjections(
   bootstrap: NormalizedBootstrap,
   historical: HistoricalBundle | null,
 ): Promise<{ bootstrap: NormalizedBootstrap; metadata: BootstrapProjectionMetadata }> {
-  const inSeasonForm = await loadInSeasonTeamXG(bootstrap.players, bootstrap.fixtures);
+  const [inSeasonForm, playerForm] = await Promise.all([
+    loadInSeasonTeamXG(bootstrap.players, bootstrap.fixtures),
+    loadInSeasonPlayerRates(bootstrap.fixtures),
+  ]);
   const enriched = enrichPlayersWithHistory(
     bootstrap.players,
     bootstrap.teams,
     bootstrap.events,
     historical,
     inSeasonForm,
+    playerForm,
   );
   return {
     bootstrap: { ...bootstrap, players: enriched.players },

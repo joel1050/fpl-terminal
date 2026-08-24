@@ -1,5 +1,5 @@
 import type { Player, PlayerProjection } from "@/types/player";
-import type { TeamStrength } from "@/types/projection";
+import type { PlayerMatchRate, TeamStrength } from "@/types/projection";
 import { projectPlayers } from "@/lib/projections/projectPlayer";
 import { loadRotowireSelectionData } from "@/lib/availability/loadSelectionData";
 import { buildPlayerSelections } from "@/lib/availability/selection";
@@ -159,6 +159,7 @@ export function enrichPlayersWithHistory(
   events: readonly EnrichmentEvent[],
   historical: HistoricalBundle | null,
   inSeasonForm?: Record<number, readonly TeamMatchXG[]>,
+  playerForm?: Record<number, readonly PlayerMatchRate[]>,
 ): EnrichedPlayers {
   const historicalById = new Map(
     (historical?.players ?? []).map((player) => [player.historicalPlayerId, player]),
@@ -195,6 +196,7 @@ export function enrichPlayersWithHistory(
     fixtureHorizon: 39 - gw,
     currentGameweek: gw,
     teamStrengths: strengths,
+    playerForm,
   });
   return {
     players: selectedPlayers.map((player, index) => ({

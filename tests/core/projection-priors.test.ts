@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Player } from "@/types/player";
 import { projectPlayer, regressPer90 } from "@/lib/projections";
+import { HOME_ATTACK_MULTIPLIER } from "@/lib/projections/fixtureAdjustment";
 
 function defender(overrides: Partial<Player> = {}): Player {
   return {
@@ -24,7 +25,7 @@ function defender(overrides: Partial<Player> = {}): Player {
 describe("defender attacking priors", () => {
   it("uses the conservative prior when no historical or current attacking sample exists", () => {
     const projection = projectPlayer(defender(), { currentGameweek: 1, horizon: 1, expectedMinutes: 90 });
-    const attackMultiplier = 1.03;
+    const attackMultiplier = HOME_ATTACK_MULTIPLIER;
 
     expect(projection.components?.goals).toBeCloseTo(0.02 * attackMultiplier * 6, 8);
     expect(projection.components?.assists).toBeCloseTo(0.02 * attackMultiplier * 3, 8);
@@ -37,7 +38,7 @@ describe("defender attacking priors", () => {
       expectedMinutes: 90,
       positionPrior: { DEF: 0.5 },
     });
-    const attackMultiplier = 1.03;
+    const attackMultiplier = HOME_ATTACK_MULTIPLIER;
 
     expect(projection.components?.goals).toBeCloseTo(0.5 * attackMultiplier * 6, 8);
     expect(projection.components?.assists).toBeCloseTo(0.02 * attackMultiplier * 3, 8);
@@ -56,7 +57,7 @@ describe("defender attacking priors", () => {
         expectedAssists: 0.9,
       },
     }), { currentGameweek: 1, horizon: 1, expectedMinutes: 90 });
-    const attackMultiplier = 1.03;
+    const attackMultiplier = HOME_ATTACK_MULTIPLIER;
     const regressedCurrentRate = regressPer90(0.02 * 0.9 + 0.9 * 0.1, 9, 0.02, 900);
 
     expect(projection.components?.goals).toBeCloseTo(regressedCurrentRate * attackMultiplier * 6, 8);
@@ -72,12 +73,53 @@ describe("defender attacking priors", () => {
         expectedAssists: 18,
       },
     }), { currentGameweek: 1, horizon: 1, expectedMinutes: 90 });
-    const attackMultiplier = 1.03;
+    const attackMultiplier = HOME_ATTACK_MULTIPLIER;
     const historicalRate = regressPer90(1.8, 900, 0.08, 900);
 
     expect(projection.components?.goals).toBeCloseTo(historicalRate * attackMultiplier * 6, 8);
     expect(projection.components?.assists).toBeCloseTo(historicalRate * attackMultiplier * 3, 8);
     expect(projection.components?.goals).toBeGreaterThan(0.02 * attackMultiplier * 6);
     expect(projection.components?.assists).toBeGreaterThan(0.02 * attackMultiplier * 3);
+  });
+
+  it("uses the recency-weighted in-season match history when playerForm is supplied", () => {
+    const withoutForm = projectPlayer(defender({
+      historical: { season: "2025/26", minutes: 900, expectedGoals: 1.8, expectedAssists: 1.8 },
+    }), { currentGameweek: 1, horizon: 1, expectedMinutes: 90 });
+
+    const hotForm = [
+      { xg: 0.3, xa: 0.1, minutes: 90 },
+      { xg: 0.5, xa: 0.1, minutes: 90 },
+      { xg: 0.9, xa: 0.1, minutes: 90 }, // most recent match, well above the 0.1 historical xG/90 rate
+    ];
+    const withForm = projectPlayer(defender({
+      id: 1,
+      historical: { season: "2025/26", minutes: 900, expectedGoals: 1.8, expectedAssists: 1.8 },
+    }), {
+      currentGameweek: 1,
+      horizon: 1,
+      expectedMinutes: 90,
+      playerForm: { 1: hotForm },
+    });
+
+    // A hot in-season match history should raise the projection above the
+    // historical-only baseline, but a 24-match prior weight keeps 3 matches
+    // from swinging it anywhere near the raw recent rate (0.9).
+    expect(withForm.components?.goals).toBeGreaterThan(withoutForm.components?.goals ?? 0);
+    const attackMultiplier = HOME_ATTACK_MULTIPLIER;
+    expect(withForm.components?.goals).toBeLessThan(0.9 * attackMultiplier * 6);
+  });
+
+  it("falls back to the cumulative current-season rate when no playerForm history exists yet", () => {
+    const projection = projectPlayer(defender({
+      current: {
+        totalPoints: 0, minutes: 90, goals: 0, assists: 0, cleanSheets: 0, bonus: 0,
+        expectedGoals: 0.9, expectedAssists: 0.9,
+      },
+    }), { currentGameweek: 1, horizon: 1, expectedMinutes: 90, playerForm: {} });
+    const attackMultiplier = HOME_ATTACK_MULTIPLIER;
+    const regressedCurrentRate = regressPer90(0.02 * 0.9 + 0.9 * 0.1, 9, 0.02, 900);
+
+    expect(projection.components?.goals).toBeCloseTo(regressedCurrentRate * attackMultiplier * 6, 8);
   });
 });

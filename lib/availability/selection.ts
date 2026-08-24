@@ -141,12 +141,23 @@ function rotowireCoveredTeams(
 }
 
 function officialAvailability(player: Player): { factor: number; unavailable: boolean } {
+  // player.status is always FPL's short code (i, d, s, u, n, ...), never
+  // descriptive text, so a text-pattern fallback here can never fire against
+  // real data.
   const status = player.status.trim().toLowerCase();
+  const unavailable = ["i", "u", "n", "s"].includes(status);
+  const chance = typeof player.chanceOfPlaying === "number" ? clamp(player.chanceOfPlaying, 0, 100) / 100 : undefined;
   let factor = 1;
-  const unavailable = ["i", "u", "n", "s"].includes(status) || /injur|suspend|unavail|out|red|not.?squad/.test(status);
-  if (unavailable) factor = 0.01;
-  else if (status === "d" || /doubt|knock|ill/.test(status)) factor = 0.7;
-  if (typeof player.chanceOfPlaying === "number") factor *= clamp(player.chanceOfPlaying, 0, 100) / 100;
+  if (unavailable) {
+    factor = 0.01;
+    if (chance !== undefined) factor *= chance;
+  } else if (status === "d") {
+    // chanceOfPlaying is already FPL's specific estimate for this doubtful
+    // player; use it directly rather than stacking a generic discount on
+    // top of an already-specific number. Fall back to a flat discount only
+    // when FPL hasn't supplied a percentage for this player.
+    factor = chance ?? 0.7;
+  }
   return { factor: clamp(factor, 0, 1), unavailable };
 }
 
@@ -194,6 +205,9 @@ function evidenceFor(
     ? player.status
     : `${player.status}, ${player.chanceOfPlaying}% chance`;
   evidence.push({ source: "FPL_STATUS", detail: `FPL status: ${status}` });
+  if (player.news) {
+    evidence.push({ source: "FPL_STATUS", detail: `FPL news: ${player.news}` });
+  }
   return evidence;
 }
 

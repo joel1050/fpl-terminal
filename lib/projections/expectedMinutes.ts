@@ -14,14 +14,23 @@ function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
+// Mirrors officialAvailability in lib/availability/selection.ts, so a
+// player without a selection model is treated identically to one with a
+// selection model for the same underlying fact. player.status is always
+// FPL's short code (i, d, s, u, n, ...), never descriptive text.
 function statusAvailability(player: Player): number {
   const status = player.status.trim().toLowerCase();
+  const unavailable = ["i", "u", "n", "s"].includes(status);
+  const chance = typeof player.chanceOfPlaying === "number" ? clamp(player.chanceOfPlaying, 0, 100) / 100 : undefined;
   let availability = 1;
-  if (/injur|suspend|unavail|out|red|not.?squad/.test(status) || ["i", "u", "n"].includes(status)) availability = 0.25;
-  else if (/doubt|knock|ill/.test(status) || status === "d") availability = 0.75;
-  else if (status === "s" || /suspend/.test(status)) availability = 0.5;
-  if (typeof player.chanceOfPlaying === "number") {
-    availability *= clamp(player.chanceOfPlaying, 0, 100) / 100;
+  if (unavailable) {
+    availability = 0.01;
+    if (chance !== undefined) availability *= chance;
+  } else if (status === "d") {
+    // chanceOfPlaying is already FPL's specific estimate for this doubtful
+    // player; use it directly rather than stacking a generic discount on
+    // top of an already-specific number.
+    availability = chance ?? 0.7;
   }
   return clamp(availability, 0, 1);
 }

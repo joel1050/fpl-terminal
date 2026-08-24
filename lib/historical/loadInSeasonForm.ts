@@ -2,11 +2,17 @@ import { z } from "zod";
 import { getLiveGameweek } from "@/lib/fpl/client";
 import { readSnapshot, writeSnapshot } from "@/lib/fpl/cache";
 import type { TeamMatchXG } from "./inSeasonForm";
+import type { PlayerMatchRate } from "@/lib/projections/playerForm";
 
 const GameweekTeamXGSchema = z.array(
   z.object({ teamId: z.number(), xgFor: z.number(), xgAgainst: z.number() }),
 );
 type GameweekTeamXG = z.infer<typeof GameweekTeamXGSchema>;
+
+const GameweekPlayerRatesSchema = z.array(
+  z.object({ playerId: z.number(), xg: z.number(), xa: z.number(), minutes: z.number() }),
+);
+type GameweekPlayerRates = z.infer<typeof GameweekPlayerRatesSchema>;
 
 export interface InSeasonFormPlayer {
   id: number;
@@ -74,6 +80,32 @@ async function loadGameweekTeamXG(
 }
 
 /**
+ * A gameweek qualifies once every one of its fixtures is finished and no
+ * team played twice in it - event/live xG is a per-gameweek total, so a
+ * double gameweek can't be split back out into its two fixtures. Shared by
+ * both the team-level and player-level loaders below, since the same
+ * ambiguity applies to a player's rate for the same reason.
+ */
+function eligibleGameweeks(fixtures: readonly InSeasonFormFixture[]): number[] {
+  const fixturesByGameweek = new Map<number, InSeasonFormFixture[]>();
+  for (const fixture of fixtures) {
+    if (fixture.gameweek === undefined) continue;
+    const gameweekFixtures = fixturesByGameweek.get(fixture.gameweek) ?? [];
+    gameweekFixtures.push(fixture);
+    fixturesByGameweek.set(fixture.gameweek, gameweekFixtures);
+  }
+
+  return [...fixturesByGameweek.entries()]
+    .filter(([, gameweekFixtures]) => {
+      const teams = gameweekFixtures.flatMap((fixture) => [fixture.teamHomeId, fixture.teamAwayId]);
+      return gameweekFixtures.every((fixture) => fixture.finished)
+        && new Set(teams).size === teams.length;
+    })
+    .map(([gameweek]) => gameweek)
+    .sort((a, b) => a - b);
+}
+
+/**
  * Builds each team's chronological xG-for/xG-against history for the
  * current season, from finished gameweeks only. Returns an empty history
  * (and callers fall back to the preseason prior) before any gameweek has
@@ -83,32 +115,68 @@ export async function loadInSeasonTeamXG(
   players: readonly InSeasonFormPlayer[],
   fixtures: readonly InSeasonFormFixture[],
 ): Promise<Record<number, TeamMatchXG[]>> {
-  const fixturesByGameweek = new Map<number, InSeasonFormFixture[]>();
-  for (const fixture of fixtures) {
-    if (fixture.gameweek === undefined) continue;
-    const gameweekFixtures = fixturesByGameweek.get(fixture.gameweek) ?? [];
-    gameweekFixtures.push(fixture);
-    fixturesByGameweek.set(fixture.gameweek, gameweekFixtures);
-  }
-
-  const finishedGameweeks = [...fixturesByGameweek.entries()]
-    .filter(([, gameweekFixtures]) => {
-      const teams = gameweekFixtures.flatMap((fixture) => [fixture.teamHomeId, fixture.teamAwayId]);
-      // ponytail: event/live xG is per gameweek, so skip doubles until a per-fixture xG source exists.
-      return gameweekFixtures.every((fixture) => fixture.finished)
-        && new Set(teams).size === teams.length;
-    })
-    .map(([gameweek]) => gameweek)
-    .sort((a, b) => a - b);
-
   const perGameweek = await Promise.all(
-    finishedGameweeks.map((gameweek) => loadGameweekTeamXG(gameweek, players, fixtures)),
+    eligibleGameweeks(fixtures).map((gameweek) => loadGameweekTeamXG(gameweek, players, fixtures)),
   );
 
   const history: Record<number, TeamMatchXG[]> = {};
   for (const rows of perGameweek) {
     for (const row of rows) {
       (history[row.teamId] ??= []).push({ xgFor: row.xgFor, xgAgainst: row.xgAgainst });
+    }
+  }
+  return history;
+}
+
+/**
+ * Same caching contract as loadGameweekTeamXG: a finished gameweek's player
+ * rates are persisted once and never re-fetched. Only players who actually
+ * featured (minutes > 0) are recorded, matching how the backtest behind
+ * PLAYER_FORM_DECAY/PLAYER_FORM_PRIOR_WEIGHT_MATCHES built its history - a
+ * blank gameweek should not count as "a match with zero output."
+ */
+async function loadGameweekPlayerRates(gameweek: number): Promise<GameweekPlayerRates> {
+  const cached = await readSnapshot(`in-season-player-rates-gw-${gameweek}`, GameweekPlayerRatesSchema);
+  if (cached && cached.data.length > 0) return cached.data;
+
+  const live = await getLiveGameweek(gameweek);
+  if (!live.data) return [];
+
+  const result: GameweekPlayerRates = [];
+  let hasSignal = false;
+  for (const element of live.data.elements) {
+    const minutes = toNumber(element.stats.minutes);
+    if (minutes <= 0) continue;
+    const xg = toNumber(element.stats.expected_goals);
+    const xa = toNumber(element.stats.expected_assists);
+    if (xg > 0 || xa > 0) hasSignal = true;
+    result.push({ playerId: element.id, xg, xa, minutes });
+  }
+  // Same corruption guard as the team loader: a full gameweek of real
+  // appearances never sums to zero xG and xA across every player.
+  if (!hasSignal) return [];
+
+  await writeSnapshot(`in-season-player-rates-gw-${gameweek}`, result);
+  return result;
+}
+
+/**
+ * Builds each player's chronological xG/xA-per-match history for the
+ * current season, one entry per match they actually featured in. Returns an
+ * empty history (and callers fall back to the historical/prior rate) before
+ * any gameweek has finished.
+ */
+export async function loadInSeasonPlayerRates(
+  fixtures: readonly InSeasonFormFixture[],
+): Promise<Record<number, PlayerMatchRate[]>> {
+  const perGameweek = await Promise.all(
+    eligibleGameweeks(fixtures).map((gameweek) => loadGameweekPlayerRates(gameweek)),
+  );
+
+  const history: Record<number, PlayerMatchRate[]> = {};
+  for (const rows of perGameweek) {
+    for (const row of rows) {
+      (history[row.playerId] ??= []).push({ xg: row.xg, xa: row.xa, minutes: row.minutes });
     }
   }
   return history;

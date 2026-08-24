@@ -29,7 +29,6 @@ function cleanSheetProbability(
     {
       ownTeam: team(1, ownStrength),
       opponentTeam: team(2, opponentStrength),
-      position: "DEF",
     },
   ).cleanSheetProbability;
 }

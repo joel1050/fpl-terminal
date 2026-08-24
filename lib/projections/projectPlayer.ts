@@ -7,12 +7,13 @@ import type {
   ProjectionConfidence,
   Position,
 } from "@/types/player";
-import type { ProjectionComponents, ProjectionOptions, TeamStrength } from "@/types/projection";
+import type { PlayerMatchRate, ProjectionComponents, ProjectionOptions, TeamStrength } from "@/types/projection";
 import { calculateFixtureAdjustment, LEAGUE_AVERAGE_GOALS_AGAINST } from "./fixtureAdjustment";
 import { expectedFloorDivision, thresholdProbability } from "./distributions";
 import { estimateExpectedMinutes, type ExpectedMinutesOptions } from "./expectedMinutes";
 import { projectionConfidence, calculateRiskScore, valuePerMillion } from "./metrics";
 import { regressPer90 } from "./regression";
+import { blendPlayerRate, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES } from "./playerForm";
 
 export type ProjectPlayerOptions = Partial<ProjectionOptions> & {
   expectedMinutesOptions?: ExpectedMinutesOptions;
@@ -94,6 +95,51 @@ function regressedPlayerRate(
   return clamp(regressPer90(rate, sample, prior, 900), 0, ceiling);
 }
 
+/**
+ * xG/xA-specific replacement for regressedPlayerRate's current-season half.
+ * A player's own historical (or position-prior) rate still anchors the
+ * blend, preserving personalization. When a per-gameweek match history is
+ * available (form), the current-season contribution comes from a
+ * recency-weighted match-by-match blend (blendPlayerRate) instead of a flat
+ * season-to-date average - see playerForm.ts for why. Before any gameweek
+ * has finished (or for any caller that hasn't wired up the in-season form
+ * loader), this falls back to the same cumulative-current-season blend
+ * regressedPlayerRate always used, so behaviour degrades gracefully rather
+ * than silently discarding Player.current's live totals.
+ */
+function regressedFormRate(
+  player: Player,
+  primary: "expectedGoals" | "expectedAssists",
+  fallback: "goals" | "assists",
+  prior: number,
+  form: readonly PlayerMatchRate[] | undefined,
+  currentGameweek: number,
+  ceiling: number = RATE_CEILING.goalInvolvement,
+): number {
+  const historical = historicalRate(player, primary) ?? historicalRate(player, fallback);
+  const basePrior = historical?.rate ?? prior;
+
+  if (form && form.length > 0) {
+    const field = primary === "expectedGoals" ? "xg" : "xa";
+    const matchRates = form.map((match) => (match.minutes > 0 ? (match[field] / match.minutes) * 90 : 0));
+    return clamp(
+      blendPlayerRate(matchRates, basePrior, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES),
+      0,
+      ceiling,
+    );
+  }
+
+  const current = currentRate(player, primary) ?? currentRate(player, fallback);
+  let rate = basePrior;
+  let sample = historical?.minutes ?? 0;
+  if (current) {
+    const currentWeight = clamp(currentGameweek / 10, 0, 0.6);
+    rate = rate * (1 - currentWeight) + current.rate * currentWeight;
+    sample += current.minutes * currentWeight;
+  }
+  return clamp(regressPer90(rate, sample, prior, 900), 0, ceiling);
+}
+
 function teamFor(
   player: Player,
   options: ProjectPlayerOptions,
@@ -121,7 +167,6 @@ function fixtureFor(
   options: ProjectPlayerOptions,
 ): ReturnType<typeof calculateFixtureAdjustment> {
   return calculateFixtureAdjustment(fixture, {
-    position: player.position,
     ownTeam: teamFor(player, options),
     opponentTeam: options.teamStrengths?.[fixture.opponentTeamId],
   });
@@ -312,9 +357,10 @@ export function projectPlayer(
   });
   const useSelection = options.expectedMinutes === undefined && options.expectedMinutesOptions?.override === undefined;
   const confidence = projectionConfidence(player);
+  const form = options.playerForm?.[player.id];
   const rates = {
-    xg: regressedPlayerRate(player, "expectedGoals", "goals", attackingPrior(player, options, "expectedGoals", "goals"), currentGameweek),
-    xa: regressedPlayerRate(player, "expectedAssists", "assists", attackingPrior(player, options, "expectedAssists", "assists"), currentGameweek),
+    xg: regressedFormRate(player, "expectedGoals", "goals", attackingPrior(player, options, "expectedGoals", "goals"), form, currentGameweek),
+    xa: regressedFormRate(player, "expectedAssists", "assists", attackingPrior(player, options, "expectedAssists", "assists"), form, currentGameweek),
     saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves),
     defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution),
     bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus),

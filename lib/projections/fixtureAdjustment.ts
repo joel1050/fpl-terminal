@@ -1,23 +1,51 @@
-import type { PlayerFixture, Position } from "@/types/player";
+import type { PlayerFixture } from "@/types/player";
 import type { TeamStrength } from "@/types/projection";
 
 export interface FixtureAdjustmentOptions {
   ownTeam?: TeamStrength;
   opponentTeam?: TeamStrength;
-  position?: Position;
 }
 
 export interface FixtureAdjustmentResult {
   attackMultiplier: number;
-  defenceMultiplier: number;
   cleanSheetProbability: number;
   /** Goals against over a full match, always consistent with the clean-sheet probability. */
   expectedGoalsAgainst: number;
-  overallMultiplier: number;
 }
 
 /** Goals against for an average side, used to scale save volume to the fixture. */
 export const LEAGUE_AVERAGE_GOALS_AGAINST = 1.35;
+
+/**
+ * Attacking home advantage, measured over all 380 fixtures of 2025/26 rather
+ * than assumed: home sides averaged 1.551 xG and away sides 1.264, so against
+ * the 1.408 league mean the multipliers are 1.102 and 0.898. Actual goals
+ * agree (1.453 against 1.203). The previous 1.03/0.97 was about a third of
+ * the real spread, and disagreed with the 0.9/1.1 already used on the
+ * goals-against side of the same fixture. Re-derive with
+ * `npx tsx scripts/backtest/sweep.ts`.
+ */
+export const HOME_ATTACK_MULTIPLIER = 1.102;
+export const AWAY_ATTACK_MULTIPLIER = 0.898;
+
+/**
+ * Clamp on ownAttack / opponentDefence. Walk-forward strengths for 2025/26 ran
+ * 0.47-1.62, so the old [0.78, 1.22] truncated a real signal on 24.5% of
+ * team-fixtures. Backtested: widening to [0.70, 1.35] lowered expected-points
+ * RMSE by 0.0008 with the paired confidence interval excluding zero, and won
+ * 24 of 33 gameweeks. The gain is flat from here all the way to unclamped, so
+ * this is the narrowest window that captures all of it. A window is still
+ * wanted: blendInSeasonForm floors a defence ratio at 0.05, which would let an
+ * unclamped ratio reach about 25.
+ */
+const ATTACK_RATIO_CLAMP = [0.7, 1.35] as const;
+
+/**
+ * Final guard on the attack multiplier. This is not slack. With `base` at 1.07
+ * it binds on roughly 9% of fixtures, and on 14-20% once the venue term rises,
+ * so it carries the top of the range. Widening it to [0.6, 1.5] measured worse.
+ */
+const MULTIPLIER_CLAMP = [0.7, 1.3] as const;
 
 const difficultyMultiplier: Record<number, number> = {
   1: 1.14,
@@ -65,7 +93,7 @@ function nearestStrengthTier(value: number): number {
   return nearestIndex;
 }
 
-/** Returns transparent attacking/defensive adjustments for one fixture. */
+/** Returns transparent attacking and clean-sheet adjustments for one fixture. */
 export function calculateFixtureAdjustment(
   fixture: PlayerFixture,
   options: FixtureAdjustmentOptions = {},
@@ -74,11 +102,12 @@ export function calculateFixtureAdjustment(
     ? 3
     : clamp(Math.round(fixture.difficulty), 1, 5);
   const base = difficultyMultiplier[difficulty] ?? 1;
-  const venue = fixture.isHome ? 1.03 : 0.97;
+  const venue = fixture.isHome ? HOME_ATTACK_MULTIPLIER : AWAY_ATTACK_MULTIPLIER;
+  // Only live in the no-strengths fallback below: once a table lookup happens,
+  // this is overwritten from the clean-sheet probability. Its 0.9/1.1 spread
+  // matches the measured home advantage (1.227) closely enough to leave alone.
   let expectedGoalsAgainst = LEAGUE_AVERAGE_GOALS_AGAINST * (fixture.isHome ? 0.9 : 1.1);
   let attackMultiplier = base * venue;
-  // Easy opponents improve both attacking returns and clean-sheet odds.
-  let defenceMultiplier = base * (fixture.isHome ? 1.03 : 0.97);
   let cleanSheetProbability: number | undefined;
 
   const own = options.ownTeam;
@@ -89,11 +118,9 @@ export function calculateFixtureAdjustment(
     const opponentAttack = fixture.isHome ? opponent.attackAway : opponent.attackHome;
     const opponentDefence = fixture.isHome ? opponent.defenceAway : opponent.defenceHome;
     if (ownAttack > 0 && opponentDefence > 0) {
-      attackMultiplier *= clamp(ownAttack / opponentDefence, 0.78, 1.22);
+      attackMultiplier *= clamp(ownAttack / opponentDefence, ATTACK_RATIO_CLAMP[0], ATTACK_RATIO_CLAMP[1]);
     }
     if (ownDefence > 0 && opponentAttack > 0) {
-      defenceMultiplier *= clamp(ownDefence / opponentAttack, 0.78, 1.22);
-      expectedGoalsAgainst *= Math.pow(clamp(opponentAttack / ownDefence, 0.55, 1.8), 1.5);
       const ownDefenceTier = nearestStrengthTier(ownDefence);
       const opponentAttackTier = nearestStrengthTier(opponentAttack);
       cleanSheetProbability = cleanSheetProbabilities[fixture.isHome ? "home" : "away"]
@@ -102,33 +129,15 @@ export function calculateFixtureAdjustment(
   } else {
     expectedGoalsAgainst /= Math.pow(base, 2);
   }
-  attackMultiplier = clamp(attackMultiplier, 0.7, 1.3);
-  defenceMultiplier = clamp(defenceMultiplier, 0.7, 1.3);
+  attackMultiplier = clamp(attackMultiplier, MULTIPLIER_CLAMP[0], MULTIPLIER_CLAMP[1]);
   cleanSheetProbability ??= clamp(Math.exp(-expectedGoalsAgainst), 0.03, 0.65);
   // One goals-against number per fixture. Inverting the clean-sheet probability
   // keeps the lookup table and the goals-conceded deduction from disagreeing:
   // both now come from the same Poisson.
   expectedGoalsAgainst = -Math.log(clamp(cleanSheetProbability, 0.03, 0.9));
-  const position = options.position;
-  const overallMultiplier = position === "GK" || position === "DEF"
-    ? defenceMultiplier
-    : attackMultiplier;
   return {
     attackMultiplier,
-    defenceMultiplier,
     cleanSheetProbability,
     expectedGoalsAgainst,
-    overallMultiplier,
   };
 }
-
-/** A scalar fixture multiplier for directional comparisons and simple callers. */
-export function fixtureAdjustment(
-  fixture: PlayerFixture,
-  options: FixtureAdjustmentOptions = {},
-): number {
-  return calculateFixtureAdjustment(fixture, options).overallMultiplier;
-}
-
-export const fixtureMultiplier = fixtureAdjustment;
-export const adjustFixture = calculateFixtureAdjustment;

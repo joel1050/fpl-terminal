@@ -136,4 +136,29 @@ describe("player selection model", () => {
     expect(selection.expectedMinutes).toBeLessThan(25);
     expect(selection.expectedMinutes).not.toBe(62);
   });
+
+  it("uses a doubtful player's chanceOfPlaying directly instead of stacking a flat penalty on top of it", () => {
+    const highChance = { ...player(1), status: "d", chanceOfPlaying: 75 };
+    const noChance = { ...player(2), status: "d", chanceOfPlaying: null };
+    const selections = buildPlayerSelections([highChance, noChance]);
+    // FPL's own 75% estimate should leave this player *more* available than
+    // the generic 70% fallback used when no percentage is supplied. The old
+    // code stacked them (0.7 * 0.75 = 52.5%), which would have made the
+    // player with the higher known chance look *less* available than the
+    // player with no specific estimate at all.
+    expect(selections.get(1)!.startProbability).toBeGreaterThan(selections.get(2)!.startProbability);
+  });
+
+  it("still applies a flat discount for a doubtful player with no chanceOfPlaying figure", () => {
+    const available = { ...player(1), status: "a" };
+    const doubtfulNoChance = { ...player(2), status: "d", chanceOfPlaying: null };
+    const selections = buildPlayerSelections([available, doubtfulNoChance]);
+    expect(selections.get(2)!.startProbability).toBeLessThan(selections.get(1)!.startProbability);
+  });
+
+  it("surfaces FPL news text in the evidence trail", () => {
+    const injured: Player = { ...player(1), status: "i", news: "Hamstring injury - Expected back 15 Sep" };
+    const evidence = buildPlayerSelections([injured]).get(1)!.evidence;
+    expect(evidence.some((item) => item.source === "FPL_STATUS" && item.detail.includes("Hamstring injury"))).toBe(true);
+  });
 });
