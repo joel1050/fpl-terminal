@@ -18,6 +18,8 @@ export interface FixturePlayer {
   news: string;
   chance_of_playing_next_round: number | null;
   total_points: number;
+  points_per_game: string;
+  form: string;
   minutes: number;
   goals_scored: number;
   assists: number;
@@ -61,6 +63,8 @@ const player = (
   news: "",
   chance_of_playing_next_round: null,
   total_points: points,
+  points_per_game: (points / 30).toFixed(1),
+  form: (points / 45).toFixed(1),
   minutes: 2400,
   goals_scored: element_type === 3 || element_type === 4 ? 10 : 1,
   assists: element_type === 3 ? 8 : 2,
@@ -127,6 +131,8 @@ const browserPlayers = fixturePlayers.map((current) => {
     ownership: Number(current.selected_by_percent),
     current: {
       totalPoints: current.total_points,
+      pointsPer90: current.minutes ? (current.total_points / (current.minutes / 90)) : undefined,
+      form: Number(current.form),
       minutes: current.minutes,
       goals: current.goals_scored,
       assists: current.assists,

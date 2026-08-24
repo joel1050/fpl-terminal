@@ -101,6 +101,8 @@ describe("FPL data boundary", () => {
         chance_of_playing_next_round: null,
         minutes: 900,
         total_points: 60,
+        points_per_game: "5.2",
+        form: "6.3",
         goals_scored: 4,
         assists: 3,
         clean_sheets: 2,
@@ -132,6 +134,7 @@ describe("FPL data boundary", () => {
       difficulty: 2,
     });
     expect(normalized.players[0]?.current).toMatchObject({ minutes: 0, totalPoints: 0 });
+    expect(normalized.players[0]?.current.form).toBeUndefined();
 
     const started = normalizeBootstrap(payload, [{
       id: 100,
@@ -140,7 +143,7 @@ describe("FPL data boundary", () => {
       team_a: 2,
       started: true,
     }]);
-    expect(started.players[0]?.current).toMatchObject({ minutes: 900, totalPoints: 60 });
+    expect(started.players[0]?.current).toMatchObject({ minutes: 900, totalPoints: 60, form: 6.3 });
   });
 
   it("marks snapshot data stale while retaining its source timestamp", () => {

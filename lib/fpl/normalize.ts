@@ -218,6 +218,7 @@ export function normalizePlayer(
   const current: CurrentStats = seasonStarted ? {
     totalPoints: rawPlayer.total_points ?? 0,
     pointsPer90: rawPlayer.minutes ? (rawPlayer.total_points ?? 0) / (rawPlayer.minutes / 90) : undefined,
+    form: optionalNumber(rawPlayer.form),
     goals: rawPlayer.goals_scored ?? 0,
     assists: rawPlayer.assists ?? 0,
     cleanSheets: rawPlayer.clean_sheets ?? 0,

@@ -206,7 +206,7 @@ test.describe("FPL Terminal acceptance", () => {
     const universe = page.getByRole("region", { name: /player universe/i }).first();
     await expect(universe).toBeVisible();
     const headers = () => universe.getByRole("columnheader").allTextContents().then((texts) => texts.join(" ").replace(/\s+/g, " "));
-    for (const label of [/own(?:ership)?%?/i, /(?:gw\s*xp|xp\s*gw)/i, /(?:3gw|3\s*gw|xp\s*3)/i, /(?:5gw|5\s*gw|xp\s*5)/i, /xp\s*\/\s*£/i, /fixtures/i]) {
+    for (const label of [/own(?:ership)?%?/i, /form/i, /(?:gw\s*xp|xp\s*gw)/i, /(?:5gw|5\s*gw|xp\s*5)/i, /xp\s*\/\s*£/i, /fixtures/i]) {
       expect(await headers(), `player universe should expose ${label}`).toMatch(label);
     }
 

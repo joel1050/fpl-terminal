@@ -25,6 +25,7 @@ export type PriceTenths = number;
 export interface CurrentStats {
   totalPoints: number;
   pointsPer90?: number;
+  form?: number;
   goals: number;
   assists: number;
   cleanSheets: number;

@@ -63,6 +63,7 @@ export const FplElementSchema = z
     chance_of_playing_this_round: nullableNumberLike,
     total_points: z.number().optional(),
     points_per_game: numberLike.optional(),
+    form: numberLike.optional(),
     minutes: z.number().optional(),
     starts: z.number().optional(),
     goals_scored: z.number().optional(),
