@@ -13,7 +13,7 @@ export async function GET(request: Request): Promise<Response> {
     return fplJson(null, { bootstrap: bootstrap.freshness, fixtures: fixtures.freshness }, errors);
   }
   const historical = await loadHistoricalBundle();
-  const enriched = enrichBootstrapWithProjections(
+  const enriched = await enrichBootstrapWithProjections(
     normalizeBootstrap(bootstrap.data, fixtures.data ?? []),
     historical,
   );

@@ -3,12 +3,15 @@ import type { TeamStrength } from "@/types/projection";
 import { projectPlayers } from "@/lib/projections/projectPlayer";
 import { loadRotowireSelectionData } from "@/lib/availability/loadSelectionData";
 import { buildPlayerSelections } from "@/lib/availability/selection";
+import { applyInSeasonForm, type TeamMatchXG } from "./inSeasonForm";
 import type { HistoricalBundle } from "./types";
 
 export interface EnrichmentTeam {
   id: number;
   strength?: {
     rating?: number;
+    attackRating?: number;
+    defenceRating?: number;
     overallHome?: number;
     overallAway?: number;
     attackHome?: number;
@@ -54,27 +57,54 @@ function mean(values: number[]): number {
   return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : 1;
 }
 
+function consensusRatio(rating: number | undefined): number | undefined {
+  return rating !== undefined && rating >= 1 && rating <= 5 ? 0.76 + rating * 0.08 : undefined;
+}
+
+/**
+ * Normalizes each team's value against the mean of only its own source
+ * (manual consensus vs. raw FPL fallback fields). Consensus ratios
+ * (~0.84-1.16) and raw FPL fields (which can run in the hundreds) live on
+ * different scales, so averaging them together would crush whichever group
+ * is a minority into the other group's scale. Normalizing within-source
+ * first keeps both groups centred on 1.0 independently before they are
+ * merged into one Record.
+ */
+function normalizeBySource(items: { value: number; isFallback: boolean }[]): number[] {
+  const consensusMean = mean(items.filter((item) => !item.isFallback).map((item) => item.value));
+  const fallbackMean = mean(items.filter((item) => item.isFallback).map((item) => item.value));
+  return items.map((item) => item.value / (item.isFallback ? fallbackMean : consensusMean));
+}
+
 /** Converts live FPL ratings to ratios centred on 1.0 for fixture adjustment. */
 export function deriveTeamStrengths(
   teams: readonly EnrichmentTeam[],
 ): { strengths: Record<number, TeamStrength>; fallbackCount: number } {
   const raw = teams.map((team) => {
     const strength = team.strength;
-    const consensus = strength?.rating && strength.rating >= 1 && strength.rating <= 5
-      ? 0.76 + strength.rating * 0.08
-      : undefined;
-    const overallHome = consensus ?? finiteOr(strength?.overallHome, 1);
-    const overallAway = consensus ?? finiteOr(strength?.overallAway, overallHome);
-    const attackHome = consensus ?? finiteOr(strength?.attackHome, overallHome);
-    const attackAway = consensus ?? finiteOr(strength?.attackAway, overallAway);
-    const defenceHome = consensus ?? finiteOr(strength?.defenceHome, overallHome);
-    const defenceAway = consensus ?? finiteOr(strength?.defenceAway, overallAway);
-    const fallbackCount = consensus === undefined ? [
-      strength?.attackHome,
-      strength?.attackAway,
-      strength?.defenceHome,
-      strength?.defenceAway,
-    ].filter((value) => value === undefined || value <= 0).length : 0;
+    const overallConsensus = consensusRatio(strength?.rating);
+    // Attack/defence consensus falls back to the overall rating when a team
+    // has a manual overall tier but no separate attack/defence split yet.
+    const attackConsensus = consensusRatio(strength?.attackRating) ?? overallConsensus;
+    const defenceConsensus = consensusRatio(strength?.defenceRating) ?? overallConsensus;
+
+    const overallHome = overallConsensus ?? finiteOr(strength?.overallHome, 1);
+    const overallAway = overallConsensus ?? finiteOr(strength?.overallAway, overallHome);
+    const attackHome = attackConsensus ?? finiteOr(strength?.attackHome, overallHome);
+    const attackAway = attackConsensus ?? finiteOr(strength?.attackAway, overallAway);
+    const defenceHome = defenceConsensus ?? finiteOr(strength?.defenceHome, overallHome);
+    const defenceAway = defenceConsensus ?? finiteOr(strength?.defenceAway, overallAway);
+
+    const missingRawField = (value: number | undefined) => value === undefined || value <= 0;
+    const fallbackCount = [
+      overallConsensus === undefined && missingRawField(strength?.overallHome),
+      overallConsensus === undefined && missingRawField(strength?.overallAway),
+      attackConsensus === undefined && missingRawField(strength?.attackHome),
+      attackConsensus === undefined && missingRawField(strength?.attackAway),
+      defenceConsensus === undefined && missingRawField(strength?.defenceHome),
+      defenceConsensus === undefined && missingRawField(strength?.defenceAway),
+    ].filter(Boolean).length;
+
     return {
       team,
       overallHome,
@@ -83,28 +113,31 @@ export function deriveTeamStrengths(
       attackAway,
       defenceHome,
       defenceAway,
+      overallIsFallback: overallConsensus === undefined,
+      attackIsFallback: attackConsensus === undefined,
+      defenceIsFallback: defenceConsensus === undefined,
       fallbackCount,
     };
   });
-  const averages = {
-    overallHome: mean(raw.map((item) => item.overallHome)),
-    overallAway: mean(raw.map((item) => item.overallAway)),
-    attackHome: mean(raw.map((item) => item.attackHome)),
-    attackAway: mean(raw.map((item) => item.attackAway)),
-    defenceHome: mean(raw.map((item) => item.defenceHome)),
-    defenceAway: mean(raw.map((item) => item.defenceAway)),
-  };
+
+  const overallHome = normalizeBySource(raw.map((item) => ({ value: item.overallHome, isFallback: item.overallIsFallback })));
+  const overallAway = normalizeBySource(raw.map((item) => ({ value: item.overallAway, isFallback: item.overallIsFallback })));
+  const attackHome = normalizeBySource(raw.map((item) => ({ value: item.attackHome, isFallback: item.attackIsFallback })));
+  const attackAway = normalizeBySource(raw.map((item) => ({ value: item.attackAway, isFallback: item.attackIsFallback })));
+  const defenceHome = normalizeBySource(raw.map((item) => ({ value: item.defenceHome, isFallback: item.defenceIsFallback })));
+  const defenceAway = normalizeBySource(raw.map((item) => ({ value: item.defenceAway, isFallback: item.defenceIsFallback })));
+
   const strengths: Record<number, TeamStrength> = {};
-  for (const item of raw) {
+  raw.forEach((item, index) => {
     strengths[item.team.id] = {
       teamId: item.team.id,
-      attackHome: item.attackHome / averages.attackHome,
-      attackAway: item.attackAway / averages.attackAway,
-      defenceHome: item.defenceHome / averages.defenceHome,
-      defenceAway: item.defenceAway / averages.defenceAway,
-      overall: ((item.overallHome / averages.overallHome) + (item.overallAway / averages.overallAway)) / 2,
+      attackHome: attackHome[index],
+      attackAway: attackAway[index],
+      defenceHome: defenceHome[index],
+      defenceAway: defenceAway[index],
+      overall: (overallHome[index] + overallAway[index]) / 2,
     };
-  }
+  });
   return {
     strengths,
     fallbackCount: raw.reduce((sum, item) => sum + item.fallbackCount, 0),
@@ -125,6 +158,7 @@ export function enrichPlayersWithHistory(
   teams: readonly EnrichmentTeam[],
   events: readonly EnrichmentEvent[],
   historical: HistoricalBundle | null,
+  inSeasonForm?: Record<number, readonly TeamMatchXG[]>,
 ): EnrichedPlayers {
   const historicalById = new Map(
     (historical?.players ?? []).map((player) => [player.historicalPlayerId, player]),
@@ -145,7 +179,8 @@ export function enrichPlayersWithHistory(
       ? { ...player, historical: historicalPlayer.stats }
       : { ...player, historical: undefined };
   });
-  const { strengths, fallbackCount } = deriveTeamStrengths(teams);
+  const { strengths: priorStrengths, fallbackCount } = deriveTeamStrengths(teams);
+  const strengths = inSeasonForm ? applyInSeasonForm(priorStrengths, inSeasonForm) : priorStrengths;
   const gw = currentGameweek(events);
   const selections = buildPlayerSelections(enrichedPlayers, {
     rotowire: loadRotowireSelectionData(),

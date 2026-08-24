@@ -9,6 +9,7 @@ import {
   enrichPlayersWithHistory,
   type PlayerEnrichmentMetadata,
 } from "@/lib/historical/enrichPlayers";
+import { loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
 import {
   type FplBootstrapPayload,
   type FplFixturePayload,
@@ -20,7 +21,14 @@ import teamStrengthData from "@/data/manual/team-strengths.json";
 export type ConsensusTeamStrength = 1 | 2 | 3 | 4 | 5;
 
 const consensusStrengthByTeam = new Map(
-  teamStrengthData.teams.map((team) => [team.shortName, team.strength as ConsensusTeamStrength]),
+  teamStrengthData.teams.map((team) => [
+    team.shortName,
+    {
+      overall: team.strength as ConsensusTeamStrength,
+      attack: team.attackStrength as ConsensusTeamStrength | undefined,
+      defence: team.defenceStrength as ConsensusTeamStrength | undefined,
+    },
+  ]),
 );
 
 export interface NormalizedTeam {
@@ -29,6 +37,8 @@ export interface NormalizedTeam {
   shortName: string;
   strength?: {
     rating?: ConsensusTeamStrength;
+    attackRating?: ConsensusTeamStrength;
+    defenceRating?: ConsensusTeamStrength;
     updatedAt?: string;
     overallHome?: number;
     overallAway?: number;
@@ -120,14 +130,18 @@ const optionalNumber = (
 
 function teamMap(teams: FplBootstrapPayload["teams"]): Map<number, NormalizedTeam> {
   return new Map(
-    teams.map((team) => [
+    teams.map((team) => {
+      const consensus = consensusStrengthByTeam.get(team.short_name);
+      return [
       team.id,
       {
         id: team.id,
         name: team.name,
         shortName: team.short_name,
         strength: {
-          rating: consensusStrengthByTeam.get(team.short_name),
+          rating: consensus?.overall,
+          attackRating: consensus?.attack,
+          defenceRating: consensus?.defence,
           updatedAt: teamStrengthData.updatedAt,
           overallHome: team.strength_overall_home,
           overallAway: team.strength_overall_away,
@@ -137,7 +151,8 @@ function teamMap(teams: FplBootstrapPayload["teams"]): Map<number, NormalizedTea
           defenceAway: team.strength_defence_away,
         },
       },
-    ]),
+      ] as const;
+    }),
   );
 }
 
@@ -268,15 +283,17 @@ export function normalizeBootstrap(
   };
 }
 
-export function enrichBootstrapWithProjections(
+export async function enrichBootstrapWithProjections(
   bootstrap: NormalizedBootstrap,
   historical: HistoricalBundle | null,
-): { bootstrap: NormalizedBootstrap; metadata: BootstrapProjectionMetadata } {
+): Promise<{ bootstrap: NormalizedBootstrap; metadata: BootstrapProjectionMetadata }> {
+  const inSeasonForm = await loadInSeasonTeamXG(bootstrap.players, bootstrap.fixtures);
   const enriched = enrichPlayersWithHistory(
     bootstrap.players,
     bootstrap.teams,
     bootstrap.events,
     historical,
+    inSeasonForm,
   );
   return {
     bootstrap: { ...bootstrap, players: enriched.players },

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const [bootstrap, fixtures, historical] = await Promise.all([getBootstrap(), getFixtures(), loadHistoricalBundle()]);
     if (!bootstrap.data) return NextResponse.json({ error: bootstrap.error ?? "FPL data is unavailable" }, { status: 503 });
     const normalized = normalizeBootstrap(bootstrap.data, fixtures.data ?? []);
-    const projected = enrichBootstrapWithProjections(normalized, historical).bootstrap;
+    const projected = (await enrichBootstrapWithProjections(normalized, historical)).bootstrap;
     const legality = legalSquad(parsed.data.squad, playerMap(projected.players));
     if (!legality.legal) return NextResponse.json({ error: legality.errors[0] ?? "A legal 15-player squad is required" }, { status: 422 });
     const gameweek = parsed.data.gameweek

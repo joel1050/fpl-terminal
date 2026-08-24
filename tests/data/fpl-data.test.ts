@@ -31,6 +31,52 @@ describe("FPL data boundary", () => {
     expect(fallbackCount).toBe(0);
   });
 
+  it("gives attack and defence independent ratios for clubs with a manual split", () => {
+    const payload = FplBootstrapSchema.parse({
+      events: [],
+      teams: [
+        // Arsenal: attackStrength 5 > defenceStrength 4 in the manual file.
+        { id: 1, name: "Arsenal", short_name: "ARS" },
+        // Man City: defenceStrength 5 > attackStrength 4 in the manual file.
+        { id: 2, name: "Manchester City", short_name: "MCI" },
+      ],
+      element_types: [],
+      elements: [],
+    });
+    const normalized = normalizeBootstrap(payload);
+    const { strengths } = deriveTeamStrengths(normalized.teams);
+
+    expect(strengths[1]?.attackHome).toBeGreaterThan(strengths[1]?.defenceHome ?? 0);
+    expect(strengths[2]?.defenceHome).toBeGreaterThan(strengths[2]?.attackHome ?? 0);
+  });
+
+  it("does not crush one team's ratio when consensus and raw-FPL fallback scales mix", () => {
+    // A club missing from the manual consensus file falls back to raw FPL
+    // strength fields, which run in the hundreds rather than the ~0.84-1.16
+    // consensus band. Both groups must stay independently centred on 1.0
+    // rather than being averaged into one pool.
+    const { strengths } = deriveTeamStrengths([
+      { id: 1, strength: { rating: 5 } },
+      { id: 2, strength: { rating: 3 } },
+      {
+        id: 3,
+        strength: {
+          attackHome: 1050,
+          attackAway: 1050,
+          defenceHome: 1050,
+          defenceAway: 1050,
+          overallHome: 1050,
+          overallAway: 1050,
+        },
+      },
+    ]);
+
+    for (const teamId of [1, 2, 3]) {
+      expect(strengths[teamId]?.overall).toBeGreaterThan(0.5);
+      expect(strengths[teamId]?.overall).toBeLessThan(1.5);
+    }
+  });
+
   it("parses quoted CSV fields without changing source values", () => {
     expect(parseCsv('name,note\n"Player, One","said ""ready"""\n')).toEqual([
       { name: "Player, One", note: 'said "ready"' },
@@ -161,7 +207,7 @@ describe("FPL data boundary", () => {
     });
   });
 
-  it("enriches a live-shaped bootstrap with mapped history and finite projections", () => {
+  it("enriches a live-shaped bootstrap with mapped history and finite projections", async () => {
     const payload = FplBootstrapSchema.parse({
       events: [{ id: 1, name: "Gameweek 1", is_next: true, finished: false }],
       teams: [
@@ -221,7 +267,7 @@ describe("FPL data boundary", () => {
       teamStrength: [],
       playerMappings: [{ currentPlayerId: 10, historicalPlayerId: 10, confidence: "EXACT" }],
     };
-    const enriched = enrichBootstrapWithProjections(normalized, historical);
+    const enriched = await enrichBootstrapWithProjections(normalized, historical);
     const player = enriched.bootstrap.players[0];
     expect(player?.historical).toEqual(historicalStats);
     expect(enriched.metadata.historical.mappedPlayers).toBe(1);
@@ -234,7 +280,7 @@ describe("FPL data boundary", () => {
     expect(player?.projection?.nextGW).toBeGreaterThan(0);
     expect(player?.projection?.next5).toBeGreaterThan(0);
 
-    const withoutHistory = enrichBootstrapWithProjections(normalized, null);
+    const withoutHistory = await enrichBootstrapWithProjections(normalized, null);
     expect(withoutHistory.metadata.historical.available).toBe(false);
     expect(withoutHistory.bootstrap.players[0]?.projection?.next5).toBeGreaterThan(0);
   });
