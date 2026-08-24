@@ -40,6 +40,7 @@ test.describe("persisted planning gameweeks", () => {
     const selector = region.getByRole("group", { name: /select planning gameweek/i });
     const haaland = region.locator("article.squad-slot", { hasText: "Haaland" }).first();
     await expect(selector).toContainText("GW 1");
+    await expect(haaland.locator(".slot-xp")).toHaveText("11.4 xP");
     await expect(haaland.locator(".squad-fixture-badges")).toContainText("EASY(H)");
     await expect(haaland.locator(".squad-fixture-badges .easy")).toBeVisible();
     await haaland.hover();

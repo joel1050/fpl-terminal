@@ -1,0 +1,183 @@
+{
+  "id": 4827193,
+  "joined_time": "2026-07-23T12:00:00.000000Z",
+  "started_event": 1,
+  "favourite_team": 19,
+  "player_first_name": "Sam",
+  "player_last_name": "Tester",
+  "player_region_id": 241,
+  "player_region_name": "England",
+  "player_region_iso_code_short": "EN",
+  "player_region_iso_code_long": "ENG",
+  "years_active": 8,
+  "summary_overall_points": 17,
+  "summary_overall_rank": 6258141,
+  "summary_event_points": 17,
+  "summary_event_rank": 6258141,
+  "current_event": 1,
+  "leagues": {
+    "classic": [
+      {
+        "active_phases": [
+          {
+            "entry_percentile_rank": 65,
+            "last_rank": 0,
+            "league_id": 19,
+            "phase": 1,
+            "rank": 184066,
+            "rank_count": 284648,
+            "rank_sort": 186226,
+            "total": 17
+          },
+          {
+            "entry_percentile_rank": 40,
+            "last_rank": 0,
+            "league_id": 19,
+            "phase": 2,
+            "rank": 111918,
+            "rank_count": 284584,
+            "rank_sort": 114683,
+            "total": 12
+          }
+        ],
+        "admin_entry": null,
+        "closed": false,
+        "created": "2026-07-23T11:36:56.749092Z",
+        "cup_league": null,
+        "cup_qualified": null,
+        "entry_can_admin": false,
+        "entry_can_invite": false,
+        "entry_can_leave": false,
+        "entry_last_rank": 0,
+        "entry_percentile_rank": 65,
+        "entry_rank": 184065,
+        "featured_entry_ids": [],
+        "has_cup": true,
+        "id": 19,
+        "league_type": "s",
+        "max_entries": null,
+        "name": "League 1",
+        "rank": null,
+        "rank_count": 284648,
+        "scoring": "c",
+        "short_name": "league-1",
+        "start_event": 1
+      },
+      {
+        "active_phases": [
+          {
+            "entry_percentile_rank": 65,
+            "last_rank": 0,
+            "league_id": 97,
+            "phase": 1,
+            "rank": 89,
+            "rank_count": 146,
+            "rank_sort": 89,
+            "total": 17
+          },
+          {
+            "entry_percentile_rank": 45,
+            "last_rank": 0,
+            "league_id": 97,
+            "phase": 2,
+            "rank": 64,
+            "rank_count": 146,
+            "rank_sort": 64,
+            "total": 12
+          }
+        ],
+        "admin_entry": null,
+        "closed": false,
+        "created": "2026-07-23T11:36:57.810078Z",
+        "cup_league": null,
+        "cup_qualified": null,
+        "entry_can_admin": false,
+        "entry_can_invite": false,
+        "entry_can_leave": false,
+        "entry_last_rank": 0,
+        "entry_percentile_rank": 65,
+        "entry_rank": 89,
+        "featured_entry_ids": [],
+        "has_cup": true,
+        "id": 97,
+        "league_type": "s",
+        "max_entries": null,
+        "name": "League 2",
+        "rank": null,
+        "rank_count": 146,
+        "scoring": "c",
+        "short_name": "league-2",
+        "start_event": 1
+      },
+      {
+        "active_phases": [
+          {
+            "entry_percentile_rank": 75,
+            "last_rank": 0,
+            "league_id": 276,
+            "phase": 1,
+            "rank": 6258151,
+            "rank_count": 8905290,
+            "rank_sort": 6308451,
+            "total": 17
+          },
+          {
+            "entry_percentile_rank": 50,
+            "last_rank": 0,
+            "league_id": 276,
+            "phase": 2,
+            "rank": 4292765,
+            "rank_count": 8906093,
+            "rank_sort": 4371749,
+            "total": 12
+          }
+        ],
+        "admin_entry": null,
+        "closed": false,
+        "created": "2026-07-23T11:37:00.226484Z",
+        "cup_league": null,
+        "cup_qualified": null,
+        "entry_can_admin": false,
+        "entry_can_invite": false,
+        "entry_can_leave": false,
+        "entry_last_rank": 0,
+        "entry_percentile_rank": 75,
+        "entry_rank": 6258141,
+        "featured_entry_ids": [],
+        "has_cup": false,
+        "id": 276,
+        "league_type": "s",
+        "max_entries": null,
+        "name": "League 3",
+        "rank": null,
+        "rank_count": 8905290,
+        "scoring": "c",
+        "short_name": "league-3",
+        "start_event": 1
+      }
+    ],
+    "h2h": [],
+    "cup": {
+      "matches": [],
+      "status": {
+        "qualification_event": null,
+        "qualification_numbers": null,
+        "qualification_rank": null,
+        "qualification_state": null
+      },
+      "cup_league": null
+    },
+    "cup_matches": [],
+    "event": []
+  },
+  "name": "Expected Toulouse",
+  "name_change_blocked": false,
+  "entered_events": [
+    1
+  ],
+  "kit": null,
+  "last_deadline_bank": 10,
+  "last_deadline_value": 1000,
+  "last_deadline_total_transfers": 0,
+  "club_badge_src": null
+}

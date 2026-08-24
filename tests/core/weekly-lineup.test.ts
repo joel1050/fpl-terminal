@@ -59,6 +59,7 @@ describe("weekly lineup engine", () => {
     expect(plan.benchOrder).toHaveLength(3);
     expect(plan.benchGoalkeeperId).toBe(2);
     expect(plan.projectionFingerprint).toMatch(/^[0-9a-f]{8}$/);
+    expect(plan.projectedTotal).toBeCloseTo(plan.projectedXI + plan.captainBonus + plan.autosubValue);
   });
 
   it("rejects malformed squads without inventing a lineup", () => {

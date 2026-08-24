@@ -1,5 +1,6 @@
 import { getEntry, getEntryPicks } from "@/lib/fpl/client";
 import { errorList, fplJson } from "@/lib/fpl/http";
+import { normalizeManagerProfile } from "@/lib/fpl/normalizeLeagues";
 import type { Position, SquadState } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +57,7 @@ export async function GET(
     entryId,
     teamName: entry.data.name,
     managerName: [entry.data.player_first_name, entry.data.player_last_name].filter(Boolean).join(" "),
+    profile: normalizeManagerProfile(entry.data),
     squad: { playerIds, byPosition },
     lineup: {
       gameweek,

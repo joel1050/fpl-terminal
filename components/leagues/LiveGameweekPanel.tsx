@@ -1,0 +1,41 @@
+"use client";
+
+import type { LiveEntryCalculation } from "@/types/leagues";
+import type { ManagerProfile } from "@/types/leagues";
+
+function rankLabel(value: number | undefined): string {
+  return value === undefined ? "—" : value.toLocaleString();
+}
+
+export default function LiveGameweekPanel({
+  gameweek,
+  calculation,
+  profile,
+  live,
+}: {
+  gameweek: number | null;
+  calculation: LiveEntryCalculation | null;
+  profile: ManagerProfile | null;
+  live: boolean;
+}) {
+  const done = calculation?.done ?? 0;
+  const liveCount = calculation?.live ?? 0;
+  const toPlay = calculation?.toPlay ?? 0;
+  return (
+    <section className="leagues-panel" aria-label="Live Gameweek summary">
+      <div className="panel-header">
+        <div><span className="section-kicker">LIVE GAMEWEEK</span></div>
+        <span className={`data-badge ${live ? "live" : ""}`}>GW {gameweek ?? "—"}</span>
+      </div>
+      <div className="live-metrics">
+        <div><span>LIVE POINTS</span><strong className="cyan-text">{calculation ? calculation.netPoints : "—"}</strong></div>
+        <div><span>OFFICIAL RANK</span><strong>{rankLabel(profile?.summaryOverallRank)}</strong></div>
+        <div><span>GW RANK</span><strong>{rankLabel(profile?.summaryEventRank)}</strong></div>
+        <div><span>DONE</span><strong className="green">{done || "—"}</strong></div>
+        <div><span>LIVE</span><strong className="amber">{liveCount || "—"}</strong></div>
+        <div><span>TO PLAY</span><strong>{toPlay || "—"}</strong></div>
+        <div><span>ACTIVE CHIP</span><strong>{calculation?.activeChip ? calculation.activeChip.replace(/_/g, " ").toUpperCase() : "—"}</strong></div>
+      </div>
+    </section>
+  );
+}

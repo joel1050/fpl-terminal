@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import type { PersistentFPLState, Player, Position, SquadState, WeeklyLineupPlan } from "@/types";
+import { isLeagueKey } from "@/lib/leagues/leagueKey";
 import { validateWeeklyLineup } from "@/lib/squad/weeklyLineup";
 
 type RiskMode = "SAFE" | "BALANCED" | "AGGRESSIVE";
@@ -53,6 +54,7 @@ export type ApplyLineupInput = {
 export type PersistedTerminalState = PersistentFPLState & {
   mode?: TerminalMode | null;
   entryId?: number;
+  selectedLeagueKey?: string;
   benchGoalkeeperId?: number;
   lineupGameweek?: number;
   lineupProjectionFingerprint?: string;
@@ -319,6 +321,8 @@ export function isLineupStale(lineupGameweek: number | undefined, lineupProjecti
 export type TerminalState = {
   mode: TerminalMode | null;
   entryId?: number;
+  /** The league the manager last opened in the Leagues workspace. */
+  selectedLeagueKey?: string;
   activeMobileTab: "SQUAD" | "MARKET" | "AI";
   currentGameweek: number;
   planningGameweek: number;
@@ -359,6 +363,7 @@ export type TerminalState = {
   setSelectedPlayer: (id?: number) => void;
   setStrategy: (strategy: Partial<Pick<TerminalState, "horizon" | "riskMode" | "benchStrategy">>) => void;
   setPanelRatios: (ratios: Partial<Record<DesktopPanel, number>>) => void;
+  setSelectedLeagueKey: (key: string) => void;
   dismissTransferSuggestion: (outgoingId: number, incomingId: number) => void;
   setCaptain: (id?: number) => boolean;
   setViceCaptain: (id?: number) => boolean;
@@ -372,6 +377,7 @@ export type TerminalState = {
 const initial = {
   mode: null,
   entryId: undefined,
+  selectedLeagueKey: undefined as string | undefined,
   activeMobileTab: "SQUAD" as const,
   currentGameweek: 1,
   planningGameweek: 1,
@@ -540,6 +546,9 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   })),
   setSelectedPlayer: (selectedPlayerId) => set({ selectedPlayerId }),
   setStrategy: (strategy) => set(strategy),
+  setSelectedLeagueKey: (key) => {
+    if (isLeagueKey(key)) set({ selectedLeagueKey: key });
+  },
   setPanelRatios: (ratios) => set({ panelRatios: sanitizePanelRatios(ratios) }),
   dismissTransferSuggestion: (outgoingId, incomingId) => {
     if (!Number.isSafeInteger(outgoingId) || outgoingId < 1 || !Number.isSafeInteger(incomingId) || incomingId < 1) return;
@@ -652,6 +661,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       planningGameweek,
       mode: state.mode === "BUILD" || state.mode === "ANALYZE" || state.mode === null ? state.mode : current.mode,
       entryId: Number.isSafeInteger(state.entryId) && Number(state.entryId) > 0 ? state.entryId : current.entryId,
+      selectedLeagueKey: isLeagueKey(state.selectedLeagueKey) ? state.selectedLeagueKey : current.selectedLeagueKey,
       ...activeState,
       horizon: state.horizon === 1 || state.horizon === 3 || state.horizon === 5 ? state.horizon : current.horizon,
       riskMode: state.riskMode === "SAFE" || state.riskMode === "BALANCED" || state.riskMode === "AGGRESSIVE" ? state.riskMode : current.riskMode,
@@ -675,6 +685,7 @@ export function exportTerminalState(state: TerminalState): PersistedTerminalStat
   return {
     mode: state.mode,
     entryId: state.entryId,
+    selectedLeagueKey: state.selectedLeagueKey,
     squad: { playerIds: state.playerIds, byPosition: state.byPosition },
     lockedPlayerIds: state.lockedPlayerIds,
     captainId: state.captainId,

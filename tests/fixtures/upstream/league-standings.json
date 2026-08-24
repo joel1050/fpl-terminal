@@ -1,0 +1,73 @@
+{
+  "league": {
+    "admin_entry": 1784056,
+    "closed": false,
+    "code_privacy": "p",
+    "created": "2026-07-27T18:42:39.841547Z",
+    "cup_league": null,
+    "has_cup": true,
+    "id": 342328,
+    "league_type": "x",
+    "max_entries": null,
+    "name": "Sample League",
+    "rank": null,
+    "scoring": "c",
+    "start_event": 1
+  },
+  "standings": {
+    "has_next": false,
+    "page": 1,
+    "results": [
+      {
+        "club_badge_src": null,
+        "entry": 4827193,
+        "entry_name": "Team 1",
+        "event_total": 56,
+        "last_rank": 0,
+        "player_name": "Manager 1",
+        "rank": 1,
+        "rank_sort": 1,
+        "total": 56
+      },
+      {
+        "club_badge_src": null,
+        "entry": 1002,
+        "entry_name": "Team 2",
+        "event_total": 25,
+        "last_rank": 0,
+        "player_name": "Manager 2",
+        "rank": 2,
+        "rank_sort": 2,
+        "total": 25
+      },
+      {
+        "club_badge_src": null,
+        "entry": 1003,
+        "entry_name": "Team 3",
+        "event_total": 20,
+        "last_rank": 0,
+        "player_name": "Manager 3",
+        "rank": 3,
+        "rank_sort": 3,
+        "total": 20
+      },
+      {
+        "club_badge_src": null,
+        "entry": 1004,
+        "entry_name": "Team 4",
+        "event_total": 17,
+        "last_rank": 0,
+        "player_name": "Manager 4",
+        "rank": 4,
+        "rank_sort": 4,
+        "total": 17
+      }
+    ]
+  },
+  "last_updated_data": "2026-08-22T20:38:23Z",
+  "new_entries": {
+    "has_next": false,
+    "page": 1,
+    "results": []
+  }
+}

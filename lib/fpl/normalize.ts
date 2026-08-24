@@ -59,7 +59,9 @@ export interface NormalizedFixture {
   homeScore?: number | null;
   awayScore?: number | null;
   finished: boolean;
+  finishedProvisional: boolean;
   started: boolean;
+  minutes?: number;
   homeDifficulty?: number;
   awayDifficulty?: number;
 }
@@ -83,7 +85,7 @@ export interface NormalizedPlayerDetail {
 
 export interface NormalizedLiveElement {
   playerId: number;
-  stats: Record<string, number | string | null>;
+  stats: Record<string, number | string | boolean | null>;
   explain: unknown[];
 }
 
@@ -155,7 +157,9 @@ export function normalizeFixtures(
     homeScore: fixture.team_h_score,
     awayScore: fixture.team_a_score,
     finished: fixture.finished ?? false,
+    finishedProvisional: fixture.finished_provisional ?? false,
     started: fixture.started ?? false,
+    minutes: fixture.minutes,
     homeDifficulty: fixture.team_h_difficulty,
     awayDifficulty: fixture.team_a_difficulty,
   }));

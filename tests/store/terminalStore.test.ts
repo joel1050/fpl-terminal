@@ -216,3 +216,26 @@ describe("persisted weekly lineup state", () => {
     expect(useTerminalStore.getState().gameweekPlans[2]).toBeUndefined();
   });
 });
+
+describe("last opened league", () => {
+  it("remembers the league the manager last opened", () => {
+    useTerminalStore.getState().setSelectedLeagueKey("classic-342328");
+    expect(useTerminalStore.getState().selectedLeagueKey).toBe("classic-342328");
+  });
+
+  it("survives a save and reload", () => {
+    useTerminalStore.getState().setSelectedLeagueKey("h2h-77");
+    const saved = JSON.stringify(exportTerminalState(useTerminalStore.getState()));
+    useTerminalStore.getState().reset();
+    useTerminalStore.getState().hydrate(parseSavedState(saved));
+    expect(useTerminalStore.getState().selectedLeagueKey).toBe("h2h-77");
+  });
+
+  it("ignores a saved key that is not a league", () => {
+    useTerminalStore.getState().hydrate({ squad, selectedLeagueKey: "cup-1" });
+    expect(useTerminalStore.getState().selectedLeagueKey).toBeUndefined();
+    useTerminalStore.getState().setSelectedLeagueKey("overall");
+    useTerminalStore.getState().hydrate({ squad, selectedLeagueKey: "classic-0" });
+    expect(useTerminalStore.getState().selectedLeagueKey).toBe("overall");
+  });
+});

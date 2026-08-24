@@ -1,0 +1,34 @@
+{
+  "current": [
+    {
+      "event": 1,
+      "points": 17,
+      "total_points": 17,
+      "rank": 6258159,
+      "rank_sort": 6308459,
+      "overall_rank": 6258153,
+      "percentile_rank": 75,
+      "overall_rank_percentage": "70",
+      "bank": 10,
+      "value": 1000,
+      "event_transfers": 0,
+      "event_transfers_cost": 0,
+      "points_on_bench": 3
+    }
+  ],
+  "past": [
+    {
+      "season_name": "2018/19",
+      "total_points": 1648,
+      "rank": 4975697,
+      "rank_percentage": "79"
+    },
+    {
+      "season_name": "2019/20",
+      "total_points": 1621,
+      "rank": 5880015,
+      "rank_percentage": "77"
+    }
+  ],
+  "chips": []
+}

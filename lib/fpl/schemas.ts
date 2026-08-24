@@ -158,7 +158,7 @@ export const FplPlayerSummarySchema = z
 export const FplLiveElementSchema = z
   .object({
     id: z.number().int(),
-    stats: z.record(z.string(), z.union([z.number(), z.string(), z.null()])),
+    stats: z.record(z.string(), z.union([z.number(), z.string(), z.boolean(), z.null()])),
     explain: z.array(z.unknown()).optional(),
   })
   .passthrough();
@@ -167,14 +167,106 @@ export const FplLiveResponseSchema = z.object({
   elements: z.array(FplLiveElementSchema),
 });
 
+export const FplLeagueRefSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().optional(),
+  short_name: z.string().nullable().optional(),
+  league_type: z.union([z.number(), z.string()]).optional(),
+  rank: nullableNumberLike,
+  entry_rank: nullableNumberLike,
+  entry_last_rank: nullableNumberLike,
+  size: nullableNumberLike,
+  entry_count: nullableNumberLike,
+  rank_count: nullableNumberLike,
+  closed: z.boolean().optional(),
+}).passthrough();
+
+export const FplCupLeagueRefSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().optional(),
+  stage: numberLike.nullable().optional(),
+}).passthrough();
+
+/** FPL sends the cup as one object with matches and a qualification status. */
+export const FplEntryCupSchema = z.object({
+  matches: z.array(z.unknown()).optional(),
+  status: z.unknown().optional(),
+  cup_league: nullableNumberLike,
+}).passthrough();
+
 export const FplEntrySchema = z.object({
   id: z.number().int().positive(),
   name: z.string().optional(),
   player_first_name: z.string().optional(),
   player_last_name: z.string().optional(),
+  player_region_id: nullableNumberLike,
+  player_region_name: z.string().nullable().optional(),
+  player_region_iso_code_short: z.string().nullable().optional(),
+  joined_time: z.string().nullable().optional(),
+  started_event: nullableNumberLike,
+  years_active: nullableNumberLike,
+  favourite_team: nullableNumberLike,
+  current_event: nullableNumberLike,
+  summary_overall_points: nullableNumberLike,
+  summary_overall_rank: nullableNumberLike,
+  summary_event_points: nullableNumberLike,
+  summary_event_rank: nullableNumberLike,
+  last_deadline_bank: nullableNumberLike,
+  last_deadline_value: nullableNumberLike,
+  last_deadline_total_transfers: nullableNumberLike,
+  leagues: z.object({
+    classic: z.array(FplLeagueRefSchema.passthrough()).optional(),
+    h2h: z.array(FplLeagueRefSchema.passthrough()).optional(),
+    cup: z.union([z.array(FplCupLeagueRefSchema), FplEntryCupSchema]).optional(),
+  }).passthrough().optional(),
+}).passthrough();
+
+export const FplEntryHistoryRowSchema = z.object({
+  event: z.number().int().positive(),
+  points: nullableNumberLike,
+  total_points: nullableNumberLike,
+  rank: nullableNumberLike,
+  rank_sort: nullableNumberLike,
+  overall_rank: nullableNumberLike,
+  percentile_rank: nullableNumberLike,
+  bank: nullableNumberLike,
+  value: nullableNumberLike,
+  event_transfers: nullableNumberLike,
+  event_transfers_cost: nullableNumberLike,
+  points_on_bench: nullableNumberLike,
+}).passthrough();
+
+export const FplEntryHistorySchema = z.object({
+  chips: z.array(z.object({ name: z.string().optional(), event: nullableNumberLike }).passthrough()).optional(),
+  current: z.array(FplEntryHistoryRowSchema),
+  past: z.array(z.object({
+    season_name: z.string(),
+    total_points: nullableNumberLike,
+    rank: nullableNumberLike,
+  }).passthrough()).optional(),
 }).passthrough();
 
 export const FplEntryPicksSchema = z.object({
+  entry_history: z.object({
+    event: nullableNumberLike,
+    points: nullableNumberLike,
+    total_points: nullableNumberLike,
+    rank: nullableNumberLike,
+    rank_sort: nullableNumberLike,
+    overall_rank: nullableNumberLike,
+    percentile_rank: nullableNumberLike,
+    bank: nullableNumberLike,
+    value: nullableNumberLike,
+    event_transfers: nullableNumberLike,
+    event_transfers_cost: nullableNumberLike,
+    points_on_bench: nullableNumberLike,
+  }).passthrough().optional(),
+  active_chip: z.string().nullable().optional(),
+  automatic_subs: z.array(z.object({
+    element_in: z.number().int().positive(),
+    element_out: z.number().int().positive(),
+    event: z.number().int().positive().optional(),
+  }).passthrough()).optional(),
   picks: z.array(z.object({
     element: z.number().int().positive(),
     position: z.number().int().min(1).max(15),
@@ -183,6 +275,31 @@ export const FplEntryPicksSchema = z.object({
     is_captain: z.boolean().optional(),
     is_vice_captain: z.boolean().optional(),
   }).passthrough()),
+}).passthrough();
+
+export const FplClassicStandingRowSchema = z.object({
+  entry: z.number().int().positive(),
+  entry_name: z.string().nullable().optional(),
+  player_name: z.string().nullable().optional(),
+  rank: nullableNumberLike,
+  last_rank: nullableNumberLike,
+  total: nullableNumberLike,
+  event_total: nullableNumberLike,
+}).passthrough();
+
+export const FplClassicLeagueStandingsSchema = z.object({
+  league: z.object({
+    id: z.number().int().positive(),
+    name: z.string().nullable().optional(),
+    short_name: z.string().nullable().optional(),
+    league_type: z.union([z.number(), z.string()]).optional(),
+    closed: z.boolean().optional(),
+  }).passthrough(),
+  standings: z.object({
+    page: nullableNumberLike,
+    has_next: z.boolean().nullable().optional(),
+    results: z.array(FplClassicStandingRowSchema),
+  }).passthrough(),
 }).passthrough();
 
 export const BootstrapStaticSchema = FplBootstrapSchema;
@@ -195,7 +312,9 @@ export type FplFixturePayload = z.infer<typeof FplFixturesSchema>;
 export type FplPlayerSummaryPayload = z.infer<typeof FplPlayerSummarySchema>;
 export type FplLiveResponsePayload = z.infer<typeof FplLiveResponseSchema>;
 export type FplEntryPayload = z.infer<typeof FplEntrySchema>;
+export type FplEntryHistoryPayload = z.infer<typeof FplEntryHistorySchema>;
 export type FplEntryPicksPayload = z.infer<typeof FplEntryPicksSchema>;
+export type FplClassicLeagueStandingsPayload = z.infer<typeof FplClassicLeagueStandingsSchema>;
 
 export function parseExternal<T>(
   schema: z.ZodType<T>,

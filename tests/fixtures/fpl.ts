@@ -116,6 +116,8 @@ const browserPlayers = fixturePlayers.map((current) => {
   const team = teams.find((candidate) => candidate.id === current.team);
   return {
     ...current,
+    web_name: current.web_name,
+    displayName: current.web_name,
     team: { id: current.team, name: team?.name ?? "Test Club", shortName: team?.short_name ?? "TST" },
     teamId: current.team,
     teamName: team?.name ?? "Test Club",
@@ -140,6 +142,7 @@ const browserPlayers = fixturePlayers.map((current) => {
       valueNext5: (17.5 + current.total_points / 20) / (current.now_cost / 10),
       riskScore: 20,
       confidence: "MEDIUM",
+      fixtures: [],
     },
     selection: {
       startProbability: 0.88,

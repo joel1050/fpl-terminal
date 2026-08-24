@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import WorkspaceSwitcher from "@/components/terminal/WorkspaceSwitcher";
 import type { NailedRating, Player, PlayerFixture, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, WeeklyLineupPlan } from "@/types";
 import { analyzeSquad } from "@/lib/analysis/analyzeSquad";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
@@ -1071,6 +1072,7 @@ export default function TerminalApp() {
     <main className="terminal-app">
       <header className="topbar">
         <button className="brand" onClick={() => store.setMode(null)} aria-label="Return to mode chooser"><span className="brand-mark">FPL</span><span>TERMINAL</span></button>
+        <WorkspaceSwitcher />
         <div className="topbar-stats" aria-label="Terminal status">
           <StatusCell label="GW" value={data.gameweek ? String(data.gameweek) : "—"} />
           <StatusCell label="DEADLINE" value={data.deadline ? formatDeadline(data.deadline) : "—"} />
@@ -1211,7 +1213,7 @@ function SquadSlot({ player, gameweek, locked, captain, vice, starter, benchLabe
   const benched = Boolean(benchLabel);
   return <article className={`squad-slot filled ${locked ? "locked" : ""} ${benched ? "benched" : ""} ${swapSelected ? "lineup-selected" : ""}`}>
     <SquadFixtureBadges player={player} gameweek={gameweek} />
-    <button className="slot-main" onClick={onSelect}><span className="slot-player">{player.displayName}</span><span className="slot-sub">{player.teamShortName} · {money(player.priceTenths)}</span><span className="slot-xp">{points(weeklyPlayerMetrics(player, gameweek).points)} <small>xP</small></span></button>
+    <button className="slot-main" onClick={onSelect}><span className="slot-player">{player.displayName}</span><span className="slot-sub">{player.teamShortName} · {money(player.priceTenths)}</span><span className="slot-xp">{points(weeklyPlayerMetrics(player, gameweek).points * (captain ? 2 : 1))} <small>xP</small></span></button>
     <div className="slot-flags"><button className={`lock-flag ${locked ? "on" : ""}`} onClick={onToggleLock} aria-label={`${locked ? "Unlock" : "Lock"} ${player.displayName}`} aria-pressed={locked}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d="M4 7V5a4 4 0 0 1 8 0v2" /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button>{!locked && <button className="remove-flag" onClick={onRemove} aria-label={`Remove ${player.displayName}`}>×</button>}</div>
     {lineupActive && <div className="lineup-controls">{starter ? <><button className={`role-button captain ${captain ? "active" : ""}`} onClick={onCaptain} aria-label={`Make ${player.displayName} captain`} aria-pressed={captain}>C</button><button className={`role-button vice ${vice ? "active" : ""}`} onClick={onViceCaptain} aria-label={`Make ${player.displayName} vice-captain`} aria-pressed={vice}>VC</button><button className="role-button bench-toggle" onClick={onSwap} aria-label={`Select ${player.displayName} to move to bench`} aria-pressed={swapSelected}>B</button></> : <><button className="role-button bench-toggle active" onClick={onSwap} aria-label={`Select ${player.displayName} to move into the starting XI`} aria-pressed={swapSelected}>{benchLabel}</button>{benchIndex >= 0 && <><button className="role-button bench-order" disabled={benchIndex === 0} onClick={() => onMoveBench(-1)} aria-label={`Move ${player.displayName} up the bench order`}>↑</button><button className="role-button bench-order" disabled={benchIndex === 2} onClick={() => onMoveBench(1)} aria-label={`Move ${player.displayName} down the bench order`}>↓</button></>}</>}</div>}
   </article>;

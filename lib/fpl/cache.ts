@@ -5,9 +5,13 @@ import type { z } from "zod";
 export const FPL_CACHE_TTLS_MS = {
   bootstrap: 5 * 60 * 1000,
   fixtures: 15 * 60 * 1000,
+  liveFixtures: 60 * 1000,
   player: 15 * 60 * 1000,
   live: 60 * 1000,
-  entry: 60 * 1000,
+  entry: 5 * 60 * 1000,
+  entryPicks: 10 * 60 * 1000,
+  entryHistory: 15 * 60 * 1000,
+  league: 5 * 60 * 1000,
 } as const;
 
 export type DataSource = "live" | "snapshot";
@@ -77,6 +81,24 @@ function snapshotFile(name: string): string {
   return path.join(snapshotDirectory(), `${safeName}.json`);
 }
 
+/**
+ * An empty payload is never worth keeping or serving. A snapshot of zero live
+ * elements or zero standings rows parses cleanly, so without this guard a
+ * failing upstream call answers with a valid-looking file full of nothing.
+ */
+export function isEmptyPayload(data: unknown): boolean {
+  if (Array.isArray(data)) return data.length === 0;
+  if (!data || typeof data !== "object") return false;
+  const record = data as Record<string, unknown>;
+  for (const key of ["elements", "results", "picks", "current"]) {
+    const value = record[key];
+    if (Array.isArray(value)) return value.length === 0;
+  }
+  const standings = record.standings as { results?: unknown } | undefined;
+  if (standings && Array.isArray(standings.results)) return standings.results.length === 0;
+  return false;
+}
+
 export async function readSnapshot<T>(
   name: string,
   schema: z.ZodType<T>,
@@ -86,6 +108,7 @@ export async function readSnapshot<T>(
     const parsed = schema.safeParse(value.data);
     const fetchedAt = Date.parse(value.fetchedAt);
     if (!parsed.success || !Number.isFinite(fetchedAt)) return null;
+    if (isEmptyPayload(parsed.data)) return null;
     return { data: parsed.data, fetchedAt };
   } catch {
     return null;
@@ -97,6 +120,7 @@ export async function writeSnapshot<T>(
   data: T,
   fetchedAt = Date.now(),
 ): Promise<void> {
+  if (isEmptyPayload(data)) return;
   try {
     await mkdir(snapshotDirectory(), { recursive: true });
     const payload: Snapshot<T> = {

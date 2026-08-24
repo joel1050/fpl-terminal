@@ -48,7 +48,7 @@ function compareIds(left: readonly number[], right: readonly number[]): number {
 }
 
 function fixtureProjections(player: Player, gameweek: number) {
-  return player.projection?.fixtures.filter((fixture) => fixture.gameweek === gameweek) ?? [];
+  return player.projection?.fixtures?.filter((fixture) => fixture.gameweek === gameweek) ?? [];
 }
 
 function hasFixtureSchedule(player: Player): boolean {

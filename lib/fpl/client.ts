@@ -11,6 +11,8 @@ import {
 } from "./cache";
 import {
   FplBootstrapSchema,
+  FplClassicLeagueStandingsSchema,
+  FplEntryHistorySchema,
   FplEntryPicksSchema,
   FplEntrySchema,
   FplFixturesSchema,
@@ -18,8 +20,10 @@ import {
   FplPlayerSummarySchema,
   parseExternal,
   type FplBootstrapPayload,
-  type FplEntryPayload,
+  type FplClassicLeagueStandingsPayload,
+  type FplEntryHistoryPayload,
   type FplEntryPicksPayload,
+  type FplEntryPayload,
   type FplFixturePayload,
   type FplLiveResponsePayload,
   type FplPlayerSummaryPayload,
@@ -28,13 +32,11 @@ import {
 const FPL_BASE_URL = (process.env.FPL_API_BASE_URL ?? "https://fantasy.premierleague.com/api").replace(/\/$/, "");
 const REQUEST_TIMEOUT_MS = 12_000;
 
-interface RequestOptions<T> {
+interface RequestOptions<T> extends FplRequestOptions {
   key: string;
   path: string;
   schema: z.ZodType<T>;
   ttlMs: number;
-  forceRefresh?: boolean;
-  persistSnapshot?: boolean;
 }
 
 function errorMessage(error: unknown): string {
@@ -101,6 +103,14 @@ async function requestJson<T>({
 export interface FplRequestOptions {
   forceRefresh?: boolean;
   persistSnapshot?: boolean;
+  ttlMs?: number;
+}
+
+interface RequestOptions<T> extends FplRequestOptions {
+  key: string;
+  path: string;
+  schema: z.ZodType<T>;
+  ttlMs: number;
 }
 
 export function getBootstrap(options: FplRequestOptions = {}): Promise<FplResponse<FplBootstrapPayload>> {
@@ -155,7 +165,10 @@ export function getLiveGameweek(
   });
 }
 
-export function getEntry(entryId: number): Promise<FplResponse<FplEntryPayload>> {
+export function getEntry(
+  entryId: number,
+  options: FplRequestOptions = {},
+): Promise<FplResponse<FplEntryPayload>> {
   if (!Number.isSafeInteger(entryId) || entryId < 1) {
     return Promise.resolve({ data: null, freshness: null, error: "Team id must be a positive integer" });
   }
@@ -165,10 +178,31 @@ export function getEntry(entryId: number): Promise<FplResponse<FplEntryPayload>>
     schema: FplEntrySchema,
     ttlMs: FPL_CACHE_TTLS_MS.entry,
     persistSnapshot: false,
+    ...options,
   });
 }
 
-export function getEntryPicks(entryId: number, gameweek = 1): Promise<FplResponse<FplEntryPicksPayload>> {
+export function getEntryHistory(
+  entryId: number,
+  options: FplRequestOptions = {},
+): Promise<FplResponse<FplEntryHistoryPayload>> {
+  if (!Number.isSafeInteger(entryId) || entryId < 1) {
+    return Promise.resolve({ data: null, freshness: null, error: "Team id must be a positive integer" });
+  }
+  return requestJson({
+    key: `entry-${entryId}-history`,
+    path: `entry/${entryId}/history/`,
+    schema: FplEntryHistorySchema,
+    ttlMs: FPL_CACHE_TTLS_MS.entryHistory,
+    ...options,
+  });
+}
+
+export function getEntryPicks(
+  entryId: number,
+  gameweek: number,
+  options: FplRequestOptions = {},
+): Promise<FplResponse<FplEntryPicksPayload>> {
   if (!Number.isSafeInteger(entryId) || entryId < 1) {
     return Promise.resolve({ data: null, freshness: null, error: "Team id must be a positive integer" });
   }
@@ -179,8 +213,30 @@ export function getEntryPicks(entryId: number, gameweek = 1): Promise<FplRespons
     key: `entry-${entryId}-event-${gameweek}-picks`,
     path: `entry/${entryId}/event/${gameweek}/picks/`,
     schema: FplEntryPicksSchema,
-    ttlMs: FPL_CACHE_TTLS_MS.entry,
+    ttlMs: FPL_CACHE_TTLS_MS.entryPicks,
     persistSnapshot: false,
+    ...options,
+  });
+}
+
+export function getClassicLeagueStandings(
+  leagueId: number,
+  page = 1,
+  options: FplRequestOptions = {},
+): Promise<FplResponse<FplClassicLeagueStandingsPayload>> {
+  if (!Number.isSafeInteger(leagueId) || leagueId < 1) {
+    return Promise.resolve({ data: null, freshness: null, error: "League id must be a positive integer" });
+  }
+  if (!Number.isSafeInteger(page) || page < 1) {
+    return Promise.resolve({ data: null, freshness: null, error: "Page must be a positive integer" });
+  }
+  return requestJson({
+    key: `league-classic-${leagueId}-page-${page}`,
+    path: `leagues-classic/${leagueId}/standings/?page_standings=${page}`,
+    schema: FplClassicLeagueStandingsSchema,
+    ttlMs: FPL_CACHE_TTLS_MS.league,
+    persistSnapshot: page === 1,
+    ...options,
   });
 }
 
@@ -191,3 +247,7 @@ export const fetchBootstrap = getBootstrap;
 export const fetchFixtures = getFixtures;
 export const fetchPlayerSummary = getPlayerSummary;
 export const fetchLiveGameweek = getLiveGameweek;
+export const fetchEntry = getEntry;
+export const fetchEntryHistory = getEntryHistory;
+export const fetchEntryPicks = getEntryPicks;
+export const fetchClassicLeagueStandings = getClassicLeagueStandings;
