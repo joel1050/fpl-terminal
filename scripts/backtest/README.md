@@ -9,6 +9,10 @@ npx tsx scripts/backtest/validate.ts      # gate: harness must reproduce project
 npx tsx scripts/backtest/run.ts           # section 7 variants scored on section 8 xP
 npx tsx scripts/backtest/cleansheets.ts   # the clean-sheet model scored directly
 npx tsx scripts/backtest/sweep.ts         # clamp-width sweep and team-goals test
+npx tsx scripts/backtest/bias.ts          # where section 8 is systematically high or low
+npx tsx scripts/backtest/players.ts       # per-player xP, and bias by team strength tier
+npx tsx scripts/backtest/cs-tiers.ts      # clean-sheet calibration per defence tier
+npx tsx scripts/backtest/cs-fit.ts        # fits a table correction, checks it out of sample
 ```
 
 `validate.ts` reproduces `projectPlayer()` to 0.0e+0 on all 9,972 played rows, so
@@ -39,7 +43,18 @@ first; the other scripts are meaningless if it fails.
 | Replace the 5×5 clean-sheet table with a Poisson | **Reject.** Brier +0.0001 (ns) on the direct test; significantly *worse* for MID/FWD on xP. Tested across three scales and three exponents; none beat the table. |
 | Read the same table by bilinear interpolation | **No gain.** Brier −0.0001 (ns). The tier snap is ugly but costs nothing measurable. |
 | Scale goalkeeper saves off opponent attack | **No gain.** ns on 666 GK rows. |
+| Correct the bottom rows of the clean-sheet table | **Reject.** Every correction tried improves in-sample and gets *worse* under 5-fold cross-validation: scaling the tier-1 row 0.18366 in-sample against 0.18410 held out, a global logit recalibration worse in 5 folds out of 5. Tier-1 defences appear in only 59 team-fixtures, and the tier-1 miss of +0.063 has a confidence interval of [-0.027, +0.144]. |
 | Drop FPL difficulty when strengths exist | **Untestable here.** No FDR exists for 2025/26. In the 2026/27 snapshot home FDR only ever takes 2, 3 or 4, so `base` spans 1.07–0.92, not 1.14–0.84. |
+
+## Counting the right unit
+
+A defender's expected points and his team's clean sheet are the same event. One
+team-fixture carries about 9.8 defender rows, so scoring per player row and
+treating those as independent overstates the evidence by roughly `sqrt(9.8)`, or
+3.1x. That is the difference between the tier-1 defender bias reading
+`+0.388 [0.136, 0.595]` - apparently real - and `+0.388 [-0.401, 1.035]`, which
+is no finding at all. Cluster by fixture, or count per team-fixture, before
+calling anything a defect.
 
 ## Limits
 

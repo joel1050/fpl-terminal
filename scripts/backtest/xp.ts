@@ -114,6 +114,8 @@ export function expectedPoints(
   rates: Rates,
   strengths: Record<number, TeamStrength>,
   variant: Variant,
+  /** Experiment: let bonus follow the fixture, as BPS actually does. */
+  bonusFollowsFixture = false,
 ): ProjectionComponents {
   const a = adjust(fixture, {
     position: player.position,
@@ -144,7 +146,7 @@ export function expectedPoints(
     c.defensiveContribution += DEFENSIVE_CONTRIBUTION_POINTS
       * thresholdProbability(rates.defensiveContribution * minutesShare, threshold);
   }
-  c.bonus += rates.bonus * minutesShare;
+  c.bonus += rates.bonus * minutesShare * (bonusFollowsFixture ? a.attackMultiplier : 1);
   c.total = Object.entries(c).filter(([k]) => k !== "total").reduce((s, [, v]) => s + v, 0);
   return c;
 }

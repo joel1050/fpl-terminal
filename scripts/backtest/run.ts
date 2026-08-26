@@ -31,12 +31,12 @@ interface Row {
 
 const v = (over: Partial<Variant>): Variant => ({ ...BASELINE, ...over });
 
-const ARMS: { name: string; variant: Variant; note: string }[] = [
-  { name: "legacy §7 (before)", variant: LEGACY, note: "" },
-  { name: "ratio [0.70,1.35] only", variant: { ...LEGACY, attackRatioClamp: [0.70, 1.35] }, note: "" },
-  { name: "measured venue only", variant: { ...LEGACY, venue: MEASURED_VENUE }, note: "" },
-  { name: "shipped §7 (both)", variant: BASELINE, note: "what fixtureAdjustment.ts does now" },
-  { name: "shipped + Poisson CS", variant: v({ cleanSheet: "POISSON" }), note: "rejected: see cleansheets.ts" },
+const ARMS: { name: string; variant: Variant; note: string; bonusFixture?: boolean }[] = [
+  { name: "shipped §7", variant: BASELINE, note: "" },
+  { name: "bonus follows fixture", variant: BASELINE, note: "", bonusFixture: true },
+  { name: "outer clamp [0.55,1.60]", variant: v({ multiplierClamp: [0.55, 1.60] }), note: "" },
+  { name: "both", variant: v({ multiplierClamp: [0.55, 1.60] }), note: "", bonusFixture: true },
+  { name: "both + ratio [0.55,1.75]", variant: v({ attackRatioClamp: [0.55, 1.75], multiplierClamp: [0.55, 1.60] }), note: "", bonusFixture: true },
 ];
 
 function collect(season: Season): Row[] {
@@ -53,7 +53,7 @@ function collect(season: Season): Row[] {
       const rates = playerRates(player, formBefore(season, row.historicalPlayerId, gameweek), gameweek);
       const upcoming = player.fixtures[0];
       const predictions = ARMS.map((arm) =>
-        expectedPoints(player, upcoming, row.minutes, rates, strengths, arm.variant).total);
+        expectedPoints(player, upcoming, row.minutes, rates, strengths, arm.variant, arm.bonusFixture ?? false).total);
       rows.push({
         gameweek, playerId: row.historicalPlayerId, position: player.position,
         minutes: row.minutes, actual: row.totalPoints, predictions,

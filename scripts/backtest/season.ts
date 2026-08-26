@@ -237,6 +237,13 @@ export function playerAt(
   gameweek: number,
   fixture: Fixture,
   wasHome: boolean,
+  /**
+   * Emulates the previous-season anchor that production has and a one-season
+   * backtest does not. When set, `historical` carries the player's own xG/xA
+   * over gameweeks 1..anchorThrough, so basePrior is a real per-player rate
+   * instead of the position prior. Backtest only gameweeks after it.
+   */
+  anchorThrough?: number,
 ): Player | undefined {
   const source = season.players.get(playerId);
   const teamId = season.teamOf.get(playerId);
@@ -252,12 +259,24 @@ export function playerAt(
     // arms differ only in the parts of section 7 that are actually testable.
     difficulty: 3,
   };
+  const anchor = anchorThrough === undefined ? undefined : currentBefore(season, playerId, anchorThrough + 1);
   const historical: HistoricalStats | undefined = seasonStats.minutes > 0
     ? {
         season: seasonStats.season,
         minutes: seasonStats.minutes,
         saves: seasonStats.saves,
         defensiveContribution: seasonStats.defensiveContribution,
+        ...(anchor && anchor.minutes > 0
+          ? {
+              minutes: anchor.minutes,
+              expectedGoals: anchor.expectedGoals,
+              expectedAssists: anchor.expectedAssists,
+              // saves and defensive contributions have no per-match source, so
+              // they stay on the season aggregate and are rescaled to match.
+              saves: (seasonStats.saves ?? 0) * (anchor.minutes / seasonStats.minutes),
+              defensiveContribution: (seasonStats.defensiveContribution ?? 0) * (anchor.minutes / seasonStats.minutes),
+            }
+          : {}),
       }
     : undefined;
   return {
