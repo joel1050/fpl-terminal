@@ -56,8 +56,8 @@ function main(): void {
       const st = season.players.get(r.historicalPlayerId)!.stats;
       rows.push({
         position: base.position, minutes: r.minutes, actual: r.totalPoints,
-        noAnchor: expectedPoints(base, base.fixtures[0], r.minutes, playerRates(base, form, gw), strengths, BASELINE).total,
-        anchored: expectedPoints(withAnchor, withAnchor.fixtures[0], r.minutes, playerRates(withAnchor, form, gw), strengths, BASELINE).total,
+        noAnchor: expectedPoints(withAnchor, withAnchor.fixtures[0], r.minutes, playerRates(withAnchor, form, gw), strengths, BASELINE, true, false).total,
+        anchored: expectedPoints(withAnchor, withAnchor.fixtures[0], r.minutes, playerRates(withAnchor, form, gw), strengths, BASELINE, true, true).total,
         seasonXg: st.minutes > 0 ? (((st.expectedGoals ?? 0) + (st.expectedAssists ?? 0)) / st.minutes) * 90 : 0,
       });
     }
@@ -70,11 +70,11 @@ function main(): void {
     const b2 = mean(list.map((r) => r.anchored - r.actual));
     const rm = (pick: (r: Row) => number) => Math.sqrt(mean(list.map((r) => (pick(r) - r.actual) ** 2)));
     console.log(`${label.padEnd(24)} n=${String(list.length).padStart(5)}  actual ${act.toFixed(3)}`
-      + `   bias no-anchor ${b1 >= 0 ? "+" : ""}${b1.toFixed(3)}  anchored ${b2 >= 0 ? "+" : ""}${b2.toFixed(3)}`
+      + `   bias no-cards ${b1 >= 0 ? "+" : ""}${b1.toFixed(3)}  cards ${b2 >= 0 ? "+" : ""}${b2.toFixed(3)}`
       + `   RMSE ${rm((r) => r.noAnchor).toFixed(3)} -> ${rm((r) => r.anchored).toFixed(3)}`);
   };
 
-  console.log(`gameweeks ${FIRST}-38, anchor = the player's own gameweeks 1-19\n`);
+  console.log(`gameweeks ${FIRST}-38, anchored on the player's own gameweeks 1-19; comparing cards off vs on\n`);
   show("all", rows);
   for (const p of ["GK", "DEF", "MID", "FWD"]) show(p, rows.filter((r) => r.position === p));
   console.log();

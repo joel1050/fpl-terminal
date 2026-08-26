@@ -56,6 +56,32 @@ treating those as independent overstates the evidence by roughly `sqrt(9.8)`, or
 is no finding at all. Cluster by fixture, or count per team-fixture, before
 calling anything a defect.
 
+## Later changes
+
+| Change | Verdict |
+|---|---|
+| Cards (yellow -1, red -3) | **Adopt.** Overall bias +0.174 → **+0.045** per appearance; started midfielders +0.175 → +0.001. Rates measured from every 2025/26 appearance, and differential: DEF -0.165, FWD -0.088. `anchor.ts` |
+| Bonus follows the fixture | **Adopt.** RMSE -0.0033 for GK/DEF, interval excluding zero. Closes most of the forward fixture swing (0.73 → 1.01 against an observed 1.07). `run.ts`, `fwd-swing.ts` |
+| Outer multiplier clamp 0.7–1.3 → 0.55–1.6 | **Adopt on calibration, not accuracy.** RMSE unchanged (+0.0006, ns). But it bound on 14% of forward-fixtures and pinned 11 of Haaland's 30 onto one ceiling. `fwd-swing.ts` |
+| RotoWire precedence over correlated FPL flags | **Not backtestable** — no RotoWire archive for a past season. Held by `tests/data/rotowire-precedence.test.ts`. |
+
+`anchor.ts` also settled an earlier question: the large attacker bias reported
+before it was mostly the harness falling back to a position prior, not a model
+defect. Given a per-player anchor, forwards came out near unbiased before cards
+were added at all.
+
+## Data
+
+`season.ts` reads `data/generated` unless `BACKTEST_DATA_DIR` is set. Card
+columns need a re-ingest; run it to a scratch directory and point the harness
+there. **Never run a bare `npm run data:ingest` to test something** —
+`data/generated/` is gitignored, so overwriting it destroys the backtest corpus
+with no way back:
+
+```bash
+BACKTEST_DATA_DIR=/tmp/cards npx tsx scripts/backtest/anchor.ts
+```
+
 ## Limits
 
 The backtest sets fixture difficulty to a neutral 3, because no FDR exists for

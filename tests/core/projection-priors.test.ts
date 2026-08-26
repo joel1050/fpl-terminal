@@ -3,6 +3,12 @@ import type { Player } from "@/types/player";
 import { projectPlayer, regressPer90 } from "@/lib/projections";
 import { HOME_ATTACK_MULTIPLIER } from "@/lib/projections/fixtureAdjustment";
 
+// xG and xA are not goals and assists. A defender's chances are set-piece
+// headers that convert at 0.70, while FPL awards 1.272 assists per xA.
+// See GOAL_CONVERSION / ASSIST_CONVERSION in projectPlayer.ts.
+const DEF_GOAL_POINTS = 6 * 0.7;
+const DEF_ASSIST_POINTS = 3 * 1.272;
+
 function defender(overrides: Partial<Player> = {}): Player {
   return {
     id: 1,
@@ -27,8 +33,8 @@ describe("defender attacking priors", () => {
     const projection = projectPlayer(defender(), { currentGameweek: 1, horizon: 1, expectedMinutes: 90 });
     const attackMultiplier = HOME_ATTACK_MULTIPLIER;
 
-    expect(projection.components?.goals).toBeCloseTo(0.02 * attackMultiplier * 6, 8);
-    expect(projection.components?.assists).toBeCloseTo(0.02 * attackMultiplier * 3, 8);
+    expect(projection.components?.goals).toBeCloseTo(0.02 * attackMultiplier * DEF_GOAL_POINTS, 8);
+    expect(projection.components?.assists).toBeCloseTo(0.02 * attackMultiplier * DEF_ASSIST_POINTS, 8);
   });
 
   it("keeps the position prior override scoped to xG", () => {
@@ -40,8 +46,8 @@ describe("defender attacking priors", () => {
     });
     const attackMultiplier = HOME_ATTACK_MULTIPLIER;
 
-    expect(projection.components?.goals).toBeCloseTo(0.5 * attackMultiplier * 6, 8);
-    expect(projection.components?.assists).toBeCloseTo(0.02 * attackMultiplier * 3, 8);
+    expect(projection.components?.goals).toBeCloseTo(0.5 * attackMultiplier * DEF_GOAL_POINTS, 8);
+    expect(projection.components?.assists).toBeCloseTo(0.02 * attackMultiplier * DEF_ASSIST_POINTS, 8);
   });
 
   it("keeps current-only defenders regressed toward the conservative prior", () => {
@@ -60,8 +66,8 @@ describe("defender attacking priors", () => {
     const attackMultiplier = HOME_ATTACK_MULTIPLIER;
     const regressedCurrentRate = regressPer90(0.02 * 0.9 + 0.9 * 0.1, 9, 0.02, 900);
 
-    expect(projection.components?.goals).toBeCloseTo(regressedCurrentRate * attackMultiplier * 6, 8);
-    expect(projection.components?.assists).toBeCloseTo(regressedCurrentRate * attackMultiplier * 3, 8);
+    expect(projection.components?.goals).toBeCloseTo(regressedCurrentRate * attackMultiplier * DEF_GOAL_POINTS, 8);
+    expect(projection.components?.assists).toBeCloseTo(regressedCurrentRate * attackMultiplier * DEF_ASSIST_POINTS, 8);
   });
 
   it("keeps mapped defenders on regressed historical xG and xA rates", () => {
@@ -76,10 +82,10 @@ describe("defender attacking priors", () => {
     const attackMultiplier = HOME_ATTACK_MULTIPLIER;
     const historicalRate = regressPer90(1.8, 900, 0.08, 900);
 
-    expect(projection.components?.goals).toBeCloseTo(historicalRate * attackMultiplier * 6, 8);
-    expect(projection.components?.assists).toBeCloseTo(historicalRate * attackMultiplier * 3, 8);
-    expect(projection.components?.goals).toBeGreaterThan(0.02 * attackMultiplier * 6);
-    expect(projection.components?.assists).toBeGreaterThan(0.02 * attackMultiplier * 3);
+    expect(projection.components?.goals).toBeCloseTo(historicalRate * attackMultiplier * DEF_GOAL_POINTS, 8);
+    expect(projection.components?.assists).toBeCloseTo(historicalRate * attackMultiplier * DEF_ASSIST_POINTS, 8);
+    expect(projection.components?.goals).toBeGreaterThan(0.02 * attackMultiplier * DEF_GOAL_POINTS);
+    expect(projection.components?.assists).toBeGreaterThan(0.02 * attackMultiplier * DEF_ASSIST_POINTS);
   });
 
   it("uses the recency-weighted in-season match history when playerForm is supplied", () => {
@@ -107,7 +113,7 @@ describe("defender attacking priors", () => {
     // from swinging it anywhere near the raw recent rate (0.9).
     expect(withForm.components?.goals).toBeGreaterThan(withoutForm.components?.goals ?? 0);
     const attackMultiplier = HOME_ATTACK_MULTIPLIER;
-    expect(withForm.components?.goals).toBeLessThan(0.9 * attackMultiplier * 6);
+    expect(withForm.components?.goals).toBeLessThan(0.9 * attackMultiplier * DEF_GOAL_POINTS);
   });
 
   it("falls back to the cumulative current-season rate when no playerForm history exists yet", () => {
@@ -120,6 +126,6 @@ describe("defender attacking priors", () => {
     const attackMultiplier = HOME_ATTACK_MULTIPLIER;
     const regressedCurrentRate = regressPer90(0.02 * 0.9 + 0.9 * 0.1, 9, 0.02, 900);
 
-    expect(projection.components?.goals).toBeCloseTo(regressedCurrentRate * attackMultiplier * 6, 8);
+    expect(projection.components?.goals).toBeCloseTo(regressedCurrentRate * attackMultiplier * DEF_GOAL_POINTS, 8);
   });
 });

@@ -19,16 +19,22 @@ const GOAL_POINTS: Record<Position, number> = { GK: 10, DEF: 6, MID: 5, FWD: 4 }
 const PRIOR_DEFENSIVE_CONTRIBUTION: Record<Position, number> = { GK: 0, DEF: 7.7, MID: 8.6, FWD: 4.7 };
 const PRIOR_SAVES: Record<Position, number> = { GK: 2.8, DEF: 0, MID: 0, FWD: 0 };
 const PRIOR_BONUS: Record<Position, number> = { GK: 0.22, DEF: 0.22, MID: 0.32, FWD: 0.59 };
-const RATE_CEILING = { goalInvolvement: 3, saves: 10, defensiveContribution: 30, bonus: 3 } as const;
+const RATE_CEILING = { goalInvolvement: 3, saves: 10, defensiveContribution: 30, bonus: 3, yellowCards: 0.8, redCards: 0.1 } as const;
 const CLEAN_SHEET_POINTS: Record<Position, number> = { GK: 4, DEF: 4, MID: 1, FWD: 0 };
 const DEFENSIVE_CONTRIBUTION_THRESHOLD: Record<Position, number> = { GK: 0, DEF: 10, MID: 12, FWD: 12 };
 const DEFENSIVE_CONTRIBUTION_POINTS = 2;
 const SAVES_PER_POINT = 3;
+const GOAL_CONVERSION: Record<Position, number> = { GK: 1, DEF: 0.7, MID: 0.981, FWD: 0.988 };
+const ASSIST_CONVERSION: Record<Position, number> = { GK: 1, DEF: 1.272, MID: 1.207, FWD: 2.114 };
+const YELLOW_CARD_POINTS = 1;
+const RED_CARD_POINTS = 3;
+const PRIOR_YELLOW_CARDS: Record<Position, number> = { GK: 0.072, DEF: 0.182, MID: 0.188, FWD: 0.149 };
+const PRIOR_RED_CARDS: Record<Position, number> = { GK: 0.001, DEF: 0.008, MID: 0.005, FWD: 0.002 };
 const GOALS_CONCEDED_PER_DEDUCTION = 2;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-type RateField = "expectedGoals" | "expectedAssists" | "goals" | "assists" | "bonus" | "saves" | "defensiveContribution";
+type RateField = "expectedGoals" | "expectedAssists" | "goals" | "assists" | "bonus" | "saves" | "defensiveContribution" | "yellowCards" | "redCards";
 
 function historicalRate(player: Player, field: RateField) {
   const history = player.historical;
@@ -68,9 +74,17 @@ function regressedFormRate(
   player: Player, primary: "expectedGoals" | "expectedAssists", fallback: "goals" | "assists",
   prior: number, form: readonly PlayerMatchRate[] | undefined, currentGameweek: number,
   ceiling: number = RATE_CEILING.goalInvolvement,
+  shrinkMinutes = 0, poolRate?: number,
 ): number {
   const historical = historicalRate(player, primary) ?? historicalRate(player, fallback);
-  const basePrior = historical?.rate ?? prior;
+  // A player's own prior-period rate is used raw today. It is an estimate, so
+  // shrinking it toward the pool by its own sample size removes the survivorship
+  // tilt without touching a player who has a genuinely large sample.
+  const basePrior = historical
+    ? (shrinkMinutes > 0 && poolRate !== undefined
+        ? regressPer90(historical.rate, historical.minutes, poolRate, shrinkMinutes)
+        : historical.rate)
+    : prior;
   if (form && form.length > 0) {
     const field = primary === "expectedGoals" ? "xg" : "xa";
     const matchRates = form.map((m) => (m.minutes > 0 ? (m[field] / m.minutes) * 90 : 0));
@@ -94,13 +108,30 @@ function attackingPrior(player: Player, primary: "expectedGoals" | "expectedAssi
   return primary === "expectedGoals" ? UNKNOWN_DEFENDER_XG_PRIOR : UNKNOWN_DEFENDER_XA_PRIOR;
 }
 
-export function playerRates(player: Player, form: readonly PlayerMatchRate[] | undefined, currentGameweek: number) {
+export interface RateOverrides {
+  priorXg?: Record<Position, number>;
+  priorXa?: Record<Position, number>;
+  /** Shrink the player's own anchor toward the pool rate, in minutes of prior weight. */
+  anchorShrinkMinutes?: number;
+}
+
+export function playerRates(
+  player: Player,
+  form: readonly PlayerMatchRate[] | undefined,
+  currentGameweek: number,
+  overrides: RateOverrides = {},
+) {
+  const priorXg = overrides.priorXg?.[player.position];
+  const priorXa = overrides.priorXa?.[player.position];
+  const shrink = overrides.anchorShrinkMinutes ?? 0;
   return {
-    xg: regressedFormRate(player, "expectedGoals", "goals", attackingPrior(player, "expectedGoals", "goals"), form, currentGameweek),
-    xa: regressedFormRate(player, "expectedAssists", "assists", attackingPrior(player, "expectedAssists", "assists"), form, currentGameweek),
+    xg: regressedFormRate(player, "expectedGoals", "goals", priorXg ?? attackingPrior(player, "expectedGoals", "goals"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXg),
+    xa: regressedFormRate(player, "expectedAssists", "assists", priorXa ?? attackingPrior(player, "expectedAssists", "assists"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXa),
     saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves),
     defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution),
     bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus),
+    yellowCards: regressedPlayerRate(player, "yellowCards", undefined, PRIOR_YELLOW_CARDS[player.position], currentGameweek, RATE_CEILING.yellowCards),
+    redCards: regressedPlayerRate(player, "redCards", undefined, PRIOR_RED_CARDS[player.position], currentGameweek, RATE_CEILING.redCards),
   };
 }
 
@@ -115,7 +146,13 @@ export function expectedPoints(
   strengths: Record<number, TeamStrength>,
   variant: Variant,
   /** Experiment: let bonus follow the fixture, as BPS actually does. */
-  bonusFollowsFixture = false,
+  bonusFollowsFixture = true,
+  /** Experiment: deduct for yellow and red cards. */
+  cards = true,
+  /** Experiment: scale xA to the rate FPL actually awards assists. */
+  assistConversion: Record<Position, number> = ASSIST_CONVERSION,
+  /** Experiment: scale xG to the rate goals are actually scored. */
+  goalConversion: Record<Position, number> = GOAL_CONVERSION,
 ): ProjectionComponents {
   const a = adjust(fixture, {
     position: player.position,
@@ -125,15 +162,15 @@ export function expectedPoints(
 
   const c: ProjectionComponents = {
     appearance: 0, goals: 0, assists: 0, cleanSheets: 0, goalsConceded: 0,
-    saves: 0, defensiveContribution: 0, bonus: 0, penalties: 0, total: 0,
+    saves: 0, defensiveContribution: 0, bonus: 0, cards: 0, penalties: 0, total: 0,
   };
   const minutesShare = clamp(minutes, 0, 90) / 90;
   if (minutesShare <= 0) return c;
   const playedSixty = minutes >= 60;
 
   c.appearance += playedSixty ? 2 : 1;
-  c.goals += rates.xg * minutesShare * a.attackMultiplier * GOAL_POINTS[player.position];
-  c.assists += rates.xa * minutesShare * a.attackMultiplier * 3;
+  c.goals += rates.xg * goalConversion[player.position] * minutesShare * a.attackMultiplier * GOAL_POINTS[player.position];
+  c.assists += rates.xa * assistConversion[player.position] * minutesShare * a.attackMultiplier * 3;
   if (playedSixty) c.cleanSheets += a.cleanSheetProbability * CLEAN_SHEET_POINTS[player.position];
   if (player.position === "GK" || player.position === "DEF") {
     c.goalsConceded -= expectedFloorDivision(a.expectedGoalsAgainst * minutesShare, GOALS_CONCEDED_PER_DEDUCTION);
@@ -147,6 +184,10 @@ export function expectedPoints(
       * thresholdProbability(rates.defensiveContribution * minutesShare, threshold);
   }
   c.bonus += rates.bonus * minutesShare * (bonusFollowsFixture ? a.attackMultiplier : 1);
+  if (cards) {
+    c.cards -= YELLOW_CARD_POINTS * (1 - Math.exp(-rates.yellowCards * minutesShare))
+      + RED_CARD_POINTS * (1 - Math.exp(-rates.redCards * minutesShare));
+  }
   c.total = Object.entries(c).filter(([k]) => k !== "total").reduce((s, [, v]) => s + v, 0);
   return c;
 }

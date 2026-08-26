@@ -75,6 +75,8 @@ export const FplElementSchema = z
     expected_goals: numberLike.optional(),
     expected_assists: numberLike.optional(),
     defensive_contribution: z.number().optional(),
+    yellow_cards: z.number().optional(),
+    red_cards: z.number().optional(),
   })
   .passthrough();
 

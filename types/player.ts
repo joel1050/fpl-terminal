@@ -34,6 +34,8 @@ export interface CurrentStats {
   saves?: number;
   expectedGoals?: number;
   expectedAssists?: number;
+  yellowCards?: number;
+  redCards?: number;
 }
 
 export interface HistoricalStats {
@@ -55,6 +57,8 @@ export interface HistoricalStats {
   xGIPer90?: number;
   pointsPer90?: number;
   defensiveContribution?: number;
+  yellowCards?: number;
+  redCards?: number;
 }
 
 export interface PlayerFixture {

@@ -14,7 +14,7 @@
  */
 import { loadSeason, strengthsBefore, formBefore, playerAt, KNOWN_LEAKS, type Season } from "./season";
 import { expectedPoints, playerRates } from "./xp";
-import { BASELINE, LEGACY, MEASURED_VENUE, type Variant } from "./variants";
+import { BASELINE, type Variant } from "./variants";
 
 const FIRST_GAMEWEEK = 6;
 const BOOTSTRAP = 10000;

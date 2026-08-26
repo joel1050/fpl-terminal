@@ -54,13 +54,24 @@ describe("fixture adjustment", () => {
     expect(attackFor(1.4)).toBeCloseTo(AWAY_ATTACK_MULTIPLIER * 1.35, 10);
   });
 
-  it("keeps the outer multiplier clamp, which carries the top of the range", () => {
+  it("lets a strong attack against a weak defence keep its edge", () => {
+    // The old [0.7, 1.3] guard flattened every fixture past 1.3 onto one
+    // number, which erased a third of a top forward's fixture variation.
+    const strong = calculateFixtureAdjustment(neutralHome, {
+      ownTeam: team(1, 1.35, 1),
+      opponentTeam: team(2, 1, 1),
+    });
+    expect(strong.attackMultiplier).toBeCloseTo(HOME_ATTACK_MULTIPLIER * 1.35, 10);
+    expect(strong.attackMultiplier).toBeGreaterThan(1.3);
+  });
+
+  it("still guards against an absurd multiplier", () => {
+    // 1.14 base * 1.102 venue * 1.35 ratio = 1.696 before the backstop.
     const extreme = calculateFixtureAdjustment(
       { ...neutralHome, difficulty: 1 },
-      { ownTeam: team(1, 1.35, 1), opponentTeam: team(2, 1, 1) },
+      { ownTeam: team(1, 25, 1), opponentTeam: team(2, 1, 1) },
     );
-    // 1.14 base * 1.102 venue * 1.35 ratio = 1.696 before the guard.
-    expect(extreme.attackMultiplier).toBe(1.3);
+    expect(extreme.attackMultiplier).toBe(1.6);
   });
 
   it("keeps goals-against and the clean-sheet probability on one Poisson", () => {

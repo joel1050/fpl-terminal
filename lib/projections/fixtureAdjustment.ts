@@ -41,11 +41,26 @@ export const AWAY_ATTACK_MULTIPLIER = 0.898;
 const ATTACK_RATIO_CLAMP = [0.7, 1.35] as const;
 
 /**
- * Final guard on the attack multiplier. This is not slack. With `base` at 1.07
- * it binds on roughly 9% of fixtures, and on 14-20% once the venue term rises,
- * so it carries the top of the range. Widening it to [0.6, 1.5] measured worse.
+ * Backstop on the attack multiplier, deliberately wider than the range the
+ * ratio clamp already allows, so ATTACK_RATIO_CLAMP is the operative limit and
+ * this only catches a genuinely absurd input.
+ *
+ * It used to be [0.7, 1.3], which bound on 14% of forward-fixtures and did real
+ * damage at the top: a strong attack against a weak defence computes past 1.3
+ * in a third of its fixtures, and every one of them collapsed onto the same
+ * number. Over 2025/26 that flattened Erling Haaland's 30 fixtures onto a
+ * 0.89-1.30 range when the inputs said 0.89-1.57, and 11 of the 30 sat pinned
+ * on the ceiling - so the model could not tell his best fixture from his median
+ * one. Forwards' modelled swing between their easiest and hardest fixtures came
+ * to 0.73 points against an observed 1.07.
+ *
+ * This is a calibration fix, not a measured accuracy win: widening the clamp
+ * left match-level RMSE unchanged (+0.0006, confidence interval spanning zero)
+ * and top-30 selection flat. Single-match points are too noisy to reward
+ * getting the slope right, but a ceiling that erases a third of a player's
+ * fixture variation misleads anyone planning a run of fixtures.
  */
-const MULTIPLIER_CLAMP = [0.7, 1.3] as const;
+const MULTIPLIER_CLAMP = [0.55, 1.6] as const;
 
 const difficultyMultiplier: Record<number, number> = {
   1: 1.14,

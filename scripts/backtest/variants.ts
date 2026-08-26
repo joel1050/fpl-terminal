@@ -28,7 +28,7 @@ export const BASELINE: Variant = {
   useDifficultyBase: true,
   venue: [1.102, 0.898],
   attackRatioClamp: [0.7, 1.35],
-  multiplierClamp: [0.7, 1.3],
+  multiplierClamp: [0.55, 1.6],
   cleanSheet: "TABLE",
   leagueAverageGoals: 1.35,
   savesEnvironment: "LAMBDA",
@@ -42,6 +42,7 @@ export const LEGACY: Variant = {
   ...BASELINE,
   venue: [1.03, 0.97],
   attackRatioClamp: [0.78, 1.22],
+  multiplierClamp: [0.7, 1.3],
 };
 
 const difficultyMultiplier: Record<number, number> = { 1: 1.14, 2: 1.07, 3: 1, 4: 0.92, 5: 0.84 };

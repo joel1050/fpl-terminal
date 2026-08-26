@@ -161,6 +161,21 @@ function officialAvailability(player: Player): { factor: number; unavailable: bo
   return { factor: clamp(factor, 0, 1), unavailable };
 }
 
+/**
+ * How far a doubtful flag may pull down a player RotoWire still names in the
+ * XI. A predicted lineup is published after the injury news and already prices
+ * it in, so the two signals are not independent evidence. These floors keep a
+ * named starter above the "probably rotated" band without ignoring the doubt:
+ * a predicted starter on FPL's 75% flag settles near 0.62 rather than 0.67
+ * unchecked or 0.43 with both discounts stacked.
+ *
+ * A confirmed lineup is a team sheet, not a forecast, so it holds a higher
+ * floor. Neither floor applies when FPL rules the player out entirely - that
+ * path returns above, before any of this.
+ */
+const ROTOWIRE_PREDICTED_FLOOR = 0.62;
+const ROTOWIRE_CONFIRMED_FLOOR = 0.8;
+
 function rating(startProbability: number): NailedRating {
   if (startProbability >= 0.85) return 5;
   if (startProbability >= 0.7) return 4;
@@ -256,17 +271,37 @@ export function buildPlayerSelections(
       start = rotowireStart * 0.75 + historicalStart * 0.25;
       cameo = rotowireCameo * 0.75 + historicalCameo * 0.25;
     }
-    if (signal?.availability) {
-      start *= signal.availability === "QUES" ? 0.65 : 0.01;
-      cameo *= signal.availability === "QUES" ? 0.75 : 0.01;
-    }
     const official = officialAvailability(player);
-    if (official.unavailable) {
+    // RotoWire OUT and SUS are rulings, not doubts, and gate as hard as FPL's
+    // own unavailable codes. Only QUES is soft enough to trade off below.
+    const rotowireRulesOut = signal?.availability === "OUT" || signal?.availability === "SUS";
+    if (official.unavailable || rotowireRulesOut) {
+      // The hard gate, and the one place a predicted XI never wins. A lineup is
+      // a forecast made before the news: on a recent snapshot, 53 of 310
+      // RotoWire starters were players FPL had already ruled out with a 0%
+      // chance of playing. Whatever the lineup says, they do not play.
       start = Math.min(start, 0.01);
       cameo = Math.min(cameo, 0.01);
     } else {
-      start *= official.factor;
-      cameo *= official.factor;
+      // RotoWire's QUES flag and FPL's doubtful status are usually the same
+      // injury reported twice. Multiplying both discounts counted one knock as
+      // two: a predicted starter carrying both landed near 0.43, which reads as
+      // a rotation risk rather than the likely starter RotoWire called him.
+      // Take the single most severe discount instead of the product.
+      const rotowireFactor = signal?.availability === "QUES" ? { start: 0.65, cameo: 0.75 } : undefined;
+      const startFactor = Math.min(rotowireFactor?.start ?? 1, official.factor);
+      const cameoFactor = Math.min(rotowireFactor?.cameo ?? 1, official.factor);
+      if (signal?.starter) {
+        // RotoWire published a lineup after the news and still picked him. That
+        // is the later and more specific judgement, so let it set a floor
+        // rather than being multiplied away by the more general one.
+        const floor = signal.confirmed ? ROTOWIRE_CONFIRMED_FLOOR : ROTOWIRE_PREDICTED_FLOOR;
+        start = Math.max(start * startFactor, Math.min(start, floor));
+        cameo *= cameoFactor;
+      } else {
+        start *= startFactor;
+        cameo *= cameoFactor;
+      }
     }
     const scenarios = adjustRounding(normalizeScenarios(start, cameo));
     const expectedStartMinutes = rounded(clamp(history.startMinutes ?? START_MINUTES[player.position], 60, 90));

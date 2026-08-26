@@ -22,6 +22,8 @@ export interface HistoricalMatchStat {
   expectedAssists?: number;
   bonus: number;
   bps: number;
+  yellowCards?: number;
+  redCards?: number;
   wasHome?: boolean;
 }
 

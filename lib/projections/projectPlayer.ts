@@ -31,12 +31,56 @@ const PRIOR_SAVES: Record<Position, number> = { GK: 2.8, DEF: 0, MID: 0, FWD: 0 
 const PRIOR_BONUS: Record<Position, number> = { GK: 0.22, DEF: 0.22, MID: 0.32, FWD: 0.59 };
 // Ceilings on a per-90 rate, one per statistic. A shared ceiling of 3 silently
 // capped defensive contributions and goalkeeper saves, which run far higher.
-const RATE_CEILING = { goalInvolvement: 3, saves: 10, defensiveContribution: 30, bonus: 3 } as const;
+const RATE_CEILING = { goalInvolvement: 3, saves: 10, defensiveContribution: 30, bonus: 3, yellowCards: 0.8, redCards: 0.1 } as const;
 const CLEAN_SHEET_POINTS: Record<Position, number> = { GK: 4, DEF: 4, MID: 1, FWD: 0 };
 const DEFENSIVE_CONTRIBUTION_THRESHOLD: Record<Position, number> = { GK: 0, DEF: 10, MID: 12, FWD: 12 };
 const DEFENSIVE_CONTRIBUTION_POINTS = 2;
 const SAVES_PER_POINT = 3;
+/**
+ * xG and xA are not goals and assists, and the gap differs by position. Both
+ * factors are the product of two measured things, cross-validated over 2025/26
+ * (fitted on three quarters of the gameweeks, scored on the fourth, four times):
+ *
+ *   - whether the model states the expected count correctly, and
+ *   - whether that count converts at the rate FPL pays out.
+ *
+ * Which effect dominates changes by position. A defender's xG rate is accurate
+ * (1.022) but converts at only 0.698 - their chances are set-piece headers.
+ * A midfielder converts fine (0.981) but the model overstates their xG by 20%
+ * (0.835). On the assist side FPL is far more generous than xA: it pays 1.21
+ * assists per xA for a midfielder and 2.11 for a forward, because it awards the
+ * final pass whatever happens to the shot.
+ *
+ * These are deliberately the bias-neutral values, not the values that minimise
+ * squared error. The least-squares slopes score better still (RMSE -0.0129
+ * against -0.0074) but are shrinkage estimators: they drive bias to -0.146 and
+ * systematically under-project the best players, who are the ones worth buying.
+ * Using the raw season ratios instead is worse than doing nothing, because they
+ * correct the conversion while ignoring the rate error.
+ *
+ * Re-derive with `npx tsx scripts/backtest/fit-conversions.ts`.
+ */
+const GOAL_CONVERSION: Record<Position, number> = { GK: 1, DEF: 0.7, MID: 0.981, FWD: 0.988 };
+const ASSIST_CONVERSION: Record<Position, number> = { GK: 1, DEF: 1.272, MID: 1.207, FWD: 2.114 };
+const YELLOW_CARD_POINTS = 1;
+const RED_CARD_POINTS = 3;
+/**
+ * Card rates per 90, measured across every 2025/26 appearance rather than
+ * assumed. Cards are differential, not a flat levy: a defender loses roughly
+ * twice what a forward does (-0.165 against -0.088 points per appearance,
+ * league-wide -0.135), so leaving them out flattered defenders and holding
+ * midfielders against the forwards they compete with for a place.
+ *
+ * No forward was sent off in the sample, so their red prior is a floor rather
+ * than the observed zero - a striker can still be dismissed.
+ */
+const PRIOR_YELLOW_CARDS: Record<Position, number> = { GK: 0.072, DEF: 0.182, MID: 0.188, FWD: 0.149 };
+const PRIOR_RED_CARDS: Record<Position, number> = { GK: 0.001, DEF: 0.008, MID: 0.005, FWD: 0.002 };
 const GOALS_CONCEDED_PER_DEDUCTION = 2;
+
+type RateField =
+  | "expectedGoals" | "expectedAssists" | "goals" | "assists"
+  | "bonus" | "saves" | "defensiveContribution" | "yellowCards" | "redCards";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
@@ -48,20 +92,20 @@ function rounded(value: number): number {
 
 function historicalRate(
   player: Player,
-  field: "expectedGoals" | "expectedAssists" | "goals" | "assists" | "bonus" | "saves" | "defensiveContribution",
+  field: RateField,
 ): { rate: number; minutes: number } | undefined {
   const history = player.historical;
   if (!history || history.minutes <= 0) return undefined;
-  const value = history[field];
+  const value = (history as unknown as Partial<Record<RateField, number>>)[field];
   if (value === undefined) return undefined;
   return { rate: (value / history.minutes) * 90, minutes: history.minutes };
 }
 
 function currentRate(
   player: Player,
-  field: "expectedGoals" | "expectedAssists" | "goals" | "assists" | "bonus" | "saves" | "defensiveContribution",
+  field: RateField,
 ): { rate: number; minutes: number } | undefined {
-  const value = (player.current as unknown as Partial<Record<typeof field, number>>)[field];
+  const value = (player.current as unknown as Partial<Record<RateField, number>>)[field];
   if (value === undefined || player.current.minutes <= 0) return undefined;
   return { rate: (value / player.current.minutes) * 90, minutes: player.current.minutes };
 }
@@ -77,7 +121,7 @@ function hasUsableHistoricalRate(
 
 function regressedPlayerRate(
   player: Player,
-  primary: "expectedGoals" | "expectedAssists" | "goals" | "assists" | "bonus" | "saves" | "defensiveContribution",
+  primary: RateField,
   fallback: "goals" | "assists" | undefined,
   prior: number,
   currentGameweek: number,
@@ -182,6 +226,7 @@ function zeroComponents(): ProjectionComponents {
     saves: 0,
     defensiveContribution: 0,
     bonus: 0,
+    cards: 0,
     penalties: 0,
     total: 0,
   };
@@ -260,6 +305,8 @@ function fixtureComponents(
     saves: number;
     defensiveContribution: number;
     bonus: number;
+    yellowCards: number;
+    redCards: number;
   },
   useSelection: boolean,
 ): ProjectionComponents {
@@ -271,8 +318,8 @@ function fixtureComponents(
     const weight = scenario.probability;
     const playedSixty = scenario.minutes >= 60;
     components.appearance += weight * (playedSixty ? 2 : 1);
-    components.goals += weight * rates.xg * minutesShare * adjustment.attackMultiplier * GOAL_POINTS[player.position];
-    components.assists += weight * rates.xa * minutesShare * adjustment.attackMultiplier * 3;
+    components.goals += weight * rates.xg * GOAL_CONVERSION[player.position] * minutesShare * adjustment.attackMultiplier * GOAL_POINTS[player.position];
+    components.assists += weight * rates.xa * ASSIST_CONVERSION[player.position] * minutesShare * adjustment.attackMultiplier * 3;
     if (playedSixty) {
       components.cleanSheets += weight * adjustment.cleanSheetProbability * CLEAN_SHEET_POINTS[player.position];
     }
@@ -303,7 +350,23 @@ function fixtureComponents(
       components.defensiveContribution += weight * DEFENSIVE_CONTRIBUTION_POINTS
         * thresholdProbability(rates.defensiveContribution * minutesShare, threshold);
     }
-    components.bonus += weight * rates.bonus * minutesShare;
+    // Bonus follows the fixture. BPS is driven by the same goals, assists and
+    // clean sheets section 7 already adjusts, so a flat per-90 rate priced a
+    // player identically at home to the worst defence and away to the best.
+    // Backtested over 2025/26: RMSE -0.0033 for GK/DEF with the paired
+    // confidence interval excluding zero, -0.0017 across all rows. It also
+    // closes most of the gap in how far a forward's projection moves between
+    // an easy and a hard fixture (0.73 -> 1.01 against an observed 1.07).
+    components.bonus += weight * rates.bonus * minutesShare * adjustment.attackMultiplier;
+    // A booking is something that either happens or does not, so this is a
+    // probability rather than a rate times minutes: at a 0.18 yellow rate the
+    // difference is small, but it keeps a full match from ever implying more
+    // than one card. Yellows and reds are added separately; a red arriving via
+    // a second yellow is rare enough (0.005 per 90 at its highest) that the
+    // overlap is not worth modelling.
+    const yellowChance = 1 - Math.exp(-rates.yellowCards * minutesShare);
+    const redChance = 1 - Math.exp(-rates.redCards * minutesShare);
+    components.cards -= weight * (YELLOW_CARD_POINTS * yellowChance + RED_CARD_POINTS * redChance);
   }
   components.total = Object.entries(components)
     .filter(([key]) => key !== "total")
@@ -364,6 +427,8 @@ export function projectPlayer(
     saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves),
     defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution),
     bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus),
+    yellowCards: regressedPlayerRate(player, "yellowCards", undefined, PRIOR_YELLOW_CARDS[player.position], currentGameweek, RATE_CEILING.yellowCards),
+    redCards: regressedPlayerRate(player, "redCards", undefined, PRIOR_RED_CARDS[player.position], currentGameweek, RATE_CEILING.redCards),
   };
   const projectionHorizon = Math.max(5, options.fixtureHorizon ?? horizon);
   const upcoming = player.fixtures

@@ -31,6 +31,7 @@ From `normalizePlayer` (`lib/fpl/normalize.ts:207`):
 | `pointsPer90` | `total_points / (minutes / 90)` when `minutes > 0` |
 | `goals`, `assists`, `cleanSheets`, `bonus`, `minutes`, `saves` | matching bootstrap fields |
 | `expectedGoals`, `expectedAssists` | `expected_goals`, `expected_assists` |
+| `yellowCards`, `redCards` | `yellow_cards`, `red_cards` |
 | `status` | FPL status string (`i`, `d`, `s`, `u`, `n`, …) |
 | `chanceOfPlaying` | `chance_of_playing_next_round` (may be null) |
 | `priceTenths` | `now_cost` |
@@ -42,7 +43,7 @@ From `normalizePlayer` (`lib/fpl/normalize.ts:207`):
 
 ### 2.3 Historical stats (evidence)
 
-`lib/historical/ingest.ts` aggregates the `merged_gw.csv` season file. Season totals are summed, then converted to per-90 where needed. `HistoricalStats` carries `minutes`, `starts`, `totalPoints`, `goals`, `assists`, `cleanSheets`, `saves`, `bonus`, `bps`, `influence`, `creativity`, `threat`, `expectedGoals`, `expectedAssists`, `xGIPer90`, `pointsPer90`, and `defensiveContribution`.
+`lib/historical/ingest.ts` aggregates the `merged_gw.csv` season file. Season totals are summed, then converted to per-90 where needed. `HistoricalStats` carries `minutes`, `starts`, `totalPoints`, `goals`, `assists`, `cleanSheets`, `saves`, `bonus`, `bps`, `influence`, `creativity`, `threat`, `expectedGoals`, `expectedAssists`, `xGIPer90`, `pointsPer90`, `defensiveContribution`, `yellowCards`, and `redCards`.
 
 Players are linked to history via `playerMappings` (EXACT by code, else LIKELY by normalized name+team).
 
@@ -154,7 +155,7 @@ start = rotowireStart * 0.75 + historicalStart * 0.25
 cameo = rotowireCameo * 0.75 + historicalCameo * 0.25
 ```
 
-An `UNAVAILABLE` status then scales both: `QUES` multiplies start by `0.65` and cameo by `0.75`; `OUT`/`SUS` multiply both by `0.01`.
+RotoWire's own `UNAVAILABLE` records then apply. `OUT` and `SUS` are rulings, not doubts, and gate as hard as FPL's unavailable codes (§4.4) - start and cameo are capped at `0.01`. Only `QUES` is soft, and it is resolved against FPL's status rather than multiplied with it.
 
 ### 4.4 Official status gate
 
@@ -163,6 +164,17 @@ An `UNAVAILABLE` status then scales both: `QUES` multiplies start by `0.65` and 
 - Unavailable (`i`, `u`, `n`, `s`): `factor = 0.01`, then multiplied by `chanceOfPlaying / 100` when present; start/cameo are additionally capped at `0.01`.
 - Doubtful (`d`): `factor = chanceOfPlaying / 100` directly when FPL has supplied a percentage - `chanceOfPlaying` is already FPL's specific estimate for this player, so it is used as-is rather than discounted further. `factor = 0.7` only when no percentage is available.
 - Otherwise `factor = 1`.
+
+### 4.4.1 Precedence, not a product
+
+FPL's doubtful flag and RotoWire's `QUES` are usually the same injury reported twice, so they are never multiplied together. Two rules apply:
+
+- **The hard gate always wins.** If FPL rules a player out (`i`, `u`, `n`, `s`), or RotoWire records `OUT`/`SUS`, start and cameo are capped at `0.01` and nothing below runs. A predicted XI is a forecast published before the news: on the snapshot taken 21 August 2026, **53 of 310** RotoWire starters were players FPL had already given a 0% chance of playing. RotoWire never overrides that.
+- **Otherwise the single most severe discount applies**, not the product. A predicted starter carrying both RotoWire `QUES` and FPL's 75% used to land near `0.43` - reading as a rotation risk rather than the likely starter RotoWire had named.
+
+When RotoWire still names a doubtful player in the XI, that lineup is the later and more specific judgement and sets a floor rather than being multiplied away: `0.62` for a predicted XI, `0.80` for a confirmed team sheet (`ROTOWIRE_PREDICTED_FLOOR`/`ROTOWIRE_CONFIRMED_FLOOR`). Neither floor applies on the hard-gate path.
+
+None of this is backtested - there is no RotoWire archive for a past season, only the current snapshot - so it is held in place by deterministic tests in `tests/data/rotowire-precedence.test.ts` instead.
 
 `evidenceFor` (`lib/availability/selection.ts:183`) also surfaces `player.news` - FPL's free-text injury/return note - as an `FPL_STATUS` evidence entry when present, so it is visible even though it does not adjust any probability.
 
@@ -339,9 +351,22 @@ that captures all of it - and a window is still wanted, because
 `blendInSeasonForm` floors a defence ratio at `0.05`, which would let an
 unclamped ratio reach about 25.
 
-`attackMultiplier` is then clamped to `0.7`-`1.3`. That outer guard is not
-slack: with `base` at `1.07` it binds on roughly 9% of fixtures, so it carries
-the top of the range. Widening it to `0.6`-`1.5` measured worse.
+`attackMultiplier` is then clamped to `0.55`-`1.60`. That is deliberately wider
+than the ratio window above, so the ratio clamp is the operative limit and this
+only catches an absurd input.
+
+It used to be `0.7`-`1.3`, which bound on 14% of forward-fixtures and did real
+damage at the top. Over 2025/26 it flattened Erling Haaland's 30 fixtures onto a
+`0.89`-`1.30` range when the inputs said `0.89`-`1.57`, with **11 of the 30
+pinned on the ceiling** - so the model could not tell his best fixture from his
+median one. Forwards' modelled swing between their easiest and hardest fixtures
+came to 0.73 points against an observed 1.07.
+
+This one is a calibration fix, not a measured accuracy win, and the difference
+matters: widening the clamp left match-level RMSE unchanged (+0.0006, interval
+spanning zero) and top-30 selection flat. Single-match points are too noisy to
+reward getting the slope right. The case for it is that a ceiling erasing a
+third of a player's fixture variation misleads anyone planning a fixture run.
 
 ### 7.3 Consistent goals-against
 
@@ -416,7 +441,7 @@ appearance += weight * (minutes >= 60 ? 2 : 1)      // 1 for playing, 2 for 60+ 
 ### 8.2 Goals
 
 ```
-goals += weight * xgRate * minutesShare * attackMultiplier * GOAL_POINTS[position]
+goals += weight * xgRate * GOAL_CONVERSION[position] * minutesShare * attackMultiplier * GOAL_POINTS[position]
 ```
 
 `GOAL_POINTS = { GK: 10, DEF: 6, MID: 5, FWD: 4 }`.
@@ -424,8 +449,43 @@ goals += weight * xgRate * minutesShare * attackMultiplier * GOAL_POINTS[positio
 ### 8.3 Assists
 
 ```
-assists += weight * xaRate * minutesShare * attackMultiplier * 3
+assists += weight * xaRate * ASSIST_CONVERSION[position] * minutesShare * attackMultiplier * 3
 ```
+
+### 8.3.1 xG and xA are not goals and assists
+
+Both rates are converted before they are paid, and the factor differs by
+position. Measured over 2025/26 and cross-validated by gameweek:
+
+| Position | goals per xG | assists per xA |
+|---|---|---|
+| GK | 1.000 | 1.000 |
+| DEF | **0.700** | **1.272** |
+| MID | 0.981 | **1.207** |
+| FWD | 0.988 | **2.114** |
+
+Two separate facts. A defender's chances are set-piece headers and convert at
+0.70, where a midfielder or forward converts at essentially 1.0. And FPL is far
+more generous with assists than xA is: it pays for the final pass whatever
+happens to the shot, so a forward earns 2.11 assists per xA.
+
+**What is deliberately not in this table.** A larger set of factors scores
+better on the backtest (RMSE -0.0074 with the paired interval excluding zero,
+against no measurable gain for the ones above). Those absorb a second effect -
+the model overstating a midfielder's xG rate by 20% - and they are not shipped,
+because `tests/core/calibration.test.ts` catches what they really are. Given
+exact rates, they under-pay midfielders by 0.178 points and over-pay forwards by
+0.215, pushing positional spread to 0.393 against a 0.35 guard. A rate error is
+not a scoring rule and does not belong in one. The table above holds the guard
+at 0.284.
+
+That rate error is real and unfixed; §6.3.1 is where it lives. Shrinking a
+player's own anchor toward the pool rate by its sample size was worth -0.0237
+RMSE in testing - larger than anything else measured so far - but it barely
+moves the bias, so the cause is regression to the mean rather than noise. It
+remains open.
+
+Re-derive any of this with `npx tsx scripts/backtest/fit-conversions.ts`.
 
 ### 8.4 Clean sheets
 
@@ -469,10 +529,52 @@ defensiveContribution += weight * 2 * P(count >= threshold)
 ### 8.8 Bonus
 
 ```
-bonus += weight * bonusRate * minutesShare
+bonus += weight * bonusRate * minutesShare * attackMultiplier
 ```
 
-### 8.9 Total
+Bonus follows the fixture. BPS is driven by the same goals, assists and clean
+sheets §7 already adjusts, so a flat per-90 rate priced a player identically at
+home to the worst defence and away to the best. Backtested over 2025/26: RMSE
+-0.0033 for GK/DEF with the paired interval excluding zero, -0.0017 across all
+rows. It also closes most of the gap in how far a forward's projection moves
+between an easy and a hard fixture (0.73 to 1.01, against an observed 1.07).
+The measured win is clearest for defenders, whose BPS owes more to clean sheets
+and defensive actions than to their own team's attack - the multiplier is the
+term that worked, not a claim about the mechanism.
+
+### 8.9 Cards
+
+```
+yellowChance = 1 - exp(-yellowRate * minutesShare)
+redChance    = 1 - exp(-redRate * minutesShare)
+cards       -= weight * (1 * yellowChance + 3 * redChance)
+```
+
+A booking either happens or it does not, so this is a probability rather than a
+rate times minutes - which also stops a full match implying more than one card.
+Yellows and reds are added separately; a red arriving via a second yellow is
+rare enough (0.005 per 90 at its highest) that the overlap is not modelled.
+
+Rates are measured, not assumed. Across every 2025/26 appearance:
+
+| Position | yellow / 90 | red / 90 | points per appearance |
+|---|---|---|---|
+| GK | 0.072 | 0.0013 | -0.076 |
+| DEF | 0.182 | 0.0082 | -0.165 |
+| MID | 0.188 | 0.0048 | -0.134 |
+| FWD | 0.149 | 0.0000 | -0.088 |
+
+League-wide that is **-0.135 points per appearance**, and it is differential: a
+defender loses roughly twice what a forward does, so omitting cards flattered
+defenders and held midfielders against the forwards they compete with. No
+forward was sent off in the sample, so their red prior is a floor rather than
+the observed zero.
+
+Adding this term took overall bias from **+0.174 to +0.045** points per
+appearance, and started midfielders from +0.175 to +0.001, measured with a
+per-player anchor (`npx tsx scripts/backtest/anchor.ts`).
+
+### 8.10 Total
 
 `total` is the sum of all components. The `penalties` field exists in the type but is not populated (always 0).
 
@@ -754,11 +856,16 @@ Scoring constants (`lib/projections/projectPlayer.ts`):
 | Rule | Value |
 |---|---|
 | Goal points | GK 10, DEF 6, MID 5, FWD 4 |
+| Goals per xG | GK 1.000, DEF 0.700, MID 0.981, FWD 0.988 |
+| Assists per xA | GK 1.000, DEF 1.272, MID 1.207, FWD 2.114 |
 | Assist points | 3 |
 | Clean sheet points | GK 4, DEF 4, MID 1, FWD 0 |
 | Defensive contribution points | 2 (threshold GK 0, DEF 10, MID 12, FWD 12) |
 | Saves per point | 3 |
 | Goals-conceded deduction | 1 point per 2 goals |
+| Card deductions | yellow 1, red 3 |
+| Yellow prior per 90 | GK 0.072, DEF 0.182, MID 0.188, FWD 0.149 |
+| Red prior per 90 | GK 0.001, DEF 0.008, MID 0.005, FWD 0.002 |
 
 Fixture constants (`lib/projections/fixtureAdjustment.ts`):
 
@@ -768,7 +875,7 @@ Fixture constants (`lib/projections/fixtureAdjustment.ts`):
 | Difficulty multipliers | 1→1.14, 2→1.07, 3→1.00, 4→0.92, 5→0.84 |
 | Home / away attack venue | 1.102 / 0.898 (measured) |
 | Attack ratio clamp | 0.70 – 1.35 |
-| Attack multiplier clamp | 0.70 – 1.30 |
+| Attack multiplier clamp | 0.55 – 1.60 (backstop only) |
 | Strength tier anchors | 0.84, 0.92, 1.00, 1.08, 1.16 |
 
 Lineup constants (`lib/squad/weeklyLineup.ts`):

@@ -16,11 +16,14 @@ import { applyInSeasonForm, type TeamMatchXG } from "@/lib/historical/inSeasonFo
 export const KNOWN_LEAKS = [
   "saves per-90: only a season aggregate exists per player, so it is reused at every gameweek",
   "defensive contributions per-90: same, season aggregate only",
+  "card rates per-90: season aggregate only, so they are reused at every gameweek",
 ] as const;
 
 const root = path.resolve(__dirname, "../..");
+/** BACKTEST_DATA_DIR points the harness at a scratch ingest; never write to data/generated. */
+const dataDir = process.env.BACKTEST_DATA_DIR ?? path.join(root, "data/generated");
 const read = <T,>(file: string): T =>
-  JSON.parse(readFileSync(path.join(root, "data/generated", file), "utf8")) as T;
+  JSON.parse(readFileSync(path.join(dataDir, file), "utf8")) as T;
 
 export interface MatchRow {
   historicalPlayerId: number;
@@ -35,6 +38,8 @@ export interface MatchRow {
   expectedAssists: number;
   bonus: number;
   bps: number;
+  yellowCards?: number;
+  redCards?: number;
   wasHome: boolean;
 }
 
@@ -266,6 +271,8 @@ export function playerAt(
         minutes: seasonStats.minutes,
         saves: seasonStats.saves,
         defensiveContribution: seasonStats.defensiveContribution,
+        yellowCards: seasonStats.yellowCards,
+        redCards: seasonStats.redCards,
         ...(anchor && anchor.minutes > 0
           ? {
               minutes: anchor.minutes,

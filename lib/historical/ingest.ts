@@ -88,6 +88,8 @@ interface PlayerAccumulator {
   expectedGoals: number;
   expectedAssists: number;
   defensiveContribution: number;
+  yellowCards: number;
+  redCards: number;
 }
 
 export function aggregateHistoricalPlayers(
@@ -125,6 +127,8 @@ export function aggregateHistoricalPlayers(
       expectedGoals: 0,
       expectedAssists: 0,
       defensiveContribution: 0,
+      yellowCards: 0,
+      redCards: 0,
     };
     current.minutes += requiredNumber(row.minutes);
     current.starts += requiredNumber(row.starts);
@@ -141,6 +145,8 @@ export function aggregateHistoricalPlayers(
     current.expectedGoals += requiredNumber(row.expected_goals);
     current.expectedAssists += requiredNumber(row.expected_assists);
     current.defensiveContribution += requiredNumber(row.defensive_contribution);
+    current.yellowCards += requiredNumber(row.yellow_cards);
+    current.redCards += requiredNumber(row.red_cards);
     accumulators.set(id, current);
   }
 
@@ -171,6 +177,8 @@ export function aggregateHistoricalPlayers(
         xGIPer90: (value.expectedGoals + value.expectedAssists) * per90,
         pointsPer90: value.totalPoints * per90,
         defensiveContribution: value.defensiveContribution,
+        yellowCards: value.yellowCards,
+        redCards: value.redCards,
       },
     };
   });
@@ -194,6 +202,8 @@ export function normalizeHistoricalMatchStats(mergedText: string): HistoricalMat
         expectedGoals: number(row.expected_goals),
         expectedAssists: number(row.expected_assists),
         bonus: requiredNumber(row.bonus),
+        yellowCards: requiredNumber(row.yellow_cards),
+        redCards: requiredNumber(row.red_cards),
         bps: requiredNumber(row.bps),
         wasHome: row.was_home === "True" || row.was_home === "true",
       };

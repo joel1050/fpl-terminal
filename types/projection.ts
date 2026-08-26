@@ -36,6 +36,8 @@ export interface ProjectionComponents {
   saves: number;
   defensiveContribution: number;
   bonus: number;
+  /** Negative: one point off per yellow, three per red. */
+  cards: number;
   penalties: number;
   total: number;
 }
