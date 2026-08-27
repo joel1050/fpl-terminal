@@ -430,7 +430,7 @@ export function projectPlayer(
     yellowCards: regressedPlayerRate(player, "yellowCards", undefined, PRIOR_YELLOW_CARDS[player.position], currentGameweek, RATE_CEILING.yellowCards),
     redCards: regressedPlayerRate(player, "redCards", undefined, PRIOR_RED_CARDS[player.position], currentGameweek, RATE_CEILING.redCards),
   };
-  const projectionHorizon = Math.max(5, options.fixtureHorizon ?? horizon);
+  const projectionHorizon = Math.max(10, options.fixtureHorizon ?? horizon);
   const upcoming = player.fixtures
     .filter(
       (fixture) =>
@@ -457,12 +457,14 @@ export function projectPlayer(
   const nextGW = fixturePointsForGameweek(fixtureProjections, currentGameweek);
   const next3 = fixturePointsForGameweeks(pointsByGameweek, currentGameweek, 3);
   const next5 = fixturePointsForGameweeks(pointsByGameweek, currentGameweek, 5);
+  const next10 = fixturePointsForGameweeks(pointsByGameweek, currentGameweek, 10);
   return {
     playerId: player.id,
     fixtures: fixtureProjections,
     nextGW: rounded(nextGW),
     next3: rounded(next3),
     next5: rounded(next5),
+    next10: rounded(next10),
     expectedMinutes,
     valueNext5: rounded(valuePerMillion(next5, player.priceTenths)),
     riskScore: calculateRiskScore(player, expectedMinutes, confidence),

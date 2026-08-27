@@ -88,16 +88,17 @@ export function simulateChange(input: SimulateChangeInput): SimulationResult {
   const afterPlayers = afterIds.map((id) => map.get(id)).filter((player): player is Player => Boolean(player));
   const beforeProjection = baselineLegal
     ? projectWeeklyLineupHorizons({ squad: beforePlayers, gameweek, riskMode })
-    : { nextGW: before.projectedNextGW, next3: before.projectedNext3, next5: before.projectedNext5 };
+    : { nextGW: before.projectedNextGW, next3: before.projectedNext3, next5: before.projectedNext5, next10: before.projectedNext10 };
   const afterProjection = legal
     ? projectWeeklyLineupHorizons({ squad: afterPlayers, gameweek, riskMode })
-    : { nextGW: after.projectedNextGW, next3: after.projectedNext3, next5: after.projectedNext5 };
+    : { nextGW: after.projectedNextGW, next3: after.projectedNext3, next5: after.projectedNext5, next10: after.projectedNext10 };
   const projectedDeltaGW = afterProjection.nextGW - beforeProjection.nextGW;
   const projectedDelta3 = afterProjection.next3 - beforeProjection.next3;
   const projectedDelta5 = afterProjection.next5 - beforeProjection.next5;
+  const projectedDelta10 = afterProjection.next10 - beforeProjection.next10;
   const horizon = input.horizon ?? input.strategy?.horizon ?? 5;
-  const optimizedBeforeXp = horizon === 1 ? beforeProjection.nextGW : horizon === 3 ? beforeProjection.next3 : beforeProjection.next5;
-  const optimizedAfterXp = horizon === 1 ? afterProjection.nextGW : horizon === 3 ? afterProjection.next3 : afterProjection.next5;
+  const optimizedBeforeXp = horizon === 1 ? beforeProjection.nextGW : horizon === 3 ? beforeProjection.next3 : horizon === 5 ? beforeProjection.next5 : beforeProjection.next10;
+  const optimizedAfterXp = horizon === 1 ? afterProjection.nextGW : horizon === 3 ? afterProjection.next3 : horizon === 5 ? afterProjection.next5 : afterProjection.next10;
   const projectedDelta = optimizedAfterXp - optimizedBeforeXp;
   if (priceDeltaTenths > 0) explanationFactors.push(`Costs ${(priceDeltaTenths / 10).toFixed(1)}m more.`);
   if (priceDeltaTenths < 0) explanationFactors.push(`Releases ${(-priceDeltaTenths / 10).toFixed(1)}m.`);
@@ -117,6 +118,7 @@ export function simulateChange(input: SimulateChangeInput): SimulationResult {
     projectedDeltaGW,
     projectedDelta3,
     projectedDelta5,
+    projectedDelta10,
     requiredSecondaryMoves: proposedSecondaryMoves(afterIds, universe, input),
     legal,
     explanationFactors,

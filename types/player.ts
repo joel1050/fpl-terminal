@@ -89,6 +89,7 @@ export interface PlayerProjection {
   nextGW: number;
   next3: number;
   next5: number;
+  next10: number;
   expectedMinutes: number;
   valueNext5: number;
   riskScore: number;

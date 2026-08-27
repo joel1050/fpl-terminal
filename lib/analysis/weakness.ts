@@ -1,5 +1,6 @@
 import type { Player } from "../../types/player";
 import type { SquadWeakness } from "../../types/analysis";
+import type { Horizon } from "../../types/projection";
 import {
   availabilityRisk,
   confidenceWeight,
@@ -11,7 +12,7 @@ import {
 } from "./context";
 
 export interface WeaknessOptions {
-  horizon?: 1 | 3 | 5;
+  horizon?: Horizon;
   players?: PlayerUniverse;
 }
 

@@ -1,5 +1,7 @@
 import type { Position } from "./player";
 
+export type Horizon = 1 | 3 | 5 | 10;
+
 export interface PlayerMatchRate {
   xg: number;
   xa: number;
@@ -19,6 +21,7 @@ export interface ProjectionSummary {
   nextGW: number;
   next3: number;
   next5: number;
+  next10: number;
   expectedMinutes: number;
   valueNext5: number;
   riskScore: number;
@@ -43,7 +46,7 @@ export interface ProjectionComponents {
 }
 
 export interface ProjectionOptions {
-  horizon: 1 | 3 | 5;
+  horizon: Horizon;
   currentGameweek: number;
   teamStrength?: TeamStrength;
   teamStrengths?: Record<number, TeamStrength>;

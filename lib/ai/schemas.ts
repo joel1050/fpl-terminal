@@ -27,6 +27,7 @@ export const CompactPlayerSchema = z.object({
       nextGW: z.number().finite().optional(),
       next3: z.number().finite().optional(),
       next5: z.number().finite().optional(),
+      next10: z.number().finite().optional(),
       expectedMinutes: z.number().finite().optional(),
       valueNext5: z.number().finite().optional(),
       riskScore: z.number().finite().optional(),
@@ -50,7 +51,7 @@ export const AnalystContextSchema = z
       bankTenths: z.number().int().nonnegative().max(2000),
     }),
     strategy: z.object({
-      horizon: z.union([z.literal(1), z.literal(3), z.literal(5)]),
+      horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]),
       risk: z.enum(["SAFE", "BALANCED", "AGGRESSIVE"]),
       bench: z.enum(["CHEAP", "BALANCED", "STRONG"]),
     }),
@@ -128,10 +129,10 @@ export const ToolInputSchemas = {
     .object({ playerIds: z.array(idSchema).min(2).max(5) })
     .strict(),
   get_player_fixtures: z
-    .object({ playerId: idSchema, horizon: z.union([z.literal(1), z.literal(3), z.literal(5)]).optional() })
+    .object({ playerId: idSchema, horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]).optional() })
     .strict(),
   get_player_projection: z
-    .object({ playerId: idSchema, horizon: z.union([z.literal(1), z.literal(3), z.literal(5)]).optional() })
+    .object({ playerId: idSchema, horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]).optional() })
     .strict(),
   analyze_squad: z.object({}).strict(),
   find_replacements: z

@@ -33,6 +33,7 @@ function player(id: number, position: Position, priceTenths: number, points: num
       nextGW: points,
       next3: points * 3,
       next5: points * 5,
+      next10: points * 10,
       expectedMinutes: 90,
       valueNext5: points * 5 / (priceTenths / 10),
       riskScore: 0,

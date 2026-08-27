@@ -9,6 +9,7 @@ import {
   ToolName,
 } from "./schemas";
 import type { Player } from "@/types/player";
+import type { Horizon } from "@/types/projection";
 import { getBootstrap, getFixtures } from "@/lib/fpl/client";
 import { normalizeBootstrap } from "@/lib/fpl/normalize";
 import { enrichPlayersWithHistory } from "@/lib/historical/enrichPlayers";
@@ -44,7 +45,7 @@ export interface AIDataAdapters {
 }
 
 function compactPlayer(player: Player, currentGameweek = 1) {
-  const projection = player.projection ?? projectPlayer(player, { currentGameweek, horizon: 5 });
+  const projection = player.projection ?? projectPlayer(player, { currentGameweek, horizon: 10 });
   return {
     id: player.id,
     displayName: player.displayName,
@@ -54,13 +55,14 @@ function compactPlayer(player: Player, currentGameweek = 1) {
     teamShortName: player.teamShortName,
     status: player.status,
     chanceOfPlaying: player.chanceOfPlaying,
-    fixtures: player.fixtures.slice(0, 5),
+    fixtures: player.fixtures.slice(0, 10),
     ...(projection
       ? {
         projection: {
             nextGW: projection.nextGW,
             next3: projection.next3,
             next5: projection.next5,
+            next10: projection.next10,
             expectedMinutes: projection.expectedMinutes,
             valueNext5: projection.valueNext5,
             riskScore: projection.riskScore,
@@ -78,6 +80,7 @@ function compactAnalysis(analysis: ReturnType<typeof analyzeSquad>) {
     projectedNextGW: analysis.projectedNextGW,
     projectedNext3: analysis.projectedNext3,
     projectedNext5: analysis.projectedNext5,
+    projectedNext10: analysis.projectedNext10,
     startingXI: analysis.startingXI,
     bench: analysis.bench,
     strengths: analysis.strengths,
@@ -167,7 +170,7 @@ export function createFplToolAdapters(): AIDataAdapters {
       const player = (await players()).find((candidate) => candidate.id === input.playerId);
       const horizon = input.horizon ?? 5;
       const projection = player ? player.projection ?? projectPlayer(player, { currentGameweek: context.gameweek, horizon }) : undefined;
-      return { playerId: input.playerId, horizon, projectedPoints: projection ? (horizon === 1 ? projection.nextGW : horizon === 3 ? projection.next3 : projection.next5) : null };
+      return { playerId: input.playerId, horizon, projectedPoints: projection ? (horizon === 1 ? projection.nextGW : horizon === 3 ? projection.next3 : horizon === 5 ? projection.next5 : projection.next10) : null };
     },
     analyzeSquad: async (_, context) => {
       const universe = await players();
@@ -203,6 +206,7 @@ export function createFplToolAdapters(): AIDataAdapters {
         projectedDeltaGW: result.projectedDeltaGW,
         projectedDelta3: result.projectedDelta3,
         projectedDelta5: result.projectedDelta5,
+        projectedDelta10: result.projectedDelta10,
         requiredSecondaryMoves: result.requiredSecondaryMoves,
         explanationFactors: result.explanationFactors,
       };
@@ -251,13 +255,13 @@ const toolParameters: Record<ToolName, Record<string, unknown>> = {
   },
   get_player_fixtures: {
     type: "object",
-    properties: { playerId: { type: "integer", minimum: 1 }, horizon: { type: "integer", enum: [1, 3, 5] } },
+    properties: { playerId: { type: "integer", minimum: 1 }, horizon: { type: "integer", enum: [1, 3, 5, 10] } },
     required: ["playerId"],
     additionalProperties: false,
   },
   get_player_projection: {
     type: "object",
-    properties: { playerId: { type: "integer", minimum: 1 }, horizon: { type: "integer", enum: [1, 3, 5] } },
+    properties: { playerId: { type: "integer", minimum: 1 }, horizon: { type: "integer", enum: [1, 3, 5, 10] } },
     required: ["playerId"],
     additionalProperties: false,
   },
@@ -334,9 +338,9 @@ function findPlayer(context: AnalystContextInput, playerId: number) {
   return playersFrom(context).find((player) => player.id === playerId);
 }
 
-function projectionFor(player: ReturnType<typeof findPlayer>, horizon: 1 | 3 | 5): number | undefined {
+function projectionFor(player: ReturnType<typeof findPlayer>, horizon: Horizon): number | undefined {
   if (!player?.projection) return undefined;
-  return horizon === 1 ? player.projection.nextGW : horizon === 3 ? player.projection.next3 : player.projection.next5;
+  return horizon === 1 ? player.projection.nextGW : horizon === 3 ? player.projection.next3 : horizon === 5 ? player.projection.next5 : player.projection.next10;
 }
 
 function withAdapter<Name extends ToolName>(

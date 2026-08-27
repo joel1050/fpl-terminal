@@ -1,5 +1,6 @@
 import type { Position, PriceTenths, ProjectionConfidence } from "./player";
 import type { SquadState } from "./squad";
+import type { Horizon } from "./projection";
 
 export interface SquadInsight {
   title: string;
@@ -27,6 +28,7 @@ export interface SquadAnalysis {
   projectedNextGW: number;
   projectedNext3: number;
   projectedNext5: number;
+  projectedNext10: number;
   startingXI: number[];
   bench: number[];
   strengths: SquadInsight[];
@@ -52,7 +54,7 @@ export type SingleTransferKind = "XP_UPGRADE" | "BOTH";
 export interface SingleTransferSuggestion {
   outgoingPlayerId: number;
   incomingPlayerId: number;
-  horizon: 1 | 3 | 5;
+  horizon: Horizon;
   beforeXp: number;
   afterXp: number;
   projectedDelta: number;
@@ -75,7 +77,7 @@ export interface ProposedMove {
 export interface SimulationResult {
   before: SquadAnalysis;
   after: SquadAnalysis;
-  horizon: 1 | 3 | 5;
+  horizon: Horizon;
   optimizedBeforeXp: number;
   optimizedAfterXp: number;
   projectedDelta: number;
@@ -83,6 +85,7 @@ export interface SimulationResult {
   projectedDeltaGW: number;
   projectedDelta3: number;
   projectedDelta5: number;
+  projectedDelta10: number;
   requiredSecondaryMoves: ProposedMove[];
   legal: boolean;
   explanationFactors: string[];
