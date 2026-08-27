@@ -155,6 +155,7 @@ describe("transparent projection model", () => {
       { gameweek: 2, opponentTeamId: 4, opponentShortName: "C", isHome: true, difficulty: 3 },
       { gameweek: 4, opponentTeamId: 5, opponentShortName: "D", isHome: false, difficulty: 4 },
       { gameweek: 5, opponentTeamId: 6, opponentShortName: "E", isHome: true, difficulty: 2 },
+      { gameweek: 8, opponentTeamId: 7, opponentShortName: "F", isHome: true, difficulty: 3 },
     ]), { currentGameweek: 1, horizon: 5, expectedMinutes: 90 });
     const totals = aggregateFixturePointsByGameweek(projection.fixtures);
     const sum = (start: number, count: number) => Array.from({ length: count }, (_, offset) => start + offset)
@@ -163,6 +164,7 @@ describe("transparent projection model", () => {
     expect(projection.nextGW).toBeCloseTo(sum(1, 1), 6);
     expect(projection.next3).toBeCloseTo(sum(1, 3), 6);
     expect(projection.next5).toBeCloseTo(sum(1, 5), 6);
+    expect(projection.next10).toBeCloseTo(sum(1, 10), 6);
     expect(projection.nextGW).toBeGreaterThan(projection.fixtures[0]?.expectedPoints ?? 0);
     expect(fixturePointsForGameweek(projection.fixtures, 3)).toBe(0);
 

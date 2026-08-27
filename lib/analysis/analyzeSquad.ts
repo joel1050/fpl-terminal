@@ -1,5 +1,6 @@
 import type { SquadAnalysis, SquadOpportunity } from "../../types/analysis";
 import type { Player, Position } from "../../types/player";
+import type { Horizon } from "../../types/projection";
 import {
   asPlayers,
   costOf,
@@ -30,11 +31,11 @@ export interface AnalyzeSquadOptions extends CommonOptions {
   playerPool?: PlayerUniverse;
 }
 
-function projectionFor(player: Player, horizon: 1 | 3 | 5): number {
+function projectionFor(player: Player, horizon: Horizon): number {
   return horizonValue(player, horizon);
 }
 
-function chooseStartingXI(ids: readonly number[], players: Map<number, Player>, horizon: 1 | 3 | 5): { startingXI: number[]; bench: number[] } {
+function chooseStartingXI(ids: readonly number[], players: Map<number, Player>, horizon: Horizon): { startingXI: number[]; bench: number[] } {
   const selectedPlayers = ids.map((id) => players.get(id)).filter((player): player is Player => Boolean(player));
   if (selectedPlayers.length === 15) {
     try {
@@ -82,7 +83,7 @@ function chooseStartingXI(ids: readonly number[], players: Map<number, Player>, 
   return { startingXI: best.ids, bench: ids.filter((id) => !starting.has(id)) };
 }
 
-function buildStrengths(players: readonly Player[], horizon: 1 | 3 | 5): SquadAnalysis["strengths"] {
+function buildStrengths(players: readonly Player[], horizon: Horizon): SquadAnalysis["strengths"] {
   if (!players.length) return [];
   const strengths: SquadAnalysis["strengths"] = [];
   const secure = players.filter((player) => expectedMinutes(player) >= 80).length / players.length;
@@ -146,6 +147,7 @@ export function analyzeSquad(
   const projectedNextGW = startingXI.reduce((sum, id) => sum + horizonValue(map.get(id)!, 1), 0);
   const projectedNext3 = startingXI.reduce((sum, id) => sum + horizonValue(map.get(id)!, 3), 0);
   const projectedNext5 = startingXI.reduce((sum, id) => sum + horizonValue(map.get(id)!, 5), 0);
+  const projectedNext10 = startingXI.reduce((sum, id) => sum + horizonValue(map.get(id)!, 10), 0);
   const weaknesses = rankWeaknesses(selectedPlayers, universe, { horizon });
   const opportunities: SquadOpportunity[] = [];
   for (const weakness of weaknesses.slice(0, 3)) {
@@ -180,6 +182,7 @@ export function analyzeSquad(
     projectedNextGW,
     projectedNext3,
     projectedNext5,
+    projectedNext10,
     startingXI,
     bench,
     strengths: buildStrengths(selectedPlayers, horizon),

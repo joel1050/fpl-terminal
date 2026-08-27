@@ -144,6 +144,7 @@ const browserPlayers = fixturePlayers.map((current) => {
       nextGW: 3.5 + current.total_points / 100,
       next3: 10.5 + current.total_points / 30,
       next5: 17.5 + current.total_points / 20,
+      next10: 35 + current.total_points / 10,
       expectedMinutes: 80,
       valueNext5: (17.5 + current.total_points / 20) / (current.now_cost / 10),
       riskScore: 20,

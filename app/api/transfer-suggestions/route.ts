@@ -14,7 +14,7 @@ const requestSchema = z.object({
   lockedPlayerIds: z.array(z.number().int().positive()).max(15),
   excludedPlayerIds: z.array(z.number().int().positive()).max(600).optional(),
   gameweek: z.number().int().min(1).max(38).optional(),
-  horizon: z.union([z.literal(1), z.literal(3), z.literal(5)]),
+  horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]),
   risk: z.enum(["SAFE", "BALANCED", "AGGRESSIVE"]),
 }).strict();
 

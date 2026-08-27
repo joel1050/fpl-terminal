@@ -1,4 +1,5 @@
 import type { Player, Position, PriceTenths } from "./player";
+import type { Horizon } from "./projection";
 
 export const SQUAD_SIZE = 15;
 export const INITIAL_BUDGET_TENTHS: PriceTenths = 1000;
@@ -15,7 +16,7 @@ export interface PersistentFPLState {
   captainId?: number;
   viceCaptainId?: number;
   benchOrder: number[];
-  horizon: 1 | 3 | 5;
+  horizon: Horizon;
   riskMode: "SAFE" | "BALANCED" | "AGGRESSIVE";
   benchStrategy: "CHEAP" | "BALANCED" | "STRONG";
   excludedPlayerIds: number[];
@@ -94,7 +95,7 @@ export interface AnalystContext {
     bankTenths: PriceTenths;
   };
   strategy: {
-    horizon: 1 | 3 | 5;
+    horizon: Horizon;
     risk: "SAFE" | "BALANCED" | "AGGRESSIVE";
     bench: "CHEAP" | "BALANCED" | "STRONG";
   };

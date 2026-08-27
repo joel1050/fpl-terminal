@@ -54,6 +54,7 @@ describe("player selection payloads", () => {
             nextGW: 1,
             next3: 9,
             next5: 15,
+            next10: 30,
             fixtures: [{
               gameweek: 2,
               expectedPoints: 4,

@@ -6,6 +6,7 @@ import type {
   WeeklyLineupInput,
   WeeklyLineupPlan,
 } from "@/types/squad";
+import type { Horizon } from "@/types/projection";
 import { validateSquad } from "./validation";
 
 const positionOrder: Record<Position, number> = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
@@ -360,18 +361,18 @@ export function pickWeeklyTeam(input: WeeklyLineupInput): WeeklyLineupPlan {
 
 /** Uses the weekly lineup engine for each distinct gameweek in the displayed horizons. */
 export function projectWeeklyLineupHorizons(input: WeeklyLineupInput, appliedPlan?: WeeklyLineupPlan) {
-  const plans = Array.from({ length: 5 }, (_, index) => {
+  const plans = Array.from({ length: 10 }, (_, index) => {
     const gameweek = input.gameweek + index;
     return index === 0 && appliedPlan?.gameweek === gameweek
       ? appliedPlan
       : pickWeeklyTeam({ ...input, gameweek });
   });
   const total = (length: number) => round(plans.slice(0, length).reduce((sum, plan) => sum + plan.projectedTotal, 0));
-  return { nextGW: total(1), next3: total(3), next5: total(5) };
+  return { nextGW: total(1), next3: total(3), next5: total(5), next10: total(10) };
 }
 
 /** Projects only the requested number of distinct gameweeks. */
-export function projectWeeklyLineupTotal(input: WeeklyLineupInput, horizon: 1 | 3 | 5): number {
+export function projectWeeklyLineupTotal(input: WeeklyLineupInput, horizon: Horizon): number {
   return round(Array.from({ length: horizon }, (_, index) => pickWeeklyTeam({
     ...input,
     gameweek: input.gameweek + index,

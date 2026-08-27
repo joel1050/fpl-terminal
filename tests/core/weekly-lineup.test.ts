@@ -30,6 +30,7 @@ function player(id: number, position: Position, points: number, status = "a"): P
       nextGW: points,
       next3: points * 3,
       next5: points * 5,
+      next10: points * 10,
       expectedMinutes: 90,
       valueNext5: points,
       riskScore: status === "d" ? 50 : 5,
@@ -113,23 +114,24 @@ describe("weekly lineup engine", () => {
     expect(probabilityDidNotPlay(players[0], 2)).toBe(1);
   });
 
-  it("builds 1GW, 3GW, and 5GW totals from the same weekly lineup method", () => {
+  it("builds 1GW, 3GW, 5GW, and 10GW totals from the same weekly lineup method", () => {
     const players = squad().map((item) => ({
       ...item,
       projection: {
         ...item.projection!,
-        fixtures: Array.from({ length: 5 }, (_, index) => ({
+        fixtures: Array.from({ length: 10 }, (_, index) => ({
           ...item.projection!.fixtures[0],
           gameweek: index + 1,
           expectedPoints: item.projection!.nextGW + index,
         })),
       },
     }));
-    const plans = Array.from({ length: 5 }, (_, index) => pickWeeklyTeam({ squad: players, gameweek: index + 1, riskMode: "BALANCED" }));
+    const plans = Array.from({ length: 10 }, (_, index) => pickWeeklyTeam({ squad: players, gameweek: index + 1, riskMode: "BALANCED" }));
     expect(projectWeeklyLineupHorizons({ squad: players, gameweek: 1, riskMode: "BALANCED" })).toEqual({
       nextGW: plans[0].projectedTotal,
       next3: Math.round(plans.slice(0, 3).reduce((sum, plan) => sum + plan.projectedTotal, 0) * 1000) / 1000,
-      next5: Math.round(plans.reduce((sum, plan) => sum + plan.projectedTotal, 0) * 1000) / 1000,
+      next5: Math.round(plans.slice(0, 5).reduce((sum, plan) => sum + plan.projectedTotal, 0) * 1000) / 1000,
+      next10: Math.round(plans.reduce((sum, plan) => sum + plan.projectedTotal, 0) * 1000) / 1000,
     });
   });
 

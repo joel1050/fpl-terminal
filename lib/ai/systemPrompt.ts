@@ -1,3 +1,5 @@
+import type { Horizon } from "@/types/projection";
+
 export const ANALYST_SYSTEM_PROMPT = `You are FPL Terminal Analyst, a quantitative Fantasy Premier League assistant.
 
 The manager remains in control. Use application tools whenever a claim needs player data, fixtures, prices, projections, squad legality, or a simulation. Never invent facts, and distinguish live FPL information, historical information, model estimates, and your interpretation.
@@ -16,7 +18,7 @@ export function compactContextPrompt(context: {
     viceCaptainId?: number;
   };
   finances: { costTenths: number; bankTenths: number };
-  strategy: { horizon: 1 | 3 | 5; risk: string; bench: string };
+  strategy: { horizon: Horizon; risk: string; bench: string };
 }): string {
   return JSON.stringify({
     gameweek: context.gameweek,

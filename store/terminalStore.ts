@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { PersistentFPLState, Player, Position, SquadState, WeeklyLineupPlan } from "@/types";
+import type { Horizon, PersistentFPLState, Player, Position, SquadState, WeeklyLineupPlan } from "@/types";
 import { isLeagueKey } from "@/lib/leagues/leagueKey";
 import { validateWeeklyLineup } from "@/lib/squad/weeklyLineup";
 
@@ -341,7 +341,7 @@ export type TerminalState = {
   filters: TerminalFilters;
   sortKey: SortKey;
   sortDirection: "asc" | "desc";
-  horizon: 1 | 3 | 5;
+  horizon: Horizon;
   riskMode: RiskMode;
   benchStrategy: BenchStrategy;
   panelRatios: Partial<Record<DesktopPanel, number>>;
@@ -663,7 +663,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       entryId: Number.isSafeInteger(state.entryId) && Number(state.entryId) > 0 ? state.entryId : current.entryId,
       selectedLeagueKey: isLeagueKey(state.selectedLeagueKey) ? state.selectedLeagueKey : current.selectedLeagueKey,
       ...activeState,
-      horizon: state.horizon === 1 || state.horizon === 3 || state.horizon === 5 ? state.horizon : current.horizon,
+      horizon: state.horizon === 1 || state.horizon === 3 || state.horizon === 5 || state.horizon === 10 ? state.horizon : current.horizon,
       riskMode: state.riskMode === "SAFE" || state.riskMode === "BALANCED" || state.riskMode === "AGGRESSIVE" ? state.riskMode : current.riskMode,
       benchStrategy: state.benchStrategy === "CHEAP" || state.benchStrategy === "BALANCED" || state.benchStrategy === "STRONG" ? state.benchStrategy : current.benchStrategy,
       panelRatios: sanitizePanelRatios(state.panelRatios),

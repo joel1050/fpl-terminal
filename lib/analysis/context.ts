@@ -1,12 +1,13 @@
 import type { Player, Position, ProjectionConfidence } from "../../types/player";
 import type { SquadState } from "../../types/squad";
+import type { Horizon } from "../../types/projection";
 import { projectPlayer } from "../projections/projectPlayer";
 
 export type PlayerUniverse = readonly Player[] | ReadonlyMap<number, Player> | Record<string, Player>;
 export type SquadReference = SquadState | readonly number[] | readonly Player[];
 
 export interface AnalysisStrategy {
-  horizon?: 1 | 3 | 5;
+  horizon?: Horizon;
   risk?: "SAFE" | "BALANCED" | "AGGRESSIVE";
   bench?: "CHEAP" | "BALANCED" | "STRONG";
   availability?: "ANY" | "AVAILABLE" | "NAILED";
@@ -64,10 +65,10 @@ export function normalizeSquad(
   return { playerIds, byPosition };
 }
 
-export function horizonValue(player: Player, horizon: 1 | 3 | 5 = 5): number {
+export function horizonValue(player: Player, horizon: Horizon = 5): number {
   const projection = player.projection ?? projectPlayer(player, { horizon });
   if (projection) {
-    const value = horizon === 1 ? projection.nextGW : horizon === 3 ? projection.next3 : projection.next5;
+    const value = horizon === 1 ? projection.nextGW : horizon === 3 ? projection.next3 : horizon === 5 ? projection.next5 : projection.next10;
     if (Number.isFinite(value) && (value > 0 || player.fixtures.length > 0 || player.current.totalPoints === 0)) return Math.max(0, value);
   }
 
@@ -75,7 +76,7 @@ export function horizonValue(player: Player, horizon: 1 | 3 | 5 = 5): number {
   const per90 = player.current.pointsPer90 ??
     (player.current.minutes > 0 ? (player.current.totalPoints / player.current.minutes) * 90 : 0);
   const nextGameweek = Math.max(0, (per90 * Math.max(0, minutes)) / 90);
-  return nextGameweek * (horizon === 1 ? 1 : horizon === 3 ? 3 : 5);
+  return nextGameweek * horizon;
 }
 
 export function nextGameweekValue(player: Player): number {
@@ -109,7 +110,7 @@ export function fixtureDifficulty(player: Player, horizon = 5): number {
 }
 
 export function utilityValue(player: Player, horizon = 5, risk: CommonOptions["risk"] = "BALANCED"): number {
-  const projection = horizonValue(player, horizon as 1 | 3 | 5);
+  const projection = horizonValue(player, horizon as Horizon);
   const minutes = expectedMinutes(player) / 100;
   const confidence = confidenceWeight(player.projection?.confidence);
   const availability = 1 - availabilityRisk(player);

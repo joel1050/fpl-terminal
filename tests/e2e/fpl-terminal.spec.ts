@@ -272,6 +272,8 @@ test.describe("FPL Terminal acceptance", () => {
     const popover = panel.locator(".strategy-popover");
     await expect(popover.getByText(/optimizer settings/i)).toBeVisible();
     await expect(popover.getByText(/^HORIZON$/i)).toBeVisible();
+    const tenGameweek = popover.getByRole("button", { name: "10GW", exact: true });
+    await expect(tenGameweek).toBeVisible();
     await expect(popover.getByText(/^RISK$/i)).toBeVisible();
     await expect(popover.getByText(/^BENCH$/i)).toBeVisible();
   });

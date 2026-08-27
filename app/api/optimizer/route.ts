@@ -14,7 +14,7 @@ const requestSchema = z.object({
   mode: z.enum(["OPTIMIZE", "COMPLETE"]),
   squad: z.array(z.number().int().positive()).max(15),
   lockedPlayerIds: z.array(z.number().int().positive()).max(15),
-  horizon: z.union([z.literal(1), z.literal(3), z.literal(5)]),
+  horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]),
   risk: z.enum(["SAFE", "BALANCED", "AGGRESSIVE"]),
   bench: z.enum(["CHEAP", "BALANCED", "STRONG"]),
 }).strict();

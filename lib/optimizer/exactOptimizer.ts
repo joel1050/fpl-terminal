@@ -13,6 +13,7 @@ import {
   playerMap,
   POSITIONS,
   POSITION_MINIMUMS,
+  horizonValue,
   utilityValue,
 } from "@/lib/analysis/context";
 
@@ -97,7 +98,7 @@ async function solveExact(input: OptimizerInput, fixedIds: readonly number[]): P
     } else {
       bounds.push(`${goalkeeperBench(player.id)} = 0`);
     }
-    const rawHorizon = horizon === 1 ? player.projection?.nextGW : horizon === 3 ? player.projection?.next3 : player.projection?.next5;
+    const rawHorizon = horizonValue(player, horizon);
     const multiplier = rawHorizon && rawHorizon > 0 ? utility / rawHorizon : 0;
     for (const gameweek of gameweeks) {
       const variable = captain(gameweek, player.id);

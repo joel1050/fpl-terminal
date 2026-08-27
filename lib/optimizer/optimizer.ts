@@ -1,6 +1,7 @@
 import type { Player, Position } from "../../types/player";
 import type { SquadState } from "../../types/squad";
 import type { SquadAnalysis } from "../../types/analysis";
+import type { Horizon } from "../../types/projection";
 import { analyzeSquad } from "../analysis/analyzeSquad";
 import {
   asPlayers,
@@ -64,7 +65,7 @@ function failure(ids: readonly number[], errors: string[], players: Map<number, 
 function constructionScore(
   ids: readonly number[],
   players: ReadonlyMap<number, Player>,
-  horizon: 1 | 3 | 5,
+  horizon: Horizon,
   risk: CommonOptions["risk"],
 ): number {
   const goalkeepers = ids

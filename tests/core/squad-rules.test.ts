@@ -80,7 +80,7 @@ describe("deterministic squad rules", () => {
   it("selects exactly one goalkeeper and a legal XI", () => {
     const squad = legalSquad().map((item, index) => ({
       ...item,
-      projection: { playerId: item.id, fixtures: [], nextGW: index, next3: index, next5: index, expectedMinutes: 90, valueNext5: index, riskScore: 0, confidence: "HIGH" as const, factors: [] },
+      projection: { playerId: item.id, fixtures: [], nextGW: index, next3: index, next5: index, next10: index, expectedMinutes: 90, valueNext5: index, riskScore: 0, confidence: "HIGH" as const, factors: [] },
     }));
     const plan = selectStartingXI(squad);
     expect(plan.playerIds).toHaveLength(11);
