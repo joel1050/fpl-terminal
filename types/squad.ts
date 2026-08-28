@@ -17,6 +17,8 @@ export interface PersistentFPLState {
   viceCaptainId?: number;
   benchOrder: number[];
   horizon: Horizon;
+  /** Horizon the transfer suggestions are searched over, chosen on that panel. */
+  transferHorizon: Horizon;
   riskMode: "SAFE" | "BALANCED" | "AGGRESSIVE";
   benchStrategy: "CHEAP" | "BALANCED" | "STRONG";
   excludedPlayerIds: number[];

@@ -14,6 +14,7 @@ const requestSchema = z.object({
   mode: z.enum(["OPTIMIZE", "COMPLETE"]),
   squad: z.array(z.number().int().positive()).max(15),
   lockedPlayerIds: z.array(z.number().int().positive()).max(15),
+  gameweek: z.number().int().min(1).max(38).optional(),
   horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]),
   risk: z.enum(["SAFE", "BALANCED", "AGGRESSIVE"]),
   bench: z.enum(["CHEAP", "BALANCED", "STRONG"]),
@@ -33,10 +34,15 @@ export async function POST(request: Request) {
       loadInSeasonPlayerRates(normalized.fixtures),
     ]);
     const players = enrichPlayersWithHistory(normalized.players, normalized.teams, normalized.events, historical, inSeasonForm, playerForm).players;
+    const gameweek = parsed.data.gameweek
+      ?? normalized.events.find((event) => event.isCurrent)?.id
+      ?? normalized.events.find((event) => event.isNext)?.id
+      ?? 1;
     const input = {
       players,
       squad: parsed.data.squad,
       lockedPlayerIds: parsed.data.lockedPlayerIds,
+      gameweek,
       horizon: parsed.data.horizon,
       risk: parsed.data.risk,
       bench: parsed.data.bench,

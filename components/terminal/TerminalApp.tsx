@@ -265,9 +265,9 @@ export function normalizeBootstrap(value: unknown): Bootstrap {
     .filter((player): player is TerminalPlayer => player !== null)
     .map((player) => ({ ...player, projection: player.projection && (player.projection.nextGW || player.projection.next3 || player.projection.next5 || player.projection.next10) ? player.projection : projectPlayer(player, { currentGameweek: 1, horizon: 5 }) }));
   const events = arrayOf(readField(root, "events", "event")).length ? arrayOf(readField(root, "events", "event")) : arrayOf(readField(data, "events", "event"));
-  const currentEvent = events.map(objectOf).find((event): event is UnknownRecord => Boolean(event && (event.is_current === true || event.is_next === true)));
+  const currentEvent = events.map(objectOf).find((event): event is UnknownRecord => Boolean(event && (event.isCurrent === true || event.is_current === true || event.isNext === true || event.is_next === true)));
   const gameweek = numberOf(readField(root, "gameweek", "currentGameweek", "current_gameweek")) ?? numberOf(readField(data, "gameweek", "currentGameweek", "current_gameweek")) ?? numberOf(readField(metadata, "currentGameweek", "current_gameweek", "gameweek")) ?? numberOf(currentEvent ? readField(currentEvent, "id", "event") : undefined) ?? null;
-  const deadline = stringOf(readField(root, "deadline", "nextDeadline", "next_deadline")) ?? stringOf(readField(data, "deadline", "nextDeadline")) ?? stringOf(currentEvent ? readField(currentEvent, "deadline_time") : undefined) ?? null;
+  const deadline = stringOf(readField(root, "deadline", "deadlineTime", "nextDeadline", "next_deadline")) ?? stringOf(readField(data, "deadline", "deadlineTime", "nextDeadline")) ?? stringOf(currentEvent ? readField(currentEvent, "deadlineTime", "deadline_time") : undefined) ?? null;
   return { players, gameweek, deadline, source: stringOf(readField(root, "source", "dataSource")) ?? stringOf(readField(data, "source")) ?? null, freshness: "LIVE", fetchedAt: null };
 }
 
@@ -552,7 +552,7 @@ export default function TerminalApp() {
     const state = useTerminalStore.getState();
     if (!state.isHydrated) return;
     window.localStorage.setItem("fpl-terminal-state", JSON.stringify(exportTerminalState(state)));
-  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.mode, store.entryId, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys]);
+  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.mode, store.entryId, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.transferHorizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -620,7 +620,7 @@ export default function TerminalApp() {
     .map((weakness) => playerById.get(weakness.playerId))
     .filter((player): player is TerminalPlayer => Boolean(player)), [playerById, squadAnalysis.weaknesses]);
   const transferRequestKey = selected.length === 15
-    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.horizon}|${store.riskMode}|${planningGameweek}`
+    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.transferHorizon}|${store.riskMode}|${planningGameweek}`
     : "";
   useEffect(() => {
     if (!transferRequestKey) return;
@@ -632,7 +632,7 @@ export default function TerminalApp() {
       body: JSON.stringify({
         squad: store.playerIds,
         lockedPlayerIds: store.lockedPlayerIds,
-        horizon: store.horizon,
+        horizon: store.transferHorizon,
         risk: store.riskMode,
         gameweek: planningGameweek,
       }),
@@ -645,7 +645,7 @@ export default function TerminalApp() {
       setTransferSearch({ key: transferRequestKey, suggestions: [], state: "ERROR", message: error instanceof Error ? error.message : "Exact transfer search failed" });
     });
     return () => controller.abort();
-  }, [planningGameweek, store.horizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
+  }, [planningGameweek, store.transferHorizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
   const dismissedTransferKeys = new Set(store.dismissedTransferKeys);
   const transferSuggestions = transferRequestKey && transferSearch.key === transferRequestKey
     ? transferSearch.suggestions.filter((move) => !dismissedTransferKeys.has(`${move.outgoingPlayerId}:${move.incomingPlayerId}`))
@@ -729,6 +729,7 @@ export default function TerminalApp() {
           mode: complete ? "COMPLETE" : "OPTIMIZE",
           squad: store.playerIds,
           lockedPlayerIds: store.lockedPlayerIds,
+          gameweek: planningGameweek,
           horizon: store.horizon,
           risk: store.riskMode,
           bench: store.benchStrategy,
@@ -862,7 +863,7 @@ export default function TerminalApp() {
       outId,
       inId,
       gameweek: planningGameweek,
-      horizon: store.horizon,
+      horizon: store.transferHorizon,
       risk: store.riskMode,
       bench: store.benchStrategy,
     });
@@ -884,7 +885,7 @@ export default function TerminalApp() {
       outId: outgoing.id,
       inId: incoming.id,
       gameweek: planningGameweek,
-      horizon: store.horizon,
+      horizon: store.transferHorizon,
       risk: store.riskMode,
       bench: store.benchStrategy,
     });
@@ -1078,12 +1079,11 @@ export default function TerminalApp() {
         <WorkspaceSwitcher />
         <div className="topbar-stats" aria-label="Terminal status">
           <StatusCell label="GW" value={data.gameweek ? String(data.gameweek) : "—"} />
-          <StatusCell label="DEADLINE" value={data.deadline ? formatDeadline(data.deadline) : "—"} />
-          <StatusCell label="DATA" value={status === "LIVE" ? "LIVE" : status === "SNAPSHOT" ? "SNAPSHOT" : status === "STALE" ? "STALE" : status === "SYNCING" ? "SYNC" : "OFFLINE"} tone={status === "LIVE" ? "green" : status === "ERROR" ? "red" : "amber"} />
-          <StatusCell label="UPDATED" value={data.fetchedAt ? relativeAge(data.fetchedAt) : "—"} />
-          <StatusCell label="ITB" value={money(1000 - spent)} tone={spent > 1000 ? "red" : "amber"} />
+          <DeadlineStatus deadline={data.deadline} />
+          <StatusCell label="DATA" value={`${status === "LIVE" ? "● LIVE" : status === "SNAPSHOT" ? "● SNAPSHOT" : status === "STALE" ? "● STALE" : status === "SYNCING" ? "● SYNC" : "● OFFLINE"}${data.fetchedAt ? ` · ${relativeAge(data.fetchedAt)}` : ""}`} tone={status === "LIVE" ? "green" : status === "ERROR" ? "red" : "amber"} />
+          <StatusCell label="ITB" value={money(1000 - spent)} tone={spent > 1000 ? "red" : undefined} />
           <StatusCell label="5GW xP" value={points(projected.next5)} tone="cyan" />
-          <StatusCell label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} />
+          <StatusCell label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} tone={risk === undefined ? undefined : risk < 30 ? "green" : risk < 60 ? "amber" : "red"} />
         </div>
         <div className="topbar-actions"><button className="text-button" onClick={refresh}>REFRESH</button><button className="text-button" onClick={() => exportState(store)}>EXPORT</button><button className="text-button" onClick={() => importRef.current?.click()}>IMPORT</button><button className="text-button danger-text" onClick={reset}>RESET</button><input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, store)} /></div>
       </header>
@@ -1116,7 +1116,7 @@ export default function TerminalApp() {
             <section className="bench-section" aria-label="Bench"><div className="lineup-roster-heading"><span>BENCH</span><span>BGK · B1 · B2 · B3</span></div><div className="slot-grid bench-slot-grid">{benchSlots.map((slot) => { const player = slot.id ? playerById.get(slot.id) : undefined; return player ? renderSquadPlayer(player, false, slot.label) : <EmptySlot key={slot.label} position={slot.position} maxPriceTenths={slotMaxPrices[slot.position]} onChoose={() => choosePlayer(slot.position)} />; })}</div></section>
           </div>
           <MetricStrip spent={spent} projected={projected} risk={risk} />
-          <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} playerById={playerById} onSimulate={simulateMove} onDismiss={store.dismissTransferSuggestion} />
+          <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} playerById={playerById} onSimulate={simulateMove} onDismiss={store.dismissTransferSuggestion} />
           {simulation && simulationMove && <div className="squad-overlay"><SimulationPanel result={simulation} move={simulationMove} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMove(null); }} /></div>}
           <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
         </section>
@@ -1166,6 +1166,18 @@ function TeamImportScreen({ players, gameweek, onImport, onBack }: { players: Te
 }
 
 function StatusCell({ label, value, tone }: { label: string; value: string; tone?: "amber" | "green" | "red" | "cyan" }) { return <div className="status-cell"><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
+
+function DeadlineStatus({ deadline }: { deadline: string | null }) {
+  const [countingDown, setCountingDown] = useState(false);
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (!countingDown) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, [countingDown]);
+  if (!deadline) return <StatusCell label="DEADLINE" value="—" />;
+  return <button type="button" className="status-cell status-cell-button" aria-pressed={countingDown} title={countingDown ? "Show deadline date" : "Show deadline countdown"} onClick={() => { setNow(Date.now()); setCountingDown((value) => !value); }}><span>DEADLINE</span><strong>{countingDown ? formatDeadlineCountdown(deadline, now) : formatDeadline(deadline)}</strong></button>;
+}
 
 function PanelToggle({ panel, collapsed, onToggle }: { panel: DesktopPanel; collapsed: boolean; onToggle: () => void }) {
   return <button type="button" className="panel-collapse" aria-expanded={!collapsed} aria-controls={`terminal-panel-${panel}`} aria-label={`${collapsed ? "Expand" : "Minimize"} ${PANEL_LABELS[panel]}`} onClick={onToggle}>{collapsed ? "+" : "−"}</button>;
@@ -1228,8 +1240,8 @@ function MetricStrip({ spent, projected, risk }: { spent: number; projected: { n
 
 function StrategyControls({ horizon, riskMode, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; riskMode: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; riskMode?: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">RISK</span><div className="segmented">{(["SAFE", "BALANCED", "AGGRESSIVE"] as const).map((value) => <button key={value} className={riskMode === value ? "active" : ""} onClick={() => setStrategy({ riskMode: value })}>{value.slice(0, 4)}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value.slice(0, 4)}</button>)}</div></div></div>; }
 
-function TransferSuggestionsPanel({ suggestions, state, message, playerById, onSimulate, onDismiss }: { suggestions: SingleTransferSuggestion[]; state: "INCOMPLETE" | "LOADING" | "READY" | "ERROR"; message: string | null; playerById: Map<number, TerminalPlayer>; onSimulate: (outId: number, inId: number) => void; onDismiss: (outId: number, inId: number) => void }) {
-  return <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions"><div className="subsection-head"><div><span className="section-kicker">TRANSFER SUGGESTIONS</span><span className="panel-count">EXACT</span></div></div><div className="replacement-scroll">{suggestions.length ? suggestions.map((suggestion) => {
+function TransferSuggestionsPanel({ suggestions, state, message, horizon, onHorizon, playerById, onSimulate, onDismiss }: { suggestions: SingleTransferSuggestion[]; state: "INCOMPLETE" | "LOADING" | "READY" | "ERROR"; message: string | null; horizon: 1 | 3 | 5 | 10; onHorizon: (horizon: 1 | 3 | 5 | 10) => void; playerById: Map<number, TerminalPlayer>; onSimulate: (outId: number, inId: number) => void; onDismiss: (outId: number, inId: number) => void }) {
+  return <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions"><div className="subsection-head"><div><span className="section-kicker">TRANSFER SUGGESTIONS</span><span className="panel-count">EXACT</span></div><div className="segmented transfer-horizon" role="group" aria-label="Transfer suggestion horizon">{([1, 3, 5, 10] as const).map((value) => <button key={value} type="button" className={horizon === value ? "active" : ""} aria-pressed={horizon === value} onClick={() => onHorizon(value)}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div className="replacement-scroll">{suggestions.length ? suggestions.map((suggestion) => {
     const outgoing = playerById.get(suggestion.outgoingPlayerId);
     const incoming = playerById.get(suggestion.incomingPlayerId);
     const outgoingName = outgoing?.displayName ?? `Player ${suggestion.outgoingPlayerId}`;
@@ -1363,6 +1375,18 @@ function selectionSourceLabel(selection: PlayerSelection): string {
   return [sources.some((item) => item.startsWith("ROTOWIRE")) ? "RotoWire" : "", sources.includes("HISTORICAL_STARTS") ? "history" : "", sources.includes("FPL_STATUS") ? "FPL" : ""].filter(Boolean).join(" + ") || "model estimate";
 }
 function formatDeadline(value: string): string { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); }
+export function formatDeadlineCountdown(value: string, now = Date.now()): string {
+  const deadline = Date.parse(value);
+  if (!Number.isFinite(deadline)) return "—";
+  const totalSeconds = Math.max(0, Math.ceil((deadline - now) / 1_000));
+  if (totalSeconds === 0) return "CLOSED";
+  const days = Math.floor(totalSeconds / 86_400);
+  const hours = Math.floor(totalSeconds % 86_400 / 3_600);
+  const minutes = Math.floor(totalSeconds % 3_600 / 60);
+  const seconds = totalSeconds % 60;
+  const clock = [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":");
+  return days ? `${days}d ${clock}` : clock;
+}
 function relativeAge(value: string): string { const elapsed = Math.max(0, Date.now() - Date.parse(value)); if (!Number.isFinite(elapsed)) return "—"; const minutes = Math.floor(elapsed / 60000); return minutes < 1 ? "<1m" : `${minutes}m ago`; }
 
 function exportState(state: ReturnType<typeof useTerminalStore.getState>) { const blob = new Blob([JSON.stringify(exportTerminalState(state), null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "fpl-terminal-state.json"; anchor.click(); URL.revokeObjectURL(url); }

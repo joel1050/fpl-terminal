@@ -155,6 +155,52 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("region", { name: /squad builder and analysis/i }).getByTestId("squad-roster")).toContainText(/Saka/i);
   });
 
+  test("searches the chosen transfer horizon and remembers it", async ({ page }) => {
+    const horizons: number[] = [];
+    page.on("request", (request) => {
+      if (!request.url().includes("/api/transfer-suggestions") || request.method() !== "POST") return;
+      horizons.push(JSON.parse(request.postData() ?? "{}").horizon);
+    });
+    await chooseMode(page, /analyze (?:a )?team/i);
+    await waitForMarket(page);
+
+    const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
+    const toggles = replacements.getByRole("group", { name: /transfer suggestion horizon/i });
+    await expect(toggles).toBeVisible();
+    for (const label of ["GW", "3GW", "5GW", "10GW"]) {
+      await expect(toggles.getByRole("button", { name: label, exact: true })).toBeVisible();
+    }
+    await expect(toggles.getByRole("button", { name: "5GW", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(() => horizons).toEqual([5]);
+
+    await toggles.getByRole("button", { name: "10GW", exact: true }).click();
+    await expect(toggles.getByRole("button", { name: "10GW", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(() => horizons).toEqual([5, 10]);
+
+    await toggles.getByRole("button", { name: "GW", exact: true }).click();
+    await expect.poll(() => horizons).toEqual([5, 10, 1]);
+
+    await page.reload();
+    await waitForMarket(page);
+    const reloaded = page.getByRole("region", { name: /^transfer suggestions$/i }).getByRole("group", { name: /transfer suggestion horizon/i });
+    await expect(reloaded.getByRole("button", { name: "GW", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(() => horizons.at(-1)).toBe(1);
+  });
+
+  test("keeps the transfer horizon toggles on-screen on a phone", async ({ page }) => {
+    await chooseMode(page, /analyze (?:a )?team/i);
+    await waitForMarket(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const toggles = page.getByRole("region", { name: /^transfer suggestions$/i }).getByRole("group", { name: /transfer suggestion horizon/i });
+    await expect(toggles).toBeVisible();
+    const box = await toggles.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+    await expect(toggles.getByRole("button", { name: "10GW", exact: true })).toBeVisible();
+  });
+
   test("dismisses a transfer suggestion across reloads", async ({ page }) => {
     let suggestionRequests = 0;
     page.on("request", (request) => { if (request.url().includes("/api/transfer-suggestions")) suggestionRequests += 1; });

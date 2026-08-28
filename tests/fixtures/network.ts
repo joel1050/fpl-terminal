@@ -86,6 +86,8 @@ export async function interceptFplData(page: Page) {
 export interface LeaguesInterceptOptions {
   /** Makes every live poll after the first fail, as a flaky FPL would. */
   failLiveAfterFirstPoll?: boolean;
+  /** Marks GW2 current while its live endpoint is still empty. */
+  emptyCurrentGameweek?: boolean;
 }
 
 export async function interceptLeaguesData(page: Page, options: LeaguesInterceptOptions = {}) {
@@ -261,12 +263,23 @@ export async function interceptLeaguesData(page: Page, options: LeaguesIntercept
       route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
     if (pathname === "/api/fpl/bootstrap") {
-      await fulfill({ data: bootstrapStaticFixture, freshness: null });
+      await fulfill({
+        data: options.emptyCurrentGameweek ? {
+          ...bootstrapStaticFixture,
+          currentGameweek: 2,
+          deadlineTime: "2026-08-29T10:00:00Z",
+          events: [
+            { id: 1, isCurrent: false, isNext: false, deadlineTime: "2026-08-22T10:00:00Z" },
+            { id: 2, isCurrent: true, isNext: true, deadlineTime: "2026-08-29T10:00:00Z" },
+          ],
+        } : bootstrapStaticFixture,
+        freshness: null,
+      });
       return;
     }
 
     if (pathname === "/api/fpl/fixtures") {
-      await fulfill({ data: leaguesFixtures, freshness: null });
+      await fulfill({ data: options.emptyCurrentGameweek && new URL(url).searchParams.get("gameweek") === "2" ? [] : leaguesFixtures, freshness: null });
       return;
     }
 
@@ -274,6 +287,10 @@ export async function interceptLeaguesData(page: Page, options: LeaguesIntercept
       liveCalls += 1;
       if (options.failLiveAfterFirstPoll && liveCalls > 1) {
         await fulfill({ data: null, errors: ["FPL returned HTTP 503"] }, 503);
+        return;
+      }
+      if (options.emptyCurrentGameweek && pathname.endsWith("/2")) {
+        await fulfill({ data: { gameweek: 2, elements: [] }, freshness: null });
         return;
       }
       await fulfill({ data: { gameweek: 1, elements: buildElements(liveCalls > 1) }, freshness: null });
@@ -339,4 +356,3 @@ export async function interceptLeaguesData(page: Page, options: LeaguesIntercept
     await route.continue();
   });
 }
-

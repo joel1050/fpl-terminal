@@ -15,8 +15,13 @@ export interface Variant {
   attackRatioClamp: readonly [number, number];
   /** Clamp on the final attack and defence multipliers. */
   multiplierClamp: readonly [number, number];
-  /** Clean sheets from the 5x5 tier table, or from a continuous Poisson lambda. */
-  cleanSheet: "TABLE" | "POISSON";
+  /**
+   * Clean sheets from the 5x5 tier table snapped to the nearest cell, from the
+   * same table read continuously, or from a continuous Poisson lambda.
+   * BILINEAR interpolates inside the grid and stops at the end rungs;
+   * BILINEAR_OPEN carries the edge gradient past them.
+   */
+  cleanSheet: "TABLE" | "BILINEAR" | "BILINEAR_OPEN" | "POISSON";
   /** League average goals conceded, the Poisson scale. */
   leagueAverageGoals: number;
   /** Save volume scales with the derived lambda, or with the opponent's attack. */
@@ -67,6 +72,29 @@ const cleanSheetProbabilities = {
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
+}
+
+const TIER_STEP = 0.08;
+
+/**
+ * Reads the market table at an arbitrary point instead of snapping to a cell.
+ * `open` decides what happens outside 0.84-1.16: false stops at the end rung,
+ * true carries the edge gradient onwards, held inside [-3, 7] so one freak
+ * strength cannot run the extrapolation off a cliff.
+ */
+function interpolatedCleanSheet(isHome: boolean, ownDefence: number, opponentAttack: number, open: boolean): number {
+  const grid = cleanSheetProbabilities[isHome ? "home" : "away"];
+  const position = (value: number) => (open
+    ? clamp((value - consensusStrengthTiers[0]) / TIER_STEP, -3, 7)
+    : clamp((value - consensusStrengthTiers[0]) / TIER_STEP, 0, 4));
+  const r = position(ownDefence), c = position(opponentAttack);
+  const r0 = clamp(Math.floor(r), 0, 3), c0 = clamp(Math.floor(c), 0, 3);
+  const fr = r - r0, fc = c - c0;
+  return clamp(
+    grid[r0][c0] * (1 - fr) * (1 - fc) + grid[r0 + 1][c0] * fr * (1 - fc)
+      + grid[r0][c0 + 1] * (1 - fr) * fc + grid[r0 + 1][c0 + 1] * fr * fc,
+    0.02, 0.9,
+  );
 }
 
 function nearestStrengthTier(value: number): number {
@@ -123,8 +151,10 @@ export function adjust(
         cleanSheetProbability = clamp(Math.exp(-expectedGoalsAgainst), 0.02, 0.9);
       } else {
         expectedGoalsAgainst *= Math.pow(clamp(opponentAttack / ownDefence, 0.55, 1.8), 1.5);
-        cleanSheetProbability = cleanSheetProbabilities[fixture.isHome ? "home" : "away"]
-          [nearestStrengthTier(ownDefence)][nearestStrengthTier(opponentAttack)];
+        cleanSheetProbability = variant.cleanSheet === "TABLE"
+          ? cleanSheetProbabilities[fixture.isHome ? "home" : "away"]
+            [nearestStrengthTier(ownDefence)][nearestStrengthTier(opponentAttack)]
+          : interpolatedCleanSheet(fixture.isHome, ownDefence, opponentAttack, variant.cleanSheet === "BILINEAR_OPEN");
       }
     }
   } else if (variant.useDifficultyBase) {

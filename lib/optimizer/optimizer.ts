@@ -21,6 +21,8 @@ import {
 } from "../analysis/context";
 
 export interface OptimizerInput extends CommonOptions {
+  /** Gameweek the squad is being planned for; defaults to the first projected one. */
+  gameweek?: number;
   players?: PlayerUniverse;
   playerPool?: PlayerUniverse;
   squad?: SquadReference;

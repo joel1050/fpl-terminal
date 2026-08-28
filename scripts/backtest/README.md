@@ -64,6 +64,11 @@ calling anything a defect.
 | Bonus follows the fixture | **Adopt.** RMSE -0.0033 for GK/DEF, interval excluding zero. Closes most of the forward fixture swing (0.73 → 1.01 against an observed 1.07). `run.ts`, `fwd-swing.ts` |
 | Outer multiplier clamp 0.7–1.3 → 0.55–1.6 | **Adopt on calibration, not accuracy.** RMSE unchanged (+0.0006, ns). But it bound on 14% of forward-fixtures and pinned 11 of Haaland's 30 onto one ceiling. `fwd-swing.ts` |
 | RotoWire precedence over correlated FPL flags | **Not backtestable** — no RotoWire archive for a past season. Held by `tests/data/rotowire-precedence.test.ts`. |
+| Defensive contributions rise against a stronger attack | **Reject.** The plausible mechanism is real and the term still gets worse: DEF xP RMSE +0.0078 at half strength and **+0.0258 at full, interval excluding zero**. `run.ts` |
+| Re-tuning the defensive-contribution dispersion | **Reject, keep 8.** Swept 3, 5, 12, 20 and 1000: every value is inside the noise and the Poisson end (1000) is the worst of them. The assumed 8 sits at the optimum. `run.ts` |
+| Defender bonus following the clean sheet instead of the attack | **Reject.** +0.0015 following the clean sheet, +0.0008 following both, neither resolving. The mechanism story favours the defensive side; the measurement does not, so the shipped attacking multiplier stays. `run.ts` |
+| Scaling down the weak end of the clean-sheet table | **Reject.** Fitting a scale on the tier-1 rows helps in-sample (0.18403 → 0.18366) and **hurts out of sample** (0.18410), improving 3 folds of 5. Per team-fixture the tier-1 miss is +0.063 [-0.027, 0.144] and the tier-1 defender bias +0.185 [-0.610, 0.820]. `cs-fit.ts`, `cs-tiers.ts` |
+| Interpolating the clean-sheet table | **Reject.** Reading the same 5×5 table continuously rather than snapping to a cell: Brier -0.0001 on the event itself and xP RMSE **+0.0019 for GK/DEF**, both intervals spanning zero. Extrapolating past the grid as well is directionally better but cannot be resolved: [-0.0201, +0.0141]. `cleansheets.ts`, `run.ts` |
 
 `anchor.ts` also settled an earlier question: the large attacker bias reported
 before it was mostly the harness falling back to a position prior, not a model
@@ -95,6 +100,29 @@ test: with strengths built only from earlier gameweeks, the top band runs 0.326
 actual against 0.331 predicted. The earlier figure was an artefact of giving the
 model hindsight strengths, which made the best defence look more extreme than it
 was ever predictable to be.
+
+**Nothing in sections 7 or 8 measurably improves a defender.** Every candidate
+above was tested and rejected, and the component table says why: appearance is
+1.774 of a defender's 3.109 expected points and comes from the minutes model,
+which sections 7 and 8 never touch. Clean sheets and goals conceded are 1.161
+more and both read a table that survives every test aimed at it. That leaves
+0.588 of attacking points and 0.426 of defensive contributions to argue over.
+
+A caution on the two weak-end findings that pointed the other way. `position.ts`
+reports +0.474 [+0.072, +0.940] for defender rows below the grid, and the
+bottom band of `cleansheets.ts` shows 0.152 actual against 0.208 predicted.
+Neither survives contact with `cs-fit.ts`, which is the decisive test: an actual
+fitted correction, scored on gameweeks it never saw, loses. Prefer that result.
+Fitting the weak end of one season's table is fitting one season's noise.
+
+Snapping is not the reason weak defences are over-projected. 36.4% of defender
+rows have one side pinned to an end rung and the whole season yields only 27
+distinct clean-sheet probabilities, which looks like a resolution problem and is
+not one. The bottom band of defences keeps a clean sheet 0.152 of the time
+against 0.208 predicted; interpolation moves that to 0.206 and extrapolation to
+0.192, while extrapolation overshoots the top band from 0.331 to 0.382 against
+an actual 0.326. The table is the wrong shape at the weak end, not too coarse,
+so reading it more precisely reads the same error more precisely.
 
 One season, 9,972 player-rows and 660 team-fixtures. The minimum detectable
 effect is about ±0.0007 RMSE on xP and ±0.0025 Brier on clean sheets. Several

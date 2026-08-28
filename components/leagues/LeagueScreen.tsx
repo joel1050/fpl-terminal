@@ -393,9 +393,9 @@ export default function LeagueScreen() {
   }, [data, rememberLeague]);
 
   useEffect(() => {
-    if (!isHydrated || gameweek === null) return;
-    initializeGameweek(gameweek);
-  }, [gameweek, initializeGameweek, isHydrated]);
+    if (!isHydrated || data.currentGameweek === null) return;
+    initializeGameweek(data.currentGameweek);
+  }, [data.currentGameweek, initializeGameweek, isHydrated]);
 
   useEffect(() => {
     if (!isHydrated) return;

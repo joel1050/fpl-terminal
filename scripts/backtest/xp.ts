@@ -138,6 +138,15 @@ export function playerRates(
 export type Rates = ReturnType<typeof playerRates>;
 
 /** Expected points for one fixture at a known minutes figure. */
+export interface DefenceExperiments {
+  /** Negative-binomial dispersion for the defensive-contribution threshold. */
+  dispersion?: number;
+  /** Whether defensive contributions rise against a stronger attack. */
+  defConEnvironment?: "FLAT" | "HALF_PRESSURE" | "PRESSURE";
+  /** Which side of the fixture a player's bonus follows. */
+  bonusEnvironment?: "FLAT" | "ATTACK" | "DEFENCE" | "BOTH";
+}
+
 export function expectedPoints(
   player: Player,
   fixture: PlayerFixture,
@@ -153,7 +162,22 @@ export function expectedPoints(
   assistConversion: Record<Position, number> = ASSIST_CONVERSION,
   /** Experiment: scale xG to the rate goals are actually scored. */
   goalConversion: Record<Position, number> = GOAL_CONVERSION,
+  /** Experiments aimed at the two defender terms that carry no fixture signal. */
+  defence: DefenceExperiments = {},
 ): ProjectionComponents {
+  const {
+    // distributions.ts documents 8 as an assumption, not a fitted value: the
+    // ingest keeps season totals only, so there is nothing to fit it against.
+    // A higher number is closer to a Poisson, a lower one more spread out.
+    dispersion = 8,
+    // A defender making clearances and blocks does more of it against a strong
+    // attack, but the term is currently identical in every fixture.
+    defConEnvironment = "FLAT",
+    // Where a defender's bonus comes from. Shipped behaviour scales it by the
+    // attacking multiplier, but a defender's BPS is mostly clean sheets and
+    // defensive actions.
+    bonusEnvironment = bonusFollowsFixture ? "ATTACK" : "FLAT",
+  } = defence;
   const a = adjust(fixture, {
     position: player.position,
     ownTeam: strengths[player.teamId],
@@ -178,12 +202,27 @@ export function expectedPoints(
   if (player.position === "GK") {
     c.saves += expectedFloorDivision(rates.saves * minutesShare * a.savesEnvironment, SAVES_PER_POINT);
   }
+  // How much harder than average this fixture is defensively. 0.256 is the
+  // league clean-sheet rate over 2025/26, so an average fixture scores 1.
+  const defencePressure = clamp(0.256 / clamp(a.cleanSheetProbability, 0.02, 0.9), 0.55, 1.6);
+  const defenceEase = clamp(clamp(a.cleanSheetProbability, 0.02, 0.9) / 0.256, 0.55, 1.6);
   const threshold = DEFENSIVE_CONTRIBUTION_THRESHOLD[player.position];
   if (threshold > 0) {
+    const environment = defConEnvironment === "PRESSURE" ? defencePressure
+      : defConEnvironment === "HALF_PRESSURE" ? 1 + (defencePressure - 1) / 2
+      : 1;
     c.defensiveContribution += DEFENSIVE_CONTRIBUTION_POINTS
-      * thresholdProbability(rates.defensiveContribution * minutesShare, threshold);
+      * thresholdProbability(rates.defensiveContribution * minutesShare * environment, threshold, dispersion);
   }
-  c.bonus += rates.bonus * minutesShare * (bonusFollowsFixture ? a.attackMultiplier : 1);
+  const defensive = player.position === "GK" || player.position === "DEF";
+  const bonusMultiplier = bonusEnvironment === "FLAT" ? 1
+    : bonusEnvironment === "ATTACK" ? a.attackMultiplier
+    // A defender's bonus follows the clean sheet; everyone else keeps the
+    // attacking multiplier, which is where their BPS comes from.
+    : defensive && bonusEnvironment === "DEFENCE" ? defenceEase
+    : defensive && bonusEnvironment === "BOTH" ? Math.sqrt(a.attackMultiplier * defenceEase)
+    : a.attackMultiplier;
+  c.bonus += rates.bonus * minutesShare * bonusMultiplier;
   if (cards) {
     c.cards -= YELLOW_CARD_POINTS * (1 - Math.exp(-rates.yellowCards * minutesShare))
       + RED_CARD_POINTS * (1 - Math.exp(-rates.redCards * minutesShare));

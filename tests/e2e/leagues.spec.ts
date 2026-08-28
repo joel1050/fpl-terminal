@@ -110,6 +110,15 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(page.getByTestId("live-roster")).toBeVisible();
   });
 
+  test("shows the latest available gameweek while the new live endpoint is empty", async ({ page }) => {
+    await interceptLeaguesData(page, { emptyCurrentGameweek: true });
+    await importTeam(page);
+
+    await expect(page.locator(".topbar-stats")).toContainText("GW1");
+    await expect(page.locator(".live-notice")).toHaveCount(0);
+    await expect(page.getByTestId("live-roster")).toBeVisible();
+  });
+
   test("renders a centered roster with opponent tags, xP versus P, and real captaincy markers only", async ({ page }) => {
     await importTeam(page);
 

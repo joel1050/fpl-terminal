@@ -81,6 +81,8 @@ export interface NormalizedBootstrap {
   teams: NormalizedTeam[];
   players: Player[];
   fixtures: NormalizedFixture[];
+  currentGameweek?: number;
+  deadlineTime?: string;
   totalPlayers?: number;
 }
 
@@ -268,20 +270,28 @@ export function normalizeBootstrap(
 ): NormalizedBootstrap {
   const teams = teamMap(payload.teams);
   const fixtures = normalizeFixtures(fixturesPayload, payload.teams);
+  const events = payload.events.map((event) => ({
+    id: event.id,
+    name: event.name ?? `Gameweek ${event.id}`,
+    deadlineTime: event.deadline_time ?? undefined,
+    finished: event.finished ?? false,
+    isCurrent: event.is_current ?? false,
+    isNext: event.is_next ?? false,
+  }));
+  const markedCurrent = events.find((event) => event.isCurrent) ?? events.find((event) => event.isNext) ?? events.find((event) => !event.finished);
+  const markedFixtures = fixtures.filter((fixture) => fixture.gameweek === markedCurrent?.id);
+  const currentEvent = markedCurrent && markedFixtures.length > 0 && markedFixtures.every((fixture) => fixture.finished)
+    ? events.find((event) => event.id > markedCurrent.id && !event.finished) ?? markedCurrent
+    : markedCurrent;
   const seasonStarted = fixtures.some((fixture) => fixture.started || fixture.finished) ||
     payload.events.some((event) => event.finished || event.is_current || event.is_previous);
   return {
-    events: payload.events.map((event) => ({
-      id: event.id,
-      name: event.name ?? `Gameweek ${event.id}`,
-      deadlineTime: event.deadline_time ?? undefined,
-      finished: event.finished ?? false,
-      isCurrent: event.is_current ?? false,
-      isNext: event.is_next ?? false,
-    })),
+    events: events.map((event) => ({ ...event, isCurrent: event.id === currentEvent?.id })),
     teams: [...teams.values()],
     players: payload.elements.map((player) => normalizePlayer(player, teams, fixtures, seasonStarted)),
     fixtures,
+    currentGameweek: currentEvent?.id,
+    deadlineTime: currentEvent?.deadlineTime,
     totalPlayers: payload.total_players,
   };
 }

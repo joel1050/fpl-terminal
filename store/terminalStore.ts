@@ -209,6 +209,9 @@ function planFromState(state: Pick<TerminalState, "planningGameweek" | "playerId
   };
 }
 
+function validHorizon(value: unknown): value is Horizon {
+  return value === 1 || value === 3 || value === 5 || value === 10;
+}
 function savePlan(plans: Record<number, GameweekPlanSnapshot>, plan: GameweekPlanSnapshot): Record<number, GameweekPlanSnapshot> {
   const clean = sanitizePlan(plan, plan.gameweek);
   return clean ? { ...plans, [plan.gameweek]: clean } : { ...plans };
@@ -342,6 +345,7 @@ export type TerminalState = {
   sortKey: SortKey;
   sortDirection: "asc" | "desc";
   horizon: Horizon;
+  transferHorizon: Horizon;
   riskMode: RiskMode;
   benchStrategy: BenchStrategy;
   panelRatios: Partial<Record<DesktopPanel, number>>;
@@ -361,7 +365,7 @@ export type TerminalState = {
   replaceSquad: (squad: SquadState, lineup: ApplyLineupInput, entryId: number) => boolean;
   toggleLock: (id: number) => void;
   setSelectedPlayer: (id?: number) => void;
-  setStrategy: (strategy: Partial<Pick<TerminalState, "horizon" | "riskMode" | "benchStrategy">>) => void;
+  setStrategy: (strategy: Partial<Pick<TerminalState, "horizon" | "transferHorizon" | "riskMode" | "benchStrategy">>) => void;
   setPanelRatios: (ratios: Partial<Record<DesktopPanel, number>>) => void;
   setSelectedLeagueKey: (key: string) => void;
   dismissTransferSuggestion: (outgoingId: number, incomingId: number) => void;
@@ -410,6 +414,7 @@ const initial = {
   sortKey: "nextGW" as SortKey,
   sortDirection: "desc" as const,
   horizon: 5 as const,
+  transferHorizon: 5 as const,
   riskMode: "BALANCED" as const,
   benchStrategy: "BALANCED" as const,
   panelRatios: {},
@@ -654,7 +659,10 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const nextPlans = hasPlans
       ? savePlan(plans, persistedPlan ?? planFromState({ ...current, ...activeState, planningGameweek }, planningGameweek))
       : hasSquad && incomingSquad
-        ? { [planningGameweek]: planFromState({ ...current, ...activeState, planningGameweek }, planningGameweek) }
+        // A new squad replaces the plan for the gameweek being planned. Plans
+        // saved for other gameweeks survive, and the snapshot keeps any stale
+        // lineup metadata so the UI can still flag it as outdated.
+        ? { ...current.gameweekPlans, [planningGameweek]: planFromState({ ...current, ...activeState, planningGameweek }, planningGameweek) }
         : current.gameweekPlans;
     set({
       currentGameweek,
@@ -663,7 +671,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       entryId: Number.isSafeInteger(state.entryId) && Number(state.entryId) > 0 ? state.entryId : current.entryId,
       selectedLeagueKey: isLeagueKey(state.selectedLeagueKey) ? state.selectedLeagueKey : current.selectedLeagueKey,
       ...activeState,
-      horizon: state.horizon === 1 || state.horizon === 3 || state.horizon === 5 || state.horizon === 10 ? state.horizon : current.horizon,
+      horizon: validHorizon(state.horizon) ? state.horizon : current.horizon,
+      transferHorizon: validHorizon(state.transferHorizon) ? state.transferHorizon : current.transferHorizon,
       riskMode: state.riskMode === "SAFE" || state.riskMode === "BALANCED" || state.riskMode === "AGGRESSIVE" ? state.riskMode : current.riskMode,
       benchStrategy: state.benchStrategy === "CHEAP" || state.benchStrategy === "BALANCED" || state.benchStrategy === "STRONG" ? state.benchStrategy : current.benchStrategy,
       panelRatios: sanitizePanelRatios(state.panelRatios),
@@ -695,6 +704,7 @@ export function exportTerminalState(state: TerminalState): PersistedTerminalStat
     lineupGameweek: state.lineupGameweek,
     lineupProjectionFingerprint: state.lineupProjectionFingerprint,
     horizon: state.horizon,
+    transferHorizon: state.transferHorizon,
     riskMode: state.riskMode,
     benchStrategy: state.benchStrategy,
     panelRatios: state.panelRatios,

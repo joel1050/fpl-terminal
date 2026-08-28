@@ -2,6 +2,7 @@ import type { Player, Position, ProjectionConfidence } from "../../types/player"
 import type { SquadState } from "../../types/squad";
 import type { Horizon } from "../../types/projection";
 import { projectPlayer } from "../projections/projectPlayer";
+import { weeklyPlayerMetrics } from "../squad/weeklyLineup";
 
 export type PlayerUniverse = readonly Player[] | ReadonlyMap<number, Player> | Record<string, Player>;
 export type SquadReference = SquadState | readonly number[] | readonly Player[];
@@ -109,13 +110,44 @@ export function fixtureDifficulty(player: Player, horizon = 5): number {
   return Math.max(0, Math.min(1, (total / fixtures.length - 1) / 4));
 }
 
-export function utilityValue(player: Player, horizon = 5, risk: CommonOptions["risk"] = "BALANCED"): number {
-  const projection = horizonValue(player, horizon as Horizon);
+/** Scales raw projected points by minutes, confidence, availability, and risk appetite. */
+function utilityScale(player: Player, risk: CommonOptions["risk"] = "BALANCED"): number {
   const minutes = expectedMinutes(player) / 100;
   const confidence = confidenceWeight(player.projection?.confidence);
   const availability = 1 - availabilityRisk(player);
   const riskMultiplier = risk === "SAFE" ? 0.72 : risk === "AGGRESSIVE" ? 1.08 : 0.9;
-  return projection * (0.62 + 0.16 * minutes + 0.12 * confidence + 0.1 * availability) * riskMultiplier;
+  return (0.62 + 0.16 * minutes + 0.12 * confidence + 0.1 * availability) * riskMultiplier;
+}
+
+export function utilityValue(player: Player, horizon = 5, risk: CommonOptions["risk"] = "BALANCED"): number {
+  return horizonValue(player, horizon as Horizon) * utilityScale(player, risk);
+}
+
+/**
+ * Points projected for one named gameweek. Unlike horizonValue, which always
+ * starts at the live gameweek, this answers "what is this player worth in GW n",
+ * so a plan built for a later gameweek scores that gameweek. Doubles sum, blanks
+ * return zero.
+ */
+export function gameweekValue(player: Player, gameweek: number): number {
+  if (!player.projection) return horizonValue(player, 1);
+  return Math.max(0, weeklyPlayerMetrics(player, gameweek).points);
+}
+
+/** Points projected across `horizon` gameweeks starting at `gameweek`. */
+export function windowValue(player: Player, gameweek: number, horizon: Horizon = 5): number {
+  return Array.from({ length: horizon }, (_, offset) => gameweekValue(player, gameweek + offset))
+    .reduce((sum, value) => sum + value, 0);
+}
+
+/** utilityValue for an explicit gameweek window rather than the live one. */
+export function windowUtility(
+  player: Player,
+  gameweek: number,
+  horizon: Horizon = 5,
+  risk: CommonOptions["risk"] = "BALANCED",
+): number {
+  return windowValue(player, gameweek, horizon) * utilityScale(player, risk);
 }
 
 export function costOf(ids: readonly number[], players: Map<number, Player>): number {

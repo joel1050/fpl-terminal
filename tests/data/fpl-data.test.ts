@@ -146,6 +146,27 @@ describe("FPL data boundary", () => {
     expect(started.players[0]?.current).toMatchObject({ minutes: 900, totalPoints: 60, form: 6.3 });
   });
 
+  it("advances the current gameweek and deadline once every fixture has finished", () => {
+    const payload = FplBootstrapSchema.parse({
+      events: [
+        { id: 1, is_current: true, finished: false, deadline_time: "2026-08-22T10:00:00Z" },
+        { id: 2, is_next: true, finished: false, deadline_time: "2026-08-29T10:00:00Z" },
+      ],
+      teams: [
+        { id: 1, name: "Test City", short_name: "TST" },
+        { id: 2, name: "Test United", short_name: "TUN" },
+      ],
+      element_types: [],
+      elements: [],
+    });
+    const active = normalizeBootstrap(payload, [{ id: 99, event: 1, team_h: 1, team_a: 2, started: true, finished: false }]);
+    const normalized = normalizeBootstrap(payload, [{ id: 100, event: 1, team_h: 1, team_a: 2, finished: true }]);
+
+    expect(active).toMatchObject({ currentGameweek: 1, deadlineTime: "2026-08-22T10:00:00Z" });
+    expect(normalized).toMatchObject({ currentGameweek: 2, deadlineTime: "2026-08-29T10:00:00Z" });
+    expect(normalized.events.find((event) => event.isCurrent)?.id).toBe(2);
+  });
+
   it("marks snapshot data stale while retaining its source timestamp", () => {
     const freshness = getFreshness(1_000, 300_000, "snapshot", 121_000);
     expect(freshness).toMatchObject({ source: "snapshot", ageSeconds: 120, stale: true });

@@ -22,9 +22,18 @@ const mean = (a: number[]) => (a.length ? a.reduce((s, x) => s + x, 0) / a.lengt
 
 interface Row {
   gameweek: number; playerId: number; name: string; position: Position;
-  minutes: number; actual: number; pred: number; ratio: number; attackMultiplier: number;
+  minutes: number; actual: number; pred: number; attackMultiplier: number;
+  /** ownAttack / opponentDefence. Higher is easier. Drives goals, assists, bonus. */
+  ratio: number;
+  /** ownDefence / opponentAttack. Higher is easier. Drives clean sheets and goals conceded. */
+  defRatio: number;
+  ownDefence: number; oppAttack: number; cleanSheetProbability: number;
   seasonXgi: number; parts: Record<string, number>;
 }
+
+/** Mirrors nearestStrengthTier's grid, for counting how much snapping throws away. */
+const TIERS = [0.84, 0.92, 1, 1.08, 1.16] as const;
+const outsideTiers = (v: number) => v < TIERS[0] || v > TIERS[TIERS.length - 1];
 
 /** The player's own gameweeks 1-19, standing in for a previous season. */
 function anchor(season: Season, playerId: number): HistoricalStats | undefined {
@@ -62,14 +71,23 @@ function collect(season: Season): Row[] {
       const own = strengths[p.teamId], opp = strengths[f.opponentTeamId];
       const c = expectedPoints(p, f, r.minutes, playerRates(p, formBefore(season, r.historicalPlayerId, gw), gw), strengths, BASELINE);
       const st = season.players.get(r.historicalPlayerId)!.stats;
+      const a = adjust(f, { ownTeam: own, opponentTeam: opp }, BASELINE);
+      const ownDefence = r.wasHome ? own.defenceHome : own.defenceAway;
+      const oppAttack = r.wasHome ? opp.attackAway : opp.attackHome;
       rows.push({
         gameweek: gw, playerId: r.historicalPlayerId, name: p.displayName, position: p.position,
         minutes: r.minutes, actual: r.totalPoints, pred: c.total,
         ratio: (r.wasHome ? own.attackHome : own.attackAway) / (r.wasHome ? opp.defenceAway : opp.defenceHome),
-        attackMultiplier: adjust(f, { ownTeam: own, opponentTeam: opp }, BASELINE).attackMultiplier,
+        defRatio: ownDefence / oppAttack,
+        ownDefence, oppAttack, cleanSheetProbability: a.cleanSheetProbability,
+        attackMultiplier: a.attackMultiplier,
         seasonXgi: st.minutes > 0 ? (((st.expectedGoals ?? 0) + (st.expectedAssists ?? 0)) / st.minutes) * 90 : 0,
+        // Every component, so the printed parts add up to the printed total. Goals
+        // conceded is identically zero for MID and FWD, which is why leaving it out
+        // went unnoticed - for a defender it is the third-largest term.
         parts: { appearance: c.appearance, goals: c.goals, assists: c.assists, cleanSheets: c.cleanSheets,
-                 defCon: c.defensiveContribution, bonus: c.bonus, cards: c.cards },
+                 goalsConceded: c.goalsConceded, saves: c.saves, defCon: c.defensiveContribution,
+                 bonus: c.bonus, cards: c.cards, penalties: c.penalties },
       });
     }
   }
@@ -84,10 +102,20 @@ const band = (label: string, list: readonly Row[]) => {
     + `  mult ${mean(list.map((r) => r.attackMultiplier)).toFixed(3)}  min ${mean(list.map((r) => r.minutes)).toFixed(1)}`);
 };
 
-const quintile = (list: readonly Row[], pick: (r: Row) => number) => {
-  const s = [...list].sort((a, b) => b.ratio - a.ratio);
+type Axis = { label: string; key: (r: Row) => number };
+const ATTACK_AXIS: Axis = { label: "attack ratio  (ownAttack / oppDefence)", key: (r) => r.ratio };
+const DEFENCE_AXIS: Axis = { label: "defence ratio (ownDefence / oppAttack)", key: (r) => r.defRatio };
+
+const quintile = (list: readonly Row[], axis: Axis, pick: (r: Row) => number) => {
+  const s = [...list].sort((a, b) => axis.key(b) - axis.key(a));
   const q = Math.max(1, Math.floor(s.length / 5));
   return mean(s.slice(0, q).map(pick)) - mean(s.slice(-q).map(pick));
+};
+
+/** Rows in the hardest fifth on this axis. */
+const hardest = (list: readonly Row[], axis: Axis) => {
+  const s = [...list].sort((a, b) => axis.key(b) - axis.key(a));
+  return s.slice(-Math.max(1, Math.floor(s.length / 5)));
 };
 
 function main(): void {
@@ -112,51 +140,118 @@ function main(): void {
     console.log(`  ${k.padEnd(14)} ${mean(rows.map((r) => r.parts[k])).toFixed(3)}`);
   }
 
-  console.log("\n=== FIXTURE SWING ===");
-  const sorted = [...rows].sort((a, b) => b.ratio - a.ratio);
-  const q5 = Math.floor(sorted.length / 5);
-  for (let i = 0; i < 5; i += 1) {
-    const s = sorted.slice(i * q5, i === 4 ? sorted.length : (i + 1) * q5);
-    band(`  Q${i + 1} ratio ${s[s.length - 1].ratio.toFixed(2)}-${s[0].ratio.toFixed(2)}`, s);
-  }
-  const modelSwing = quintile(rows, (r) => r.pred), actualSwing = quintile(rows, (r) => r.actual);
-  console.log(`  SWING easiest fifth - hardest fifth:  model ${modelSwing >= 0 ? "+" : ""}${modelSwing.toFixed(3)}   observed ${actualSwing >= 0 ? "+" : ""}${actualSwing.toFixed(3)}`);
-
-  // Is the shortfall real, or noise? Bootstrap over gameweek clusters.
+  // Sampling machinery shared by every interval below: resample whole gameweeks,
+  // because rows in one fixture share a team, a clean-sheet probability and a
+  // result, so resampling rows understates the spread.
   const gws = [...new Set(rows.map((r) => r.gameweek))];
   const byGw = new Map<number, Row[]>();
   for (const r of rows) (byGw.get(r.gameweek) ?? byGw.set(r.gameweek, []).get(r.gameweek)!).push(r);
   let seed = 20260824;
   const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-  const deltas = Array.from({ length: BOOTSTRAP }, () => {
-    const smp = Array.from({ length: gws.length }, () => gws[Math.floor(rand() * gws.length)]).flatMap((g) => byGw.get(g)!);
-    return quintile(smp, (r) => r.pred) - quintile(smp, (r) => r.actual);
-  }).sort((a, b) => a - b);
-  const lo = deltas[Math.floor(0.025 * BOOTSTRAP)], hi = deltas[Math.floor(0.975 * BOOTSTRAP)];
-  console.log(`  model minus observed: ${(modelSwing - actualSwing).toFixed(3)}  [${lo.toFixed(3)}, ${hi.toFixed(3)}]  ${hi < 0 ? "MODEL TOO FLAT" : lo > 0 ? "too steep" : "cannot resolve"}`);
+  const samples = Array.from({ length: BOOTSTRAP }, () =>
+    Array.from({ length: gws.length }, () => gws[Math.floor(rand() * gws.length)]).flatMap((g) => byGw.get(g)!));
+  const interval = (stat: (list: readonly Row[]) => number) => {
+    const d = samples.map(stat).sort((a, b) => a - b);
+    return [d[Math.floor(0.025 * BOOTSTRAP)], d[Math.floor(0.975 * BOOTSTRAP)]] as const;
+  };
+  const signed = (x: number, dp = 3) => `${x >= 0 ? "+" : ""}${x.toFixed(dp)}`;
+
+  // Two fixture axes, because they drive different halves of the scoring. A
+  // defender's goals, assists and bonus follow ownAttack / opponentDefence; his
+  // clean sheet and goals-conceded points follow ownDefence / opponentAttack.
+  // Sorting a defender on the attacking axis measures the smaller half.
+  for (const axis of [ATTACK_AXIS, DEFENCE_AXIS]) {
+    console.log(`\n=== FIXTURE SWING, sorted by ${axis.label} ===`);
+    const sorted = [...rows].sort((a, b) => axis.key(b) - axis.key(a));
+    const q5 = Math.floor(sorted.length / 5);
+    for (let i = 0; i < 5; i += 1) {
+      const s = sorted.slice(i * q5, i === 4 ? sorted.length : (i + 1) * q5);
+      band(`  Q${i + 1} ${axis.key(s[s.length - 1]).toFixed(2)}-${axis.key(s[0]).toFixed(2)}`, s);
+    }
+    const modelSwing = quintile(rows, axis, (r) => r.pred);
+    const actualSwing = quintile(rows, axis, (r) => r.actual);
+    console.log(`  SWING easiest fifth - hardest fifth:  model ${signed(modelSwing)}   observed ${signed(actualSwing)}`);
+
+    // The swing gap is a difference of two differences of two means, so its
+    // interval is wide by construction. The mean bias inside the hardest fifth
+    // is the same question asked with one fewer subtraction, and it resolves.
+    const gap = interval((smp) => quintile(smp, axis, (r) => r.pred) - quintile(smp, axis, (r) => r.actual));
+    const verdict = (lo: number, hi: number) => (hi < 0 ? "MODEL TOO FLAT" : lo > 0 ? "MODEL TOO STEEP" : "cannot resolve");
+    console.log(`  model minus observed swing: ${signed(modelSwing - actualSwing)}  [${signed(gap[0])}, ${signed(gap[1])}]  ${verdict(gap[0], gap[1])}`);
+    const hardBias = mean(hardest(rows, axis).map((r) => r.pred - r.actual));
+    const hb = interval((smp) => mean(hardest(smp, axis).map((r) => r.pred - r.actual)));
+    console.log(`  bias inside the hardest fifth: ${signed(hardBias)}  [${signed(hb[0])}, ${signed(hb[1])}]  `
+      + `${hb[0] > 0 ? "OVER-PROJECTED in hard fixtures" : hb[1] < 0 ? "UNDER-PROJECTED in hard fixtures" : "cannot resolve"}`);
+  }
 
   const atCeiling = rows.filter((r) => r.attackMultiplier >= 1.5999).length;
   const atFloor = rows.filter((r) => r.attackMultiplier <= 0.5501).length;
   const mults = rows.map((r) => r.attackMultiplier).sort((a, b) => a - b);
-  console.log(`\n  attack multiplier ${mults[0].toFixed(2)}-${mults[mults.length - 1].toFixed(2)}`
+  console.log(`\nattack multiplier ${mults[0].toFixed(2)}-${mults[mults.length - 1].toFixed(2)}`
     + `   pinned at a clamp: ${atCeiling + atFloor} of ${rows.length} (${(100 * (atCeiling + atFloor) / rows.length).toFixed(1)}%)`);
+
+  // The clean-sheet lookup snaps each side to the nearest of five tiers with no
+  // interpolation, so any strength outside 0.84-1.16 lands on an end tier and
+  // everything between two tiers is rounded. Both the clean-sheet points and the
+  // goals-conceded deduction read that one cell, so a snapping error is counted
+  // twice in the same direction.
+  const outDef = rows.filter((r) => outsideTiers(r.ownDefence)).length;
+  const outAtt = rows.filter((r) => outsideTiers(r.oppAttack)).length;
+  const outEither = rows.filter((r) => outsideTiers(r.ownDefence) || outsideTiers(r.oppAttack)).length;
+  const defs = rows.map((r) => r.ownDefence).sort((a, b) => a - b);
+  const atts = rows.map((r) => r.oppAttack).sort((a, b) => a - b);
+  console.log(`clean-sheet tier grid 0.84-1.16   own defence ${defs[0].toFixed(2)}-${defs[defs.length - 1].toFixed(2)}`
+    + `   opponent attack ${atts[0].toFixed(2)}-${atts[atts.length - 1].toFixed(2)}`);
+  console.log(`  pinned to an end tier: own defence ${outDef} (${(100 * outDef / rows.length).toFixed(1)}%)`
+    + `, opponent attack ${outAtt} (${(100 * outAtt / rows.length).toFixed(1)}%)`
+    + `, either ${outEither} (${(100 * outEither / rows.length).toFixed(1)}%)`);
+  const csp = rows.map((r) => r.cleanSheetProbability).sort((a, b) => a - b);
+  console.log(`  distinct clean-sheet probabilities used: ${new Set(rows.map((r) => r.cleanSheetProbability)).size}`
+    + `   range ${csp[0].toFixed(2)}-${csp[csp.length - 1].toFixed(2)}`);
+  // Does the snapping cost anything measurable, and in which direction? A
+  // defence stronger than the top tier is the case where it should hurt most:
+  // the grid cannot price it above the 1.16 row.
+  const biasOf = (list: readonly Row[]) => mean(list.map((r) => r.pred - r.actual));
+  for (const [label, list] of [
+    ["own defence above the grid (>1.16)", rows.filter((r) => r.ownDefence > TIERS[4])],
+    ["own defence below the grid (<0.84)", rows.filter((r) => r.ownDefence < TIERS[0])],
+    ["opponent attack above the grid", rows.filter((r) => r.oppAttack > TIERS[4])],
+    ["both sides inside the grid", rows.filter((r) => !outsideTiers(r.ownDefence) && !outsideTiers(r.oppAttack))],
+  ] as const) {
+    if (!list.length) continue;
+    const ci = interval((smp) => {
+      const l = smp.filter((r) => list.some((x) => x === r));
+      return l.length ? biasOf(l) : NaN;
+    });
+    console.log(`  ${label.padEnd(36)} n=${String(list.length).padStart(4)}  bias ${signed(biasOf(list))}`
+      + `  [${signed(ci[0])}, ${signed(ci[1])}]`
+      + `   clean sheets ${mean(list.map((r) => r.parts.cleanSheets)).toFixed(3)}`);
+  }
 
   const named = (process.env.PLAYERS ?? "").split(",").map((n) => n.trim().toLowerCase()).filter(Boolean);
   const byPlayer = new Map<number, Row[]>();
   for (const r of rows) (byPlayer.get(r.playerId) ?? byPlayer.set(r.playerId, []).get(r.playerId)!).push(r);
   const picked = [...byPlayer.values()].filter((rs) => rs.length >= 12
     && (named.length ? named.some((n) => rs[0].name.toLowerCase().includes(n)) : rs[0].seasonXgi >= 0.5));
+  // A single player's split has no interval and no way to earn one: a defender
+  // scores in four-point clean-sheet lumps, so five fixtures against five is a
+  // coin-flip dressed as a measurement. Read the model column; the observed
+  // column is here for completeness, not for drawing a conclusion from.
   console.log("\nnamed players - easiest third of his own fixtures minus hardest third:");
-  console.log("player                       n   xGI/90   easy xP  hard xP   model   observed   ratio range   pinned");
+  console.log("player                       n   xGI/90   axis      easy xP  hard xP   model   observed   range        pinned");
   for (const rs of picked.sort((a, b) => b[0].seasonXgi - a[0].seasonXgi)) {
-    const s = [...rs].sort((a, b) => b.ratio - a.ratio);
-    const h = Math.max(2, Math.floor(s.length / 3));
-    const e = s.slice(0, h), hd = s.slice(-h);
-    const ms = mean(e.map((r) => r.pred)) - mean(hd.map((r) => r.pred));
-    const as = mean(e.map((r) => r.actual)) - mean(hd.map((r) => r.actual));
-    const raw = rs.map((r) => r.ratio).sort((a, b) => a - b);
-    const pin = rs.filter((r) => r.attackMultiplier >= 1.5999 || r.attackMultiplier <= 0.5501).length;
-    console.log(`${rs[0].name.slice(0, 27).padEnd(28)} ${String(rs.length).padStart(2)}   ${rs[0].seasonXgi.toFixed(2)}     ${mean(e.map((r) => r.pred)).toFixed(2)}     ${mean(hd.map((r) => r.pred)).toFixed(2)}   ${ms >= 0 ? "+" : ""}${ms.toFixed(2)}     ${as >= 0 ? "+" : ""}${as.toFixed(2)}     ${raw[0].toFixed(2)}-${raw[raw.length - 1].toFixed(2)}     ${pin}/${rs.length}`);
+    for (const axis of [ATTACK_AXIS, DEFENCE_AXIS]) {
+      const s = [...rs].sort((a, b) => axis.key(b) - axis.key(a));
+      const h = Math.max(2, Math.floor(s.length / 3));
+      const e = s.slice(0, h), hd = s.slice(-h);
+      const ms = mean(e.map((r) => r.pred)) - mean(hd.map((r) => r.pred));
+      const as = mean(e.map((r) => r.actual)) - mean(hd.map((r) => r.actual));
+      const raw = rs.map(axis.key).sort((a, b) => a - b);
+      const pin = rs.filter((r) => r.attackMultiplier >= 1.5999 || r.attackMultiplier <= 0.5501).length;
+      console.log(`${rs[0].name.slice(0, 27).padEnd(28)} ${String(rs.length).padStart(2)}   ${rs[0].seasonXgi.toFixed(2)}     `
+        + `${(axis === ATTACK_AXIS ? "attack" : "defence").padEnd(8)}  ${mean(e.map((r) => r.pred)).toFixed(2)}     ${mean(hd.map((r) => r.pred)).toFixed(2)}   `
+        + `${signed(ms, 2)}     ${signed(as, 2)}     ${raw[0].toFixed(2)}-${raw[raw.length - 1].toFixed(2)}    ${pin}/${rs.length}`);
+    }
   }
 }
 main();

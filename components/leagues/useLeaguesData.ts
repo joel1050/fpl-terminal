@@ -158,6 +158,7 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
   const [picks, setPicks] = useState<Resource<EntryPicks>>({ status: "IDLE", data: null });
   const [live, setLive] = useState<Resource<LiveSnapshot>>({ status: "IDLE", data: null });
   const [fixtures, setFixtures] = useState<Resource<FixtureView[]>>({ status: "IDLE", data: null });
+  const [availableGameweek, setAvailableGameweek] = useState<{ requested: number; available: number } | null>(null);
   const [userSelectedLeagueKey, setUserSelectedLeagueKey] = useState<string | null>(null);
   const [standingsCache, setStandingsCache] = useState<Map<string, LoadedStandings>>(new Map());
   const [standingsFailure, setStandingsFailure] = useState<{ key: string; message: string } | null>(null);
@@ -208,7 +209,8 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
     return () => controller.abort();
   }, [bootstrapToken]);
 
-  const gameweek = bootstrap.data?.gameweek ?? null;
+  const currentGameweek = bootstrap.data?.gameweek ?? null;
+  const gameweek = availableGameweek?.requested === currentGameweek ? availableGameweek.available : currentGameweek;
   const shortNames = useMemo(
     () => bootstrap.data?.teamShortNameById ?? EMPTY_TEAM_NAMES,
     [bootstrap.data],
@@ -258,19 +260,23 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
   useEffect(() => () => pollAbortRef.current?.abort(), []);
 
   const refreshLive = useCallback(async () => {
-    if (!entryId || gameweek === null || pollInFlightRef.current) return;
+    if (currentGameweek === null || pollInFlightRef.current) return;
     pollInFlightRef.current = true;
     const controller = new AbortController();
     pollAbortRef.current = controller;
     try {
-      const [liveEnvelope, fixtureEnvelope] = await Promise.all([
-        getJson<{ elements?: Array<{ playerId: number; stats: LiveStats }> }>(
-          `/api/fpl/live/${gameweek}`,
-          controller.signal,
-        ),
-        getJson<RawFixture[]>(`/api/fpl/fixtures?gameweek=${gameweek}`, controller.signal),
-      ]);
+      let liveGameweek = currentGameweek;
+      let liveEnvelope = await getJson<{ elements?: Array<{ playerId: number; stats: LiveStats }> }>(`/api/fpl/live/${liveGameweek}`, controller.signal);
+      if (!(liveEnvelope.data.elements?.length) && liveGameweek > 1) {
+        const previous = await getJson<{ elements?: Array<{ playerId: number; stats: LiveStats }> }>(`/api/fpl/live/${liveGameweek - 1}`, controller.signal);
+        if (previous.data.elements?.length) {
+          liveGameweek -= 1;
+          liveEnvelope = previous;
+        }
+      }
+      const fixtureEnvelope = await getJson<RawFixture[]>(`/api/fpl/fixtures?gameweek=${liveGameweek}`, controller.signal);
       if (controller.signal.aborted) return;
+      setAvailableGameweek({ requested: currentGameweek, available: liveGameweek });
       const statsByElement = new Map<number, LiveStats>();
       for (const element of liveEnvelope.data.elements ?? []) statsByElement.set(element.playerId, element.stats);
       const snapshot: LiveSnapshot = {
@@ -305,25 +311,26 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
       if (pollAbortRef.current === controller) pollAbortRef.current = null;
       pollInFlightRef.current = false;
     }
-  }, [entryId, gameweek, shortNames]);
+  }, [currentGameweek, shortNames]);
 
   useEffect(() => {
-    if (!entryId || gameweek === null) return;
+    if (currentGameweek === null) return;
     const timer = window.setTimeout(() => {
       void refreshLive();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [entryId, gameweek, refreshLive]);
+  }, [currentGameweek, refreshLive]);
 
   const anyFixtureLive = fixtures.data?.some((fixture) => fixture.state === "LIVE") ?? false;
+  const waitingForCurrentData = gameweek !== currentGameweek;
 
   useEffect(() => {
-    if (!anyFixtureLive || !entryId) return;
+    if (!anyFixtureLive && !waitingForCurrentData) return;
     const timer = window.setInterval(() => {
       void refreshLive();
     }, 60_000);
     return () => window.clearInterval(timer);
-  }, [anyFixtureLive, entryId, refreshLive]);
+  }, [anyFixtureLive, refreshLive, waitingForCurrentData]);
 
   // The default league selection is derived during render, never written by an effect.
   const firstClassicKey = profile.status === "READY" && profile.data
@@ -449,6 +456,7 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
   return {
     bootstrap,
     gameweek,
+    currentGameweek,
     profile,
     history,
     picks,

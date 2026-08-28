@@ -13,7 +13,7 @@
  * the standard error.
  */
 import { loadSeason, strengthsBefore, formBefore, playerAt, KNOWN_LEAKS, type Season } from "./season";
-import { expectedPoints, playerRates } from "./xp";
+import { expectedPoints, playerRates, type DefenceExperiments } from "./xp";
 import { BASELINE, type Variant } from "./variants";
 
 const FIRST_GAMEWEEK = 6;
@@ -31,14 +31,34 @@ interface Row {
 
 const v = (over: Partial<Variant>): Variant => ({ ...BASELINE, ...over });
 
-const ARMS: { name: string; variant: Variant; note: string; bonusFixture?: boolean }[] = [
-  { name: "shipped §7", variant: BASELINE, note: "" },
-  { name: "bonus follows fixture", variant: BASELINE, note: "", bonusFixture: true },
-  { name: "outer clamp [0.55,1.60]", variant: v({ multiplierClamp: [0.55, 1.60] }), note: "" },
-  { name: "both", variant: v({ multiplierClamp: [0.55, 1.60] }), note: "", bonusFixture: true },
-  { name: "both + ratio [0.55,1.75]", variant: v({ attackRatioClamp: [0.55, 1.75], multiplierClamp: [0.55, 1.60] }), note: "", bonusFixture: true },
-];
+const ARMS: { name: string; variant: Variant; note: string; bonusFixture?: boolean; defence?: DefenceExperiments }[] = [
+  // Arm 0 must be what production does today, or every delta below is measured
+  // against the wrong reference. Bonus following the fixture shipped in fd89d2f.
+  { name: "shipped", variant: BASELINE, note: "", bonusFixture: true },
+  { name: "bonus flat (pre-ship)", variant: BASELINE, note: "", bonusFixture: false },
+  { name: "outer clamp [0.55,1.60]", variant: v({ multiplierClamp: [0.55, 1.60] }), note: "", bonusFixture: true },
+  { name: "+ ratio [0.55,1.75]", variant: v({ attackRatioClamp: [0.55, 1.75], multiplierClamp: [0.55, 1.60] }), note: "", bonusFixture: true },
 
+  // The defensive-contribution threshold. Its dispersion of 8 is an assumption
+  // documented as such; these sweep it. Higher is nearer a Poisson.
+  ...[3, 5, 12, 20, 1000].map((dispersion) => ({
+    name: `defCon dispersion ${dispersion}`, variant: BASELINE, note: "", bonusFixture: true,
+    defence: { dispersion } as DefenceExperiments,
+  })),
+
+  // Does the term deserve a fixture at all? A defender should make more
+  // clearances and blocks against a stronger attack.
+  { name: "defCon rises vs attack (half)", variant: BASELINE, note: "", bonusFixture: true, defence: { defConEnvironment: "HALF_PRESSURE" } },
+  { name: "defCon rises vs attack (full)", variant: BASELINE, note: "", bonusFixture: true, defence: { defConEnvironment: "PRESSURE" } },
+
+  // Which side of the fixture a defender's bonus follows. Shipped scales it by
+  // the attacking multiplier; a defender's BPS is mostly clean sheets.
+  { name: "GK/DEF bonus follows CS", variant: BASELINE, note: "", bonusFixture: true, defence: { bonusEnvironment: "DEFENCE" } },
+  { name: "GK/DEF bonus follows both", variant: BASELINE, note: "", bonusFixture: true, defence: { bonusEnvironment: "BOTH" } },
+
+  { name: "clean sheets interpolated", variant: v({ cleanSheet: "BILINEAR" }), note: "rejected: see README", bonusFixture: true },
+  { name: "interpolated + extrapolated", variant: v({ cleanSheet: "BILINEAR_OPEN" }), note: "rejected: see README", bonusFixture: true },
+];
 function collect(season: Season): Row[] {
   const rows: Row[] = [];
   for (let gameweek = FIRST_GAMEWEEK; gameweek <= 38; gameweek += 1) {
@@ -53,7 +73,8 @@ function collect(season: Season): Row[] {
       const rates = playerRates(player, formBefore(season, row.historicalPlayerId, gameweek), gameweek);
       const upcoming = player.fixtures[0];
       const predictions = ARMS.map((arm) =>
-        expectedPoints(player, upcoming, row.minutes, rates, strengths, arm.variant, arm.bonusFixture ?? false).total);
+        expectedPoints(player, upcoming, row.minutes, rates, strengths, arm.variant, arm.bonusFixture ?? false,
+          undefined, undefined, undefined, arm.defence).total);
       rows.push({
         gameweek, playerId: row.historicalPlayerId, position: player.position,
         minutes: row.minutes, actual: row.totalPoints, predictions,
@@ -174,6 +195,7 @@ function main(): void {
   table("GK + DEF only (section 7's defensive path)", rows, (r) => r.position === "GK" || r.position === "DEF");
   table("MID + FWD only (section 7's attacking path)", rows, (r) => r.position === "MID" || r.position === "FWD");
   table("60+ minutes only (clean sheet actually credited)", rows, (r) => r.minutes >= 60);
+  table("DEF only", rows, (r) => r.position === "DEF");
   table("GK only", rows, (r) => r.position === "GK");
 
   console.log("\nrows each arm actually changes vs baseline:");

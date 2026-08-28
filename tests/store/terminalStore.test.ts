@@ -201,6 +201,26 @@ describe("persisted weekly lineup state", () => {
     expect(useTerminalStore.getState().gameweekPlans[2]).toMatchObject({ captainId: 4, viceCaptainId: 3 });
   });
 
+  it("keeps other gameweek plans when the optimizer replaces the current squad", () => {
+    const store = useTerminalStore.getState();
+    store.initializeGameweek(1);
+    store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "fp-1", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 });
+    store.setPlanningGameweek(2);
+
+    const optimized = {
+      playerIds: squad.playerIds.map((id) => id + 20),
+      byPosition: Object.fromEntries(Object.entries(squad.byPosition).map(([position, ids]) => [position, ids.map((id) => id + 20)])) as typeof squad.byPosition,
+    };
+    useTerminalStore.getState().hydrate({ squad: optimized, lockedPlayerIds: [], horizon: 1, riskMode: "BALANCED", benchStrategy: "CHEAP" });
+
+    const state = useTerminalStore.getState();
+    expect(state.planningGameweek).toBe(2);
+    expect(state.playerIds).toEqual(optimized.playerIds);
+    expect(Object.keys(state.gameweekPlans).sort()).toEqual(["1", "2"]);
+    expect(state.gameweekPlans[1]).toMatchObject({ playerIds: squad.playerIds, captainId: 1, viceCaptainId: 3 });
+    expect(state.gameweekPlans[2]).toMatchObject({ playerIds: optimized.playerIds });
+  });
+
   it("clears future plans when an official squad replaces the current state", () => {
     const store = useTerminalStore.getState();
     store.initializeGameweek(1);
@@ -214,6 +234,32 @@ describe("persisted weekly lineup state", () => {
     expect(useTerminalStore.getState().planningGameweek).toBe(1);
     expect(Object.keys(useTerminalStore.getState().gameweekPlans)).toEqual(["1"]);
     expect(useTerminalStore.getState().gameweekPlans[2]).toBeUndefined();
+  });
+});
+
+describe("transfer suggestion horizon", () => {
+  it("starts at five gameweeks and is independent of the optimizer horizon", () => {
+    expect(useTerminalStore.getState().transferHorizon).toBe(5);
+
+    useTerminalStore.getState().setStrategy({ horizon: 10 });
+    expect(useTerminalStore.getState().transferHorizon).toBe(5);
+
+    useTerminalStore.getState().setStrategy({ transferHorizon: 1 });
+    expect(useTerminalStore.getState()).toMatchObject({ transferHorizon: 1, horizon: 10 });
+  });
+
+  it("survives export and reload, and rejects a horizon outside the four choices", () => {
+    useTerminalStore.getState().setStrategy({ transferHorizon: 3 });
+    const saved = exportTerminalState(useTerminalStore.getState());
+    expect(saved.transferHorizon).toBe(3);
+
+    useTerminalStore.getState().reset();
+    useTerminalStore.getState().hydrate(parseSavedState(JSON.stringify(saved)));
+    expect(useTerminalStore.getState().transferHorizon).toBe(3);
+
+    // Already on 3, so a rejected 4 has to be told apart from the initial 5.
+    useTerminalStore.getState().hydrate(parseSavedState(JSON.stringify({ ...saved, transferHorizon: 4 })));
+    expect(useTerminalStore.getState().transferHorizon).toBe(3);
   });
 });
 

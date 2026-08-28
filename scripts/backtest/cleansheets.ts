@@ -37,24 +37,51 @@ function nearestTier(value: number): number {
   return best;
 }
 
+const TIER_STEP = 0.08;
+
 /** Fractional tier position, so a strength between anchors lands between rows. */
 function tierPosition(value: number): number {
   if (value <= TIERS[0]) return 0;
   if (value >= TIERS[4]) return 4;
-  const step = 0.08;
-  return (value - TIERS[0]) / step;
+  return (value - TIERS[0]) / TIER_STEP;
 }
 
-/** The same market table, read continuously instead of snapped to a cell. */
-function bilinear(isHome: boolean, ownDefence: number, opponentAttack: number): number {
-  const grid = TABLE[isHome ? "home" : "away"];
-  const r = tierPosition(ownDefence), c = tierPosition(opponentAttack);
-  const r0 = Math.floor(r), c0 = Math.floor(c);
-  const r1 = Math.min(4, r0 + 1), c1 = Math.min(4, c0 + 1);
-  const fr = r - r0, fc = c - c0;
-  return grid[r0][c0] * (1 - fr) * (1 - fc) + grid[r1][c0] * fr * (1 - fc)
-       + grid[r0][c1] * (1 - fr) * fc + grid[r1][c1] * fr * fc;
+/**
+ * The same position without the end clamps, so a strength outside 0.84-1.16
+ * keeps going instead of piling onto the end rung. Held inside [-3, 7] so a
+ * single freak strength cannot run the extrapolation off a cliff.
+ */
+function tierPositionOpen(value: number): number {
+  return clamp((value - TIERS[0]) / TIER_STEP, -3, 7);
 }
+
+/**
+ * Reads the market table at an arbitrary point rather than snapping to a cell.
+ *
+ * `position` decides what happens outside the grid: `tierPosition` stops at the
+ * end rung, `tierPositionOpen` carries the edge gradient onwards. `space` picks
+ * what is interpolated - a probability directly, or its log-odds, which keeps
+ * the result inside (0, 1) and steepens both tails.
+ */
+function readTable(
+  isHome: boolean, ownDefence: number, opponentAttack: number,
+  position: (v: number) => number, space: "PROBABILITY" | "LOG_ODDS",
+): number {
+  const grid = TABLE[isHome ? "home" : "away"];
+  const to = space === "LOG_ODDS" ? (p: number) => Math.log(p / (1 - p)) : (p: number) => p;
+  const from = space === "LOG_ODDS" ? (v: number) => 1 / (1 + Math.exp(-v)) : (v: number) => v;
+  const r = position(ownDefence), c = position(opponentAttack);
+  // Anchor on a cell that has a neighbour in both directions, so a fraction
+  // outside [0, 1] extrapolates along the edge gradient instead of indexing off
+  // the grid.
+  const r0 = clamp(Math.floor(r), 0, 3), c0 = clamp(Math.floor(c), 0, 3);
+  const fr = r - r0, fc = c - c0;
+  const value = to(grid[r0][c0]) * (1 - fr) * (1 - fc) + to(grid[r0 + 1][c0]) * fr * (1 - fc)
+    + to(grid[r0][c0 + 1]) * (1 - fr) * fc + to(grid[r0 + 1][c0 + 1]) * fr * fc;
+  return clamp(from(value), 0.02, 0.9);
+}
+
+const bilinear = (h: boolean, d: number, a: number) => readTable(h, d, a, tierPosition, "PROBABILITY");
 
 interface Model { name: string; predict: (isHome: boolean, ownDefence: number, opponentAttack: number) => number }
 
@@ -67,6 +94,9 @@ const poisson = (scale: number, gamma: number, homeFactor: number, awayFactor: n
 const MODELS: Model[] = [
   { name: "current: 5x5 tier table", predict: (h, d, a) => TABLE[h ? "home" : "away"][nearestTier(d)][nearestTier(a)] },
   { name: "same table, bilinear", predict: bilinear },
+  { name: "bilinear + extrapolate", predict: (h, d, a) => readTable(h, d, a, tierPositionOpen, "PROBABILITY") },
+  { name: "bilinear on log-odds", predict: (h, d, a) => readTable(h, d, a, tierPosition, "LOG_ODDS") },
+  { name: "log-odds + extrapolate", predict: (h, d, a) => readTable(h, d, a, tierPositionOpen, "LOG_ODDS") },
   { name: "Poisson s1.35 g1.0", predict: poisson(1.35, 1.0, 1.102, 0.898) },
   { name: "Poisson s1.35 g0.8", predict: poisson(1.35, 0.8, 1.102, 0.898) },
   { name: "Poisson s1.35 g1.2", predict: poisson(1.35, 1.2, 1.102, 0.898) },
@@ -144,16 +174,16 @@ function main(): void {
   });
 
   // Where the tier snap is supposed to hurt: the strongest and weakest defences.
-  console.log("\ncalibration by predicted-strength band (current table vs bilinear vs best Poisson):");
+  console.log("\ncalibration by own-defence band. The bottom band is where the grid floor bites:");
   const sorted = [...cases].sort((a, b) => a.ownDefence - b.ownDefence);
   const bands = 5, size = Math.floor(sorted.length / bands);
-  console.log("band (own defence)     n    actual   table   bilinear  Poisson");
+  console.log("band (own defence)     n    actual   table   bilinear  bi+extrap  logodds  lo+extrap  Poisson");
   for (let b = 0; b < bands; b += 1) {
     const slice = sorted.slice(b * size, b === bands - 1 ? sorted.length : (b + 1) * size);
     const mean = (index: number) => slice.reduce((s, c) => s + c.predictions[index], 0) / slice.length;
     const act = slice.reduce((s, c) => s + c.actual, 0) / slice.length;
     const lo = slice[0].ownDefence.toFixed(2), hi = slice[slice.length - 1].ownDefence.toFixed(2);
-    console.log(`${(lo + "-" + hi).padEnd(20)} ${String(slice.length).padStart(4)}   ${act.toFixed(3)}   ${mean(0).toFixed(3)}    ${mean(1).toFixed(3)}    ${mean(2).toFixed(3)}`);
+    console.log(`${(lo + "-" + hi).padEnd(20)} ${String(slice.length).padStart(4)}   ${act.toFixed(3)}   ${mean(0).toFixed(3)}    ${mean(1).toFixed(3)}     ${mean(2).toFixed(3)}     ${mean(3).toFixed(3)}    ${mean(4).toFixed(3)}     ${mean(5).toFixed(3)}`);
   }
 }
 

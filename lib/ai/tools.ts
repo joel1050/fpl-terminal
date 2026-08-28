@@ -129,6 +129,7 @@ export function createFplToolAdapters(): AIDataAdapters {
   };
 
   const options = (context: AnalystContextInput) => ({
+    gameweek: context.gameweek,
     horizon: context.strategy.horizon,
     risk: context.strategy.risk,
     bench: context.strategy.bench,
@@ -178,7 +179,7 @@ export function createFplToolAdapters(): AIDataAdapters {
     },
     findReplacements: async (input, context) => {
       const universe = await players();
-      const result = findBestSingleTransfers({ outgoingPlayerId: input.playerId, squad: selectedIds(context), players: universe, gameweek: context.gameweek, ...options(context) });
+      const result = findBestSingleTransfers({ outgoingPlayerId: input.playerId, squad: selectedIds(context), players: universe, ...options(context) });
       return { candidates: result.slice(0, input.limit ?? 5), method: "exact_single_transfer" };
     },
     suggestForSlot: async (input, context) => {
@@ -195,7 +196,7 @@ export function createFplToolAdapters(): AIDataAdapters {
       lockedPlayerIds: [...new Set([...(context.squad.lockedPlayerIds ?? []), input.playerId])],
     })),
     simulateChange: async (input, context) => {
-      const result = simulateChange({ squad: selectedIds(context), players: await players(), outId: input.outId, inId: input.inId, gameweek: context.gameweek, ...options(context) });
+      const result = simulateChange({ squad: selectedIds(context), players: await players(), outId: input.outId, inId: input.inId, ...options(context) });
       return {
         legal: result.legal,
         horizon: result.horizon,
