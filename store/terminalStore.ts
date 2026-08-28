@@ -8,7 +8,7 @@ import { validateWeeklyLineup } from "@/lib/squad/weeklyLineup";
 type RiskMode = "SAFE" | "BALANCED" | "AGGRESSIVE";
 type BenchStrategy = "CHEAP" | "BALANCED" | "STRONG";
 
-export type DesktopPanel = "market" | "squad" | "ai";
+export type DesktopPanel = "market" | "squad";
 
 export const PANEL_RATIO_MAX = 1000;
 
@@ -326,7 +326,7 @@ export type TerminalState = {
   entryId?: number;
   /** The league the manager last opened in the Leagues workspace. */
   selectedLeagueKey?: string;
-  activeMobileTab: "SQUAD" | "MARKET" | "AI";
+  activeMobileTab: "SQUAD" | "MARKET";
   currentGameweek: number;
   planningGameweek: number;
   gameweekPlans: Record<number, GameweekPlanSnapshot>;

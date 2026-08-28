@@ -3,11 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import WorkspaceSwitcher from "@/components/terminal/WorkspaceSwitcher";
 import type { NailedRating, Player, PlayerFixture, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, WeeklyLineupPlan } from "@/types";
-import { analyzeSquad } from "@/lib/analysis/analyzeSquad";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
-import { chooseCaptainVice } from "@/lib/squad/captain";
 import { explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
-import { expectedAutosubValue, pickWeeklyTeam, projectWeeklyLineupHorizons, validateWeeklyLineup, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
+import { expectedAutosubValue, pickWeeklyTeam, projectWeeklyLineupHorizons, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import type { OptimizerResult } from "@/lib/optimizer/optimizer";
 import { projectPlayer } from "@/lib/projections/projectPlayer";
 import {
@@ -27,8 +25,8 @@ type DataState = "SYNCING" | "LIVE" | "SNAPSHOT" | "STALE" | "EMPTY" | "ERROR";
 
 const POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
 const DRAFT_XI_COUNTS: Record<Position, number> = { GK: 1, DEF: 3, MID: 4, FWD: 3 };
-const DESKTOP_PANELS: DesktopPanel[] = ["market", "squad", "ai"];
-const PANEL_LABELS: Record<DesktopPanel, string> = { market: "Player universe", squad: "Squad builder and analysis", ai: "AI analyst" };
+const DESKTOP_PANELS: DesktopPanel[] = ["market", "squad"];
+const PANEL_LABELS: Record<DesktopPanel, string> = { market: "Player universe", squad: "Squad builder and analysis" };
 
 type ResizeState = {
   panel: DesktopPanel;
@@ -441,10 +439,6 @@ function useBootstrap() {
 export default function TerminalApp() {
   const bootstrap = useBootstrap();
   const store = useTerminalStore();
-  const [aiMessages, setAiMessages] = useState<Array<{ role: "user" | "assistant"; text: string; at: number; actions?: Array<{ type?: string; playerId?: unknown; outId?: unknown; inId?: unknown }> }>>([]);
-  const [aiBusy, setAiBusy] = useState(false);
-  const [aiOnline, setAiOnline] = useState<boolean | null>(null);
-  const [aiPrompt, setAiPrompt] = useState("");
   const [notice, setNoticeState] = useState<string | null>(null);
   const [noticeMinimized, setNoticeMinimized] = useState(false);
 
@@ -465,10 +459,9 @@ export default function TerminalApp() {
   const [simulationMove, setSimulationMove] = useState<{ outId: number; inId: number } | null>(null);
   const [gwSwapSelection, setGWSwapSelection] = useState<{ starterId?: number; benchId?: number }>({});
   const searchRef = useRef<HTMLInputElement>(null);
-  const aiRef = useRef<HTMLTextAreaElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<ResizeState | null>(null);
-  const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false, ai: false });
+  const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false });
   const { data, status, message, refresh } = bootstrap;
   const liveCurrentGW = clamp(Math.round(data.gameweek ?? store.currentGameweek ?? 1), 1, 38);
   const initializeGameweek = store.initializeGameweek;
@@ -525,20 +518,6 @@ export default function TerminalApp() {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/ai", { signal: controller.signal, headers: { accept: "application/json" } })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`AI status returned ${response.status}`);
-        return objectOf(await response.json());
-      })
-      .then((payload) => setAiOnline(typeof payload?.enabled === "boolean" ? payload.enabled : false))
-      .catch(() => {
-        if (!controller.signal.aborted) setAiOnline(false);
-      });
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
     const raw = window.localStorage.getItem("fpl-terminal-state");
     useTerminalStore.getState().hydrate(raw ? parseSavedState(raw) : null);
   }, []);
@@ -562,10 +541,6 @@ export default function TerminalApp() {
         event.preventDefault();
         searchRef.current?.focus();
       }
-      if (event.key.toLowerCase() === "a" && !typing) {
-        event.preventDefault();
-        aiRef.current?.focus();
-      }
       if (event.key === "Escape") store.setSelectedPlayer(undefined);
     };
     window.addEventListener("keydown", onKeyDown);
@@ -576,13 +551,6 @@ export default function TerminalApp() {
   const selected = useMemo(() => data.players.filter((player) => store.playerIds.includes(player.id)), [data.players, store.playerIds]);
   const playerById = useMemo(() => new Map(data.players.map((player) => [player.id, player])), [data.players]);
   const spent = useMemo(() => selected.reduce((sum, player) => sum + player.priceTenths, 0), [selected]);
-  const squadAnalysis = useMemo(() => analyzeSquad({
-    squad: store.playerIds,
-    players: data.players,
-    horizon: store.horizon,
-    risk: store.riskMode,
-    bench: store.benchStrategy,
-  }), [data.players, store.benchStrategy, store.horizon, store.playerIds, store.riskMode]);
   const slotMaxPrices = useMemo(() => POSITIONS.reduce((result, position) => {
     result[position] = maxSafePriceForPosition(position, selected, data.players);
     return result;
@@ -615,10 +583,6 @@ export default function TerminalApp() {
     const values = selected.map((player) => weeklyPlayerMetrics(player, planningGameweek).pDNP);
     return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 100) : undefined;
   }, [planningGameweek, selected]);
-  const weakest = useMemo(() => squadAnalysis.weaknesses
-    .slice(0, 3)
-    .map((weakness) => playerById.get(weakness.playerId))
-    .filter((player): player is TerminalPlayer => Boolean(player)), [playerById, squadAnalysis.weaknesses]);
   const transferRequestKey = selected.length === 15
     ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.transferHorizon}|${store.riskMode}|${planningGameweek}`
     : "";
@@ -839,23 +803,6 @@ export default function TerminalApp() {
     applyCaptaincy(captainId, id);
   };
 
-  const setCaptainDeterministically = () => {
-    if (selected.length < 11) {
-      setNotice("Captain selection needs at least 11 players.");
-      return;
-    }
-    try {
-      const starters = currentGWPlan?.starterIds.length === 11 ? currentGWPlan.starterIds : undefined;
-      const expectedPoints = Object.fromEntries(selected.map((player) => [player.id, weeklyPlayerMetrics(player, planningGameweek).points]));
-      const plan = chooseCaptainVice(selected, starters, { expectedPoints });
-      store.setCaptain(plan.captainId);
-      store.setViceCaptain(plan.viceCaptainId);
-      setNotice("Captain and vice-captain selected from the current projection model.");
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Captain selection is unavailable.");
-    }
-  };
-
   const simulateMove = (outId: number, inId: number) => {
     const result = simulateSquadChange({
       squad: store.playerIds,
@@ -896,85 +843,6 @@ export default function TerminalApp() {
     setSimulation(null);
     setSimulationMove(null);
     setNotice(`${outgoing.displayName} → ${incoming.displayName} applied.`);
-  };
-
-  const askAI = async (prompt: string) => {
-    const text = prompt.trim();
-    if (!text || aiBusy) return;
-    setAiPrompt("");
-    setAiMessages((messages) => [...messages, { role: "user", text, at: Date.now() }]);
-    setAiBusy(true);
-    try {
-      const response = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "content-type": "application/json", accept: "application/json" },
-        body: JSON.stringify({ message: text, context: { gameweek: planningGameweek, squad: { playerIds: store.playerIds, lockedPlayerIds: store.lockedPlayerIds, captainId: store.captainId, viceCaptainId: store.viceCaptainId }, finances: { costTenths: spent, bankTenths: 1000 - spent }, strategy: { horizon: store.horizon, risk: store.riskMode, bench: store.benchStrategy } } }),
-      });
-      if (!response.ok) throw new Error(`AI analyst returned ${response.status}`);
-      const payload = objectOf(await response.json());
-      const answer = stringOf(payload?.message) ?? stringOf(payload?.text) ?? "The analyst returned no explanation.";
-      const actions = arrayOf(payload?.actions)
-        .map(objectOf)
-        .map((action) => ({ type: stringOf(readField(action, "type")), playerId: readField(action, "playerId"), outId: readField(action, "outId"), inId: readField(action, "inId") }))
-        .filter((action): action is { type: string; playerId: unknown; outId: unknown; inId: unknown } => Boolean(action.type));
-      setAiMessages((messages) => [...messages, { role: "assistant", text: answer, at: Date.now(), actions }]);
-      const weeklyAction = arrayOf(payload?.actions)
-        .map(objectOf)
-        .find((action): action is UnknownRecord => Boolean(action && readField(action, "type") === "APPLY_WEEKLY_LINEUP"));
-      if (weeklyAction) {
-        const starterIds = arrayOf(readField(weeklyAction, "starterIds")).map(numberOf).filter((id): id is number => id !== undefined);
-        const benchOrder = arrayOf(readField(weeklyAction, "benchOrder")).map(numberOf).filter((id): id is number => id !== undefined);
-        const candidate: WeeklyLineupPlan = {
-          ...weeklyEnginePlan,
-          gameweek: numberOf(readField(weeklyAction, "gameweek")) ?? 0,
-          starterIds,
-          benchGoalkeeperId: numberOf(readField(weeklyAction, "benchGoalkeeperId")) ?? 0,
-          benchOrder: benchOrder as [number, number, number],
-          captainId: numberOf(readField(weeklyAction, "captainId")) ?? 0,
-          viceCaptainId: numberOf(readField(weeklyAction, "viceCaptainId")) ?? 0,
-          projectionFingerprint: stringOf(readField(weeklyAction, "projectionFingerprint")) ?? "",
-        };
-        const valid = candidate.gameweek === planningGameweek
-          && candidate.gameweek === weeklyEnginePlan.gameweek
-          && candidate.projectionFingerprint === weeklyEnginePlan.projectionFingerprint
-          && validateWeeklyLineup(candidate, selected).legal;
-        if (valid) {
-          store.setMobileTab("SQUAD");
-          setNotice("AI weekly team recommendation is ready. Use PICK TEAM to apply the shared lineup engine.");
-        } else {
-          setNotice("AI weekly team proposal failed validation against the current squad and projections.");
-        }
-      }
-      setAiOnline(true);
-    } catch {
-      setAiOnline(false);
-      setAiMessages((messages) => [...messages, { role: "assistant", text: "AI analyst is offline. The squad controls and deterministic analysis remain available; no model output was used.", at: Date.now() }]);
-    } finally {
-      setAiBusy(false);
-    }
-  };
-
-  const handleAnalystAction = (action: { type?: string; playerId?: unknown; outId?: unknown; inId?: unknown }) => {
-    const playerId = numberOf(action.playerId);
-    if (action.type === "VIEW_PLAYER" && playerId !== undefined) {
-      store.setSelectedPlayer(playerId);
-      store.setMobileTab("MARKET");
-      return;
-    }
-    if (action.type === "LOCK_PLAYER" && playerId !== undefined) {
-      store.toggleLock(playerId);
-      return;
-    }
-    if (action.type === "OPTIMIZE") {
-      void runOptimize(false);
-      return;
-    }
-    const outId = numberOf(action.outId);
-    const inId = numberOf(action.inId);
-    if (action.type === "SIMULATE_TRANSFER" && outId !== undefined && inId !== undefined && playerById.has(outId) && playerById.has(inId)) {
-      store.setMobileTab("SQUAD");
-      simulateMove(outId, inId);
-    }
   };
 
   const changePlanningGameweek = (target: number) => {
@@ -1088,7 +956,7 @@ export default function TerminalApp() {
         <div className="topbar-actions"><button className="text-button" onClick={refresh}>REFRESH</button><button className="text-button" onClick={() => exportState(store)}>EXPORT</button><button className="text-button" onClick={() => importRef.current?.click()}>IMPORT</button><button className="text-button danger-text" onClick={reset}>RESET</button><input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, store)} /></div>
       </header>
 
-      <nav className="mobile-tabs" aria-label="Terminal panels">{(["SQUAD", "MARKET", "AI"] as const).map((tab) => <button key={tab} className={store.activeMobileTab === tab ? "active" : ""} onClick={() => store.setMobileTab(tab)}>{tab}</button>)}</nav>
+      <nav className="mobile-tabs" aria-label="Terminal panels">{(["SQUAD", "MARKET"] as const).map((tab) => <button key={tab} className={store.activeMobileTab === tab ? "active" : ""} onClick={() => store.setMobileTab(tab)}>{tab}</button>)}</nav>
 
       <div className="terminal-grid" style={gridStyle}>
         <section id="terminal-panel-market" data-panel="market" className={`market-column ${collapsedPanels.market ? "panel-collapsed" : ""} ${store.activeMobileTab === "MARKET" ? "mobile-visible" : ""}`} aria-label="Player universe">
@@ -1121,10 +989,6 @@ export default function TerminalApp() {
           <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
         </section>
 
-        <section id="terminal-panel-ai" data-panel="ai" className={`ai-column ${collapsedPanels.ai ? "panel-collapsed" : ""} ${store.activeMobileTab === "AI" ? "mobile-visible" : ""}`} aria-label="AI analyst">
-          <AnalystPanel messages={aiMessages} busy={aiBusy} online={aiOnline} prompt={aiPrompt} setPrompt={setAiPrompt} onAsk={askAI} onAction={handleAnalystAction} lockedCheck={(id) => store.lockedPlayerIds.includes(id)} playerById={playerById} onQuick={(label) => { if (label === "OPTIMIZE" || label === "FINISH SQUAD") { runOptimize(label === "FINISH SQUAD"); store.setMobileTab("SQUAD"); return; } if (label === "CAPTAIN") { setCaptainDeterministically(); return; } if (label === "WEAK LINK") { store.setMobileTab("SQUAD"); if (weakest[0]) store.setSelectedPlayer(weakest[0].id); return; } if (label === "ANALYZE") { store.setMobileTab("SQUAD"); return; } askAI(label.toLowerCase()); }} textareaRef={aiRef} collapsed={collapsedPanels.ai} onToggle={() => togglePanel("ai")} />
-          <PanelResizer panel="ai" onResizeStart={beginPanelResize} />
-        </section>
       </div>
       {notice && (noticeMinimized
         ? <button type="button" className="toast toast-pill" aria-label="Show notification" onClick={() => setNoticeMinimized(false)}>{notice}</button>
@@ -1252,114 +1116,6 @@ function TransferSuggestionsPanel({ suggestions, state, message, horizon, onHori
 }
 
 function SimulationPanel({ result, move, playerById, onApply, onDiscard }: { result: SimulationResult; move: { outId: number; inId: number }; playerById: Map<number, TerminalPlayer>; onApply: () => void; onDiscard: () => void }) { return <section className="panel simulation-panel"><div className="panel-header"><div><span className="section-kicker">SIMULATION</span><span className="panel-count">{result.legal ? "LEGAL" : "CHECK REQUIRED"}</span></div><button className="icon-button" onClick={onDiscard} aria-label="Close simulation">×</button></div><div className="simulation-move">{playerById.get(move.outId)?.displayName ?? "Outgoing"} <span>→</span> {playerById.get(move.inId)?.displayName ?? "Incoming"}</div><div className="simulation-grid"><div><span>CURRENT {result.horizon}GW xP</span><strong>{points(result.optimizedBeforeXp)}</strong></div><div><span>SIMULATED {result.horizon}GW xP</span><strong>{points(result.optimizedAfterXp)}</strong></div><div><span>PRICE EFFECT</span><strong>{money(result.priceDeltaTenths)}</strong></div><div><span>xP EFFECT</span><strong className={result.projectedDelta >= 0 ? "green" : "red"}>{result.projectedDelta >= 0 ? "+" : ""}{result.projectedDelta.toFixed(1)}</strong></div></div><p className="simulation-note">{result.explanationFactors[0] ?? "Model comparison complete."}{!result.legal && " The current selection still has a squad-rules issue."}</p><div className="simulation-actions"><button className="primary-button" onClick={onApply}>APPLY CHANGES</button><button className="secondary-button" onClick={onDiscard}>DISCARD</button></div></section>; }
-
-const PROMPT_CARDS: Array<{ title: string; detail: string; prompt: string }> = [
-  { title: "ANALYZE SQUAD", detail: "Strengths, weak links and the next move", prompt: "Analyze my current squad and suggest the next move" },
-  { title: "WEAKEST LINK", detail: "Who is holding the squad back", prompt: "Who is my weakest link and who should replace them?" },
-  { title: "CAPTAIN PICK", detail: "Best captaincy for the next gameweek", prompt: "Who should I captain this gameweek?" },
-  { title: "BENCH CHECK", detail: "Is my bench strong enough?", prompt: "Is my bench strong enough for the next gameweek?" },
-];
-
-type AssistantActionHint = { type?: string; playerId?: unknown; outId?: unknown; inId?: unknown };
-
-function clockLabel(at: number): string {
-  return new Date(at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
-}
-
-function AnalystPanel({ messages, busy, online, prompt, setPrompt, onAsk, onQuick, onAction, lockedCheck, playerById, textareaRef, collapsed, onToggle }: {
-  messages: Array<{ role: "user" | "assistant"; text: string; at?: number; actions?: AssistantActionHint[] }>;
-  busy: boolean;
-  online: boolean | null;
-  prompt: string;
-  setPrompt: (value: string) => void;
-  onAsk: (prompt: string) => void;
-  onQuick: (label: string) => void;
-  onAction: (action: AssistantActionHint) => void;
-  lockedCheck: (id: number) => boolean;
-  playerById: Map<number, TerminalPlayer>;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  collapsed: boolean;
-  onToggle: () => void;
-}) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const offlineCopy = online === false ? "AI analyst offline. Add DEEPSEEK_API_KEY to .env.local to enable conversational analysis." : null;
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length, busy]);
-  const actionLabel = (action: AssistantActionHint): string | null => {
-    const playerId = numberOf(action.playerId);
-    if (action.type === "VIEW_PLAYER" && playerId !== undefined) return `VIEW ${playerById.get(playerId)?.displayName ?? "#" + playerId}`;
-    if (action.type === "LOCK_PLAYER" && playerId !== undefined) return `${lockedCheck(playerId) ? "UNLOCK" : "LOCK"} ${playerById.get(playerId)?.displayName ?? "#" + playerId}`;
-    if (action.type === "OPTIMIZE") return "RUN OPTIMIZER";
-    const outId = numberOf(action.outId);
-    const inId = numberOf(action.inId);
-    if (action.type === "SIMULATE_TRANSFER" && outId !== undefined && inId !== undefined) return `PREVIEW ${playerById.get(outId)?.displayName ?? "#" + outId} → ${playerById.get(inId)?.displayName ?? "#" + inId}`;
-    return null;
-  };
-  return (
-    <section className={`panel analyst-panel ${collapsed ? "panel-collapsed" : ""}`}>
-      <div className="panel-header">
-        <div>
-          <span className="section-kicker">AI ANALYST</span>
-          <span className="panel-count">{online === true ? "ONLINE" : online === false ? "OFFLINE SHELL" : "CHECKING"}</span>
-        </div>
-        <div className="header-actions">
-          <span className={`data-badge ${online === true ? "green" : "model"}`}>{online === false ? "OFFLINE" : "DEEPSEEK"}</span>
-          <PanelToggle panel="ai" collapsed={collapsed} onToggle={onToggle} />
-        </div>
-      </div>
-      <div className="analyst-scroll" ref={scrollRef}>
-        {!messages.length && !busy && offlineCopy && <div className="analyst-block"><p>{offlineCopy}</p></div>}
-        {!messages.length && !busy && !offlineCopy && (
-          <div className="prompt-cards">
-            {PROMPT_CARDS.map((card) => (
-              <button key={card.title} type="button" className="prompt-card" onClick={() => onAsk(card.prompt)}>
-                <strong>{card.title}</strong>
-                <span>{card.detail}</span>
-              </button>
-            ))}
-          </div>
-        )}
-        {messages.map((message, index) => (
-          <div className={`message ${message.role}`} key={`${message.role}-${index}`}>
-            <span className="message-label">
-              {message.role === "user" ? "> YOU" : "ANALYST"}
-              {message.at ? <time className="message-time">{clockLabel(message.at)}</time> : null}
-            </span>
-            <p>{message.text}</p>
-            {message.role === "assistant" && message.actions?.length ? (
-              <div className="message-actions">
-                {message.actions.map((action, actionIndex) => {
-                  const label = actionLabel(action);
-                  return label ? <button key={`${action.type}-${actionIndex}`} type="button" onClick={() => onAction(action)}>{label}</button> : null;
-                })}
-              </div>
-            ) : null}
-          </div>
-        ))}
-        {busy && (
-          <div className="message assistant">
-            <span className="message-label">ANALYST</span>
-            <p className="thinking" aria-label="Analyst thinking"><i /><i /><i /></p>
-          </div>
-        )}
-      </div>
-      <form className="ai-composer" onSubmit={(event) => { event.preventDefault(); onAsk(prompt); }}>
-        <div className="command-chips" role="toolbar" aria-label="Quick commands">
-          {["ANALYZE", "OPTIMIZE", "WEAK LINK", "FINISH SQUAD", "CHEAPEN BENCH", "CAPTAIN"].map((label) => (
-            <button key={label} type="button" onClick={() => onQuick(label)}>{label}</button>
-          ))}
-        </div>
-        <div className="ai-input">
-          <span>&gt;</span>
-          <textarea ref={textareaRef} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Ask about this squad..." rows={2} aria-label="Ask the AI analyst" />
-          <button type="submit" disabled={!prompt.trim() || busy} aria-label="Send analyst query">↗</button>
-        </div>
-      </form>
-    </section>
-  );
-}
 
 function probability(value: number): string { return `${Math.round(clamp(value, 0, 1) * 100)}%`; }
 export function formatSelectionUpdatedAt(value: string): string {

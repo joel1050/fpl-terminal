@@ -220,16 +220,13 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("region", { name: /^transfer suggestions$/i })).not.toContainText(/Rice\s*→\s*Saka/i);
   });
 
-  test("keeps the quantitative workspace usable and explains AI offline mode", async ({ page }) => {
+  test("keeps the quantitative workspace usable without the AI analyst", async ({ page }) => {
     await chooseMode(page, /build from scratch/i);
     await waitForMarket(page);
 
     await expect(page.getByText(/projection|xpts|expected points|data/i).first()).toBeVisible();
-    const aiInput = page.getByPlaceholder(/ask about this squad/i);
-    await expect(aiInput).toBeVisible();
-    await aiInput.fill("What should I change first?");
-    await clickButton(page, /send analyst query/i);
-    await expect(page.getByText(/ai analyst is offline|deepseek_api_key|configuration.*missing|analyst.*offline/i).last()).toBeVisible();
+    await expect(page.getByRole("region", { name: /ai analyst/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^ai$/i })).toHaveCount(0);
   });
 
   test("shows selection rating, probabilities, evidence, and update time in player details", async ({ page }) => {
@@ -263,7 +260,7 @@ test.describe("FPL Terminal acceptance", () => {
       expect(await headers(), `player universe should expose ${label} on wide panels`).toMatch(label);
     }
 
-    for (const name of [/player universe/i, /squad builder and analysis/i, /ai analyst/i]) {
+    for (const name of [/player universe/i, /squad builder and analysis/i]) {
       const panel = page.getByRole("region", { name }).first();
       await expect(panel, `${name} should be a visible desktop panel`).toBeVisible();
       const toggle = panel.getByRole("button", { name: /minimize|collapse/i });
