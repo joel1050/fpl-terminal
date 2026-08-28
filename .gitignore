@@ -4,7 +4,13 @@ out/
 coverage/
 playwright-report/
 test-results/
-data/generated/
+data/generated/*
+!data/generated/historical-match-stats.json
+!data/generated/historical-players.json
+!data/generated/player-mappings.json
+!data/generated/rotowire-lineups.json
+!data/generated/rotowire-player-mappings.json
+!data/generated/team-strength.json
 data/snapshots/
 .env*
 !.env.example
