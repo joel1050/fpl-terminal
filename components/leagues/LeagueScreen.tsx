@@ -66,6 +66,7 @@ function StatusCell({ label, value, tone }: { label: string; value: string; tone
 
 interface ImportedTeamPayload {
   entryId: number;
+  budgetTenths: number;
   teamName?: string;
   managerName?: string;
   squad: { playerIds: number[]; byPosition: Record<Position, number[]> };
@@ -108,6 +109,7 @@ function TeamGate({
         body.data.squad,
         { ...body.data.lineup, lineupProjectionFingerprint: fingerprint },
         body.data.entryId,
+        body.data.budgetTenths,
       );
       if (!applied) throw new Error("FPL returned an invalid 15-player squad.");
     } catch (reason) {

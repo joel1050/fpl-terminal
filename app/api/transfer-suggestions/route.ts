@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 const requestSchema = z.object({
   squad: z.array(z.number().int().positive()).length(15),
   lockedPlayerIds: z.array(z.number().int().positive()).max(15),
+  budgetTenths: z.number().int().nonnegative().optional(),
   excludedPlayerIds: z.array(z.number().int().positive()).max(600).optional(),
   gameweek: z.number().int().min(1).max(38).optional(),
   horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]),
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     if (!bootstrap.data) return NextResponse.json({ error: bootstrap.error ?? "FPL data is unavailable" }, { status: 503 });
     const normalized = normalizeBootstrap(bootstrap.data, fixtures.data ?? []);
     const projected = (await enrichBootstrapWithProjections(normalized, historical)).bootstrap;
-    const legality = legalSquad(parsed.data.squad, playerMap(projected.players));
+    const legality = legalSquad(parsed.data.squad, playerMap(projected.players), { budgetTenths: parsed.data.budgetTenths });
     if (!legality.legal) return NextResponse.json({ error: legality.errors[0] ?? "A legal 15-player squad is required" }, { status: 422 });
     const gameweek = parsed.data.gameweek
       ?? projected.events.find((event) => event.isCurrent)?.id
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
       horizon: parsed.data.horizon,
       risk: parsed.data.risk,
       lockedPlayerIds: parsed.data.lockedPlayerIds,
+      budgetTenths: parsed.data.budgetTenths,
       excludedPlayerIds: parsed.data.excludedPlayerIds,
     }).slice(0, 5);
     return NextResponse.json({ gameweek, horizon: parsed.data.horizon, suggestions });

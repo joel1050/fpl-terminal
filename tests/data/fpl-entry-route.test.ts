@@ -31,7 +31,7 @@ describe("FPL team import route", () => {
   beforeEach(() => {
     mocks.getEntry.mockResolvedValue({ data: { id: 4827193, name: "Test XI", player_first_name: "Test", player_last_name: "Manager" }, freshness: null });
     mocks.getEntryPicks.mockResolvedValue({
-      data: { picks },
+      data: { picks, entry_history: { bank: 10, value: 1003 } },
       freshness: null,
     });
   });
@@ -44,6 +44,8 @@ describe("FPL team import route", () => {
     await expect(response.json()).resolves.toMatchObject({ data: {
       teamName: "Test XI",
       managerName: "Test Manager",
+      bankTenths: 10,
+      budgetTenths: 1003,
       squad: { byPosition: { GK: [1, 2], DEF: [3, 4, 5, 6, 7], MID: [8, 9, 10, 11, 12], FWD: [13, 14, 15] } },
       lineup: { gameweek: 1, benchGoalkeeperId: 2, benchOrder: [6, 7, 15], captainId: 13, viceCaptainId: 14 },
     } });

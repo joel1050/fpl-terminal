@@ -64,10 +64,10 @@ describe("single-transfer route", () => {
     const response = await POST(new Request("http://localhost/api/transfer-suggestions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ squad: players.map((item) => item.id), lockedPlayerIds: [], horizon: 5, risk: "BALANCED" }),
+      body: JSON.stringify({ squad: players.map((item) => item.id), lockedPlayerIds: [], budgetTenths: 750, horizon: 5, risk: "BALANCED" }),
     }));
     expect(response.status).toBe(200);
-    expect(mocks.find).toHaveBeenCalledWith(expect.objectContaining({ gameweek: 3, horizon: 5, risk: "BALANCED" }));
+    expect(mocks.find).toHaveBeenCalledWith(expect.objectContaining({ gameweek: 3, budgetTenths: 750, horizon: 5, risk: "BALANCED" }));
     await expect(response.json()).resolves.toMatchObject({ gameweek: 3, horizon: 5, suggestions: [{ outgoingPlayerId: 3, incomingPlayerId: 16 }] });
   });
 

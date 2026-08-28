@@ -531,7 +531,7 @@ export default function TerminalApp() {
     const state = useTerminalStore.getState();
     if (!state.isHydrated) return;
     window.localStorage.setItem("fpl-terminal-state", JSON.stringify(exportTerminalState(state)));
-  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.mode, store.entryId, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.transferHorizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys]);
+  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.mode, store.entryId, store.budgetTenths, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.transferHorizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -551,6 +551,7 @@ export default function TerminalApp() {
   const selected = useMemo(() => data.players.filter((player) => store.playerIds.includes(player.id)), [data.players, store.playerIds]);
   const playerById = useMemo(() => new Map(data.players.map((player) => [player.id, player])), [data.players]);
   const spent = useMemo(() => selected.reduce((sum, player) => sum + player.priceTenths, 0), [selected]);
+  const bankTenths = store.budgetTenths - spent;
   const slotMaxPrices = useMemo(() => POSITIONS.reduce((result, position) => {
     result[position] = maxSafePriceForPosition(position, selected, data.players);
     return result;
@@ -584,7 +585,7 @@ export default function TerminalApp() {
     return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 100) : undefined;
   }, [planningGameweek, selected]);
   const transferRequestKey = selected.length === 15
-    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.transferHorizon}|${store.riskMode}|${planningGameweek}`
+    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.budgetTenths}|${store.transferHorizon}|${store.riskMode}|${planningGameweek}`
     : "";
   useEffect(() => {
     if (!transferRequestKey) return;
@@ -596,6 +597,7 @@ export default function TerminalApp() {
       body: JSON.stringify({
         squad: store.playerIds,
         lockedPlayerIds: store.lockedPlayerIds,
+        budgetTenths: store.budgetTenths,
         horizon: store.transferHorizon,
         risk: store.riskMode,
         gameweek: planningGameweek,
@@ -609,7 +611,7 @@ export default function TerminalApp() {
       setTransferSearch({ key: transferRequestKey, suggestions: [], state: "ERROR", message: error instanceof Error ? error.message : "Exact transfer search failed" });
     });
     return () => controller.abort();
-  }, [planningGameweek, store.transferHorizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
+  }, [planningGameweek, store.budgetTenths, store.transferHorizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
   const dismissedTransferKeys = new Set(store.dismissedTransferKeys);
   const transferSuggestions = transferRequestKey && transferSearch.key === transferRequestKey
     ? transferSearch.suggestions.filter((move) => !dismissedTransferKeys.has(`${move.outgoingPlayerId}:${move.incomingPlayerId}`))
@@ -643,7 +645,7 @@ export default function TerminalApp() {
         && (filters.availability === "ALL" || availabilityOf(player) === filters.availability)
         && (filters.confidence === "ALL" || confidenceOf(player) === filters.confidence)
         && (filters.risk === "ALL" || riskBandOf(player) === filters.risk)
-        && (!filters.affordableOnly || player.priceTenths <= 1000 - spent)
+        && (!filters.affordableOnly || player.priceTenths <= bankTenths)
         && (!filters.excludeSelected || !store.playerIds.includes(player.id))
         && quickMatch;
     });
@@ -663,7 +665,7 @@ export default function TerminalApp() {
       const result = typeof left === "string" && typeof right === "string" ? left.localeCompare(right) : Number(left) - Number(right);
       return store.sortDirection === "asc" ? result : -result;
     });
-  }, [data.players, spent, store.filters, store.playerIds, store.search, store.sortDirection, store.sortKey]);
+  }, [bankTenths, data.players, store.filters, store.playerIds, store.search, store.sortDirection, store.sortKey]);
 
   const addPlayer = useCallback((player: TerminalPlayer) => {
     const explanation = explainIllegalSelection(player, selected, data.players);
@@ -693,6 +695,7 @@ export default function TerminalApp() {
           mode: complete ? "COMPLETE" : "OPTIMIZE",
           squad: store.playerIds,
           lockedPlayerIds: store.lockedPlayerIds,
+          budgetTenths: store.budgetTenths,
           gameweek: planningGameweek,
           horizon: store.horizon,
           risk: store.riskMode,
@@ -813,6 +816,7 @@ export default function TerminalApp() {
       horizon: store.transferHorizon,
       risk: store.riskMode,
       bench: store.benchStrategy,
+      budgetTenths: store.budgetTenths,
     });
     setSimulationMove({ outId, inId });
     setSimulation(result);
@@ -835,6 +839,7 @@ export default function TerminalApp() {
       horizon: store.transferHorizon,
       risk: store.riskMode,
       bench: store.benchStrategy,
+      budgetTenths: store.budgetTenths,
     });
     if (!checked.legal || !store.replacePlayer(outgoing.id, incoming.id, incoming.position)) {
       setNotice("That transfer is no longer legal for the current squad.");
@@ -870,7 +875,7 @@ export default function TerminalApp() {
       if (body.data.squad.playerIds.some((playerId) => !known.has(playerId))) throw new Error("The official squad contains players missing from the current FPL player data. Refresh and try again.");
       const importedPlayers = data.players.filter((player) => body.data!.squad.playerIds.includes(player.id));
       const fingerprint = pickWeeklyTeam({ squad: importedPlayers, gameweek: liveCurrentGW, riskMode: store.riskMode }).projectionFingerprint;
-      if (!fingerprint || !store.replaceSquad(body.data.squad, { ...body.data.lineup, lineupProjectionFingerprint: fingerprint }, entryId)) throw new Error("FPL returned an invalid 15-player squad.");
+      if (!fingerprint || !store.replaceSquad(body.data.squad, { ...body.data.lineup, lineupProjectionFingerprint: fingerprint }, entryId, body.data.budgetTenths)) throw new Error("FPL returned an invalid 15-player squad.");
       store.switchGameweek(liveCurrentGW);
       setGWSwapSelection({});
       setSimulation(null);
@@ -903,7 +908,7 @@ export default function TerminalApp() {
       onImport={(result) => {
         const importedPlayers = data.players.filter((player) => result.squad.playerIds.includes(player.id));
         const fingerprint = pickWeeklyTeam({ squad: importedPlayers, gameweek: result.lineup.gameweek, riskMode: store.riskMode }).projectionFingerprint;
-        if (!store.replaceSquad(result.squad, { ...result.lineup, lineupProjectionFingerprint: fingerprint }, result.entryId)) return false;
+        if (!store.replaceSquad(result.squad, { ...result.lineup, lineupProjectionFingerprint: fingerprint }, result.entryId, result.budgetTenths)) return false;
         setNotice(`Imported ${result.teamName || result.managerName || `FPL team ${result.entryId}`}.`);
         return true;
       }}
@@ -949,7 +954,7 @@ export default function TerminalApp() {
           <StatusCell label="GW" value={data.gameweek ? String(data.gameweek) : "—"} />
           <DeadlineStatus deadline={data.deadline} />
           <StatusCell label="DATA" value={`${status === "LIVE" ? "● LIVE" : status === "SNAPSHOT" ? "● SNAPSHOT" : status === "STALE" ? "● STALE" : status === "SYNCING" ? "● SYNC" : "● OFFLINE"}${data.fetchedAt ? ` · ${relativeAge(data.fetchedAt)}` : ""}`} tone={status === "LIVE" ? "green" : status === "ERROR" ? "red" : "amber"} />
-          <StatusCell label="ITB" value={money(1000 - spent)} tone={spent > 1000 ? "red" : undefined} />
+          <StatusCell label="ITB" value={money(bankTenths)} tone={bankTenths < 0 ? "red" : undefined} />
           <StatusCell label="5GW xP" value={points(projected.next5)} tone="cyan" />
           <StatusCell label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} tone={risk === undefined ? undefined : risk < 30 ? "green" : risk < 60 ? "amber" : "red"} />
         </div>
@@ -983,7 +988,7 @@ export default function TerminalApp() {
             </section>
             <section className="bench-section" aria-label="Bench"><div className="lineup-roster-heading"><span>BENCH</span><span>BGK · B1 · B2 · B3</span></div><div className="slot-grid bench-slot-grid">{benchSlots.map((slot) => { const player = slot.id ? playerById.get(slot.id) : undefined; return player ? renderSquadPlayer(player, false, slot.label) : <EmptySlot key={slot.label} position={slot.position} maxPriceTenths={slotMaxPrices[slot.position]} onChoose={() => choosePlayer(slot.position)} />; })}</div></section>
           </div>
-          <MetricStrip spent={spent} projected={projected} risk={risk} />
+          <MetricStrip spent={spent} bankTenths={bankTenths} projected={projected} risk={risk} />
           <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} playerById={playerById} onSimulate={simulateMove} onDismiss={store.dismissTransferSuggestion} />
           {simulation && simulationMove && <div className="squad-overlay"><SimulationPanel result={simulation} move={simulationMove} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMove(null); }} /></div>}
           <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
@@ -1001,7 +1006,7 @@ function ModeChooser({ status, message, gameweek, onChoose }: { status: DataStat
   return <main className="mode-screen"><div className="mode-brand"><span className="brand-mark" aria-hidden="true" /><span>FPL TERMINAL</span></div><p className="mode-tagline">QUANTITATIVE FPL SQUAD INTELLIGENCE</p><div className="mode-grid"><button className="mode-card" onClick={() => onChoose("BUILD")}><span className="mode-index">MODE A</span><strong>BUILD FROM SCRATCH</strong><span>Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.</span></button><button className="mode-card" onClick={() => onChoose("ANALYZE")}><span className="mode-index">MODE B</span><strong>ANALYZE A TEAM</strong><span>Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities.</span></button></div><div className="mode-footer"><span className={`status-pip ${status.toLowerCase()}`} />{status === "LIVE" ? `LIVE DATA · GAMEWEEK ${gameweek ?? "—"} · MODEL ESTIMATES · SQUAD RULES ENFORCED LOCALLY` : status === "SNAPSHOT" ? `SNAPSHOT DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "STALE" ? `STALE DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "SYNCING" ? "SYNCING FPL MARKET…" : message ?? "FPL data is unavailable."}</div></main>;
 }
 
-type ImportedTeam = { entryId: number; teamName?: string; managerName?: string; squad: SquadState; lineup: Omit<ApplyLineupInput, "lineupProjectionFingerprint"> };
+type ImportedTeam = { entryId: number; budgetTenths: number; teamName?: string; managerName?: string; squad: SquadState; lineup: Omit<ApplyLineupInput, "lineupProjectionFingerprint"> };
 
 function TeamImportScreen({ players, gameweek, onImport, onBack }: { players: TerminalPlayer[]; gameweek: number; onImport: (result: ImportedTeam) => boolean; onBack: () => void }) {
   const [entryId, setEntryId] = useState("");
@@ -1100,7 +1105,7 @@ function SquadSlot({ player, gameweek, locked, captain, vice, starter, benchLabe
 
 function EmptySlot({ position, maxPriceTenths, onChoose }: { position: Position; maxPriceTenths: number; onChoose: () => void }) { return <button className="squad-slot empty-slot" onClick={onChoose}><span className="empty-plus">+</span><span className="slot-player">Open {position}</span><span className="slot-sub">Max {money(maxPriceTenths)}</span><span className="suggest-label">SUGGEST →</span></button>; }
 
-function MetricStrip({ spent, projected, risk }: { spent: number; projected: { nextGW?: number; next3?: number; next5?: number }; risk?: number }) { return <div className="metric-strip" aria-label="Squad projection metrics"><Metric label="COST" value={money(spent)} /><Metric label="ITB" value={money(1000 - spent)} tone={spent <= 1000 ? "green" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" /><Metric label="3GW" value={points(projected.next3)} /><Metric label="5GW" value={points(projected.next5)} /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} /></div>; }
+function MetricStrip({ spent, bankTenths, projected, risk }: { spent: number; bankTenths: number; projected: { nextGW?: number; next3?: number; next5?: number }; risk?: number }) { return <div className="metric-strip" aria-label="Squad projection metrics"><Metric label="COST" value={money(spent)} /><Metric label="ITB" value={money(bankTenths)} tone={bankTenths >= 0 ? "green" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" /><Metric label="3GW" value={points(projected.next3)} /><Metric label="5GW" value={points(projected.next5)} /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} /></div>; }
 
 function StrategyControls({ horizon, riskMode, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; riskMode: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; riskMode?: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">RISK</span><div className="segmented">{(["SAFE", "BALANCED", "AGGRESSIVE"] as const).map((value) => <button key={value} className={riskMode === value ? "active" : ""} onClick={() => setStrategy({ riskMode: value })}>{value.slice(0, 4)}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value.slice(0, 4)}</button>)}</div></div></div>; }
 

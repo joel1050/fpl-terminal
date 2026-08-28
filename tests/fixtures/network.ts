@@ -26,7 +26,7 @@ export async function interceptFplData(page: Page) {
         byPosition: { GK: [4, 16], DEF: [7, 9, 10, 17, 18], MID: [21, 22, 11, 12, 13], FWD: [1, 14, 15] },
       };
       const lineup = { gameweek: 1, benchGoalkeeperId: 16, benchOrder: [17, 18, 15], captainId: 1, viceCaptainId: 14 };
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { entryId: 4827193, teamName: "Test XI", managerName: "Test Manager", squad, lineup } }) });
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { entryId: 4827193, budgetTenths: 1000, teamName: "Test XI", managerName: "Test Manager", squad, lineup } }) });
       return;
     }
 
@@ -192,6 +192,7 @@ export async function interceptLeaguesData(page: Page, options: LeaguesIntercept
   const profilePayload = {
     data: {
       entryId: USER_ENTRY_ID,
+      budgetTenths: 1000,
       teamName: "Expected Toulouse",
       managerName: "Joel Tester",
       profile: {

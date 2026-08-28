@@ -53,8 +53,13 @@ export async function GET(
     && captains[0].element !== viceCaptains[0].element;
   if (!valid) return fplJson(null, { entry: entry.freshness, picks: event.freshness }, ["FPL returned an invalid 15-player squad"], 422);
 
+  const bankTenths = event.data.entry_history?.bank ?? entry.data.last_deadline_bank ?? 0;
+  const budgetTenths = event.data.entry_history?.value ?? entry.data.last_deadline_value ?? 1000;
+
   return fplJson({
     entryId,
+    bankTenths,
+    budgetTenths,
     teamName: entry.data.name,
     managerName: [entry.data.player_first_name, entry.data.player_last_name].filter(Boolean).join(" "),
     profile: normalizeManagerProfile(entry.data),

@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { Horizon, PersistentFPLState, Player, Position, SquadState, WeeklyLineupPlan } from "@/types";
+import { INITIAL_BUDGET_TENTHS, type Horizon, type PersistentFPLState, type Player, type Position, type SquadState, type WeeklyLineupPlan } from "@/types";
 import { isLeagueKey } from "@/lib/leagues/leagueKey";
 import { validateWeeklyLineup } from "@/lib/squad/weeklyLineup";
 
@@ -54,6 +54,7 @@ export type ApplyLineupInput = {
 export type PersistedTerminalState = PersistentFPLState & {
   mode?: TerminalMode | null;
   entryId?: number;
+  budgetTenths?: number;
   selectedLeagueKey?: string;
   benchGoalkeeperId?: number;
   lineupGameweek?: number;
@@ -92,6 +93,10 @@ function validId(value: unknown): value is number {
 
 function validGameweek(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= MAX_GAMEWEEK;
+}
+
+function validBudget(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
 export function clampGameweek(gameweek: number, currentGameweek = 1): number {
@@ -324,6 +329,7 @@ export function isLineupStale(lineupGameweek: number | undefined, lineupProjecti
 export type TerminalState = {
   mode: TerminalMode | null;
   entryId?: number;
+  budgetTenths: number;
   /** The league the manager last opened in the Leagues workspace. */
   selectedLeagueKey?: string;
   activeMobileTab: "SQUAD" | "MARKET";
@@ -362,7 +368,7 @@ export type TerminalState = {
   addPlayer: (id: number, position: Position) => boolean;
   removePlayer: (id: number) => boolean;
   replacePlayer: (outgoingId: number, incomingId: number, position: Position) => boolean;
-  replaceSquad: (squad: SquadState, lineup: ApplyLineupInput, entryId: number) => boolean;
+  replaceSquad: (squad: SquadState, lineup: ApplyLineupInput, entryId: number, budgetTenths?: number) => boolean;
   toggleLock: (id: number) => void;
   setSelectedPlayer: (id?: number) => void;
   setStrategy: (strategy: Partial<Pick<TerminalState, "horizon" | "transferHorizon" | "riskMode" | "benchStrategy">>) => void;
@@ -381,6 +387,7 @@ export type TerminalState = {
 const initial = {
   mode: null,
   entryId: undefined,
+  budgetTenths: INITIAL_BUDGET_TENTHS,
   selectedLeagueKey: undefined as string | undefined,
   activeMobileTab: "SQUAD" as const,
   currentGameweek: 1,
@@ -505,7 +512,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     }));
     return true;
   },
-  replaceSquad: (squad, lineup, entryId) => {
+  replaceSquad: (squad, lineup, entryId, budgetTenths = INITIAL_BUDGET_TENTHS) => {
     const counts: Record<Position, number> = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
     const listed = (Object.keys(counts) as Position[]).flatMap((position) => squad.byPosition[position]);
     if (squad.playerIds.length !== 15
@@ -515,7 +522,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       || listed.some((id) => !squad.playerIds.includes(id))
       || (Object.keys(counts) as Position[]).some((position) => squad.byPosition[position].length !== counts[position])
       || !Number.isSafeInteger(entryId)
-      || entryId < 1) return false;
+      || entryId < 1
+      || !validBudget(budgetTenths)) return false;
     const byPosition = Object.fromEntries((Object.keys(counts) as Position[]).map((position) => [position, [...squad.byPosition[position]]])) as SlotMap;
     const checked = validLineup({
       playerIds: squad.playerIds,
@@ -538,6 +546,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       viceCaptainId: checked.viceCaptainId,
       selectedPlayerId: undefined,
       entryId,
+      budgetTenths,
     };
     const gameweek = lineup.gameweek;
     const nextState = { ...get(), ...next, planningGameweek: clampGameweek(gameweek, get().currentGameweek), gameweekPlans: {} };
@@ -669,6 +678,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       planningGameweek,
       mode: state.mode === "BUILD" || state.mode === "ANALYZE" || state.mode === null ? state.mode : current.mode,
       entryId: Number.isSafeInteger(state.entryId) && Number(state.entryId) > 0 ? state.entryId : current.entryId,
+      budgetTenths: validBudget(state.budgetTenths) ? state.budgetTenths : current.budgetTenths,
       selectedLeagueKey: isLeagueKey(state.selectedLeagueKey) ? state.selectedLeagueKey : current.selectedLeagueKey,
       ...activeState,
       horizon: validHorizon(state.horizon) ? state.horizon : current.horizon,
@@ -694,6 +704,7 @@ export function exportTerminalState(state: TerminalState): PersistedTerminalStat
   return {
     mode: state.mode,
     entryId: state.entryId,
+    budgetTenths: state.budgetTenths,
     selectedLeagueKey: state.selectedLeagueKey,
     squad: { playerIds: state.playerIds, byPosition: state.byPosition },
     lockedPlayerIds: state.lockedPlayerIds,
