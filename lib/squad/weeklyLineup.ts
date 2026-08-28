@@ -7,7 +7,7 @@ import type {
   WeeklyLineupPlan,
 } from "@/types/squad";
 import type { Horizon } from "@/types/projection";
-import { validateSquad } from "./validation";
+import { squadCostTenths, validateSquad } from "./validation";
 
 const positionOrder: Record<Position, number> = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
 export const NEAR_EQUAL_XP_WINDOW = 0.25;
@@ -26,6 +26,10 @@ interface LineupCandidate {
 }
 
 export type WeeklyLineupValidation = SquadValidation;
+
+function validateOwnedSquad(squad: readonly Player[]): SquadValidation {
+  return validateSquad(squad, { budgetTenths: squadCostTenths(squad) });
+}
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
@@ -126,7 +130,7 @@ function formationString(ids: readonly number[], players: ReadonlyMap<number, Pl
 
 /** Enumerate legal XIs; malformed squads return no candidates instead of corrupting state. */
 export function enumerateLegalStartingXIs(players: readonly Player[]): number[][] {
-  if (!validateSquad(players).legal) return [];
+  if (!validateOwnedSquad(players).legal) return [];
   const ordered = orderedPlayers(players);
   const result: number[][] = [];
   const selected: Player[] = [];
@@ -314,7 +318,7 @@ function captainPair(ids: readonly number[], byId: ReadonlyMap<number, Player>, 
 /** Picks a weekly team from all legal XIs and all legal bench permutations. */
 export function pickWeeklyTeam(input: WeeklyLineupInput): WeeklyLineupPlan {
   const { squad, gameweek, riskMode } = input;
-  const validation = validateSquad(squad);
+  const validation = validateOwnedSquad(squad);
   if (!validation.legal) return invalidPlan(gameweek, validation.errors);
   const byId = new Map(squad.map((player) => [player.id, player]));
   const candidates = enumerateLegalStartingXIs(squad).map((ids) => candidateFor(ids, byId, gameweek));
@@ -385,7 +389,7 @@ export function validateWeeklyLineup(plan: WeeklyLineupPlan, squad: readonly Pla
   const warnings: string[] = [];
   if (!Number.isInteger(plan.gameweek) || plan.gameweek <= 0) errors.push("Gameweek must be a positive integer.");
   if (typeof plan.projectionFingerprint !== "string" || !plan.projectionFingerprint.trim()) errors.push("Projection fingerprint is required.");
-  const squadValidation = validateSquad(squad);
+  const squadValidation = validateOwnedSquad(squad);
   if (!squadValidation.legal) errors.push(...squadValidation.errors);
   const byId = new Map(squad.map((player) => [player.id, player]));
   const starterIds = Array.isArray(plan.starterIds) ? plan.starterIds : [];

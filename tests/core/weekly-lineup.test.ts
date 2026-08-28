@@ -8,6 +8,7 @@ import {
   projectWeeklyLineupHorizons,
   validateWeeklyLineup,
 } from "@/lib/squad/weeklyLineup";
+import { validateSquad } from "@/lib/squad/validation";
 
 function player(id: number, position: Position, points: number, status = "a"): Player {
   return {
@@ -67,6 +68,15 @@ describe("weekly lineup engine", () => {
     const plan = pickWeeklyTeam({ squad: squad().slice(0, 14), gameweek: 1, riskMode: "SAFE" });
     expect(plan.starterIds).toHaveLength(0);
     expect(plan.warnings.length).toBeGreaterThan(0);
+  });
+
+  it("accepts an owned squad whose current value has risen above £100m", () => {
+    const players = squad().map((item) => ({ ...item, priceTenths: 70 }));
+    const plan = pickWeeklyTeam({ squad: players, gameweek: 1, riskMode: "SAFE" });
+
+    expect(validateSquad(players).legal).toBe(false);
+    expect(plan.starterIds).toHaveLength(11);
+    expect(validateWeeklyLineup(plan, players).legal).toBe(true);
   });
 
   it("validates captain, vice-captain, bench, and formation state", () => {
