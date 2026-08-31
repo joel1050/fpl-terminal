@@ -25,17 +25,68 @@ export type PriceTenths = number;
 export interface CurrentStats {
   totalPoints: number;
   pointsPer90?: number;
+  pointsPerGame?: number;
   form?: number;
+  starts?: number;
   goals: number;
   assists: number;
   cleanSheets: number;
+  goalsConceded?: number;
+  ownGoals?: number;
+  penaltiesSaved?: number;
+  penaltiesMissed?: number;
   bonus: number;
+  bps?: number;
   minutes: number;
   saves?: number;
   expectedGoals?: number;
   expectedAssists?: number;
+  expectedGoalInvolvements?: number;
+  expectedGoalsConceded?: number;
+  influence?: number;
+  creativity?: number;
+  threat?: number;
+  ictIndex?: number;
+  defensiveContribution?: number;
+  clearancesBlocksInterceptions?: number;
+  recoveries?: number;
+  tackles?: number;
   yellowCards?: number;
   redCards?: number;
+}
+
+export interface PlayerPerformanceStats extends CurrentStats {
+  starts: number;
+  goalsConceded: number;
+  ownGoals: number;
+  penaltiesSaved: number;
+  penaltiesMissed: number;
+  bps: number;
+  saves: number;
+  yellowCards: number;
+  redCards: number;
+}
+
+export interface PlayerMatchPerformance {
+  fixtureId?: number;
+  gameweek: number;
+  opponentTeamId?: number;
+  opponentShortName: string;
+  isHome: boolean;
+  kickoffTime?: string;
+  teamHomeScore?: number;
+  teamAwayScore?: number;
+  valueTenths?: number;
+  transfersBalance?: number;
+  selected?: number;
+  stats: PlayerPerformanceStats;
+}
+
+export interface PlayerSeasonPerformance {
+  season: string;
+  startPriceTenths?: number;
+  endPriceTenths?: number;
+  stats: PlayerPerformanceStats;
 }
 
 export interface HistoricalStats {
@@ -62,11 +113,13 @@ export interface HistoricalStats {
 }
 
 export interface PlayerFixture {
+  fixtureId?: number;
   gameweek: number;
   opponentTeamId: number;
   opponentShortName: string;
   isHome: boolean;
   difficulty?: number;
+  kickoffTime?: string;
 }
 
 export interface ProjectionFactor {
@@ -119,6 +172,13 @@ export interface Player {
   selection?: PlayerSelection;
   fixtures: PlayerFixture[];
   projection?: PlayerProjection;
+}
+
+export interface PlayerProfileData {
+  player: Player;
+  fixtures: PlayerFixture[];
+  history: PlayerMatchPerformance[];
+  historyPast: PlayerSeasonPerformance[];
 }
 
 export interface PlayerMapping {

@@ -229,17 +229,33 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("button", { name: /^ai$/i })).toHaveCount(0);
   });
 
-  test("shows selection rating, probabilities, evidence, and update time in player details", async ({ page }) => {
+  test("shows recent matches, dense season stats, previous years, and compact projections in player details", async ({ page }) => {
     await chooseMode(page, /build from scratch/i);
     await waitForMarket(page);
     await page.getByRole("button", { name: /haaland/i }).first().click();
 
-    const detail = page.getByRole("complementary", { name: /haaland detail/i });
-    await expect(detail.getByText("STARTING STATUS")).toBeVisible();
-    await expect(detail.getByText("NAILED 1–5")).toBeVisible();
-    await expect(detail.getByText("88%")).toBeVisible();
-    await expect(detail.getByText("RotoWire predicted starter")).toBeVisible();
-    await expect(detail.getByText(/Aug 20/i)).toBeVisible();
+    const detail = page.getByRole("dialog", { name: /haaland/i });
+    const universe = page.getByRole("region", { name: /player universe/i });
+    await expect(detail.getByRole("heading", { name: /recent matches/i })).toBeVisible();
+    const recentMatch = detail.getByLabel(/gameweek 6.*17 points/i);
+    await expect(recentMatch).toBeVisible();
+    await recentMatch.click();
+    await expect(recentMatch.locator("..").getByText("58", { exact: true })).toBeVisible();
+    await expect(detail.getByRole("heading", { name: /current season output/i })).toBeVisible();
+    await expect(detail.getByText("Starts", { exact: true }).first()).toBeInViewport();
+    await expect(detail.getByText("5GW xP", { exact: true })).toBeVisible();
+    await expect(detail.getByRole("heading", { name: /previous seasons/i })).toBeVisible();
+    await expect(detail.getByRole("row", { name: /2025\/26/i })).toBeVisible();
+    await expect(detail).not.toContainText(/evidence|rotowire predicted starter/i);
+    await expect(page.getByRole("region", { name: /squad builder and analysis/i })).toBeVisible();
+    const [detailBox, universeBox] = await Promise.all([detail.boundingBox(), universe.boundingBox()]);
+    expect(detailBox).not.toBeNull();
+    expect(universeBox).not.toBeNull();
+    expect(detailBox!.width).toBeLessThanOrEqual(universeBox!.width + 1);
+    expect(detailBox!.height).toBeLessThanOrEqual(universeBox!.height + 1);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(detail).toBeVisible();
   });
 
   test("keeps the player universe dense and gives each desktop panel an accessible minimize control", async ({ page }) => {

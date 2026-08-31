@@ -69,12 +69,25 @@ export const FplElementSchema = z
     goals_scored: z.number().optional(),
     assists: z.number().optional(),
     clean_sheets: z.number().optional(),
+    goals_conceded: z.number().optional(),
+    own_goals: z.number().optional(),
+    penalties_saved: z.number().optional(),
+    penalties_missed: z.number().optional(),
     bonus: z.number().optional(),
     bps: z.number().optional(),
     saves: z.number().optional(),
+    influence: numberLike.optional(),
+    creativity: numberLike.optional(),
+    threat: numberLike.optional(),
+    ict_index: numberLike.optional(),
     expected_goals: numberLike.optional(),
     expected_assists: numberLike.optional(),
+    expected_goal_involvements: numberLike.optional(),
+    expected_goals_conceded: numberLike.optional(),
     defensive_contribution: z.number().optional(),
+    clearances_blocks_interceptions: z.number().optional(),
+    recoveries: z.number().optional(),
+    tackles: z.number().optional(),
     yellow_cards: z.number().optional(),
     red_cards: z.number().optional(),
   })
@@ -129,24 +142,62 @@ export const FplPlayerFixtureSchema = z
   })
   .passthrough();
 
+const FplPerformanceStatShape = {
+  total_points: numberLike.optional(),
+  minutes: numberLike.optional(),
+  starts: numberLike.optional(),
+  goals_scored: numberLike.optional(),
+  assists: numberLike.optional(),
+  clean_sheets: numberLike.optional(),
+  goals_conceded: numberLike.optional(),
+  own_goals: numberLike.optional(),
+  penalties_saved: numberLike.optional(),
+  penalties_missed: numberLike.optional(),
+  yellow_cards: numberLike.optional(),
+  red_cards: numberLike.optional(),
+  saves: numberLike.optional(),
+  bonus: numberLike.optional(),
+  bps: numberLike.optional(),
+  influence: numberLike.optional(),
+  creativity: numberLike.optional(),
+  threat: numberLike.optional(),
+  ict_index: numberLike.optional(),
+  clearances_blocks_interceptions: numberLike.optional(),
+  recoveries: numberLike.optional(),
+  tackles: numberLike.optional(),
+  defensive_contribution: numberLike.optional(),
+  expected_goals: numberLike.optional(),
+  expected_assists: numberLike.optional(),
+  expected_goal_involvements: numberLike.optional(),
+  expected_goals_conceded: numberLike.optional(),
+};
+
 export const FplHistoryRowSchema = z
   .object({
+    ...FplPerformanceStatShape,
     element: z.number().int().optional(),
     fixture: z.number().int().optional(),
     opponent_team: z.number().int().optional(),
-    total_points: z.number().optional(),
-    minutes: z.number().optional(),
     kickoff_time: z.string().nullable().optional(),
     round: z.number().int().optional(),
+    was_home: z.boolean().optional(),
+    team_h_score: z.number().nullable().optional(),
+    team_a_score: z.number().nullable().optional(),
+    value: numberLike.optional(),
+    transfers_balance: numberLike.optional(),
+    selected: numberLike.optional(),
+    transfers_in: numberLike.optional(),
+    transfers_out: numberLike.optional(),
   })
   .passthrough();
 
 export const FplPastSeasonRowSchema = z
   .object({
+    ...FplPerformanceStatShape,
     season_name: z.string(),
     element_code: z.number().int().optional(),
-    total_points: z.number().optional(),
-    minutes: z.number().optional(),
+    start_cost: numberLike.optional(),
+    end_cost: numberLike.optional(),
   })
   .passthrough();
 

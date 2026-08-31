@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatSelectionUpdatedAt, normalizeBootstrap, parsePlayerSelection } from "@/components/terminal/TerminalApp";
+import { normalizeBootstrap, parsePlayerSelection } from "@/components/terminal/TerminalApp";
 
 describe("player selection payloads", () => {
   it("parses probabilities, rating, freshness, and evidence from the API shape", () => {
@@ -33,7 +33,6 @@ describe("player selection payloads", () => {
   it("keeps an absent or empty selection block explicitly unavailable", () => {
     expect(parsePlayerSelection(undefined)).toBeUndefined();
     expect(parsePlayerSelection({})).toBeUndefined();
-    expect(formatSelectionUpdatedAt("")).toBe("—");
   });
 
   it("preserves per-Gameweek projections used by transfer simulation", () => {

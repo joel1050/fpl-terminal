@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { getFreshness, readSnapshot, writeSnapshot } from "@/lib/fpl/cache";
-import { enrichBootstrapWithProjections, normalizeBootstrap, normalizeLiveGameweek } from "@/lib/fpl/normalize";
-import { FplBootstrapSchema, FplLiveResponseSchema } from "@/lib/fpl/schemas";
+import { enrichBootstrapWithProjections, normalizeBootstrap, normalizeLiveGameweek, normalizePlayerDetail } from "@/lib/fpl/normalize";
+import { FplBootstrapSchema, FplLiveResponseSchema, FplPlayerSummarySchema } from "@/lib/fpl/schemas";
 import { aggregateHistoricalPlayers, mapHistoricalPlayers, parseCsv } from "@/lib/historical/ingest";
 import { deriveTeamStrengths } from "@/lib/historical/enrichPlayers";
 import type { Player } from "@/types";
@@ -165,6 +165,34 @@ describe("FPL data boundary", () => {
     expect(active).toMatchObject({ currentGameweek: 1, deadlineTime: "2026-08-22T10:00:00Z" });
     expect(normalized).toMatchObject({ currentGameweek: 2, deadlineTime: "2026-08-29T10:00:00Z" });
     expect(normalized.events.find((event) => event.isCurrent)?.id).toBe(2);
+  });
+
+  it("normalizes recent match and previous-season stats for the player profile", () => {
+    const player = {
+      id: 10,
+      firstName: "Test",
+      lastName: "Player",
+      displayName: "Player",
+      teamId: 1,
+      teamName: "Test City",
+      teamShortName: "TST",
+      position: "MID",
+      priceTenths: 75,
+      ownership: 12.4,
+      status: "a",
+      current: { totalPoints: 60, goals: 4, assists: 3, cleanSheets: 2, bonus: 5, minutes: 900 },
+      fixtures: [],
+    } satisfies Player;
+    const summary = FplPlayerSummarySchema.parse({
+      fixtures: [{ id: 101, team_h: 1, team_a: 2, event: 4, is_home: true, difficulty: 2, kickoff_time: "2026-09-12T14:00:00Z" }],
+      history: [{ fixture: 99, round: 3, opponent_team: 2, was_home: false, kickoff_time: "2026-08-30T14:00:00Z", team_h_score: 1, team_a_score: 2, total_points: 8, minutes: 90, starts: 1, goals_scored: 1, assists: 0, clean_sheets: 0, goals_conceded: 1, own_goals: 0, penalties_saved: 0, penalties_missed: 0, yellow_cards: 0, red_cards: 0, saves: 0, bonus: 2, bps: 31, expected_goals: "0.72", expected_assists: "0.08", expected_goal_involvements: "0.80", defensive_contribution: 5 }],
+      history_past: [{ season_name: "2025/26", start_cost: 70, end_cost: 76, total_points: 170, minutes: 2800, starts: 32, goals_scored: 14, assists: 9, clean_sheets: 10, goals_conceded: 34, own_goals: 0, penalties_saved: 0, penalties_missed: 1, yellow_cards: 4, red_cards: 0, saves: 0, bonus: 24, bps: 590, expected_goals: "13.4", expected_assists: "8.2", expected_goal_involvements: "21.6", defensive_contribution: 190 }],
+    });
+    const detail = normalizePlayerDetail(player, summary, new Map([[1, { id: 1, name: "Test City", shortName: "TST" }], [2, { id: 2, name: "Test United", shortName: "TUN" }]]));
+
+    expect(detail.fixtures[0]).toMatchObject({ fixtureId: 101, gameweek: 4, opponentShortName: "TUN", kickoffTime: "2026-09-12T14:00:00Z" });
+    expect(detail.history[0]).toMatchObject({ gameweek: 3, opponentShortName: "TUN", isHome: false, stats: { totalPoints: 8, goals: 1, expectedGoalInvolvements: 0.8 } });
+    expect(detail.historyPast[0]).toMatchObject({ season: "2025/26", startPriceTenths: 70, endPriceTenths: 76, stats: { totalPoints: 170, starts: 32, expectedGoals: 13.4 } });
   });
 
   it("marks snapshot data stale while retaining its source timestamp", () => {

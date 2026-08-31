@@ -1,5 +1,5 @@
 import type { Page, Route } from "@playwright/test";
-import { bootstrapStaticFixture, fixturePlayers, fixturesFixture } from "./fpl";
+import { bootstrapStaticFixture, fixturePlayers, fixturesFixture, playerProfileFixture } from "./fpl";
 
 /**
  * Keep browser tests deterministic at the same boundary production uses.
@@ -9,6 +9,11 @@ export async function interceptFplData(page: Page) {
   await page.route("**/*", async (route: Route) => {
     const url = route.request().url();
     const pathname = new URL(url).pathname.toLowerCase();
+
+    if (pathname === "/api/fpl/player/1") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(playerProfileFixture) });
+      return;
+    }
 
     if (pathname.includes("bootstrap-static") || pathname.includes("/api/fpl/bootstrap")) {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(bootstrapStaticFixture) });

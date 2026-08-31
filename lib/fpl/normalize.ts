@@ -2,6 +2,8 @@ import type {
   CurrentStats,
   Player,
   PlayerFixture,
+  PlayerPerformanceStats,
+  PlayerProfileData,
   Position,
 } from "@/types/player";
 import type { HistoricalBundle } from "@/lib/historical/types";
@@ -88,12 +90,7 @@ export interface NormalizedBootstrap {
 
 export type BootstrapProjectionMetadata = PlayerEnrichmentMetadata;
 
-export interface NormalizedPlayerDetail {
-  player: Player;
-  fixtures: PlayerFixture[];
-  history: FplPlayerSummaryPayload["history"];
-  historyPast: FplPlayerSummaryPayload["history_past"];
-}
+export type NormalizedPlayerDetail = PlayerProfileData;
 
 export interface NormalizedLiveElement {
   playerId: number;
@@ -220,17 +217,34 @@ export function normalizePlayer(
   const current: CurrentStats = seasonStarted ? {
     totalPoints: rawPlayer.total_points ?? 0,
     pointsPer90: rawPlayer.minutes ? (rawPlayer.total_points ?? 0) / (rawPlayer.minutes / 90) : undefined,
+    pointsPerGame: optionalNumber(rawPlayer.points_per_game),
     form: optionalNumber(rawPlayer.form),
+    starts: rawPlayer.starts ?? 0,
     yellowCards: rawPlayer.yellow_cards ?? 0,
     redCards: rawPlayer.red_cards ?? 0,
     goals: rawPlayer.goals_scored ?? 0,
     assists: rawPlayer.assists ?? 0,
     cleanSheets: rawPlayer.clean_sheets ?? 0,
+    goalsConceded: rawPlayer.goals_conceded ?? 0,
+    ownGoals: rawPlayer.own_goals ?? 0,
+    penaltiesSaved: rawPlayer.penalties_saved ?? 0,
+    penaltiesMissed: rawPlayer.penalties_missed ?? 0,
     bonus: rawPlayer.bonus ?? 0,
+    bps: rawPlayer.bps ?? 0,
     minutes: rawPlayer.minutes ?? 0,
     saves: rawPlayer.saves,
+    influence: optionalNumber(rawPlayer.influence),
+    creativity: optionalNumber(rawPlayer.creativity),
+    threat: optionalNumber(rawPlayer.threat),
+    ictIndex: optionalNumber(rawPlayer.ict_index),
     expectedGoals: optionalNumber(rawPlayer.expected_goals),
     expectedAssists: optionalNumber(rawPlayer.expected_assists),
+    expectedGoalInvolvements: optionalNumber(rawPlayer.expected_goal_involvements),
+    expectedGoalsConceded: optionalNumber(rawPlayer.expected_goals_conceded),
+    defensiveContribution: rawPlayer.defensive_contribution,
+    clearancesBlocksInterceptions: rawPlayer.clearances_blocks_interceptions,
+    recoveries: rawPlayer.recoveries,
+    tackles: rawPlayer.tackles,
   } : {
     totalPoints: 0,
     goals: 0,
@@ -318,12 +332,47 @@ export async function enrichBootstrapWithProjections(
   };
 }
 
+function normalizePerformanceStats(
+  row: FplPlayerSummaryPayload["history"][number] | FplPlayerSummaryPayload["history_past"][number],
+): PlayerPerformanceStats {
+  return {
+    totalPoints: toNumber(row.total_points),
+    minutes: toNumber(row.minutes),
+    starts: toNumber(row.starts),
+    goals: toNumber(row.goals_scored),
+    assists: toNumber(row.assists),
+    cleanSheets: toNumber(row.clean_sheets),
+    goalsConceded: toNumber(row.goals_conceded),
+    ownGoals: toNumber(row.own_goals),
+    penaltiesSaved: toNumber(row.penalties_saved),
+    penaltiesMissed: toNumber(row.penalties_missed),
+    yellowCards: toNumber(row.yellow_cards),
+    redCards: toNumber(row.red_cards),
+    saves: toNumber(row.saves),
+    bonus: toNumber(row.bonus),
+    bps: toNumber(row.bps),
+    influence: optionalNumber(row.influence),
+    creativity: optionalNumber(row.creativity),
+    threat: optionalNumber(row.threat),
+    ictIndex: optionalNumber(row.ict_index),
+    clearancesBlocksInterceptions: optionalNumber(row.clearances_blocks_interceptions),
+    recoveries: optionalNumber(row.recoveries),
+    tackles: optionalNumber(row.tackles),
+    defensiveContribution: optionalNumber(row.defensive_contribution),
+    expectedGoals: optionalNumber(row.expected_goals),
+    expectedAssists: optionalNumber(row.expected_assists),
+    expectedGoalInvolvements: optionalNumber(row.expected_goal_involvements),
+    expectedGoalsConceded: optionalNumber(row.expected_goals_conceded),
+  };
+}
+
 export function normalizePlayerDetail(
   player: Player,
   payload: FplPlayerSummaryPayload,
   teams?: Map<number, NormalizedTeam> | ReadonlyMap<number, NormalizedTeam>,
 ): NormalizedPlayerDetail {
-  const fixtures = payload.fixtures.map((fixture) => ({
+  const fixtures: PlayerFixture[] = payload.fixtures.map((fixture) => ({
+    fixtureId: fixture.id,
     gameweek: fixture.event ?? 0,
     opponentTeamId: fixture.is_home ? fixture.team_a : fixture.team_h,
     opponentShortName:
@@ -331,12 +380,33 @@ export function normalizePlayerDetail(
       String(fixture.is_home ? fixture.team_a : fixture.team_h),
     isHome: fixture.is_home,
     difficulty: fixture.difficulty,
+    kickoffTime: fixture.kickoff_time ?? undefined,
   }));
   return {
     player: { ...player, fixtures },
     fixtures,
-    history: payload.history,
-    historyPast: payload.history_past,
+    history: payload.history.map((row) => ({
+      fixtureId: row.fixture,
+      gameweek: row.round ?? 0,
+      opponentTeamId: row.opponent_team,
+      opponentShortName: row.opponent_team === undefined
+        ? "—"
+        : teams?.get(row.opponent_team)?.shortName ?? String(row.opponent_team),
+      isHome: row.was_home ?? false,
+      kickoffTime: row.kickoff_time ?? undefined,
+      teamHomeScore: optionalNumber(row.team_h_score),
+      teamAwayScore: optionalNumber(row.team_a_score),
+      valueTenths: optionalNumber(row.value),
+      transfersBalance: optionalNumber(row.transfers_balance),
+      selected: optionalNumber(row.selected),
+      stats: normalizePerformanceStats(row),
+    })),
+    historyPast: payload.history_past.map((row) => ({
+      season: row.season_name,
+      startPriceTenths: optionalNumber(row.start_cost),
+      endPriceTenths: optionalNumber(row.end_cost),
+      stats: normalizePerformanceStats(row),
+    })),
   };
 }
 

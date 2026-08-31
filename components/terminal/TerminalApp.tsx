@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import WorkspaceSwitcher from "@/components/terminal/WorkspaceSwitcher";
-import type { NailedRating, Player, PlayerFixture, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, WeeklyLineupPlan } from "@/types";
+import type { NailedRating, Player, PlayerFixture, PlayerMatchPerformance, PlayerProfileData, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, WeeklyLineupPlan } from "@/types";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
 import { explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
 import { expectedAutosubValue, pickWeeklyTeam, projectWeeklyLineupHorizons, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
@@ -433,6 +433,26 @@ function useBootstrap() {
     return () => controller.abort();
   }, [refreshCount]);
 
+  return state;
+}
+
+function usePlayerProfile(playerId: number) {
+  const [state, setState] = useState<{ data?: PlayerProfileData; status: "LOADING" | "READY" | "ERROR"; message?: string }>({ status: "LOADING" });
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch(`/api/fpl/player/${playerId}`, { signal: controller.signal, headers: { accept: "application/json" } })
+      .then(async (response) => {
+        const body = await response.json() as { data?: PlayerProfileData | null; errors?: string[] };
+        if (!response.ok || !body.data) throw new Error(body.errors?.[0] ?? "Player match history is unavailable.");
+        return body.data;
+      })
+      .then((data) => setState({ data, status: "READY" }))
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setState({ status: "ERROR", message: error instanceof Error ? error.message : "Player match history is unavailable." });
+      });
+    return () => controller.abort();
+  }, [playerId]);
   return state;
 }
 
@@ -924,10 +944,14 @@ export default function TerminalApp() {
     store.setSearch("");
     store.setFilters({ position: "ALL", club: "", minPrice: "", maxPrice: "", minOwnership: "", maxOwnership: "", availability: "ALL", confidence: "ALL", risk: "ALL", affordableOnly: false, excludeSelected: false, quick: "ALL" });
   };
+  const openPlayer = (playerId: number) => {
+    store.setMobileTab("MARKET");
+    store.setSelectedPlayer(playerId);
+  };
   const renderSquadPlayer = (player: TerminalPlayer, starter: boolean, benchLabel?: string) => {
     const benchIndex = (lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(player.id);
     const swapSelected = benchLabel ? gwSwapSelection.benchId === player.id : gwSwapSelection.starterId === player.id;
-    return <SquadSlot key={player.id} player={player} gameweek={planningGameweek} locked={store.lockedPlayerIds.includes(player.id)} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === player.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === player.id} starter={starter} benchLabel={benchLabel} benchIndex={benchIndex} lineupActive={Boolean(currentGWPlan)} swapSelected={swapSelected} onRemove={() => store.removePlayer(player.id)} onToggleLock={() => store.toggleLock(player.id)} onSelect={() => store.setSelectedPlayer(player.id)} onSwap={() => selectGWSwapPlayer(benchLabel ? "bench" : "starter", player.id)} onCaptain={() => makeGWCaptain(player.id)} onViceCaptain={() => makeGWViceCaptain(player.id)} onMoveBench={(direction) => moveGWBench(player.id, direction)} />;
+    return <SquadSlot key={player.id} player={player} gameweek={planningGameweek} locked={store.lockedPlayerIds.includes(player.id)} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === player.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === player.id} starter={starter} benchLabel={benchLabel} benchIndex={benchIndex} lineupActive={Boolean(currentGWPlan)} swapSelected={swapSelected} onRemove={() => store.removePlayer(player.id)} onToggleLock={() => store.toggleLock(player.id)} onSelect={() => openPlayer(player.id)} onSwap={() => selectGWSwapPlayer(benchLabel ? "bench" : "starter", player.id)} onCaptain={() => makeGWCaptain(player.id)} onViceCaptain={() => makeGWViceCaptain(player.id)} onMoveBench={(direction) => moveGWBench(player.id, direction)} />;
   };
   const choosePlayer = (position: Position) => {
     const maxPriceTenths = slotMaxPrices[position];
@@ -968,8 +992,8 @@ export default function TerminalApp() {
           <div className="panel-header"><div><span className="section-kicker">PLAYER UNIVERSE</span><span className="panel-count">{data.players.length || "—"} records</span></div><div className="header-actions"><span className={`data-badge ${status.toLowerCase()}`}>{status === "LIVE" ? "LIVE FPL" : status === "SYNCING" ? "SYNCING" : "NO LIVE DATA"}</span><PanelToggle panel="market" collapsed={collapsedPanels.market} onToggle={() => togglePanel("market")} /></div></div>
           <div className="search-wrap"><span aria-hidden="true">/</span><input ref={searchRef} value={store.search} onChange={(event) => store.setSearch(event.target.value)} placeholder="Search player, club..." aria-label="Search players" /><kbd>/</kbd></div>
           <FilterBar filters={store.filters} setFilters={store.setFilters} players={data.players} onReset={resetFilters} />
-          <div className="table-wrap"><table className="player-table"><thead><tr><SortableHead label="PLAYER" sortKey="name" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>POS</th><SortableHead label="PRICE" sortKey="price" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="OWN%" sortKey="ownership" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="FORM" sortKey="form" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP GW" sortKey="nextGW" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP5" sortKey="next5" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP/£" sortKey="value" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>EXP MIN</th><th>XGI/90</th><th>RISK</th><th>FIXTURES</th><th>ADD</th></tr></thead><tbody>{filteredPlayers.slice(0, 250).map((player) => <PlayerRow key={player.id} player={player} selected={store.playerIds.includes(player.id)} onSelect={() => store.setSelectedPlayer(player.id)} onAdd={() => addPlayer(player)} />)}</tbody></table>{status === "SYNCING" && <div className="empty-state">SYNCING FPL MARKET…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>
-          {selectedPlayer && <PlayerDetail player={selectedPlayer} locked={store.lockedPlayerIds.includes(selectedPlayer.id)} freshness={status} source={data.source} onClose={() => store.setSelectedPlayer(undefined)} onAdd={() => addPlayer(selectedPlayer)} onToggleLock={() => store.toggleLock(selectedPlayer.id)} />}
+          <div className="table-wrap"><table className="player-table"><thead><tr><SortableHead label="PLAYER" sortKey="name" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>POS</th><SortableHead label="PRICE" sortKey="price" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="OWN%" sortKey="ownership" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="FORM" sortKey="form" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP GW" sortKey="nextGW" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP5" sortKey="next5" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP/£" sortKey="value" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>EXP MIN</th><th>XGI/90</th><th>RISK</th><th>FIXTURES</th><th>ADD</th></tr></thead><tbody>{filteredPlayers.slice(0, 250).map((player) => <PlayerRow key={player.id} player={player} selected={store.playerIds.includes(player.id)} onSelect={() => openPlayer(player.id)} onAdd={() => addPlayer(player)} />)}</tbody></table>{status === "SYNCING" && <div className="empty-state">SYNCING FPL MARKET…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>
+          {selectedPlayer && <PlayerDetail key={selectedPlayer.id} player={selectedPlayer} inSquad={store.playerIds.includes(selectedPlayer.id)} locked={store.lockedPlayerIds.includes(selectedPlayer.id)} onClose={() => store.setSelectedPlayer(undefined)} onAdd={() => addPlayer(selectedPlayer)} onToggleLock={() => store.toggleLock(selectedPlayer.id)} />}
           <PanelResizer panel="market" onResizeStart={beginPanelResize} />
         </section>
 
@@ -1070,25 +1094,155 @@ function SortableHead({ label, sortKey, active, direction, onSort }: { label: st
 
 function PlayerRow({ player, selected, onSelect, onAdd }: { player: TerminalPlayer; selected: boolean; onSelect: () => void; onAdd: () => void }) { return <tr className={selected ? "selected" : ""}><td><button className="player-name-button" onClick={onSelect}><strong>{player.displayName}</strong><small>· {player.teamShortName}</small></button></td><td><span className={`pos-tag ${player.position.toLowerCase()}`}>{player.position}</span></td><td>{player.priceTenths > 0 ? money(player.priceTenths) : "—"}</td><td>{player.ownership > 0 ? `${player.ownership.toFixed(1)}%` : "—"}</td><td>{player.current.form === undefined ? "—" : player.current.form.toFixed(1)}</td><td className="cyan-text">{points(player.projection?.nextGW)}</td><td>{points(player.projection?.next5)}</td><td>{metric(player.projection?.valueNext5)}</td><td>{expectedMinutesOf(player)}</td><td>{expectedInvolvementPer90(player)}</td><td>{player.projection?.riskScore ? Math.round(player.projection.riskScore) : "—"}</td><td className="fixture-cell"><FixtureRun player={player} /></td><td><button className="add-button" onClick={onAdd} disabled={selected} aria-label={`Add ${player.displayName}`}>{selected ? "IN" : "+"}</button></td></tr>; }
 
-function PlayerDetail({ player, locked, freshness, source, onClose, onAdd, onToggleLock }: { player: TerminalPlayer; locked: boolean; freshness: DataState; source: string | null; onClose: () => void; onAdd: () => void; onToggleLock: () => void }) {
+function PlayerDetail({ player, inSquad, locked, onClose, onAdd, onToggleLock }: { player: TerminalPlayer; inSquad: boolean; locked: boolean; onClose: () => void; onAdd: () => void; onToggleLock: () => void }) {
+  const profile = usePlayerProfile(player.id);
+  const profileData = profile.data;
+  const current = profileData?.player.current ?? player.current;
   const selection = player.selection;
   const expectedMinutes = selection?.expectedMinutes ?? player.projection?.expectedMinutes;
-  return <aside className="detail-panel" aria-label={`${player.displayName} detail`}>
-    <div className="detail-head"><div><span className="section-kicker">PLAYER DETAIL</span><h2>{player.displayName}</h2><p>{player.teamShortName} · {player.position} · {player.ownership ? `${player.ownership.toFixed(1)}% own` : "ownership —"}</p></div><button className="icon-button" onClick={onClose} aria-label="Close player detail">×</button></div>
-    <div className="detail-metrics"><Metric label="NEXT GW xP" value={points(player.projection?.nextGW)} tone="cyan" /><Metric label="5GW xP" value={points(player.projection?.next5)} /><Metric label="VALUE" value={metric(player.projection?.valueNext5)} /><Metric label="EXP MIN" value={expectedMinutes ? `${Math.round(expectedMinutes)}′` : "—"} /></div>
-    <div className="selection-panel" aria-label={`${player.displayName} selection model`}>
-      <div className="selection-head"><div><span className="section-kicker">STARTING STATUS</span><span className="selection-note">Availability and lineup evidence</span></div><span className={`data-badge ${selection ? "model" : "unavailable"}`}>{selection ? "MODEL" : "UNAVAILABLE"}</span></div>
-      {selection ? <>
-        <div className="selection-metrics"><Metric label="NAILED 1–5" value={String(selection.nailedRating)} tone="amber" /><Metric label="P(START)" value={probability(selection.startProbability)} tone="cyan" /><Metric label="P(CAMEO)" value={probability(selection.cameoProbability)} /><Metric label="CONFIDENCE" value={selection.confidence} /></div>
-        <div className="selection-freshness"><span>UPDATED</span><time dateTime={selection.updatedAt || undefined}>{formatSelectionUpdatedAt(selection.updatedAt)}</time><span>MODEL</span><strong>{selectionSourceLabel(selection)}</strong><span>DATA</span><strong>{source ?? "FPL feed"} · {freshnessLabel(freshness)}</strong></div>
-        <div className="selection-evidence"><span className="section-kicker">EVIDENCE</span>{selection.evidence.length ? <ul className="selection-evidence-list">{selection.evidence.map((item, index) => <li className="selection-evidence-line" key={`${item.source}-${index}`}><span className={`data-badge ${evidenceBadgeClass(item.source)}`}>{evidenceBadgeLabel(item.source)}</span><span>{item.detail}</span></li>)}</ul> : <span className="selection-empty">No evidence lines were supplied.</span>}</div>
-      </> : <p className="selection-unavailable" role="status">Selection model unavailable; lineup probabilities, rating, and evidence were not supplied for this player.</p>}
+  const expectedGoalInvolvements = profileXgi(current);
+  const recentMatches = profileData?.history.slice(-6).reverse() ?? [];
+  const upcomingFixtures = (profileData?.fixtures.length ? profileData.fixtures : player.fixtures).slice(0, 5);
+  const availability = availabilityOf(player);
+  const titleId = `player-profile-${player.id}`;
+
+  const seasonStats = [
+    ["Starts", formatProfileStat(current.starts)],
+    ["Minutes", formatProfileStat(current.minutes)],
+    ["Goals", formatProfileStat(current.goals)],
+    ["Assists", formatProfileStat(current.assists)],
+    ["Clean sheets", formatProfileStat(current.cleanSheets)],
+    ["Goals conceded", formatProfileStat(current.goalsConceded)],
+    ["Bonus", formatProfileStat(current.bonus)],
+    ["BPS", formatProfileStat(current.bps)],
+    ["xG", formatProfileStat(current.expectedGoals, 2)],
+    ["xA", formatProfileStat(current.expectedAssists, 2)],
+    ["xGI", formatProfileStat(expectedGoalInvolvements, 2)],
+    ["xGC", formatProfileStat(current.expectedGoalsConceded, 2)],
+    ["Def contribution", formatProfileStat(current.defensiveContribution)],
+    ["CBI", formatProfileStat(current.clearancesBlocksInterceptions)],
+    ["Recoveries", formatProfileStat(current.recoveries)],
+    ["Tackles", formatProfileStat(current.tackles)],
+    ["Saves", formatProfileStat(current.saves)],
+    ["Penalties saved", formatProfileStat(current.penaltiesSaved)],
+    ["Influence", formatProfileStat(current.influence, 1)],
+    ["Creativity", formatProfileStat(current.creativity, 1)],
+    ["Threat", formatProfileStat(current.threat, 1)],
+    ["ICT index", formatProfileStat(current.ictIndex, 1)],
+    ["Yellow cards", formatProfileStat(current.yellowCards)],
+    ["Red cards", formatProfileStat(current.redCards)],
+  ] as const;
+
+  return <dialog
+    open
+    className="detail-panel"
+    aria-labelledby={titleId}
+    aria-modal="false"
+  >
+    <div className="detail-frame">
+      <header className="detail-head">
+        <div className="detail-identity">
+          <div className="detail-title-line"><h2 id={titleId}>{player.displayName}</h2><span className={`pos-tag ${player.position.toLowerCase()}`}>{player.position}</span></div>
+          <p>{player.teamName} · {money(player.priceTenths)} · {player.ownership.toFixed(1)}% owned</p>
+          {player.news && <p className="detail-news">{player.news}</p>}
+        </div>
+        <div className="detail-head-actions">
+          <span className={`profile-status ${availability.toLowerCase()}`}>{profileAvailabilityLabel(availability)}</span>
+          <button className="icon-button" autoFocus onClick={onClose} aria-label="Close player detail">×</button>
+        </div>
+      </header>
+
+      <div className="detail-scroll">
+        <section className="profile-hero" aria-label={`${player.displayName} headline statistics`}>
+          <div className="profile-points"><span>Season points</span><strong>{formatProfileStat(current.totalPoints)}</strong><small>{formatProfileStat(current.pointsPerGame, 1)} per game</small></div>
+          <div className="profile-hero-metrics">
+            <Metric label="Form" value={formatProfileStat(current.form, 1)} tone="amber" />
+            <Metric label="Points / 90" value={formatProfileStat(current.pointsPer90 ?? per90(current.totalPoints, current.minutes), 2)} />
+            <Metric label="xGI / 90" value={formatProfileStat(per90(expectedGoalInvolvements, current.minutes), 2)} />
+            <Metric label="Next GW xP" value={points(player.projection?.nextGW)} tone="cyan" />
+          </div>
+        </section>
+
+        <section className="profile-section" aria-labelledby="recent-matches-heading">
+          <div className="profile-section-head"><div><h3 id="recent-matches-heading">Recent matches</h3><p>Latest FPL performances, newest first</p></div><span className="data-badge live">Live FPL</span></div>
+          {profile.status === "LOADING" && <div className="profile-loading" role="status">Loading match history…</div>}
+          {profile.status === "ERROR" && <div className="profile-error" role="status">{profile.message}</div>}
+          {profile.status === "READY" && !recentMatches.length && <div className="profile-empty">No current-season appearances yet.</div>}
+          {recentMatches.length > 0 && <div className="recent-match-list">{recentMatches.map((match) => <RecentMatchRow key={match.fixtureId ?? `${match.gameweek}-${match.opponentTeamId}`} match={match} teamShortName={player.teamShortName} />)}</div>}
+        </section>
+
+        <section className="profile-section" aria-labelledby="season-output-heading">
+          <div className="profile-section-head"><div><h3 id="season-output-heading">Current season output</h3><p>Official totals from the FPL player feed</p></div><span className="profile-record-count">{formatProfileStat(current.starts)} starts · {formatProfileStat(current.minutes)} min</span></div>
+          <div className="current-stat-grid">{seasonStats.map(([label, value]) => <Metric key={label} label={label} value={value} />)}</div>
+        </section>
+
+        <div className="profile-split">
+          <section className="profile-section profile-model" aria-labelledby="selection-model-heading">
+            <div className="profile-section-head"><div><h3 id="selection-model-heading">Selection and projection</h3><p>Estimated availability and forward output</p></div><span className="data-badge model">Model</span></div>
+            <div className="profile-model-grid">
+              <Metric label="Start" value={selection ? probability(selection.startProbability) : "—"} tone="cyan" />
+              <Metric label="Cameo" value={selection ? probability(selection.cameoProbability) : "—"} />
+              <Metric label="DNP" value={selection ? probability(selection.noAppearanceProbability) : "—"} />
+              <Metric label="Expected min" value={expectedMinutes ? `${Math.round(expectedMinutes)}′` : "—"} />
+              <Metric label="Nailed / 5" value={selection ? String(selection.nailedRating) : "—"} tone="amber" />
+              <Metric label="Confidence" value={selection?.confidence ?? player.projection?.confidence ?? "—"} />
+              <Metric label="Risk / 100" value={formatProfileStat(player.projection?.riskScore)} />
+              <Metric label="3GW xP" value={points(player.projection?.next3)} />
+              <Metric label="5GW xP" value={points(player.projection?.next5)} />
+              <Metric label="xP / £" value={formatProfileStat(player.projection?.valueNext5, 2)} />
+            </div>
+          </section>
+
+          <section className="profile-section profile-fixtures" aria-labelledby="upcoming-fixtures-heading">
+            <div className="profile-section-head"><div><h3 id="upcoming-fixtures-heading">Upcoming fixtures</h3><p>Next five scheduled matches</p></div></div>
+            <div className="profile-fixture-list">{upcomingFixtures.length ? upcomingFixtures.map((fixture) => <div className="profile-fixture" key={fixture.fixtureId ?? `${fixture.gameweek}-${fixture.opponentTeamId}`}><span>GW {fixture.gameweek || "—"}</span><strong>{fixture.opponentShortName} <small>{fixture.isHome ? "H" : "A"}</small></strong><time dateTime={fixture.kickoffTime}>{formatProfileDate(fixture.kickoffTime)}</time><em className={`fdr-${fixture.difficulty ?? 3}`}>FDR {fixture.difficulty ?? "—"}</em></div>) : <div className="profile-empty">No scheduled fixtures.</div>}</div>
+          </section>
+        </div>
+
+        <section className="profile-section" aria-labelledby="previous-seasons-heading">
+          <div className="profile-section-head"><div><h3 id="previous-seasons-heading">Previous seasons</h3><p>Full FPL history, with per-90 rates derived from official totals</p></div><span className="profile-record-count">{profileData?.historyPast.length ?? 0} seasons</span></div>
+          {profile.status === "LOADING" && <div className="profile-loading" role="status">Loading season history…</div>}
+          {profile.status === "ERROR" && <div className="profile-error">Season history is unavailable.</div>}
+          {profile.status === "READY" && profileData && <PreviousSeasonsTable seasons={profileData.historyPast} />}
+        </section>
+      </div>
+
+      <footer className="detail-footer">
+        <div className="detail-actions"><button className="primary-button" disabled={inSquad} onClick={onAdd}>{inSquad ? "In squad" : "Add to squad"}</button><button className={`secondary-button ${locked ? "locked" : ""}`} onClick={onToggleLock}>{locked ? "Unlock player" : "Lock player"}</button></div>
+        <p className="provenance"><span className="data-badge live">Live</span> Current and historical results come from FPL. <span className="data-badge model">Model</span> xP, minutes, risk and selection probabilities are estimates.</p>
+      </footer>
     </div>
-    <div className="detail-list"><div><span>PRICE</span><strong>{money(player.priceTenths)}</strong></div><div><span>CONFIDENCE</span><strong>{selection?.confidence ?? player.projection?.confidence ?? "—"}</strong></div><div><span>RISK</span><strong>{player.projection?.riskScore ? `${Math.round(player.projection.riskScore)}/100` : "—"}</strong></div><div><span>FORM / POINTS</span><strong>{player.current.totalPoints ? player.current.totalPoints : "—"}</strong></div></div>
-    <div className="detail-fixtures"><span>FIXTURES · NEXT 5</span><div>{player.fixtures.length ? player.fixtures.slice(0, 5).map((fixture) => <span key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}{fixture.isHome ? "(H)" : "(A)"}</span>) : <span>—</span>}</div></div>
-    <div className="detail-actions"><button className="primary-button" onClick={onAdd}>ADD TO SQUAD</button><button className={`secondary-button ${locked ? "locked" : ""}`} onClick={onToggleLock}>{locked ? "UNLOCK PLAYER" : "LOCK PLAYER"}</button></div>
-    <div className="provenance"><span className="data-badge live">LIVE</span> Price, status, ownership and current points come from the FPL feed.<br /><span className="data-badge model">MODEL</span> Projection fields are FPL Terminal estimates when present.</div>
-  </aside>;
+  </dialog>;
+}
+
+function RecentMatchRow({ match, teamShortName }: { match: PlayerMatchPerformance; teamShortName: string }) {
+  const xgi = profileXgi(match.stats);
+  const outcome = matchOutcome(match);
+  const pointsTone = match.stats.totalPoints >= 8 ? "haul" : match.stats.totalPoints >= 5 ? "return" : match.stats.totalPoints <= 1 ? "blank" : "steady";
+  return <details className={`recent-match-row ${pointsTone}`}>
+    <summary aria-label={`Gameweek ${match.gameweek}, ${match.opponentShortName}, ${match.stats.totalPoints} points`}>
+      <span className="recent-match-gw">GW {match.gameweek || "—"}</span>
+      <span className="recent-match-opponent"><strong>{match.opponentShortName} <small>{match.isHome ? "H" : "A"}</small></strong><span><em className={outcome ? `outcome-${outcome.toLowerCase()}` : ""}>{outcome || "—"}</em>{matchScoreline(match, teamShortName)}</span></span>
+      <time dateTime={match.kickoffTime}>{formatProfileDate(match.kickoffTime)}</time>
+      <strong className="recent-row-points">{match.stats.totalPoints}<small> pts</small></strong>
+    </summary>
+    <div className="recent-match-expanded">
+      <dl className="recent-match-stats">
+        <div><dt>Min</dt><dd>{match.stats.minutes}</dd></div><div><dt>G</dt><dd>{match.stats.goals}</dd></div><div><dt>A</dt><dd>{match.stats.assists}</dd></div>
+        <div><dt>xG</dt><dd>{formatProfileStat(match.stats.expectedGoals, 2)}</dd></div><div><dt>xA</dt><dd>{formatProfileStat(match.stats.expectedAssists, 2)}</dd></div><div><dt>CS</dt><dd>{match.stats.cleanSheets}</dd></div>
+        <div><dt>Bon</dt><dd>{match.stats.bonus}</dd></div><div><dt>BPS</dt><dd>{match.stats.bps}</dd></div><div><dt>Def</dt><dd>{formatProfileStat(match.stats.defensiveContribution)}</dd></div>
+      </dl>
+      <div className="recent-match-foot"><span>xGI {formatProfileStat(xgi, 2)}</span><span>{match.stats.saves ? `${match.stats.saves} saves` : `${match.stats.yellowCards} YC · ${match.stats.redCards} RC`}</span></div>
+    </div>
+  </details>;
+}
+
+function PreviousSeasonsTable({ seasons }: { seasons: PlayerProfileData["historyPast"] }) {
+  if (!seasons.length) return <div className="profile-empty">No previous FPL seasons for this player.</div>;
+  return <div className="profile-history-wrap"><table className="profile-history-table" aria-label="Previous FPL season statistics"><thead><tr><th>Season</th><th>Pts</th><th>Starts</th><th>Min</th><th>Pts/90</th><th>G</th><th>A</th><th>CS</th><th>xG</th><th>xA</th><th>xGI/90</th><th>Def</th><th>BPS</th><th>Bonus</th><th>Saves</th><th>ICT</th><th>YC</th><th>RC</th><th>Start £</th><th>End £</th></tr></thead><tbody>{[...seasons].reverse().map((season) => {
+    const xgi = profileXgi(season.stats);
+    return <tr key={season.season}><th scope="row">{season.season}</th><td className="history-points">{season.stats.totalPoints}</td><td>{season.stats.starts}</td><td>{season.stats.minutes}</td><td>{formatProfileStat(per90(season.stats.totalPoints, season.stats.minutes), 2)}</td><td>{season.stats.goals}</td><td>{season.stats.assists}</td><td>{season.stats.cleanSheets}</td><td>{formatProfileStat(season.stats.expectedGoals, 2)}</td><td>{formatProfileStat(season.stats.expectedAssists, 2)}</td><td>{formatProfileStat(per90(xgi, season.stats.minutes), 2)}</td><td>{formatProfileStat(season.stats.defensiveContribution)}</td><td>{season.stats.bps}</td><td>{season.stats.bonus}</td><td>{season.stats.saves}</td><td>{formatProfileStat(season.stats.ictIndex, 1)}</td><td>{season.stats.yellowCards}</td><td>{season.stats.redCards}</td><td>{money(season.startPriceTenths)}</td><td>{money(season.endPriceTenths)}</td></tr>;
+  })}</tbody></table></div>;
 }
 
 function Metric({ label, value, tone }: { label: string; value: string; tone?: string }) { return <div><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
@@ -1123,17 +1277,30 @@ function TransferSuggestionsPanel({ suggestions, state, message, horizon, onHori
 function SimulationPanel({ result, move, playerById, onApply, onDiscard }: { result: SimulationResult; move: { outId: number; inId: number }; playerById: Map<number, TerminalPlayer>; onApply: () => void; onDiscard: () => void }) { return <section className="panel simulation-panel"><div className="panel-header"><div><span className="section-kicker">SIMULATION</span><span className="panel-count">{result.legal ? "LEGAL" : "CHECK REQUIRED"}</span></div><button className="icon-button" onClick={onDiscard} aria-label="Close simulation">×</button></div><div className="simulation-move">{playerById.get(move.outId)?.displayName ?? "Outgoing"} <span>→</span> {playerById.get(move.inId)?.displayName ?? "Incoming"}</div><div className="simulation-grid"><div><span>CURRENT {result.horizon}GW xP</span><strong>{points(result.optimizedBeforeXp)}</strong></div><div><span>SIMULATED {result.horizon}GW xP</span><strong>{points(result.optimizedAfterXp)}</strong></div><div><span>PRICE EFFECT</span><strong>{money(result.priceDeltaTenths)}</strong></div><div><span>xP EFFECT</span><strong className={result.projectedDelta >= 0 ? "green" : "red"}>{result.projectedDelta >= 0 ? "+" : ""}{result.projectedDelta.toFixed(1)}</strong></div></div><p className="simulation-note">{result.explanationFactors[0] ?? "Model comparison complete."}{!result.legal && " The current selection still has a squad-rules issue."}</p><div className="simulation-actions"><button className="primary-button" onClick={onApply}>APPLY CHANGES</button><button className="secondary-button" onClick={onDiscard}>DISCARD</button></div></section>; }
 
 function probability(value: number): string { return `${Math.round(clamp(value, 0, 1) * 100)}%`; }
-export function formatSelectionUpdatedAt(value: string): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : `${date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · ${relativeAge(value)}`;
+function formatProfileStat(value: number | undefined, digits = 0): string { return value === undefined || !Number.isFinite(value) ? "—" : value.toFixed(digits); }
+function per90(value: number | undefined, minutes: number | undefined): number | undefined { return value === undefined || minutes === undefined || minutes <= 0 ? undefined : value / minutes * 90; }
+function profileXgi(stats: Player["current"]): number | undefined {
+  if (stats.expectedGoalInvolvements !== undefined) return stats.expectedGoalInvolvements;
+  if (stats.expectedGoals === undefined && stats.expectedAssists === undefined) return undefined;
+  return (stats.expectedGoals ?? 0) + (stats.expectedAssists ?? 0);
 }
-function freshnessLabel(value: DataState): string { return value === "LIVE" ? "LIVE" : value === "SNAPSHOT" ? "SNAPSHOT" : value === "STALE" ? "STALE" : value === "SYNCING" ? "SYNCING" : "UNAVAILABLE"; }
-function evidenceBadgeLabel(source: SelectionEvidence["source"]): string { return source === "ROTOWIRE_XI" ? "RotoWire XI" : source === "ROTOWIRE_AVAILABILITY" ? "RotoWire" : source === "FPL_STATUS" ? "LIVE FPL" : "MODEL"; }
-function evidenceBadgeClass(source: SelectionEvidence["source"]): "rotowire" | "live" | "model" { return source === "ROTOWIRE_XI" || source === "ROTOWIRE_AVAILABILITY" ? "rotowire" : source === "FPL_STATUS" ? "live" : "model"; }
-function selectionSourceLabel(selection: PlayerSelection): string {
-  const sources = selection.evidence.map((item) => item.source);
-  return [sources.some((item) => item.startsWith("ROTOWIRE")) ? "RotoWire" : "", sources.includes("HISTORICAL_STARTS") ? "history" : "", sources.includes("FPL_STATUS") ? "FPL" : ""].filter(Boolean).join(" + ") || "model estimate";
+function profileAvailabilityLabel(value: ReturnType<typeof availabilityOf>): string { return value === "AVAILABLE" ? "Available" : value === "DOUBTFUL" ? "Doubtful" : "Unavailable"; }
+function formatProfileDate(value: string | undefined): string {
+  if (!value) return "Date TBC";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function matchOutcome(match: PlayerMatchPerformance): "W" | "D" | "L" | "" {
+  if (match.teamHomeScore === undefined || match.teamAwayScore === undefined) return "";
+  const playerScore = match.isHome ? match.teamHomeScore : match.teamAwayScore;
+  const opponentScore = match.isHome ? match.teamAwayScore : match.teamHomeScore;
+  return playerScore > opponentScore ? "W" : playerScore < opponentScore ? "L" : "D";
+}
+function matchScoreline(match: PlayerMatchPerformance, teamShortName: string): string {
+  if (match.teamHomeScore === undefined || match.teamAwayScore === undefined) return `${teamShortName} — ${match.opponentShortName}`;
+  return match.isHome
+    ? `${teamShortName} ${match.teamHomeScore}–${match.teamAwayScore} ${match.opponentShortName}`
+    : `${match.opponentShortName} ${match.teamHomeScore}–${match.teamAwayScore} ${teamShortName}`;
 }
 function formatDeadline(value: string): string { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); }
 export function formatDeadlineCountdown(value: string, now = Date.now()): string {

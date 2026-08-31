@@ -181,3 +181,98 @@ export const bootstrapStaticFixture = {
 };
 
 export const fixturesFixture = fixtures;
+
+const profileStats = (totalPoints: number, minutes: number, overrides: Record<string, number> = {}) => ({
+  totalPoints,
+  minutes,
+  starts: minutes >= 60 ? 1 : 0,
+  goals: 0,
+  assists: 0,
+  cleanSheets: 0,
+  goalsConceded: 0,
+  ownGoals: 0,
+  penaltiesSaved: 0,
+  penaltiesMissed: 0,
+  yellowCards: 0,
+  redCards: 0,
+  saves: 0,
+  bonus: 0,
+  bps: 14,
+  influence: 18,
+  creativity: 8,
+  threat: 42,
+  ictIndex: 6.8,
+  defensiveContribution: 4,
+  clearancesBlocksInterceptions: 1,
+  recoveries: 3,
+  tackles: 1,
+  expectedGoals: 0.32,
+  expectedAssists: 0.08,
+  expectedGoalInvolvements: 0.4,
+  expectedGoalsConceded: 1.1,
+  ...overrides,
+});
+
+const recentProfileMatches = [
+  { fixtureId: 601, gameweek: 1, opponentTeamId: 2, opponentShortName: "TUN", isHome: true, kickoffTime: "2026-08-01T14:00:00Z", teamHomeScore: 3, teamAwayScore: 0, stats: profileStats(13, 90, { goals: 2, cleanSheets: 1, bonus: 3, bps: 44, expectedGoals: 1.42, expectedGoalInvolvements: 1.5 }) },
+  { fixtureId: 602, gameweek: 2, opponentTeamId: 3, opponentShortName: "TRV", isHome: false, kickoffTime: "2026-08-08T14:00:00Z", teamHomeScore: 1, teamAwayScore: 2, stats: profileStats(8, 90, { goals: 1, bonus: 2, bps: 31, expectedGoals: 0.71, expectedGoalInvolvements: 0.76 }) },
+  { fixtureId: 603, gameweek: 3, opponentTeamId: 4, opponentShortName: "TAT", isHome: true, kickoffTime: "2026-08-15T14:00:00Z", teamHomeScore: 1, teamAwayScore: 1, stats: profileStats(2, 90, { expectedGoals: 0.55, expectedGoalInvolvements: 0.61 }) },
+  { fixtureId: 604, gameweek: 4, opponentTeamId: 5, opponentShortName: "TWA", isHome: false, kickoffTime: "2026-08-22T14:00:00Z", teamHomeScore: 0, teamAwayScore: 2, stats: profileStats(6, 84, { assists: 1, cleanSheets: 1, bonus: 1, bps: 27, expectedAssists: 0.48, expectedGoalInvolvements: 0.82 }) },
+  { fixtureId: 605, gameweek: 5, opponentTeamId: 2, opponentShortName: "TUN", isHome: true, kickoffTime: "2026-08-26T18:30:00Z", teamHomeScore: 0, teamAwayScore: 1, stats: profileStats(1, 90, { expectedGoals: 0.18, expectedGoalInvolvements: 0.22 }) },
+  { fixtureId: 606, gameweek: 6, opponentTeamId: 3, opponentShortName: "TRV", isHome: false, kickoffTime: "2026-08-29T16:30:00Z", teamHomeScore: 1, teamAwayScore: 4, stats: profileStats(17, 90, { goals: 3, bonus: 3, bps: 58, expectedGoals: 2.12, expectedGoalInvolvements: 2.18 }) },
+];
+
+const profileCurrent = {
+  ...browserPlayers[0].current,
+  totalPoints: recentProfileMatches.reduce((sum, match) => sum + match.stats.totalPoints, 0),
+  pointsPerGame: 7.8,
+  form: 6.4,
+  starts: 6,
+  minutes: 534,
+  goals: 6,
+  assists: 1,
+  cleanSheets: 3,
+  goalsConceded: 3,
+  ownGoals: 0,
+  penaltiesSaved: 0,
+  penaltiesMissed: 0,
+  bonus: 9,
+  bps: 192,
+  influence: 245.4,
+  creativity: 84.2,
+  threat: 361,
+  ictIndex: 69.1,
+  expectedGoals: 5.3,
+  expectedAssists: 0.74,
+  expectedGoalInvolvements: 6.04,
+  expectedGoalsConceded: 5.1,
+  defensiveContribution: 28,
+  clearancesBlocksInterceptions: 4,
+  recoveries: 19,
+  tackles: 5,
+  yellowCards: 1,
+  redCards: 0,
+  pointsPer90: 47 / (534 / 90),
+};
+
+const profileFixtures = [
+  { fixtureId: 701, gameweek: 7, opponentTeamId: 4, opponentShortName: "TAT", isHome: true, difficulty: 2, kickoffTime: "2026-09-05T14:00:00Z" },
+  { fixtureId: 702, gameweek: 8, opponentTeamId: 5, opponentShortName: "TWA", isHome: false, difficulty: 2, kickoffTime: "2026-09-12T16:30:00Z" },
+  { fixtureId: 703, gameweek: 9, opponentTeamId: 2, opponentShortName: "TUN", isHome: true, difficulty: 4, kickoffTime: "2026-09-19T14:00:00Z" },
+  { fixtureId: 704, gameweek: 10, opponentTeamId: 3, opponentShortName: "TRV", isHome: false, difficulty: 3, kickoffTime: "2026-09-26T14:00:00Z" },
+  { fixtureId: 705, gameweek: 11, opponentTeamId: 5, opponentShortName: "TWA", isHome: true, difficulty: 1, kickoffTime: "2026-10-03T14:00:00Z" },
+];
+
+export const playerProfileFixture = {
+  data: {
+    player: { ...browserPlayers[0], current: profileCurrent, fixtures: profileFixtures },
+    fixtures: profileFixtures,
+    history: recentProfileMatches,
+    historyPast: [
+      { season: "2023/24", startPriceTenths: 140, endPriceTenths: 142, stats: profileStats(217, 2552, { starts: 29, goals: 27, assists: 8, cleanSheets: 9, bonus: 29, bps: 658, expectedGoals: 29.18, expectedAssists: 4.11, expectedGoalInvolvements: 33.29, defensiveContribution: 72, ictIndex: 331.2 }) },
+      { season: "2024/25", startPriceTenths: 150, endPriceTenths: 149, stats: profileStats(181, 2776, { starts: 31, goals: 22, assists: 3, cleanSheets: 8, bonus: 21, bps: 571, expectedGoals: 25.24, expectedAssists: 3.48, expectedGoalInvolvements: 28.72, defensiveContribution: 81, ictIndex: 298.4 }) },
+      { season: "2025/26", startPriceTenths: 145, endPriceTenths: 146, stats: profileStats(204, 2891, { starts: 33, goals: 25, assists: 5, cleanSheets: 10, bonus: 26, bps: 622, expectedGoals: 27.16, expectedAssists: 4.22, expectedGoalInvolvements: 31.38, defensiveContribution: 88, ictIndex: 320.7 }) },
+    ],
+  },
+  freshness: { player: { source: "live", fetchedAt: "2026-08-30T18:00:00.000Z", stale: false } },
+};
