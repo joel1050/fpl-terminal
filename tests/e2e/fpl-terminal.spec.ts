@@ -94,6 +94,10 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(squad.getByRole("article").filter({ hasText: "Haaland" }).getByRole("button", { name: /make haaland captain/i })).toHaveAttribute("aria-pressed", "true");
     await expect(squad.getByRole("article").filter({ hasText: "Watkins" }).getByRole("button", { name: /make watkins vice-captain/i })).toHaveAttribute("aria-pressed", "true");
     const bench = squad.getByRole("region", { name: /^bench$/i });
+    const metrics = squad.getByLabel("Squad projection metrics");
+    await expect(metrics).toContainText(/TEAM RATING/i);
+    await expect(metrics).not.toContainText(/5GW/i);
+    await expect(metrics.getByText(/^\d+%$/)).toBeVisible();
     await expect(bench.getByRole("article").nth(0)).toContainText(/Areola/i);
     await expect(bench.getByRole("article").nth(1)).toContainText(/Faes/i);
     await expect(bench.getByRole("article").nth(2)).toContainText(/Konsa/i);
@@ -243,6 +247,11 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(recentMatch.locator("..").getByText("58", { exact: true })).toBeVisible();
     await expect(detail.getByRole("heading", { name: /current season output/i })).toBeVisible();
     await expect(detail.getByText("Starts", { exact: true }).first()).toBeInViewport();
+    const advancedStats = detail.locator("details.advanced-stat-disclosure");
+    await expect(advancedStats).not.toHaveAttribute("open", "");
+    await advancedStats.locator("summary").click();
+    await expect(advancedStats).toHaveAttribute("open", "");
+    await expect(advancedStats.getByText("Influence", { exact: true })).toBeVisible();
     await expect(detail.getByText("5GW xP", { exact: true })).toBeVisible();
     await expect(detail.getByRole("heading", { name: /previous seasons/i })).toBeVisible();
     await expect(detail.getByRole("row", { name: /2025\/26/i })).toBeVisible();

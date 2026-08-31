@@ -285,6 +285,15 @@ export function fixturePointsForGameweek(
   return aggregateFixturePointsByGameweek(fixtures).get(gameweek) ?? 0;
 }
 
+/** Rolling gameweek-total window starting at `startGameweek`; blank gameweeks count as zero. */
+export function projectedPointsForGameweeks(
+  fixtures: readonly FixtureProjection[],
+  startGameweek: number,
+  count: number,
+): number {
+  return fixturePointsForGameweeks(aggregateFixturePointsByGameweek(fixtures), startGameweek, count);
+}
+
 function fixturePointsForGameweeks(
   totals: ReadonlyMap<number, number>,
   currentGameweek: number,

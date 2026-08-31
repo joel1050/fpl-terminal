@@ -129,6 +129,15 @@ function formationString(ids: readonly number[], players: ReadonlyMap<number, Pl
 }
 
 /** Enumerate legal XIs; malformed squads return no candidates instead of corrupting state. */
+/** True when eleven distinct players form a legal starting XI under FPL formation rules. */
+export function isLegalStartingXI(players: readonly Player[]): boolean {
+  if (players.length !== 11) return false;
+  if (new Set(players.map((player) => player.id)).size !== players.length) return false;
+  const counts: Record<Position, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+  for (const player of players) counts[player.position] += 1;
+  return legalFormation(counts);
+}
+
 export function enumerateLegalStartingXIs(players: readonly Player[]): number[][] {
   if (!validateOwnedSquad(players).legal) return [];
   const ordered = orderedPlayers(players);

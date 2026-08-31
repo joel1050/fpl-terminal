@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FreshnessMetadata } from "@/lib/fpl/cache";
 import { parseLeagueKey } from "@/lib/leagues/leagueKey";
 import type { LiveStats } from "@/lib/leagues/calculateLiveEntry";
+import type { LiveExplainBlock } from "@/lib/leagues/diffLiveSnapshots";
 import { MAX_STANDINGS_ROWS } from "@/lib/leagues/calculateLiveStandings";
-import { fixtureStateOf } from "@/lib/leagues/fixtureStatus";
+import { fixtureStateOf, livePollIntervalMs } from "@/lib/leagues/fixtureStatus";
 import type {
   ClassicLeagueStandings,
   ClassicStandingRow,
@@ -46,7 +47,15 @@ export interface LoadedStandings {
 
 export interface LiveSnapshot {
   statsByElement: Map<number, LiveStats>;
+  /** FPL's own per-fixture points breakdown, which prices each feed event. */
+  explainByElement: Map<number, LiveExplainBlock[]>;
   fetchedAt: string;
+}
+
+interface RawLiveElement {
+  playerId: number;
+  stats: LiveStats;
+  explain?: Array<{ fixtureId?: number; stats?: LiveExplainBlock["stats"] }>;
 }
 
 interface RawEvent {
@@ -138,6 +147,8 @@ function buildFixtureViews(raw: readonly RawFixture[], shortNames: ReadonlyMap<n
       finishedProvisional: fixture.finishedProvisional,
       started: fixture.started,
     }),
+    // `finished` is FPL's own confirmation, published once bonus is final.
+    bonusSettled: Boolean(fixture.finished),
     minutes: fixture.minutes,
   }));
 }
@@ -266,9 +277,9 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
     pollAbortRef.current = controller;
     try {
       let liveGameweek = currentGameweek;
-      let liveEnvelope = await getJson<{ elements?: Array<{ playerId: number; stats: LiveStats }> }>(`/api/fpl/live/${liveGameweek}`, controller.signal);
+      let liveEnvelope = await getJson<{ elements?: RawLiveElement[] }>(`/api/fpl/live/${liveGameweek}`, controller.signal);
       if (!(liveEnvelope.data.elements?.length) && liveGameweek > 1) {
-        const previous = await getJson<{ elements?: Array<{ playerId: number; stats: LiveStats }> }>(`/api/fpl/live/${liveGameweek - 1}`, controller.signal);
+        const previous = await getJson<{ elements?: RawLiveElement[] }>(`/api/fpl/live/${liveGameweek - 1}`, controller.signal);
         if (previous.data.elements?.length) {
           liveGameweek -= 1;
           liveEnvelope = previous;
@@ -278,9 +289,17 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
       if (controller.signal.aborted) return;
       setAvailableGameweek({ requested: currentGameweek, available: liveGameweek });
       const statsByElement = new Map<number, LiveStats>();
-      for (const element of liveEnvelope.data.elements ?? []) statsByElement.set(element.playerId, element.stats);
+      const explainByElement = new Map<number, LiveExplainBlock[]>();
+      for (const element of liveEnvelope.data.elements ?? []) {
+        statsByElement.set(element.playerId, element.stats);
+        const explain = (element.explain ?? [])
+          .map((block) => ({ fixtureId: block.fixtureId, stats: block.stats ?? [] }))
+          .filter((block) => block.stats.length > 0);
+        if (explain.length) explainByElement.set(element.playerId, explain);
+      }
       const snapshot: LiveSnapshot = {
         statsByElement,
+        explainByElement,
         fetchedAt: liveEnvelope.fetchedAt ?? new Date().toISOString(),
       };
       // An empty live snapshot means FPL gave us nothing usable: keep the last
@@ -322,15 +341,19 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
   }, [currentGameweek, refreshLive]);
 
   const anyFixtureLive = fixtures.data?.some((fixture) => fixture.state === "LIVE") ?? false;
+  const anyFixtureSettling = fixtures.data?.some(
+    (fixture) => fixture.state === "FINISHED" && !fixture.bonusSettled,
+  ) ?? false;
   const waitingForCurrentData = gameweek !== currentGameweek;
+  const pollIntervalMs = livePollIntervalMs({ anyFixtureLive, anyFixtureSettling, waitingForCurrentData });
 
   useEffect(() => {
-    if (!anyFixtureLive && !waitingForCurrentData) return;
+    if (pollIntervalMs === null) return;
     const timer = window.setInterval(() => {
       void refreshLive();
-    }, 60_000);
+    }, pollIntervalMs);
     return () => window.clearInterval(timer);
-  }, [anyFixtureLive, refreshLive, waitingForCurrentData]);
+  }, [pollIntervalMs, refreshLive]);
 
   // The default league selection is derived during render, never written by an effect.
   const firstClassicKey = profile.status === "READY" && profile.data
@@ -405,8 +428,12 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
     return { status: "IDLE", data: null };
   }, [activeClassicKey, cachedStandings, standingsFailureMessage]);
 
-  const memberPicksCacheKey = cachedStandings?.completePopulation && gameweek !== null
-    ? `${cachedStandings.leagueId}-${gameweek}`
+  // Member picks are loaded for whatever rows we hold, complete league or not:
+  // a top-of-the-table sample is enough to say who owns a player, even though
+  // it is not enough to rank the league (which `calculateLiveStandings` gates
+  // on `completePopulation` separately).
+  const memberPicksCacheKey = cachedStandings && gameweek !== null
+    ? `${cachedStandings.leagueId}-${gameweek}-${cachedStandings.rows.length}`
     : null;
 
   useEffect(() => {
@@ -449,9 +476,16 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
     return { status: "IDLE", data: new Map() };
   }, [memberPicksCache, memberPicksCacheKey]);
 
+  /** Whether the loaded rows are the whole league or only its top of the table. */
+  const leagueSampleComplete = Boolean(cachedStandings?.completePopulation);
+
   const refreshBootstrap = useCallback(() => setBootstrapToken((token) => token + 1), []);
 
   const liveStatsByElement = useMemo(() => live.data?.statsByElement ?? new Map<number, LiveStats>(), [live.data]);
+  const liveExplainByElement = useMemo(
+    () => live.data?.explainByElement ?? new Map<number, LiveExplainBlock[]>(),
+    [live.data],
+  );
 
   return {
     bootstrap,
@@ -466,15 +500,18 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
     liveStale: live.stale ?? false,
     liveFetchedAt: live.data?.fetchedAt ?? null,
     liveStatsByElement,
+    liveExplainByElement,
     fixturesData: fixtures.data ?? [],
     fixturesStatus: fixtures.status,
     fixturesError: fixtures.error,
     anyFixtureLive,
+    anyFixtureSettling,
     refreshLive,
     refreshBootstrap,
     selectedLeagueKey,
     selectLeague,
     standings,
     memberPicks,
+    leagueSampleComplete,
   };
 }

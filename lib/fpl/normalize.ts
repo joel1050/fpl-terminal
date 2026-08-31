@@ -15,6 +15,7 @@ import { loadInSeasonPlayerRates, loadInSeasonTeamXG } from "@/lib/historical/lo
 import {
   type FplBootstrapPayload,
   type FplFixturePayload,
+  FplLiveExplainSchema,
   type FplLiveResponsePayload,
   type FplPlayerSummaryPayload,
 } from "./schemas";
@@ -92,10 +93,22 @@ export type BootstrapProjectionMetadata = PlayerEnrichmentMetadata;
 
 export type NormalizedPlayerDetail = PlayerProfileData;
 
+/** One scoring line from FPL's own points breakdown, e.g. two goals worth ten. */
+export interface NormalizedLiveExplainStat {
+  identifier: string;
+  points: number;
+  value: number;
+}
+
+export interface NormalizedLiveExplain {
+  fixtureId?: number;
+  stats: NormalizedLiveExplainStat[];
+}
+
 export interface NormalizedLiveElement {
   playerId: number;
   stats: Record<string, number | string | boolean | null>;
-  explain: unknown[];
+  explain: NormalizedLiveExplain[];
 }
 
 export interface NormalizedLiveGameweek {
@@ -294,7 +307,9 @@ export function normalizeBootstrap(
   }));
   const markedCurrent = events.find((event) => event.isCurrent) ?? events.find((event) => event.isNext) ?? events.find((event) => !event.finished);
   const markedFixtures = fixtures.filter((fixture) => fixture.gameweek === markedCurrent?.id);
-  const currentEvent = markedCurrent && markedFixtures.length > 0 && markedFixtures.every((fixture) => fixture.finished)
+  // Once a gameweek's fixtures have kicked off (in progress or finished) the
+  // planning window moves to the next gameweek.
+  const currentEvent = markedCurrent && markedFixtures.length > 0 && markedFixtures.some((fixture) => fixture.started || fixture.finished)
     ? events.find((event) => event.id > markedCurrent.id && !event.finished) ?? markedCurrent
     : markedCurrent;
   const seasonStarted = fixtures.some((fixture) => fixture.started || fixture.finished) ||
@@ -410,6 +425,28 @@ export function normalizePlayerDetail(
   };
 }
 
+/**
+ * FPL's per-fixture points breakdown, kept only where it parses. An entry we do
+ * not recognise is dropped rather than failing the whole live Gameweek, so a
+ * changed upstream shape costs exact point attribution and nothing more.
+ */
+function normalizeLiveExplain(raw: unknown[]): NormalizedLiveExplain[] {
+  const explained: NormalizedLiveExplain[] = [];
+  for (const entry of raw) {
+    const parsed = FplLiveExplainSchema.safeParse(entry);
+    if (!parsed.success) continue;
+    explained.push({
+      fixtureId: optionalNumber(parsed.data.fixture),
+      stats: (parsed.data.stats ?? []).map((stat) => ({
+        identifier: stat.identifier,
+        points: toNumber(stat.points, 0),
+        value: toNumber(stat.value, 0),
+      })),
+    });
+  }
+  return explained;
+}
+
 export function normalizeLiveGameweek(
   gameweek: number,
   payload: FplLiveResponsePayload,
@@ -419,7 +456,7 @@ export function normalizeLiveGameweek(
     elements: payload.elements.map((element) => ({
       playerId: element.id,
       stats: element.stats,
-      explain: element.explain ?? [],
+      explain: normalizeLiveExplain(element.explain ?? []),
     })),
   };
 }

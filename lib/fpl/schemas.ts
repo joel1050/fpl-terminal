@@ -209,10 +209,29 @@ export const FplPlayerSummarySchema = z
   })
   .passthrough();
 
+/** One scoring line inside FPL's own `explain` breakdown for a player. */
+export const FplLiveExplainStatSchema = z
+  .object({
+    identifier: z.string(),
+    points: numberLike.optional(),
+    value: numberLike.optional(),
+  })
+  .passthrough();
+
+/** FPL explains a player's points once per fixture they played in the Gameweek. */
+export const FplLiveExplainSchema = z
+  .object({
+    fixture: numberLike.optional(),
+    stats: z.array(FplLiveExplainStatSchema).optional(),
+  })
+  .passthrough();
+
 export const FplLiveElementSchema = z
   .object({
     id: z.number().int(),
     stats: z.record(z.string(), z.union([z.number(), z.string(), z.boolean(), z.null()])),
+    // Kept permissive on the way in so an unfamiliar breakdown cannot fail the
+    // whole live fetch; `normalizeLiveGameweek` validates each entry instead.
     explain: z.array(z.unknown()).optional(),
   })
   .passthrough();

@@ -180,9 +180,72 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await page.getByTestId("live-refresh").click();
     const goalEvent = page.locator('[data-testid="feed-event"]').filter({ hasText: "SAKA GOAL" });
     await expect(goalEvent.first()).toBeVisible();
-    await expect(goalEvent.first()).toContainText("+10");
-    await expect(goalEvent.first()).toContainText("YOU OWN · CAPTAIN");
+    // The goal is worth five; the armband is what makes it ten to this manager.
+    await expect(goalEvent.first().locator(".feed-delta")).toHaveText("+5");
+    await expect(goalEvent.first()).toContainText("YOU +10 · CAPTAIN");
     await expect(goalEvent.first()).toContainText("LEAGUE IMPACT +6.3");
+  });
+
+  test("shows the Gameweek so far the moment the page opens", async ({ page }) => {
+    await importTeam(page);
+    const feed = page.getByRole("complementary", { name: "Live feed" });
+
+    // No refresh: the opening snapshot is read back into events, so a goal
+    // scored before anyone opened the page is still on the feed.
+    const goal = feed.locator('[data-testid="feed-event"]').filter({ hasText: "Mbeumo GOAL" });
+    await expect(goal.first()).toBeVisible();
+    await expect(goal.first()).toContainText("YOU +5");
+    // The row reports what the goal was worth, not everything the player has scored.
+    await expect(goal.first().locator(".feed-delta")).toHaveText("+5");
+    // FPL says a goal happened, never when, so a reconstructed row is marked as
+    // belonging to the Gameweek rather than given a minute it cannot support.
+    await expect(goal.first().locator(".feed-minute")).toHaveText("GW");
+  });
+
+  test("keeps appearance points out of the default view but not out of the feed", async ({ page }) => {
+    await importTeam(page);
+    const feed = page.getByRole("complementary", { name: "Live feed" });
+    const appearances = feed.locator('[data-testid="feed-event"]').filter({ hasText: "APPEARANCE" });
+
+    await expect(feed.getByRole("button", { name: "FOCUS", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(appearances).toHaveCount(0);
+
+    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+    await expect(appearances.first()).toBeVisible();
+  });
+
+  test("colours a row by what it did to your own score, and nothing else", async ({ page }) => {
+    await importTeam(page);
+    const feed = page.getByRole("complementary", { name: "Live feed" });
+    await page.getByTestId("live-refresh").click();
+    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+
+    const rows = feed.locator('[data-testid="feed-event"]');
+    // The captain's goal is worth double to this manager, so it reads as a gain.
+    await expect(rows.filter({ hasText: "Saka GOAL" }).first()).toHaveClass(/gain/);
+    // Haaland is in nobody's squad here: his points are real but not theirs.
+    await expect(rows.filter({ hasText: "Haaland" }).first()).toHaveClass(/flat/);
+    // Areola is owned but benched, so what he scores is worth nothing either.
+    await expect(rows.filter({ hasText: "Areola" }).first()).toHaveClass(/flat/);
+  });
+
+  test("offers a way back to the top when events land out of sight", async ({ page }) => {
+    await importTeam(page);
+    const feed = page.getByRole("complementary", { name: "Live feed" });
+    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+    await expect(feed.locator('[data-testid="feed-event"]').first()).toBeVisible();
+
+    // Nothing is unread while the newest row is already on screen.
+    await expect(page.getByTestId("feed-new-pill")).toHaveCount(0);
+
+    await page.getByTestId("live-feed-scroll").evaluate((node) => { node.scrollTop = 400; });
+    await page.getByTestId("live-refresh").click();
+
+    const pill = page.getByTestId("feed-new-pill");
+    await expect(pill).toBeVisible();
+    await pill.click();
+    await expect(pill).toHaveCount(0);
+    await expect(page.getByTestId("live-feed-scroll")).toHaveJSProperty("scrollTop", 0);
   });
 
   test("groups fixtures and shows provisional BPS in the Match Centre", async ({ page }) => {

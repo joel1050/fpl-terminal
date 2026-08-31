@@ -25,6 +25,30 @@ export function fixtureStateOf(fixture: {
   return "UPCOMING";
 }
 
+export interface LivePollInput {
+  anyFixtureLive: boolean;
+  /** A match has ended but FPL has not confirmed its bonus points yet. */
+  anyFixtureSettling: boolean;
+  waitingForCurrentData: boolean;
+}
+
+export const LIVE_POLL_MS = 60_000;
+export const SETTLING_POLL_MS = 120_000;
+
+/**
+ * How often to ask FPL for the live Gameweek, or null to stop asking.
+ *
+ * Polling deliberately outlives the final whistle: FPL publishes provisional
+ * bonus while a match is still marked unfinished and rewrites it afterwards,
+ * and that rewrite is the change managers watch hardest for. A settled
+ * Gameweek — every fixture finished and confirmed — is the only quiet one.
+ */
+export function livePollIntervalMs(input: LivePollInput): number | null {
+  if (input.anyFixtureLive || input.waitingForCurrentData) return LIVE_POLL_MS;
+  if (input.anyFixtureSettling) return SETTLING_POLL_MS;
+  return null;
+}
+
 /**
  * Groups the gameweek fixtures by team. Double Gameweeks naturally produce two
  * entries for a club; blank gameweeks produce none.

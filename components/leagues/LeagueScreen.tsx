@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import WorkspaceSwitcher from "@/components/terminal/WorkspaceSwitcher";
-import { calculateLiveEntry, effectiveMultipliers, type LiveStats } from "@/lib/leagues/calculateLiveEntry";
+import { calculateLiveEntry, type LiveStats } from "@/lib/leagues/calculateLiveEntry";
 import { calculateLiveStandings } from "@/lib/leagues/calculateLiveStandings";
-import { diffLiveSnapshots, LIVE_FEED_MAX_EVENTS } from "@/lib/leagues/diffLiveSnapshots";
-import { kickoffLabel } from "@/lib/leagues/display";
-import { leagueAverageMultiplier } from "@/lib/leagues/leagueImpact";
+import { diffLiveSnapshots, type LiveExplainBlock } from "@/lib/leagues/diffLiveSnapshots";
+import { LIVE_FEED_MAX_EVENTS, mergeFeedEvents } from "@/lib/leagues/feedEvents";
+import { buildLeagueOwnership } from "@/lib/leagues/leagueImpact";
 import { pickWeeklyTeam, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import { exportTerminalState, parseSavedState, useTerminalStore } from "@/store/terminalStore";
 import type { EntryHistoryRow, LiveFeedEvent, LiveStandingRow } from "@/types/leagues";
@@ -26,8 +26,10 @@ const EMPTY_STRING_MAP = new Map<number, string>();
 type MobileTab = "LEAGUE" | "TEAM" | "MATCHES" | "FEED";
 const MOBILE_TABS: MobileTab[] = ["LEAGUE", "TEAM", "MATCHES", "FEED"];
 
+// Versioned: rows written under the older event shape are dropped rather than
+// rendered with missing fields. The Gameweek reconstructs itself anyway.
 function feedStorageKey(gameweek: number): string {
-  return `fpl-leagues-live-feed-gw${gameweek}`;
+  return `fpl-leagues-live-feed-v2-gw${gameweek}`;
 }
 
 function readStoredFeed(gameweek: number): LiveFeedEvent[] {
@@ -37,7 +39,10 @@ function readStoredFeed(gameweek: number): LiveFeedEvent[] {
     const parsed = JSON.parse(raw) as LiveFeedEvent[];
     if (!Array.isArray(parsed)) return [];
     return parsed
-      .filter((event) => Boolean(event) && typeof event.id === "string" && typeof event.kind === "string")
+      .filter((event) => Boolean(event)
+        && typeof event.id === "string"
+        && typeof event.kind === "string"
+        && typeof event.pointsDelta === "number")
       .slice(0, LIVE_FEED_MAX_EVENTS);
   } catch {
     return [];
@@ -46,7 +51,7 @@ function readStoredFeed(gameweek: number): LiveFeedEvent[] {
 
 function storeFeed(gameweek: number, events: readonly LiveFeedEvent[]): void {
   try {
-    window.localStorage.setItem(feedStorageKey(gameweek), JSON.stringify(events.slice(0, LIVE_FEED_MAX_EVENTS)));
+    window.localStorage.setItem(feedStorageKey(gameweek), JSON.stringify(events));
   } catch {
     // Persistence is best effort; the session feed keeps working without it.
   }
@@ -171,8 +176,10 @@ function WorkspaceBody({
   const feedContextRef = useRef<{
     names: Map<number, string>;
     teams: Map<number, number>;
+    positions: Map<number, Position>;
     minutes: Map<number, string>;
-  }>({ names: new Map(), teams: new Map(), minutes: new Map() });
+    explain: ReadonlyMap<number, LiveExplainBlock[]>;
+  }>({ names: new Map(), teams: new Map(), positions: new Map(), minutes: new Map(), explain: new Map() });
 
   const teamIdByElementAll = useMemo(
     () => new Map([...playersById.values()].map((player) => [player.id, player.teamId])),
@@ -223,14 +230,16 @@ function WorkspaceBody({
           : "OFFICIAL_ONLY";
   const standingsCalculating = standingsMode === "LIVE" && data.memberPicks.status === "LOADING";
 
+  // Only a match under way or already played has a minute to report. A fixture
+  // still to kick off is left out entirely rather than putting its kickoff time
+  // in the minute column of an event that cannot have happened yet.
   const minuteLabelsByTeam = useMemo(() => {
     const map = new Map<number, string>();
     for (const fixture of data.fixturesData) {
+      if (fixture.state === "UPCOMING") continue;
       const label = fixture.state === "FINISHED"
         ? "FT"
-        : fixture.state === "LIVE"
-          ? `${Math.min(90, Math.floor(fixture.minutes ?? 0))}'`
-          : kickoffLabel(fixture.kickoffTime);
+        : `${Math.min(90, Math.floor(fixture.minutes ?? 0))}'`;
       map.set(fixture.homeTeamId, label);
       map.set(fixture.awayTeamId, label);
     }
@@ -241,9 +250,11 @@ function WorkspaceBody({
     feedContextRef.current = {
       names: new Map([...playersById.values()].map((player) => [player.id, player.displayName])),
       teams: teamIdByElementAll,
+      positions: new Map([...playersById.values()].map((player) => [player.id, player.position])),
       minutes: minuteLabelsByTeam,
+      explain: data.liveExplainByElement,
     };
-  }, [minuteLabelsByTeam, playersById, teamIdByElementAll]);
+  }, [data.liveExplainByElement, minuteLabelsByTeam, playersById, teamIdByElementAll]);
 
   useEffect(() => {
     if (gameweek === null || feedGameweewGuard(feedGameweekRef, gameweek)) return;
@@ -251,21 +262,27 @@ function WorkspaceBody({
     setFeedEvents(readStoredFeed(gameweek));
   }, [gameweek]);
 
+  // The first snapshot of a session has no predecessor, so the diff reads the
+  // Gameweek back out of the cumulative stats instead of starting from nothing.
+  // Event ids are stable, so that reconstruction folds onto whatever the last
+  // visit already stored rather than repeating it.
   useEffect(() => {
     if (data.liveStatus !== "READY") return;
     const current = data.liveStatsByElement;
     const previous = previousLiveRef.current;
     previousLiveRef.current = current;
-    if (!previous || previous.size === 0) return;
-    const events = diffLiveSnapshots(previous, current, {
+    if (!current.size) return;
+    const events = diffLiveSnapshots(previous ?? undefined, current, {
       playerNameById: feedContextRef.current.names,
       teamIdByPlayer: feedContextRef.current.teams,
+      positionByPlayer: feedContextRef.current.positions,
       minuteLabelByTeam: feedContextRef.current.minutes,
+      explainByPlayer: feedContextRef.current.explain,
     });
     if (!events.length) return;
     const gw = feedGameweekRef.current;
     setFeedEvents((existing) => {
-      const next = [...events, ...existing].slice(0, LIVE_FEED_MAX_EVENTS);
+      const next = mergeFeedEvents(existing, events);
       if (gw !== null) storeFeed(gw, next);
       return next;
     });
@@ -276,16 +293,10 @@ function WorkspaceBody({
     [myLive],
   );
   const memberPicksList = useMemo(() => Array.from(data.memberPicks.data?.values() ?? []), [data.memberPicks.data]);
-  const averageMultiplierFor = useCallback(
-    (playerId: number) => leagueAverageMultiplier(memberPicksList, playerId),
-    [memberPicksList],
-  );
-  const ownerCountFor = useCallback(
-    (playerId: number) => memberPicksList.reduce(
-      (count, picks_) => count + ((effectiveMultipliers(picks_).get(playerId) ?? 0) > 0 ? 1 : 0),
-      0,
-    ),
-    [memberPicksList],
+  // Every sampled squad is read once here, not once per feed row.
+  const leagueOwnership = useMemo(
+    () => buildLeagueOwnership(memberPicksList, data.leagueSampleComplete),
+    [data.leagueSampleComplete, memberPicksList],
   );
   const nameFor = useCallback(
     (playerId: number) => playersById.get(playerId)?.displayName ?? `Player ${playerId}`,
@@ -357,8 +368,8 @@ function WorkspaceBody({
           <LiveFeed
             events={feedEvents}
             userPlayerById={userPlayerById}
-            leagueAverageMultiplier={averageMultiplierFor}
-            leagueOwnerCount={ownerCountFor}
+            ownership={leagueOwnership}
+            ownershipStatus={data.memberPicks.status}
             playerName={nameFor}
           />
         </aside>
@@ -430,8 +441,10 @@ export default function LeagueScreen() {
           <StatusCell label="GW" value={gameweek !== null ? String(gameweek) : "—"} />
           <StatusCell
             label="MATCHES"
-            value={liveDegraded ? "STALE" : data.anyFixtureLive ? "LIVE" : "IDLE"}
-            tone={liveDegraded ? "red" : data.anyFixtureLive ? "green" : ""}
+            value={liveDegraded ? "STALE"
+              : data.anyFixtureLive ? "LIVE"
+                : data.anyFixtureSettling ? "BONUS" : "IDLE"}
+            tone={liveDegraded ? "red" : data.anyFixtureLive || data.anyFixtureSettling ? "green" : ""}
           />
           <StatusCell
             label="UPDATED"

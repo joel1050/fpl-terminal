@@ -1,8 +1,28 @@
 "use client";
 
+import { useMemo } from "react";
 import type { EntryHistoryRow, LiveStandingRow } from "@/types/leagues";
+import { compareSortValues, SortableHead, useSortState, type SortValue } from "./tableSort";
 
 export type StandingsMode = "LIVE" | "OFFICIAL_ONLY" | "OVERALL" | "H2H";
+
+type StandingsSortKey = "team" | "manager" | "gw" | "total" | "left" | "delta";
+
+function isLiveRow(mode: StandingsMode, row: LiveStandingRow): boolean {
+  return mode === "LIVE" && Number.isFinite(row.gameweekPoints);
+}
+
+function standingsSortValue(row: LiveStandingRow, mode: StandingsMode, key: StandingsSortKey): SortValue {
+  const live = isLiveRow(mode, row);
+  switch (key) {
+    case "team": return (row.entryName ?? `Team ${row.entryId}`).toLowerCase();
+    case "manager": return (row.playerName ?? "").toLowerCase();
+    case "gw": return live ? row.gameweekPoints : row.officialGameweekPoints ?? null;
+    case "total": return live ? row.liveTotal : row.officialTotal ?? null;
+    case "left": return live ? row.leftToPlay : null;
+    case "delta": return live ? row.movement : null;
+  }
+}
 
 function movementCell(movement: number): { label: string; className: string } {
   if (!Number.isFinite(movement) || movement === 0) return { label: "—", className: "" };
@@ -28,6 +48,14 @@ export default function LeagueStandings({
   error?: string;
   completePopulation: boolean;
 }) {
+  const { sortKey, sortDirection, onSort } = useSortState<StandingsSortKey>();
+  const sortedRows = useMemo(() => {
+    if (!sortKey) return rows;
+    return [...rows].sort((a, b) =>
+      compareSortValues(standingsSortValue(a, mode, sortKey), standingsSortValue(b, mode, sortKey), sortDirection),
+    );
+  }, [rows, mode, sortKey, sortDirection]);
+
   return (
     <section className="leagues-panel" aria-label="League standings">
       <div className="panel-header">
@@ -69,12 +97,20 @@ export default function LeagueStandings({
           <div className="table-wrap league-table-wrap">
             <table className="league-table standings-table" data-testid="league-standings">
               <thead>
-                <tr><th>POS</th><th>TEAM</th><th>MANAGER</th><th>GW</th><th>LIVE TOTAL</th><th>LEFT</th><th>Δ</th></tr>
+                <tr>
+                  <th>POS</th>
+                  <SortableHead label="TEAM" sortKey="team" active={sortKey} direction={sortDirection} onSort={onSort} />
+                  <SortableHead label="MANAGER" sortKey="manager" active={sortKey} direction={sortDirection} onSort={onSort} />
+                  <SortableHead label="GW" sortKey="gw" active={sortKey} direction={sortDirection} onSort={onSort} />
+                  <SortableHead label="LIVE TOTAL" sortKey="total" active={sortKey} direction={sortDirection} onSort={onSort} />
+                  <SortableHead label="LEFT" sortKey="left" active={sortKey} direction={sortDirection} onSort={onSort} />
+                  <SortableHead label="Δ" sortKey="delta" active={sortKey} direction={sortDirection} onSort={onSort} />
+                </tr>
               </thead>
               <tbody>
-                {rows.map((row) => {
+                {sortedRows.map((row) => {
                   const movement = movementCell(row.movement);
-                  const live = mode === "LIVE" && Number.isFinite(row.gameweekPoints);
+                  const live = isLiveRow(mode, row);
                   return (
                     <tr key={row.entryId} className={row.isUser ? "you" : ""} data-testid={row.isUser ? "standings-you-row" : undefined}>
                       <td>{live ? row.localRank : row.officialRank ?? "—"}</td>

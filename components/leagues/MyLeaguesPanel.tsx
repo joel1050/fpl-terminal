@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { ManagerHistory, ManagerProfile } from "@/types/leagues";
+import { compareSortValues, SortableHead, useSortState, type SortValue } from "./tableSort";
 
 export type LeagueRow = {
   key: string;
@@ -12,6 +13,18 @@ export type LeagueRow = {
   trendFrom?: number;
   trendTo?: number;
 };
+
+type LeagueSortKey = "name" | "type" | "rank" | "teams" | "trend";
+
+function leagueSortValue(row: LeagueRow, key: LeagueSortKey): SortValue {
+  switch (key) {
+    case "name": return row.name.toLowerCase();
+    case "type": return row.type;
+    case "rank": return row.rank ?? null;
+    case "teams": return row.teams ?? null;
+    case "trend": return row.trendFrom && row.trendTo ? row.trendFrom - row.trendTo : null;
+  }
+}
 
 /**
  * FPL reports a last rank of 0 until an entry has held one, so a first-Gameweek
@@ -76,9 +89,16 @@ export default function MyLeaguesPanel({
   status: "IDLE" | "LOADING" | "READY" | "ERROR";
 }) {
   const [search, setSearch] = useState("");
+  const { sortKey, sortDirection, onSort } = useSortState<LeagueSortKey>();
   const allRows = useMemo(() => buildLeagueRows(profile, history), [profile, history]);
   const query = search.trim().toLowerCase();
-  const rows = query ? allRows.filter((row) => row.name.toLowerCase().includes(query)) : allRows;
+  const rows = useMemo(() => {
+    const filtered = query ? allRows.filter((row) => row.name.toLowerCase().includes(query)) : allRows;
+    if (!sortKey) return filtered;
+    return [...filtered].sort((a, b) =>
+      compareSortValues(leagueSortValue(a, sortKey), leagueSortValue(b, sortKey), sortDirection),
+    );
+  }, [allRows, query, sortKey, sortDirection]);
 
   return (
     <section className="leagues-panel" aria-label="My leagues">
@@ -101,7 +121,13 @@ export default function MyLeaguesPanel({
         <div className="table-wrap league-table-wrap league-list-wrap">
           <table className="league-table">
             <thead>
-              <tr><th>LEAGUE</th><th>TYPE</th><th>RANK</th><th>TEAMS</th><th>TREND</th></tr>
+              <tr>
+                <SortableHead label="LEAGUE" sortKey="name" active={sortKey} direction={sortDirection} onSort={onSort} />
+                <SortableHead label="TYPE" sortKey="type" active={sortKey} direction={sortDirection} onSort={onSort} />
+                <SortableHead label="RANK" sortKey="rank" active={sortKey} direction={sortDirection} onSort={onSort} />
+                <SortableHead label="TEAMS" sortKey="teams" active={sortKey} direction={sortDirection} onSort={onSort} />
+                <SortableHead label="TREND" sortKey="trend" active={sortKey} direction={sortDirection} onSort={onSort} />
+              </tr>
             </thead>
             <tbody>
               {rows.map((row) => {

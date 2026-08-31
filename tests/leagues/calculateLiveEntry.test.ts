@@ -43,6 +43,7 @@ function fixture(
     kickoffTime: state === "UPCOMING" ? "2026-08-22T17:30:00Z" : null,
     homeTeamId,
     awayTeamId,
+    bonusSettled: state === "FINISHED",
     homeShortName: `T${homeTeamId}`,
     awayShortName: `T${awayTeamId}`,
     homeScore: state === "UPCOMING" ? null : 1,

@@ -50,3 +50,18 @@ export function playerValueLabel(player: LiveEntryPlayer): PlayerValueLabel {
   }
   return { value: `${Math.round(player.points * multiplier)}`, unit: "P", started: true };
 }
+
+/**
+ * How long ago the feed saw an event land. Only meaningful for one watched as
+ * it happened: a reconstructed row records when it was read, never when it
+ * happened, so it goes without an age rather than with a wrong one.
+ *
+ * The clock ticks on an interval, so an event that has just arrived can carry a
+ * timestamp slightly ahead of it. That still reads as brand new, not as nothing.
+ */
+export function feedAgeLabel(event: { seeded: boolean; at: number }, now: number): string | null {
+  if (event.seeded) return null;
+  const minutes = Math.floor((now - event.at) / 60_000);
+  if (!Number.isFinite(minutes)) return null;
+  return minutes < 1 ? "<1M" : `${minutes}M`;
+}

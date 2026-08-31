@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { aggregatePlayerStatus, fixtureStateOf, teamFixturesByTeam } from "@/lib/leagues/fixtureStatus";
+import {
+  aggregatePlayerStatus,
+  fixtureStateOf,
+  LIVE_POLL_MS,
+  livePollIntervalMs,
+  SETTLING_POLL_MS,
+  teamFixturesByTeam,
+} from "@/lib/leagues/fixtureStatus";
 import type { FixtureView } from "@/types/leagues";
 
 function view(overrides: Partial<FixtureView>): FixtureView {
@@ -13,6 +20,7 @@ function view(overrides: Partial<FixtureView>): FixtureView {
     homeScore: 0,
     awayScore: 0,
     state: "UPCOMING",
+    bonusSettled: false,
     minutes: undefined,
     ...overrides,
   };
@@ -100,5 +108,34 @@ describe("provisionally finished fixtures", () => {
     // FPL keeps `finished: false` until it confirms bonus, but the match is over.
     expect(fixtureStateOf({ started: true, finishedProvisional: true, minutes: 90 })).toBe("FINISHED");
     expect(fixtureStateOf({ started: true, finished: false, minutes: 74 })).toBe("LIVE");
+  });
+});
+
+describe("livePollIntervalMs", () => {
+  const input = (overrides: Partial<Parameters<typeof livePollIntervalMs>[0]> = {}) => ({
+    anyFixtureLive: false,
+    anyFixtureSettling: false,
+    waitingForCurrentData: false,
+    ...overrides,
+  });
+
+  it("polls at the live rate while a match is being played", () => {
+    expect(livePollIntervalMs(input({ anyFixtureLive: true }))).toBe(LIVE_POLL_MS);
+  });
+
+  it("keeps polling, more slowly, while FPL settles the bonus points", () => {
+    expect(livePollIntervalMs(input({ anyFixtureSettling: true }))).toBe(SETTLING_POLL_MS);
+  });
+
+  it("prefers the live rate when a match is under way and another is settling", () => {
+    expect(livePollIntervalMs(input({ anyFixtureLive: true, anyFixtureSettling: true }))).toBe(LIVE_POLL_MS);
+  });
+
+  it("polls while waiting for the current Gameweek to open", () => {
+    expect(livePollIntervalMs(input({ waitingForCurrentData: true }))).toBe(LIVE_POLL_MS);
+  });
+
+  it("stops once every fixture is finished and confirmed", () => {
+    expect(livePollIntervalMs(input())).toBeNull();
   });
 });

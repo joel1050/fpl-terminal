@@ -7,7 +7,8 @@ import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateCh
 import { explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
 import { expectedAutosubValue, pickWeeklyTeam, projectWeeklyLineupHorizons, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import type { OptimizerResult } from "@/lib/optimizer/optimizer";
-import { projectPlayer } from "@/lib/projections/projectPlayer";
+import { projectPlayer, projectedPointsForGameweeks } from "@/lib/projections/projectPlayer";
+import { valuePerMillion } from "@/lib/projections/metrics";
 import {
   exportTerminalState,
   parseSavedState,
@@ -51,6 +52,27 @@ type Bootstrap = {
   freshness: "LIVE" | "SNAPSHOT" | "STALE";
   fetchedAt: string | null;
 };
+
+export interface DataAgeAnchor {
+  ageMs: number;
+  receivedAt: number;
+}
+
+export function computeDataAgeMs(now: number, anchor: DataAgeAnchor | null, fetchedAt: string | null): number | null {
+  if (anchor) return Math.max(0, anchor.ageMs + (now - anchor.receivedAt));
+  if (!fetchedAt) return null;
+  const parsed = Date.parse(fetchedAt);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.max(0, now - parsed);
+}
+
+export function formatDataAge(ageMs: number): string {
+  const minutes = Math.floor(ageMs / 60000);
+  if (minutes < 60) return "";
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 function objectOf(value: unknown): UnknownRecord | null {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value as UnknownRecord : null;
@@ -300,11 +322,6 @@ function riskBandOf(player: TerminalPlayer): Exclude<TerminalFilters["risk"], "A
   return score >= 60 ? "HIGH" : score >= 30 ? "MEDIUM" : "LOW";
 }
 
-function expectedMinutesOf(player: TerminalPlayer): string {
-  const minutes = player.selection?.expectedMinutes ?? player.projection?.expectedMinutes;
-  return minutes === undefined || !Number.isFinite(minutes) || minutes <= 0 ? "—" : `${Math.round(minutes)}′`;
-}
-
 function expectedInvolvementPer90(player: TerminalPlayer): string {
   const minutes = player.current.minutes;
   const expectedGoals = player.current.expectedGoals;
@@ -316,9 +333,19 @@ function expectedInvolvementPer90(player: TerminalPlayer): string {
   return ((expectedGoals + expectedAssists) / minutes * 90).toFixed(2);
 }
 
-function FixtureRun({ player }: { player: TerminalPlayer }) {
-  if (!player.fixtures.length) return <>—</>;
-  return <span className="fixture-run">{player.fixtures.slice(0, 12).map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>)}</span>;
+function FixtureRun({ player, gameweek }: { player: TerminalPlayer; gameweek: number }) {
+  const fixtures = player.fixtures.filter((fixture) => fixture.gameweek >= gameweek).slice(0, 12);
+  if (!fixtures.length) return <>—</>;
+  return <span className="fixture-run">{fixtures.map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>)}</span>;
+}
+
+type UniverseWeekMetrics = { xp: number; minutes: number; next5: number; value: number };
+
+/** Market metrics for the planning gameweek, derived from the same weekly-lineup engine the squad uses. */
+function universeWeekFor(player: TerminalPlayer, gameweek: number): UniverseWeekMetrics {
+  const week = weeklyPlayerMetrics(player, gameweek);
+  const next5 = projectedPointsForGameweeks(player.projection?.fixtures ?? [], gameweek, 5);
+  return { xp: week.points, minutes: week.minutes, next5, value: valuePerMillion(next5, player.priceTenths) };
 }
 
 function squadFixturesForGameweek(player: TerminalPlayer, gameweek: number): PlayerFixture[] {
@@ -405,7 +432,7 @@ export function classifyFreshness({ stale, source, errors = [] }: { stale?: unkn
 
 function useBootstrap() {
   const [refreshCount, setRefreshCount] = useState(0);
-  const [state, setState] = useState<{ data: Bootstrap; status: DataState; message?: string; refresh: () => void }>({ data: { players: [], gameweek: null, deadline: null, source: null, freshness: "LIVE", fetchedAt: null }, status: "SYNCING", refresh: () => setRefreshCount((value) => value + 1) });
+  const [state, setState] = useState<{ data: Bootstrap; status: DataState; message?: string; ageAnchor: DataAgeAnchor | null; refresh: () => void }>({ data: { players: [], gameweek: null, deadline: null, source: null, freshness: "LIVE", fetchedAt: null }, status: "SYNCING", ageAnchor: null, refresh: () => setRefreshCount((value) => value + 1) });
   useEffect(() => {
     const controller = new AbortController();
     fetch(`/api/fpl/bootstrap${refreshCount ? "?refresh=1" : ""}`, { signal: controller.signal, headers: { accept: "application/json" } })
@@ -416,6 +443,8 @@ function useBootstrap() {
         const freshnessRoot = firstObject(root.freshness);
         const freshness = firstObject(freshnessRoot.bootstrap, freshnessRoot.fpl, freshnessRoot);
         const fetchedAt = stringOf(readField(freshness, "fetchedAt", "fetched_at", "updatedAt", "updated_at")) ?? null;
+        const ageSeconds = numberOf(readField(freshness, "ageSeconds", "age_seconds"));
+        const ageAnchor: DataAgeAnchor | null = ageSeconds !== undefined && ageSeconds >= 0 ? { ageMs: ageSeconds * 1000, receivedAt: Date.now() } : null;
         const normalized = normalizeBootstrap(payload);
         const errors = arrayOf(root.errors).filter((error): error is string => typeof error === "string");
         const freshnessLabel = classifyFreshness({
@@ -423,12 +452,12 @@ function useBootstrap() {
           source: [stringOf(readField(freshness, "source", "dataSource")), normalized.source].filter(Boolean).join(" "),
           errors,
         });
-        return { data: { ...normalized, freshness: freshnessLabel, fetchedAt }, errors };
+        return { data: { ...normalized, freshness: freshnessLabel, fetchedAt }, errors, ageAnchor };
       })
-      .then(({ data, errors }) => setState((current) => ({ ...current, data, status: data.players.length ? data.freshness : "EMPTY", message: errors[0] ?? (data.players.length ? undefined : "The FPL response contained no player records.") })))
+      .then(({ data, errors, ageAnchor }) => setState((current) => ({ ...current, data, status: data.players.length ? data.freshness : "EMPTY", message: errors[0] ?? (data.players.length ? undefined : "The FPL response contained no player records."), ageAnchor })))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        setState((current) => ({ ...current, data: { players: [], gameweek: null, deadline: null, source: null, freshness: "LIVE", fetchedAt: null }, status: "ERROR", message: error instanceof Error ? error.message : "FPL data is unavailable." }));
+        setState((current) => ({ ...current, data: { players: [], gameweek: null, deadline: null, source: null, freshness: "LIVE", fetchedAt: null }, status: "ERROR", message: error instanceof Error ? error.message : "FPL data is unavailable.", ageAnchor: null }));
       });
     return () => controller.abort();
   }, [refreshCount]);
@@ -482,7 +511,7 @@ export default function TerminalApp() {
   const importRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<ResizeState | null>(null);
   const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false });
-  const { data, status, message, refresh } = bootstrap;
+  const { data, status, message, refresh, ageAnchor } = bootstrap;
   const liveCurrentGW = clamp(Math.round(data.gameweek ?? store.currentGameweek ?? 1), 1, 38);
   const initializeGameweek = store.initializeGameweek;
 
@@ -604,6 +633,32 @@ export default function TerminalApp() {
     const values = selected.map((player) => weeklyPlayerMetrics(player, planningGameweek).pDNP);
     return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 100) : undefined;
   }, [planningGameweek, selected]);
+  const bestXIKey = `${planningGameweek}|${store.budgetTenths}`;
+  const [bestPossibleXI, setBestPossibleXI] = useState<{ key: string; projectedTotal: number } | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/best-xi", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({ gameweek: planningGameweek, budgetTenths: store.budgetTenths }),
+    }).then(async (response) => {
+      const body = await response.json() as { projectedTotal?: number; error?: string };
+      if (!response.ok || typeof body.projectedTotal !== "number" || !Number.isFinite(body.projectedTotal)) {
+        throw new Error(body.error ?? "Best possible XI unavailable");
+      }
+      setBestPossibleXI({ key: bestXIKey, projectedTotal: body.projectedTotal });
+    }).catch(() => {
+      if (!controller.signal.aborted) setBestPossibleXI(null);
+    });
+    return () => controller.abort();
+  }, [bestXIKey, planningGameweek, store.budgetTenths]);
+  const teamRating = useMemo(() => {
+    if (!currentGWPlan || currentGWPlan.starterIds.length !== 11) return undefined;
+    if (!bestPossibleXI || bestPossibleXI.key !== bestXIKey || bestPossibleXI.projectedTotal <= 0) return undefined;
+    const lineupXp = currentGWPlan.projectedXI + currentGWPlan.captainBonus;
+    return clamp(Math.round(lineupXp / bestPossibleXI.projectedTotal * 100), 0, 100);
+  }, [bestPossibleXI, bestXIKey, currentGWPlan]);
   const transferRequestKey = selected.length === 15
     ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.budgetTenths}|${store.transferHorizon}|${store.riskMode}|${planningGameweek}`
     : "";
@@ -639,6 +694,12 @@ export default function TerminalApp() {
   const transferSuggestionState: "INCOMPLETE" | "LOADING" | "READY" | "ERROR" = !transferRequestKey ? "INCOMPLETE" : transferSearch.key === transferRequestKey ? transferSearch.state : "LOADING";
   const transferSuggestionMessage = transferSearch.key === transferRequestKey ? transferSearch.message : null;
 
+  const universeWeeks = useMemo(() => {
+    const byId = new Map<number, UniverseWeekMetrics>();
+    for (const player of data.players) byId.set(player.id, universeWeekFor(player, planningGameweek));
+    return byId;
+  }, [data.players, planningGameweek]);
+
   const filteredPlayers = useMemo(() => {
     const query = normalizeName(store.search);
     const filters = store.filters;
@@ -654,7 +715,7 @@ export default function TerminalApp() {
         || (filters.quick === "CHEAP" && price <= 5.5)
         || (filters.quick === "DIFFERENTIAL" && player.ownership < 10)
         || (filters.quick === "NAILED" && (player.selection?.nailedRating ?? 0) >= 4)
-        || (filters.quick === "VALUE" && (player.projection?.valueNext5 ?? 0) >= 2.5);
+        || (filters.quick === "VALUE" && (universeWeeks.get(player.id)?.value ?? 0) >= 2.5);
       return queryMatch
         && (filters.position === "ALL" || player.position === filters.position)
         && (!filters.club || player.teamShortName.toLowerCase() === filters.club.toLowerCase())
@@ -670,13 +731,14 @@ export default function TerminalApp() {
         && quickMatch;
     });
     return rows.sort((a, b) => {
+      const week = (player: TerminalPlayer) => universeWeeks.get(player.id);
       const values: Record<SortKey, (player: TerminalPlayer) => number | string> = {
         name: (player) => player.displayName,
         price: (player) => player.priceTenths,
-        nextGW: (player) => player.projection?.nextGW ?? 0,
+        nextGW: (player) => week(player)?.xp ?? 0,
         form: (player) => player.current.form ?? 0,
-        next5: (player) => player.projection?.next5 ?? 0,
-        value: (player) => player.projection?.valueNext5 ?? 0,
+        next5: (player) => week(player)?.next5 ?? 0,
+        value: (player) => week(player)?.value ?? 0,
         ownership: (player) => player.ownership,
         risk: (player) => player.projection?.riskScore ?? 0,
       };
@@ -685,7 +747,7 @@ export default function TerminalApp() {
       const result = typeof left === "string" && typeof right === "string" ? left.localeCompare(right) : Number(left) - Number(right);
       return store.sortDirection === "asc" ? result : -result;
     });
-  }, [bankTenths, data.players, store.filters, store.playerIds, store.search, store.sortDirection, store.sortKey]);
+  }, [bankTenths, data.players, store.filters, store.playerIds, store.search, store.sortDirection, store.sortKey, universeWeeks]);
 
   const addPlayer = useCallback((player: TerminalPlayer) => {
     const explanation = explainIllegalSelection(player, selected, data.players);
@@ -977,10 +1039,7 @@ export default function TerminalApp() {
         <div className="topbar-stats" aria-label="Terminal status">
           <StatusCell label="GW" value={data.gameweek ? String(data.gameweek) : "—"} />
           <DeadlineStatus deadline={data.deadline} />
-          <StatusCell label="DATA" value={`${status === "LIVE" ? "● LIVE" : status === "SNAPSHOT" ? "● SNAPSHOT" : status === "STALE" ? "● STALE" : status === "SYNCING" ? "● SYNC" : "● OFFLINE"}${data.fetchedAt ? ` · ${relativeAge(data.fetchedAt)}` : ""}`} tone={status === "LIVE" ? "green" : status === "ERROR" ? "red" : "amber"} />
-          <StatusCell label="ITB" value={money(bankTenths)} tone={bankTenths < 0 ? "red" : undefined} />
-          <StatusCell label="5GW xP" value={points(projected.next5)} tone="cyan" />
-          <StatusCell label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} tone={risk === undefined ? undefined : risk < 30 ? "green" : risk < 60 ? "amber" : "red"} />
+          <DataStatusCell status={status} ageAnchor={ageAnchor} fetchedAt={data.fetchedAt} />
         </div>
         <div className="topbar-actions"><button className="text-button" onClick={refresh}>REFRESH</button><button className="text-button" onClick={() => exportState(store)}>EXPORT</button><button className="text-button" onClick={() => importRef.current?.click()}>IMPORT</button><button className="text-button danger-text" onClick={reset}>RESET</button><input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, store)} /></div>
       </header>
@@ -992,8 +1051,8 @@ export default function TerminalApp() {
           <div className="panel-header"><div><span className="section-kicker">PLAYER UNIVERSE</span><span className="panel-count">{data.players.length || "—"} records</span></div><div className="header-actions"><span className={`data-badge ${status.toLowerCase()}`}>{status === "LIVE" ? "LIVE FPL" : status === "SYNCING" ? "SYNCING" : "NO LIVE DATA"}</span><PanelToggle panel="market" collapsed={collapsedPanels.market} onToggle={() => togglePanel("market")} /></div></div>
           <div className="search-wrap"><span aria-hidden="true">/</span><input ref={searchRef} value={store.search} onChange={(event) => store.setSearch(event.target.value)} placeholder="Search player, club..." aria-label="Search players" /><kbd>/</kbd></div>
           <FilterBar filters={store.filters} setFilters={store.setFilters} players={data.players} onReset={resetFilters} />
-          <div className="table-wrap"><table className="player-table"><thead><tr><SortableHead label="PLAYER" sortKey="name" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>POS</th><SortableHead label="PRICE" sortKey="price" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="OWN%" sortKey="ownership" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="FORM" sortKey="form" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP GW" sortKey="nextGW" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP5" sortKey="next5" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP/£" sortKey="value" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>EXP MIN</th><th>XGI/90</th><th>RISK</th><th>FIXTURES</th><th>ADD</th></tr></thead><tbody>{filteredPlayers.slice(0, 250).map((player) => <PlayerRow key={player.id} player={player} selected={store.playerIds.includes(player.id)} onSelect={() => openPlayer(player.id)} onAdd={() => addPlayer(player)} />)}</tbody></table>{status === "SYNCING" && <div className="empty-state">SYNCING FPL MARKET…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>
-          {selectedPlayer && <PlayerDetail key={selectedPlayer.id} player={selectedPlayer} inSquad={store.playerIds.includes(selectedPlayer.id)} locked={store.lockedPlayerIds.includes(selectedPlayer.id)} onClose={() => store.setSelectedPlayer(undefined)} onAdd={() => addPlayer(selectedPlayer)} onToggleLock={() => store.toggleLock(selectedPlayer.id)} />}
+          <div className="table-wrap"><table className="player-table"><thead><tr><SortableHead label="PLAYER" sortKey="name" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>POS</th><SortableHead label="PRICE" sortKey="price" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="OWN%" sortKey="ownership" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="FORM" sortKey="form" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP GW" sortKey="nextGW" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP5" sortKey="next5" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP/£" sortKey="value" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>EXP MIN</th><th>XGI/90</th><th>RISK</th><th>FIXTURES</th><th>ADD</th></tr></thead><tbody>{filteredPlayers.slice(0, 250).map((player) => <PlayerRow key={player.id} player={player} week={universeWeeks.get(player.id) ?? universeWeekFor(player, planningGameweek)} gameweek={planningGameweek} selected={store.playerIds.includes(player.id)} onSelect={() => openPlayer(player.id)} onAdd={() => addPlayer(player)} />)}</tbody></table>{status === "SYNCING" && <div className="empty-state">SYNCING FPL MARKET…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>
+          {selectedPlayer && <PlayerDetail key={selectedPlayer.id} player={selectedPlayer} gameweek={planningGameweek} inSquad={store.playerIds.includes(selectedPlayer.id)} locked={store.lockedPlayerIds.includes(selectedPlayer.id)} onClose={() => store.setSelectedPlayer(undefined)} onAdd={() => addPlayer(selectedPlayer)} onToggleLock={() => store.toggleLock(selectedPlayer.id)} />}
           <PanelResizer panel="market" onResizeStart={beginPanelResize} />
         </section>
 
@@ -1012,7 +1071,7 @@ export default function TerminalApp() {
             </section>
             <section className="bench-section" aria-label="Bench"><div className="lineup-roster-heading"><span>BENCH</span><span>BGK · B1 · B2 · B3</span></div><div className="slot-grid bench-slot-grid">{benchSlots.map((slot) => { const player = slot.id ? playerById.get(slot.id) : undefined; return player ? renderSquadPlayer(player, false, slot.label) : <EmptySlot key={slot.label} position={slot.position} maxPriceTenths={slotMaxPrices[slot.position]} onChoose={() => choosePlayer(slot.position)} />; })}</div></section>
           </div>
-          <MetricStrip spent={spent} bankTenths={bankTenths} projected={projected} risk={risk} />
+          <MetricStrip spent={spent} bankTenths={bankTenths} projected={projected} risk={risk} teamRating={teamRating} />
           <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} playerById={playerById} onSimulate={simulateMove} onDismiss={store.dismissTransferSuggestion} />
           {simulation && simulationMove && <div className="squad-overlay"><SimulationPanel result={simulation} move={simulationMove} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMove(null); }} /></div>}
           <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
@@ -1060,8 +1119,20 @@ function TeamImportScreen({ players, gameweek, onImport, onBack }: { players: Te
 
 function StatusCell({ label, value, tone }: { label: string; value: string; tone?: "amber" | "green" | "red" | "cyan" }) { return <div className="status-cell"><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
 
+function DataStatusCell({ status, ageAnchor, fetchedAt }: { status: DataState; ageAnchor: DataAgeAnchor | null; fetchedAt: string | null }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const value = status === "LIVE" ? "● LIVE" : status === "SNAPSHOT" ? "● SNAPSHOT" : status === "STALE" ? "● STALE" : status === "SYNCING" ? "● SYNC" : "● OFFLINE";
+  const ageMs = computeDataAgeMs(now, ageAnchor, fetchedAt);
+  const ageText = ageMs !== null ? formatDataAge(ageMs) : "";
+  return <div className="status-cell"><span>DATA</span><strong className={status === "LIVE" ? "green" : status === "ERROR" ? "red" : "amber"}>{value}{ageText ? ` · ${ageText}` : ""}</strong></div>;
+}
+
 function DeadlineStatus({ deadline }: { deadline: string | null }) {
-  const [countingDown, setCountingDown] = useState(false);
+  const [countingDown, setCountingDown] = useState(true);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     if (!countingDown) return;
@@ -1092,27 +1163,30 @@ function FilterBar({ filters, setFilters, players, onReset }: { filters: Termina
 
 function SortableHead({ label, sortKey, active, direction, onSort }: { label: string; sortKey: SortKey; active: SortKey; direction: "asc" | "desc"; onSort: (key: SortKey) => void }) { return <th><button className={`sort-button ${active === sortKey ? "active" : ""}`} onClick={() => onSort(sortKey)}>{label}{active === sortKey && <span>{direction === "asc" ? " ↑" : " ↓"}</span>}</button></th>; }
 
-function PlayerRow({ player, selected, onSelect, onAdd }: { player: TerminalPlayer; selected: boolean; onSelect: () => void; onAdd: () => void }) { return <tr className={selected ? "selected" : ""}><td><button className="player-name-button" onClick={onSelect}><strong>{player.displayName}</strong><small>· {player.teamShortName}</small></button></td><td><span className={`pos-tag ${player.position.toLowerCase()}`}>{player.position}</span></td><td>{player.priceTenths > 0 ? money(player.priceTenths) : "—"}</td><td>{player.ownership > 0 ? `${player.ownership.toFixed(1)}%` : "—"}</td><td>{player.current.form === undefined ? "—" : player.current.form.toFixed(1)}</td><td className="cyan-text">{points(player.projection?.nextGW)}</td><td>{points(player.projection?.next5)}</td><td>{metric(player.projection?.valueNext5)}</td><td>{expectedMinutesOf(player)}</td><td>{expectedInvolvementPer90(player)}</td><td>{player.projection?.riskScore ? Math.round(player.projection.riskScore) : "—"}</td><td className="fixture-cell"><FixtureRun player={player} /></td><td><button className="add-button" onClick={onAdd} disabled={selected} aria-label={`Add ${player.displayName}`}>{selected ? "IN" : "+"}</button></td></tr>; }
+function PlayerRow({ player, week, gameweek, selected, onSelect, onAdd }: { player: TerminalPlayer; week: UniverseWeekMetrics; gameweek: number; selected: boolean; onSelect: () => void; onAdd: () => void }) { return <tr className={selected ? "selected" : ""}><td><button className="player-name-button" onClick={onSelect}><strong>{player.displayName}</strong><small>· {player.teamShortName}</small></button></td><td><span className={`pos-tag ${player.position.toLowerCase()}`}>{player.position}</span></td><td>{player.priceTenths > 0 ? money(player.priceTenths) : "—"}</td><td>{player.ownership > 0 ? `${player.ownership.toFixed(1)}%` : "—"}</td><td>{player.current.form === undefined ? "—" : player.current.form.toFixed(1)}</td><td className="cyan-text">{points(week.xp)}</td><td>{points(week.next5)}</td><td>{metric(week.value)}</td><td>{week.minutes > 0 ? `${Math.round(week.minutes)}′` : "—"}</td><td>{expectedInvolvementPer90(player)}</td><td>{player.projection?.riskScore ? Math.round(player.projection.riskScore) : "—"}</td><td className="fixture-cell"><FixtureRun player={player} gameweek={gameweek} /></td><td><button className="add-button" onClick={onAdd} disabled={selected} aria-label={`Add ${player.displayName}`}>{selected ? "IN" : "+"}</button></td></tr>; }
 
-function PlayerDetail({ player, inSquad, locked, onClose, onAdd, onToggleLock }: { player: TerminalPlayer; inSquad: boolean; locked: boolean; onClose: () => void; onAdd: () => void; onToggleLock: () => void }) {
+function PlayerDetail({ player, gameweek, inSquad, locked, onClose, onAdd, onToggleLock }: { player: TerminalPlayer; gameweek: number; inSquad: boolean; locked: boolean; onClose: () => void; onAdd: () => void; onToggleLock: () => void }) {
   const profile = usePlayerProfile(player.id);
   const profileData = profile.data;
   const current = profileData?.player.current ?? player.current;
   const selection = player.selection;
-  const expectedMinutes = selection?.expectedMinutes ?? player.projection?.expectedMinutes;
+  const weekMetrics = weeklyPlayerMetrics(player, gameweek);
+  const expectedMinutes = weekMetrics.minutes;
+  const projectedFixtures = player.projection?.fixtures ?? [];
+  const next3 = projectedPointsForGameweeks(projectedFixtures, gameweek, 3);
+  const next5 = projectedPointsForGameweeks(projectedFixtures, gameweek, 5);
   const expectedGoalInvolvements = profileXgi(current);
   const recentMatches = profileData?.history.slice(-6).reverse() ?? [];
-  const upcomingFixtures = (profileData?.fixtures.length ? profileData.fixtures : player.fixtures).slice(0, 5);
+  const upcomingFixtures = (profileData?.fixtures.length ? profileData.fixtures : player.fixtures).filter((fixture) => fixture.gameweek >= gameweek).slice(0, 5);
   const availability = availabilityOf(player);
   const titleId = `player-profile-${player.id}`;
 
-  const seasonStats = [
+  const coreSeasonStats = [
     ["Starts", formatProfileStat(current.starts)],
     ["Minutes", formatProfileStat(current.minutes)],
     ["Goals", formatProfileStat(current.goals)],
     ["Assists", formatProfileStat(current.assists)],
     ["Clean sheets", formatProfileStat(current.cleanSheets)],
-    ["Goals conceded", formatProfileStat(current.goalsConceded)],
     ["Bonus", formatProfileStat(current.bonus)],
     ["BPS", formatProfileStat(current.bps)],
     ["xG", formatProfileStat(current.expectedGoals, 2)],
@@ -1120,6 +1194,10 @@ function PlayerDetail({ player, inSquad, locked, onClose, onAdd, onToggleLock }:
     ["xGI", formatProfileStat(expectedGoalInvolvements, 2)],
     ["xGC", formatProfileStat(current.expectedGoalsConceded, 2)],
     ["Def contribution", formatProfileStat(current.defensiveContribution)],
+  ] as const;
+
+  const advancedSeasonStats = [
+    ["Goals conceded", formatProfileStat(current.goalsConceded)],
     ["CBI", formatProfileStat(current.clearancesBlocksInterceptions)],
     ["Recoveries", formatProfileStat(current.recoveries)],
     ["Tackles", formatProfileStat(current.tackles)],
@@ -1159,7 +1237,7 @@ function PlayerDetail({ player, inSquad, locked, onClose, onAdd, onToggleLock }:
             <Metric label="Form" value={formatProfileStat(current.form, 1)} tone="amber" />
             <Metric label="Points / 90" value={formatProfileStat(current.pointsPer90 ?? per90(current.totalPoints, current.minutes), 2)} />
             <Metric label="xGI / 90" value={formatProfileStat(per90(expectedGoalInvolvements, current.minutes), 2)} />
-            <Metric label="Next GW xP" value={points(player.projection?.nextGW)} tone="cyan" />
+            <Metric label={`GW ${gameweek} xP`} value={points(weekMetrics.points)} tone="cyan" />
           </div>
         </section>
 
@@ -1173,7 +1251,11 @@ function PlayerDetail({ player, inSquad, locked, onClose, onAdd, onToggleLock }:
 
         <section className="profile-section" aria-labelledby="season-output-heading">
           <div className="profile-section-head"><div><h3 id="season-output-heading">Current season output</h3><p>Official totals from the FPL player feed</p></div><span className="profile-record-count">{formatProfileStat(current.starts)} starts · {formatProfileStat(current.minutes)} min</span></div>
-          <div className="current-stat-grid">{seasonStats.map(([label, value]) => <Metric key={label} label={label} value={value} />)}</div>
+          <div className="current-stat-grid">{coreSeasonStats.map(([label, value]) => <Metric key={label} label={label} value={value} />)}</div>
+          <details className="advanced-stat-disclosure">
+            <summary><span>Advanced stats</span><span>{advancedSeasonStats.length} metrics</span></summary>
+            <div className="current-stat-grid">{advancedSeasonStats.map(([label, value]) => <Metric key={label} label={label} value={value} />)}</div>
+          </details>
         </section>
 
         <div className="profile-split">
@@ -1187,9 +1269,9 @@ function PlayerDetail({ player, inSquad, locked, onClose, onAdd, onToggleLock }:
               <Metric label="Nailed / 5" value={selection ? String(selection.nailedRating) : "—"} tone="amber" />
               <Metric label="Confidence" value={selection?.confidence ?? player.projection?.confidence ?? "—"} />
               <Metric label="Risk / 100" value={formatProfileStat(player.projection?.riskScore)} />
-              <Metric label="3GW xP" value={points(player.projection?.next3)} />
-              <Metric label="5GW xP" value={points(player.projection?.next5)} />
-              <Metric label="xP / £" value={formatProfileStat(player.projection?.valueNext5, 2)} />
+              <Metric label="3GW xP" value={points(next3)} />
+              <Metric label="5GW xP" value={points(next5)} />
+              <Metric label="xP / £" value={formatProfileStat(valuePerMillion(next5, player.priceTenths), 2)} />
             </div>
           </section>
 
@@ -1245,7 +1327,7 @@ function PreviousSeasonsTable({ seasons }: { seasons: PlayerProfileData["history
   })}</tbody></table></div>;
 }
 
-function Metric({ label, value, tone }: { label: string; value: string; tone?: string }) { return <div><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
+function Metric({ label, value, tone, title }: { label: string; value: string; tone?: string; title?: string }) { return <div title={title}><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
 
 function SquadSlot({ player, gameweek, locked, captain, vice, starter, benchLabel, benchIndex, lineupActive, swapSelected, onRemove, onToggleLock, onSelect, onSwap, onCaptain, onViceCaptain, onMoveBench }: { player: TerminalPlayer; gameweek: number; locked: boolean; captain: boolean; vice: boolean; starter: boolean; benchLabel?: string; benchIndex: number; lineupActive: boolean; swapSelected: boolean; onRemove: () => void; onToggleLock: () => void; onSelect: () => void; onSwap: () => void; onCaptain: () => void; onViceCaptain: () => void; onMoveBench: (direction: -1 | 1) => void }) {
   const benched = Boolean(benchLabel);
@@ -1259,7 +1341,7 @@ function SquadSlot({ player, gameweek, locked, captain, vice, starter, benchLabe
 
 function EmptySlot({ position, maxPriceTenths, onChoose }: { position: Position; maxPriceTenths: number; onChoose: () => void }) { return <button className="squad-slot empty-slot" onClick={onChoose}><span className="empty-plus">+</span><span className="slot-player">Open {position}</span><span className="slot-sub">Max {money(maxPriceTenths)}</span><span className="suggest-label">SUGGEST →</span></button>; }
 
-function MetricStrip({ spent, bankTenths, projected, risk }: { spent: number; bankTenths: number; projected: { nextGW?: number; next3?: number; next5?: number }; risk?: number }) { return <div className="metric-strip" aria-label="Squad projection metrics"><Metric label="COST" value={money(spent)} /><Metric label="ITB" value={money(bankTenths)} tone={bankTenths >= 0 ? "green" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" /><Metric label="3GW" value={points(projected.next3)} /><Metric label="5GW" value={points(projected.next5)} /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} /></div>; }
+function MetricStrip({ spent, bankTenths, projected, risk, teamRating }: { spent: number; bankTenths: number; projected: { nextGW?: number }; risk?: number; teamRating?: number }) { return <div className="metric-strip" aria-label="Squad projection metrics"><Metric label="COST" value={money(spent)} /><Metric label="ITB" value={money(bankTenths)} /><Metric label="TEAM RATING" value={teamRating === undefined ? "—" : `${teamRating}%`} title={teamRating === undefined ? "Team rating needs a picked squad and live market data." : "Starting XI plus captain xP as a share of the best legal XI the market can field for the same budget."} tone={teamRating === undefined ? undefined : teamRating >= 90 ? "green" : teamRating >= 80 ? "bright-green" : teamRating >= 70 ? "yellow" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} tone={risk === undefined ? undefined : risk < 30 ? "green" : risk < 60 ? "yellow" : "red"} /></div>; }
 
 function StrategyControls({ horizon, riskMode, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; riskMode: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; riskMode?: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">RISK</span><div className="segmented">{(["SAFE", "BALANCED", "AGGRESSIVE"] as const).map((value) => <button key={value} className={riskMode === value ? "active" : ""} onClick={() => setStrategy({ riskMode: value })}>{value.slice(0, 4)}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value.slice(0, 4)}</button>)}</div></div></div>; }
 
@@ -1315,7 +1397,6 @@ export function formatDeadlineCountdown(value: string, now = Date.now()): string
   const clock = [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":");
   return days ? `${days}d ${clock}` : clock;
 }
-function relativeAge(value: string): string { const elapsed = Math.max(0, Date.now() - Date.parse(value)); if (!Number.isFinite(elapsed)) return "—"; const minutes = Math.floor(elapsed / 60000); return minutes < 1 ? "<1m" : `${minutes}m ago`; }
 
 function exportState(state: ReturnType<typeof useTerminalStore.getState>) { const blob = new Blob([JSON.stringify(exportTerminalState(state), null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "fpl-terminal-state.json"; anchor.click(); URL.revokeObjectURL(url); }
 

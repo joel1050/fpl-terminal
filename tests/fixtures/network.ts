@@ -77,6 +77,11 @@ export async function interceptFplData(page: Page) {
       return;
     }
 
+    if (pathname === "/api/best-xi" && route.request().method() === "POST") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ gameweek: 1, budgetTenths: 1000, projectedXI: 81, captainBonus: 9, projectedTotal: 90, playerIds: [] }) });
+      return;
+    }
+
     await route.continue();
   });
 }
@@ -130,7 +135,19 @@ export async function interceptLeaguesData(page: Page, options: LeaguesIntercept
       stats.goals_scored = 1;
       stats.bps = 29;
     }
-    return { playerId: player.id, stats, explain: [] };
+    // Mbeumo's finished match already holds a goal before the first poll, so the
+    // feed has a Gameweek to read back rather than only changes it watched.
+    if (player.id === 11) stats.goals_scored = 1;
+    const explain = player.id === 11
+      ? [{
+        fixtureId: 102,
+        stats: [
+          { identifier: "minutes", points: 2, value: 90 },
+          { identifier: "goals_scored", points: 5, value: 1 },
+        ],
+      }]
+      : [];
+    return { playerId: player.id, stats, explain };
   });
 
   const pickRow = (element: number, position: number, elementType: number, multiplier: number, flags: { captain?: boolean; vice?: boolean } = {}) => ({

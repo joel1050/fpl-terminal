@@ -41,6 +41,7 @@ function fixture(id: number, homeTeamId: number, awayTeamId: number, state: Fixt
     kickoffTime: null,
     homeTeamId,
     awayTeamId,
+    bonusSettled: state === "FINISHED",
     homeShortName: `T${homeTeamId}`,
     awayShortName: `T${awayTeamId}`,
     homeScore: state === "UPCOMING" ? null : 1,

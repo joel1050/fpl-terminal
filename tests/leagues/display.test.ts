@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fixtureTag, kickoffLabel, playerValueLabel, roleMarkerFor } from "@/lib/leagues/display";
+import { feedAgeLabel, fixtureTag, kickoffLabel, playerValueLabel, roleMarkerFor } from "@/lib/leagues/display";
 import type { LiveEntryPlayer } from "@/types/leagues";
 
 const SHORT_NAMES = new Map([[7, "CHE"], [8, "BOU"]]);
@@ -105,5 +105,22 @@ describe("opponent tags", () => {
   it("caps displayed minutes at 90", () => {
     const tag = fixtureTag({ fixtureId: 4, opponentTeamId: 7, isHome: true, state: "LIVE", minutes: 120 }, SHORT_NAMES);
     expect(tag).toBe("CHE(H) · 90'");
+  });
+});
+
+describe("feedAgeLabel", () => {
+  const NOW = 1_700_000_000_000;
+
+  it("reads a fresh event as brand new even when the clock has not caught up", () => {
+    expect(feedAgeLabel({ seeded: false, at: NOW + 4_000 }, NOW)).toBe("<1M");
+  });
+
+  it("counts whole minutes once they have passed", () => {
+    expect(feedAgeLabel({ seeded: false, at: NOW - 30_000 }, NOW)).toBe("<1M");
+    expect(feedAgeLabel({ seeded: false, at: NOW - 8 * 60_000 }, NOW)).toBe("8M");
+  });
+
+  it("gives a reconstructed event no age, since its timestamp is when it was read", () => {
+    expect(feedAgeLabel({ seeded: true, at: NOW - 8 * 60_000 }, NOW)).toBeNull();
   });
 });

@@ -159,6 +159,11 @@ export interface FixtureView {
   homeScore: number | null;
   awayScore: number | null;
   state: FixtureState;
+  /**
+   * FPL confirms bonus after a match ends, so a fixture reports FINISHED while
+   * its points can still move. False means the score is not settled yet.
+   */
+  bonusSettled: boolean;
   minutes?: number;
 }
 
@@ -236,15 +241,33 @@ export type FeedEventKind =
   | "CLEAN SHEET"
   | "BONUS CHANGE"
   | "DEFENSIVE CONTRIBUTION"
+  | "APPEARANCE"
+  | "SIXTY MINUTES"
   | "POINTS CHANGE";
 
+/**
+ * What a feed row is about. ROUTINE covers the appearance points every playing
+ * squad member banks, which are true but arrive in their hundreds at kickoff,
+ * so they stay out of every view except the deliberate one.
+ */
+export type FeedEventClass = "ATTACKING" | "DEFENSIVE" | "DISCIPLINE" | "BONUS" | "ROUTINE";
+
 export interface LiveFeedEvent {
+  /**
+   * Stable across polls and reloads: the same real event always produces the
+   * same id, so re-reading a Gameweek cannot duplicate its history.
+   */
   id: string;
   kind: FeedEventKind;
+  eventClass: FeedEventClass;
   playerId: number;
   playerName?: string;
-  rawPointsDelta: number;
+  /** Points this event alone is worth, from FPL's breakdown where it supplies one. */
+  pointsDelta: number;
+  fixtureId?: number;
   detail?: string;
   minute?: string;
+  /** Read back from cumulative stats rather than watched as it happened. */
+  seeded: boolean;
   at: number;
 }

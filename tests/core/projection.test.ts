@@ -6,6 +6,7 @@ import {
   estimateExpectedMinutes,
   fixturePointsForGameweek,
   projectPlayer,
+  projectedPointsForGameweeks,
   regressPer90,
 } from "@/lib/projections";
 
@@ -174,6 +175,26 @@ describe("transparent projection model", () => {
       expectedMinutes: 90,
     });
     expect(blankCurrentGameweek.nextGW).toBe(0);
+  });
+
+  it("windows fixture totals from any planning gameweek and returns zero past the schedule", () => {
+    const projection = projectPlayer(player([
+      { gameweek: 1, opponentTeamId: 2, opponentShortName: "A", isHome: true, difficulty: 2 },
+      { gameweek: 1, opponentTeamId: 3, opponentShortName: "B", isHome: false, difficulty: 3 },
+      { gameweek: 2, opponentTeamId: 4, opponentShortName: "C", isHome: true, difficulty: 3 },
+      { gameweek: 4, opponentTeamId: 5, opponentShortName: "D", isHome: false, difficulty: 4 },
+      { gameweek: 5, opponentTeamId: 6, opponentShortName: "E", isHome: true, difficulty: 2 },
+      { gameweek: 8, opponentTeamId: 7, opponentShortName: "F", isHome: true, difficulty: 3 },
+    ]), { currentGameweek: 1, horizon: 5, expectedMinutes: 90 });
+    const totals = aggregateFixturePointsByGameweek(projection.fixtures);
+    const sum = (start: number, count: number) => Array.from({ length: count }, (_, offset) => start + offset)
+      .reduce((total, gameweek) => total + (totals.get(gameweek) ?? 0), 0);
+
+    expect(projectedPointsForGameweeks(projection.fixtures, 1, 5)).toBeCloseTo(projection.next5, 6);
+    expect(projectedPointsForGameweeks(projection.fixtures, 2, 5)).toBeCloseTo(sum(2, 5), 6);
+    expect(projectedPointsForGameweeks(projection.fixtures, 2, 5)).toBeLessThan(projection.next5);
+    expect(projectedPointsForGameweeks(projection.fixtures, 3, 1)).toBe(0);
+    expect(projectedPointsForGameweeks(projection.fixtures, 9, 5)).toBe(0);
   });
 
   it("can retain fixtures beyond the five-gameweek summary horizon", () => {
