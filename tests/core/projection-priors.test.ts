@@ -109,7 +109,7 @@ describe("defender attacking priors", () => {
     });
 
     // A hot in-season match history should raise the projection above the
-    // historical-only baseline, but a 24-match prior weight keeps 3 matches
+    // historical-only baseline, but the prior keeps 3 matches
     // from swinging it anywhere near the raw recent rate (0.9).
     expect(withForm.components?.goals).toBeGreaterThan(withoutForm.components?.goals ?? 0);
     const attackMultiplier = HOME_ATTACK_MULTIPLIER;

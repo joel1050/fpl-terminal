@@ -114,7 +114,7 @@ export function createFplToolAdapters(): AIDataAdapters {
       const [historical, inSeasonForm, playerForm] = await Promise.all([
         loadHistoricalBundle(),
         loadInSeasonTeamXG(normalized.players, normalized.fixtures),
-        loadInSeasonPlayerRates(normalized.fixtures),
+        loadInSeasonPlayerRates(normalized.players, normalized.fixtures),
       ]);
       return enrichPlayersWithHistory(
         normalized.players,

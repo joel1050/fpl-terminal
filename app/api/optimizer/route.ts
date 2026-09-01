@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const [historical, inSeasonForm, playerForm] = await Promise.all([
       loadHistoricalBundle(),
       loadInSeasonTeamXG(normalized.players, normalized.fixtures),
-      loadInSeasonPlayerRates(normalized.fixtures),
+      loadInSeasonPlayerRates(normalized.players, normalized.fixtures),
     ]);
     const players = enrichPlayersWithHistory(normalized.players, normalized.teams, normalized.events, historical, inSeasonForm, playerForm).players;
     const gameweek = parsed.data.gameweek

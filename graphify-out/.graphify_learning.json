@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-24T16:52:00.383795+00:00",
+  "generated_at": "2026-09-01T05:31:42.028939+00:00",
   "nodes": {
     "lib_ai_tools": {
-      "code_fingerprint": "5226393a83d3cb48ca399044222873f1b708517f7d75ca73c77cfc4c46fec709",
+      "code_fingerprint": "5960e7089bda0e30e2d35f232ba7aed9c50e3b141f437043bbfd133b8d52a10d",
       "label": "tools.ts",
       "last": "2026-08-21T08:17:07.022508+00:00",
       "provenance": [
@@ -12,13 +12,13 @@
           "q": "ok integraye into the app"
         }
       ],
-      "score": 0.925356551,
+      "score": 0.777633578,
       "source_file": "lib/ai/tools.ts",
       "status": "tentative",
       "uses": 1
     },
     "lib_analysis_context_playeruniverse": {
-      "code_fingerprint": "9024a11efed3f14060a66cf5fecaa528d7003c205566c9cafc2848bf37c03431",
+      "code_fingerprint": "14c39889e31559fab6847d58112fee36a4431a1c7f7299af024a2cff61b4906b",
       "label": "PlayerUniverse",
       "last": "2026-08-21T06:41:36.322395+00:00",
       "provenance": [
@@ -38,13 +38,29 @@
           "q": "look at the pts/pound does it look more accurate"
         }
       ],
-      "score": 2.771190504,
+      "score": 2.328800488,
       "source_file": "lib/analysis/context.ts",
       "status": "preferred",
       "uses": 3
     },
+    "lib_availability_rotowiremapping": {
+      "code_fingerprint": "d3e143389f60c055f420ab1211ef0ac05b1e4257a898827802baeb3ce13e9445",
+      "label": "rotowireMapping.ts",
+      "last": "2026-08-24T16:54:25.896536+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-24T16:54:25.896536+00:00",
+          "outcome": "useful",
+          "q": "@calculations.md do section 4 now\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
+        }
+      ],
+      "score": 0.840393725,
+      "source_file": "lib/availability/rotowireMapping.ts",
+      "status": "tentative",
+      "uses": 1
+    },
     "lib_historical_enrichplayers": {
-      "code_fingerprint": "928ec2745a82f6540a46652e8eabacc6a4be4576b24d772a1917e71895b139de",
+      "code_fingerprint": "dbb748bff908118e2c21a78acca201aee33c06537210e1f6bc885d3c50785d9f",
       "label": "enrichPlayers.ts",
       "last": "2026-08-22T04:36:26.631134+00:00",
       "provenance": [
@@ -69,16 +85,21 @@
           "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
         }
       ],
-      "score": 3.772995267,
+      "score": 3.170678164,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "preferred",
       "uses": 4
     },
     "lib_historical_enrichplayers_deriveteamstrengths": {
-      "code_fingerprint": "928ec2745a82f6540a46652e8eabacc6a4be4576b24d772a1917e71895b139de",
+      "code_fingerprint": "dbb748bff908118e2c21a78acca201aee33c06537210e1f6bc885d3c50785d9f",
       "label": "deriveTeamStrengths()",
-      "last": "2026-08-24T16:10:17.253370+00:00",
+      "last": "2026-09-01T03:50:51.456890+00:00",
       "provenance": [
+        {
+          "date": "2026-09-01T03:50:51.456890+00:00",
+          "outcome": "useful",
+          "q": "what could be done to improve clean sheet odd correctness, is the algorithm already accurate"
+        },
         {
           "date": "2026-08-24T16:10:17.253370+00:00",
           "outcome": "useful",
@@ -90,13 +111,13 @@
           "q": "@calculations.md lets go section by section and try to improve the metrics formulation in this app, start with section 3\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 1.998460377,
+      "score": 2.677811484,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "preferred",
-      "uses": 2
+      "uses": 3
     },
     "lib_historical_enrichplayers_enrichplayerswithhistory": {
-      "code_fingerprint": "928ec2745a82f6540a46652e8eabacc6a4be4576b24d772a1917e71895b139de",
+      "code_fingerprint": "dbb748bff908118e2c21a78acca201aee33c06537210e1f6bc885d3c50785d9f",
       "label": "enrichPlayersWithHistory()",
       "last": "2026-08-24T16:10:17.253370+00:00",
       "provenance": [
@@ -106,13 +127,13 @@
           "q": "Fix the xG input first just do this,&#x20;\n\nafter this show me the team strength rankings"
         }
       ],
-      "score": 0.999330842,
+      "score": 0.839798689,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "tentative",
       "uses": 1
     },
     "lib_historical_ingest": {
-      "code_fingerprint": "a5699a7f44cb305640be60004f8234c31db8aa7197897440e9ef3e769194bf45",
+      "code_fingerprint": "9ef6b065cb5419df8f653c5b2e6e9aa82212313ccccb75effc73e68800f1bdba",
       "label": "ingest.ts",
       "last": "2026-08-21T23:58:13.659896+00:00",
       "provenance": [
@@ -122,16 +143,52 @@
           "q": "1. this mostly fine 2. yeah how do we make this more realistic, it should be closer to zero, do we have access to last seasons stats 3. thats whatever its fine 4. look at betting odds for recent matches for clean sheets match it against our strength rating system and design appropriate clean sheet odds, it should be closer to 0 for ars - cov"
         }
       ],
-      "score": 0.939435641,
+      "score": 0.789465096,
       "source_file": "lib/historical/ingest.ts",
       "status": "tentative",
       "uses": 1
     },
-    "lib_historical_types_historicalbundle": {
-      "code_fingerprint": "82869795a1ed07bc1d87c36ac837024f78552a1d35cfdc6a41b2a055bb5b1cd8",
-      "label": "HistoricalBundle",
-      "last": "2026-08-22T04:42:12.345810+00:00",
+    "lib_historical_ingest_ingesthistoricaldata": {
+      "code_fingerprint": "9ef6b065cb5419df8f653c5b2e6e9aa82212313ccccb75effc73e68800f1bdba",
+      "label": "ingestHistoricalData()",
+      "last": "2026-09-01T05:30:48.748917+00:00",
       "provenance": [
+        {
+          "date": "2026-09-01T05:30:48.748917+00:00",
+          "outcome": "useful",
+          "q": "do 1"
+        },
+        {
+          "date": "2026-09-01T05:14:56.828294+00:00",
+          "outcome": "useful",
+          "q": "i want to backtest for more than 1 season is there any way you can get data for more seasons"
+        }
+      ],
+      "score": 1.99971698,
+      "source_file": "lib/historical/ingest.ts",
+      "status": "preferred",
+      "uses": 2
+    },
+    "lib_historical_types_historicalbundle": {
+      "code_fingerprint": "8a4d2e3260f70dfbe4e69a4e980aaac40c9dbaf9cda8985fa6287d2da1f1a1ac",
+      "label": "HistoricalBundle",
+      "last": "2026-09-01T05:30:48.748917+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-01T05:30:48.748917+00:00",
+          "outcome": "useful",
+          "q": "do 1"
+        },
+        {
+          "date": "2026-09-01T05:14:56.828294+00:00",
+          "outcome": "useful",
+          "q": "i want to backtest for more than 1 season is there any way you can get data for more seasons"
+        },
+        {
+          "date": "2026-08-24T16:54:25.896536+00:00",
+          "outcome": "useful",
+          "q": "@calculations.md do section 4 now\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
+        },
         {
           "date": "2026-08-22T04:42:12.345810+00:00",
           "outcome": "useful",
@@ -141,30 +198,15 @@
           "date": "2026-08-22T04:36:26.631134+00:00",
           "outcome": "useful",
           "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
-        },
-        {
-          "date": "2026-08-22T04:04:37.299189+00:00",
-          "outcome": "useful",
-          "q": "try shaw and calafiori"
-        },
-        {
-          "date": "2026-08-22T04:02:34.197546+00:00",
-          "outcome": "useful",
-          "q": "what about average xp vs last seasons points per week"
-        },
-        {
-          "date": "2026-08-22T03:59:07.265070+00:00",
-          "outcome": "useful",
-          "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
         }
       ],
-      "score": 6.599143638,
+      "score": 8.385773806,
       "source_file": "lib/historical/types.ts",
       "status": "preferred",
-      "uses": 7
+      "uses": 10
     },
     "lib_optimizer_optimizer": {
-      "code_fingerprint": "063244ad25dd8aa0fd4576e507e6ba871d28b348bf85ef2c03e56170c54b040e",
+      "code_fingerprint": "ffd9eef2d97b265df9da22133b87f94ef15a3dd6eabbe073cecd8f8f1eef47e0",
       "label": "optimizer.ts",
       "last": "2026-08-21T08:17:07.022508+00:00",
       "provenance": [
@@ -184,13 +226,13 @@
           "q": "what algorithm do you use for optimized lineups, will it always determine the highest xp for gw"
         }
       ],
-      "score": 2.775099257,
+      "score": 2.332085252,
       "source_file": "lib/optimizer/optimizer.ts",
       "status": "preferred",
       "uses": 3
     },
     "lib_projections_expectedminutes": {
-      "code_fingerprint": "31e5768debcef521565ef23888ca752682edc5458eafe0b317472205f620821d",
+      "code_fingerprint": "b770bed063cf12c4c5dd09c29fc480164fca7113f39ae80607ffab12c8958df8",
       "label": "expectedMinutes.ts",
       "last": "2026-08-22T04:42:12.345810+00:00",
       "provenance": [
@@ -220,16 +262,21 @@
           "q": "can you recap how xmin is calculated"
         }
       ],
-      "score": 5.640282496,
+      "score": 4.739873571,
       "source_file": "lib/projections/expectedMinutes.ts",
       "status": "preferred",
       "uses": 6
     },
     "lib_projections_fixtureadjustment": {
-      "code_fingerprint": "656b06d241251a53d2274351270082f355de1f7fd035ed0bb110cfb6de5070cd",
+      "code_fingerprint": "c7ea1a8350632c47f8cc28be6d0f32fbc8f3d88dcc374f3784a103d19c1cbfd5",
       "label": "fixtureAdjustment.ts",
-      "last": "2026-08-22T04:42:12.345810+00:00",
+      "last": "2026-09-01T03:50:51.456890+00:00",
       "provenance": [
+        {
+          "date": "2026-09-01T03:50:51.456890+00:00",
+          "outcome": "useful",
+          "q": "what could be done to improve clean sheet odd correctness, is the algorithm already accurate"
+        },
         {
           "date": "2026-08-22T04:42:12.345810+00:00",
           "outcome": "useful",
@@ -249,33 +296,38 @@
           "date": "2026-08-21T18:50:12.393862+00:00",
           "outcome": "useful",
           "q": "we have a problem with xp calculations, if you sort by xp/pound you see a lot of bottom tier team players/defenders having a fairly high xp, there is something wrong diagnose the issue i think the problem is with clean sheet calculations for all teams"
-        },
-        {
-          "date": "2026-08-21T06:25:28.410850+00:00",
-          "outcome": "useful",
-          "q": "fix the clean-sheet calculation and whatever causes all player xminutes to be 73 min"
         }
       ],
-      "score": 5.604793306,
+      "score": 5.708433116,
       "source_file": "lib/projections/fixtureAdjustment.ts",
       "status": "preferred",
-      "uses": 6
+      "uses": 7
     },
     "lib_projections_fixtureadjustment_calculatefixtureadjustment": {
-      "code_fingerprint": "656b06d241251a53d2274351270082f355de1f7fd035ed0bb110cfb6de5070cd",
+      "code_fingerprint": "c7ea1a8350632c47f8cc28be6d0f32fbc8f3d88dcc374f3784a103d19c1cbfd5",
       "label": "calculateFixtureAdjustment()",
-      "last": "2026-08-24T15:57:43.890557+00:00",
+      "last": "2026-09-01T05:19:40.412482+00:00",
       "provenance": [
+        {
+          "date": "2026-09-01T05:19:40.412482+00:00",
+          "outcome": "useful",
+          "q": "cool ok, we need to run further model tuning because of this, can you break down every single calculation that could need tuning in xp calculations"
+        },
+        {
+          "date": "2026-09-01T03:50:51.456890+00:00",
+          "outcome": "useful",
+          "q": "what could be done to improve clean sheet odd correctness, is the algorithm already accurate"
+        },
         {
           "date": "2026-08-24T15:57:43.890557+00:00",
           "outcome": "useful",
           "q": "@calculations.md lets go section by section and try to improve the metrics formulation in this app, start with section 3\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 0.999129535,
+      "score": 2.837819841,
       "source_file": "lib/projections/fixtureAdjustment.ts",
-      "status": "tentative",
-      "uses": 1
+      "status": "preferred",
+      "uses": 3
     },
     "lib_projections_metrics_valuepermillion": {
       "code_fingerprint": "00e37d154107202797b1c907e2eb5345d0f2d375b34e05ad2c53753b9f5ec20d",
@@ -293,13 +345,13 @@
           "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
         }
       ],
-      "score": 1.887364553,
+      "score": 1.586067607,
       "source_file": "lib/projections/metrics.ts",
       "status": "preferred",
       "uses": 2
     },
     "lib_projections_projectplayer": {
-      "code_fingerprint": "5d300a235e5743bf6a5216243a0645c9889f6f368536981c8f45f6bf2171e356",
+      "code_fingerprint": "548710bf18b3c0daf6c616c5b8f33755f1509407ea1e5b0b6b0cb0f9ca7dfcd4",
       "label": "projectPlayer.ts",
       "last": "2026-08-22T04:02:34.197546+00:00",
       "provenance": [
@@ -314,16 +366,26 @@
           "q": "Implement conservative unmapped-defender xG/xA priors and market-calibrated clean-sheet probabilities using Luna xhigh subagents"
         }
       ],
-      "score": 1.88270252,
+      "score": 1.582149817,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "preferred",
       "uses": 2
     },
     "lib_projections_projectplayer_projectplayer": {
-      "code_fingerprint": "5d300a235e5743bf6a5216243a0645c9889f6f368536981c8f45f6bf2171e356",
+      "code_fingerprint": "548710bf18b3c0daf6c616c5b8f33755f1509407ea1e5b0b6b0cb0f9ca7dfcd4",
       "label": "projectPlayer()",
-      "last": "2026-08-22T04:42:12.345810+00:00",
+      "last": "2026-09-01T05:19:40.412482+00:00",
       "provenance": [
+        {
+          "date": "2026-09-01T05:19:40.412482+00:00",
+          "outcome": "useful",
+          "q": "cool ok, we need to run further model tuning because of this, can you break down every single calculation that could need tuning in xp calculations"
+        },
+        {
+          "date": "2026-08-24T16:54:25.896536+00:00",
+          "outcome": "useful",
+          "q": "@calculations.md do section 4 now\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
+        },
         {
           "date": "2026-08-22T04:42:12.345810+00:00",
           "outcome": "useful",
@@ -338,22 +400,28 @@
           "date": "2026-08-22T04:04:37.299189+00:00",
           "outcome": "useful",
           "q": "try shaw and calafiori"
-        },
-        {
-          "date": "2026-08-22T04:02:34.197546+00:00",
-          "outcome": "useful",
-          "q": "what about average xp vs last seasons points per week"
-        },
-        {
-          "date": "2026-08-22T03:59:07.265070+00:00",
-          "outcome": "useful",
-          "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
         }
       ],
-      "score": 7.506958966,
+      "score": 8.14875649,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "preferred",
-      "uses": 8
+      "uses": 10
+    },
+    "lib_projections_projectplayer_regressedplayerrate": {
+      "code_fingerprint": "548710bf18b3c0daf6c616c5b8f33755f1509407ea1e5b0b6b0cb0f9ca7dfcd4",
+      "label": "regressedPlayerRate()",
+      "last": "2026-09-01T05:19:40.412482+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-01T05:19:40.412482+00:00",
+          "outcome": "useful",
+          "q": "cool ok, we need to run further model tuning because of this, can you break down every single calculation that could need tuning in xp calculations"
+        }
+      ],
+      "score": 0.999807045,
+      "source_file": "lib/projections/projectPlayer.ts",
+      "status": "tentative",
+      "uses": 1
     },
     "lib_projections_value": {
       "code_fingerprint": "006022c24fa3722b26214c2d1475a87013338d8065f65186763817fd8f5e42bb",
@@ -366,13 +434,13 @@
           "q": "look at the pts/pound does it look more accurate"
         }
       ],
-      "score": 0.923550552,
+      "score": 0.776115887,
       "source_file": "lib/projections/value.ts",
       "status": "tentative",
       "uses": 1
     },
     "lib_squad_weeklylineup": {
-      "code_fingerprint": "0b9ad7a09d409efb52cc722529f83d0f9ccb4003f8c739ca8a46c849b18b88fe",
+      "code_fingerprint": "a476d23b67a8285eebf57a1e865d47292e1b280048afee2e8b21106684a90270",
       "label": "weeklyLineup.ts",
       "last": "2026-08-21T07:38:14.618836+00:00",
       "provenance": [
@@ -387,7 +455,7 @@
           "q": "How does TerminalApp compose the player universe squad weekly lineup analysis and analyst panels while preserving API store and projection behavior?"
         }
       ],
-      "score": 1.848719097,
+      "score": 1.553591472,
       "source_file": "lib/squad/weeklyLineup.ts",
       "status": "preferred",
       "uses": 2

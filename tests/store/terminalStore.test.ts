@@ -156,7 +156,7 @@ describe("persisted weekly lineup state", () => {
 
     const lineup = { gameweek: 1, lineupProjectionFingerprint: "imported", benchGoalkeeperId: 22, benchOrder: [27, 32, 35], captainId: 23, viceCaptainId: 24 };
     expect(useTerminalStore.getState().replaceSquad(imported, lineup, 4827193, 1003)).toBe(true);
-    expect(useTerminalStore.getState()).toMatchObject({ ...imported, mode: "ANALYZE", entryId: 4827193, budgetTenths: 1003, lockedPlayerIds: [], benchGoalkeeperId: 22, benchOrder: [27, 32, 35], captainId: 23, viceCaptainId: 24, lineupGameweek: 1, lineupProjectionFingerprint: "imported" });
+    expect(useTerminalStore.getState()).toMatchObject({ ...imported, mode: "ANALYZE", entryId: 4827193, budgetTenths: 1003, lockedPlayerIds: [...imported.playerIds], benchGoalkeeperId: 22, benchOrder: [27, 32, 35], captainId: 23, viceCaptainId: 24, lineupGameweek: 1, lineupProjectionFingerprint: "imported" });
     const saved = exportTerminalState(useTerminalStore.getState());
     useTerminalStore.getState().reset();
     useTerminalStore.getState().hydrate(saved);
@@ -166,6 +166,9 @@ describe("persisted weekly lineup state", () => {
     expect(useTerminalStore.getState().playerIds).toEqual(before);
     expect(useTerminalStore.getState().replaceSquad(imported, lineup, 4827193, -1)).toBe(false);
     expect(useTerminalStore.getState().budgetTenths).toBe(1003);
+    expect(useTerminalStore.getState().removePlayer(imported.playerIds[0])).toBe(false);
+    useTerminalStore.getState().toggleLock(imported.playerIds[0]);
+    expect(useTerminalStore.getState().removePlayer(imported.playerIds[0])).toBe(true);
   });
 
   it("inherits GW1 planning choices into GW2 and isolates later edits", () => {

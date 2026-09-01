@@ -24,6 +24,15 @@ export interface InSeasonFormFixture {
   teamHomeId: number;
   teamAwayId: number;
   finished: boolean;
+  finishedProvisional?: boolean;
+}
+
+interface GameweekEligibility {
+  gameweek: number;
+  /** Teams whose single fixture in this gameweek has been played. */
+  teamIds: Set<number>;
+  /** Every fixture played and no team doubled, so the aggregate is final. */
+  complete: boolean;
 }
 
 function toNumber(value: unknown): number {
@@ -38,31 +47,38 @@ function toNumber(value: unknown): number {
  * endpoint, so this stays cheap no matter how far into the season it runs.
  */
 async function loadGameweekTeamXG(
-  gameweek: number,
+  eligibility: GameweekEligibility,
   players: readonly InSeasonFormPlayer[],
   fixtures: readonly InSeasonFormFixture[],
 ): Promise<GameweekTeamXG> {
-  const gameweekFixtures = fixtures.filter((fixture) => fixture.gameweek === gameweek);
-  const cached = await readSnapshot(`in-season-xg-gw-${gameweek}`, GameweekTeamXGSchema);
-  if (cached?.data.length === gameweekFixtures.length * 2) return cached.data;
+  const { gameweek, teamIds, complete } = eligibility;
+  const gameweekFixtures = fixtures.filter((fixture) =>
+    fixture.gameweek === gameweek && teamIds.has(fixture.teamHomeId) && teamIds.has(fixture.teamAwayId));
+  if (complete) {
+    const cached = await readSnapshot(`in-season-xg-gw-${gameweek}`, GameweekTeamXGSchema);
+    if (cached?.data.length === gameweekFixtures.length * 2) return cached.data;
+  }
 
   const live = await getLiveGameweek(gameweek);
   if (!live.data) return [];
 
+  // Only the teams whose rows are about to be written. A team excluded from
+  // this gameweek must not vouch for the signal in data it is not part of.
+  const written = new Set(gameweekFixtures.flatMap((fixture) => [fixture.teamHomeId, fixture.teamAwayId]));
   const playerTeam = new Map(players.map((player) => [player.id, player.teamId]));
   const xgByTeam = new Map<number, number>();
   for (const element of live.data.elements) {
     const teamId = playerTeam.get(element.id);
-    if (teamId === undefined) continue;
+    if (teamId === undefined || !written.has(teamId)) continue;
     const xg = toNumber(element.stats.expected_goals);
     xgByTeam.set(teamId, (xgByTeam.get(teamId) ?? 0) + xg);
   }
 
-  // A full gameweek of real matches never sums to zero total xG. If it does,
-  // the upstream stats shape has drifted (e.g. a renamed field) and every
-  // team would otherwise be silently recorded as a scoreless shutout. Bail
-  // out unresolved rather than caching that corruption for the rest of the
-  // season - callers fall back to the preseason prior for this gameweek.
+  // Real matches never sum to zero total xG. If they do, the upstream stats
+  // shape has drifted (e.g. a renamed field) and every team would otherwise be
+  // silently recorded as a scoreless shutout. Bail out unresolved rather than
+  // caching that corruption for the rest of the season - callers fall back to
+  // the preseason prior for this gameweek.
   const hasSignal = live.data.elements.length > 0
     && [...xgByTeam.values()].some((value) => value > 0);
   if (!hasSignal) return [];
@@ -75,18 +91,33 @@ async function loadGameweekTeamXG(
     result.push({ teamId: fixture.teamAwayId, xgFor: awayXg, xgAgainst: homeXg });
   }
 
-  await writeSnapshot(`in-season-xg-gw-${gameweek}`, result);
+  // Only a finished gameweek is final. Persisting a partial one would freeze
+  // the teams that had not kicked off yet out of the season's history.
+  if (complete) await writeSnapshot(`in-season-xg-gw-${gameweek}`, result);
   return result;
 }
 
 /**
- * A gameweek qualifies once every one of its fixtures is finished and no
- * team played twice in it - event/live xG is a per-gameweek total, so a
- * double gameweek can't be split back out into its two fixtures. Shared by
- * both the team-level and player-level loaders below, since the same
- * ambiguity applies to a player's rate for the same reason.
+ * Eligibility is per team, not per gameweek. A team qualifies once its own
+ * fixture in that gameweek has been played, whatever the rest of the gameweek
+ * is doing - waiting for the last kickoff threw away evidence that already
+ * existed, and left a projection reading a team's live totals for one stat
+ * while ignoring them for another.
+ *
+ * A team that plays twice in a gameweek is still excluded: event/live xG is a
+ * per-gameweek total, so a double gameweek can't be split back out into its two
+ * fixtures. That exclusion now costs only the doubled teams rather than every
+ * other team sharing their gameweek.
+ *
+ * `played` accepts a provisional finish. Minutes, xG and xA are match stats and
+ * are final at full time; only bonus points are added later, and none of the
+ * three fields read here is one.
  */
-function eligibleGameweeks(fixtures: readonly InSeasonFormFixture[]): number[] {
+function played(fixture: InSeasonFormFixture): boolean {
+  return fixture.finished || fixture.finishedProvisional === true;
+}
+
+function eligibleGameweeks(fixtures: readonly InSeasonFormFixture[]): GameweekEligibility[] {
   const fixturesByGameweek = new Map<number, InSeasonFormFixture[]>();
   for (const fixture of fixtures) {
     if (fixture.gameweek === undefined) continue;
@@ -95,14 +126,27 @@ function eligibleGameweeks(fixtures: readonly InSeasonFormFixture[]): number[] {
     fixturesByGameweek.set(fixture.gameweek, gameweekFixtures);
   }
 
-  return [...fixturesByGameweek.entries()]
-    .filter(([, gameweekFixtures]) => {
-      const teams = gameweekFixtures.flatMap((fixture) => [fixture.teamHomeId, fixture.teamAwayId]);
-      return gameweekFixtures.every((fixture) => fixture.finished)
-        && new Set(teams).size === teams.length;
-    })
-    .map(([gameweek]) => gameweek)
-    .sort((a, b) => a - b);
+  const eligible: GameweekEligibility[] = [];
+  for (const [gameweek, gameweekFixtures] of fixturesByGameweek) {
+    const appearances = new Map<number, number>();
+    for (const fixture of gameweekFixtures) {
+      for (const teamId of [fixture.teamHomeId, fixture.teamAwayId]) {
+        appearances.set(teamId, (appearances.get(teamId) ?? 0) + 1);
+      }
+    }
+    const teamIds = new Set<number>();
+    for (const fixture of gameweekFixtures) {
+      if (!played(fixture)) continue;
+      for (const teamId of [fixture.teamHomeId, fixture.teamAwayId]) {
+        if (appearances.get(teamId) === 1) teamIds.add(teamId);
+      }
+    }
+    if (teamIds.size === 0) continue;
+    const complete = gameweekFixtures.every((fixture) => fixture.finished)
+      && [...appearances.values()].every((count) => count === 1);
+    eligible.push({ gameweek, teamIds, complete });
+  }
+  return eligible.sort((a, b) => a.gameweek - b.gameweek);
 }
 
 /**
@@ -116,7 +160,7 @@ export async function loadInSeasonTeamXG(
   fixtures: readonly InSeasonFormFixture[],
 ): Promise<Record<number, TeamMatchXG[]>> {
   const perGameweek = await Promise.all(
-    eligibleGameweeks(fixtures).map((gameweek) => loadGameweekTeamXG(gameweek, players, fixtures)),
+    eligibleGameweeks(fixtures).map((eligibility) => loadGameweekTeamXG(eligibility, players, fixtures)),
   );
 
   const history: Record<number, TeamMatchXG[]> = {};
@@ -135,9 +179,15 @@ export async function loadInSeasonTeamXG(
  * PLAYER_FORM_DECAY/PLAYER_FORM_PRIOR_WEIGHT_MATCHES built its history - a
  * blank gameweek should not count as "a match with zero output."
  */
-async function loadGameweekPlayerRates(gameweek: number): Promise<GameweekPlayerRates> {
-  const cached = await readSnapshot(`in-season-player-rates-gw-${gameweek}`, GameweekPlayerRatesSchema);
-  if (cached && cached.data.length > 0) return cached.data;
+async function loadGameweekPlayerRates(
+  eligibility: GameweekEligibility,
+  teamByPlayer: ReadonlyMap<number, number>,
+): Promise<GameweekPlayerRates> {
+  const { gameweek, teamIds, complete } = eligibility;
+  if (complete) {
+    const cached = await readSnapshot(`in-season-player-rates-gw-${gameweek}`, GameweekPlayerRatesSchema);
+    if (cached && cached.data.length > 0) return cached.data;
+  }
 
   const live = await getLiveGameweek(gameweek);
   if (!live.data) return [];
@@ -147,6 +197,8 @@ async function loadGameweekPlayerRates(gameweek: number): Promise<GameweekPlayer
   for (const element of live.data.elements) {
     const minutes = toNumber(element.stats.minutes);
     if (minutes <= 0) continue;
+    const teamId = teamByPlayer.get(element.id);
+    if (teamId === undefined || !teamIds.has(teamId)) continue;
     const xg = toNumber(element.stats.expected_goals);
     const xa = toNumber(element.stats.expected_assists);
     if (xg > 0 || xa > 0) hasSignal = true;
@@ -156,7 +208,7 @@ async function loadGameweekPlayerRates(gameweek: number): Promise<GameweekPlayer
   // appearances never sums to zero xG and xA across every player.
   if (!hasSignal) return [];
 
-  await writeSnapshot(`in-season-player-rates-gw-${gameweek}`, result);
+  if (complete) await writeSnapshot(`in-season-player-rates-gw-${gameweek}`, result);
   return result;
 }
 
@@ -167,10 +219,12 @@ async function loadGameweekPlayerRates(gameweek: number): Promise<GameweekPlayer
  * any gameweek has finished.
  */
 export async function loadInSeasonPlayerRates(
+  players: readonly InSeasonFormPlayer[],
   fixtures: readonly InSeasonFormFixture[],
 ): Promise<Record<number, PlayerMatchRate[]>> {
+  const teamByPlayer = new Map(players.map((player) => [player.id, player.teamId]));
   const perGameweek = await Promise.all(
-    eligibleGameweeks(fixtures).map((gameweek) => loadGameweekPlayerRates(gameweek)),
+    eligibleGameweeks(fixtures).map((eligibility) => loadGameweekPlayerRates(eligibility, teamByPlayer)),
   );
 
   const history: Record<number, PlayerMatchRate[]> = {};

@@ -1,27 +1,34 @@
 /**
- * Shapes the ingested 2025/26 season into a walk-forward backtest universe.
+ * Shapes one ingested season into a walk-forward backtest universe.
  *
  * Every value a projection is allowed to see at gameweek `t` comes from
  * gameweeks strictly before `t`, so nothing here leaks the outcome it is
- * scored against. The two exceptions are named in `KNOWN_LEAKS` and are held
- * identical across every arm, so they cancel in a paired comparison.
+ * scored against. Prepared multi-season inputs also supply opening team and
+ * player priors from the preceding season; the legacy single-season corpus
+ * retains the named aggregate-rate leaks for backwards-compatible comparisons.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { HistoricalStats, Player, PlayerFixture, Position } from "@/types/player";
 import type { PlayerMatchRate, TeamStrength } from "@/types/projection";
 import { deriveTeamStrengths, type EnrichmentTeam } from "@/lib/historical/enrichPlayers";
 import { applyInSeasonForm, type TeamMatchXG } from "@/lib/historical/inSeasonForm";
-
-export const KNOWN_LEAKS = [
-  "saves per-90: only a season aggregate exists per player, so it is reused at every gameweek",
-  "defensive contributions per-90: same, season aggregate only",
-  "card rates per-90: season aggregate only, so they are reused at every gameweek",
-] as const;
+import {
+  buildFixturesFromMatchRows,
+  type PreparedFixture,
+  type PreparedPlayerAnchor,
+} from "./multiSeasonData";
 
 const root = path.resolve(__dirname, "../..");
 /** BACKTEST_DATA_DIR points the harness at a scratch ingest; never write to data/generated. */
 const dataDir = process.env.BACKTEST_DATA_DIR ?? path.join(root, "data/generated");
+export const KNOWN_LEAKS = existsSync(path.join(dataDir, "previous-player-anchors.json"))
+  ? []
+  : [
+      "saves per-90: only a season aggregate exists per player, so it is reused at every gameweek",
+      "defensive contributions per-90: same, season aggregate only",
+      "card rates per-90: season aggregate only, so they are reused at every gameweek",
+    ];
 const read = <T,>(file: string): T =>
   JSON.parse(readFileSync(path.join(dataDir, file), "utf8")) as T;
 
@@ -45,6 +52,7 @@ export interface MatchRow {
 
 interface SeasonPlayer {
   historicalPlayerId: number;
+  code?: number;
   displayName: string;
   teamName: string;
   position: Position;
@@ -63,16 +71,7 @@ interface RawTeamStrength {
   defenceAway: number;
 }
 
-export interface Fixture {
-  fixtureId: number;
-  gameweek: number;
-  homeTeamId: number;
-  awayTeamId: number;
-  homeXg: number;
-  awayXg: number;
-  homeGoals: number;
-  awayGoals: number;
-}
+export type Fixture = PreparedFixture;
 
 export interface Season {
   players: Map<number, SeasonPlayer>;
@@ -82,57 +81,29 @@ export interface Season {
   rowsByPlayer: Map<number, MatchRow[]>;
   fixtures: Fixture[];
   fixturesByGameweek: Map<number, Fixture[]>;
-  /** Preseason prior: the real FPL 2025/26 strength ratings, normalized to ~1.0. */
+  /** Opening team prior, normalized to ~1.0. */
   priorStrengths: Record<number, TeamStrength>;
+  /** Previous-season player evidence keyed to this season's player id. */
+  previousStatsByPlayerId: Map<number, HistoricalStats>;
+  /** Prepared inputs never fall back to completed target-season aggregates. */
+  hasPreparedPriors: boolean;
   leagueAverageXg: number;
-}
-
-/** Rebuilds fixtures from player rows: each side reports the *other* team's id. */
-function buildFixtures(rows: readonly MatchRow[]): Fixture[] {
-  const byFixture = new Map<number, {
-    gameweek: number;
-    home: { xg: number; goals: number; opponent: number | null };
-    away: { xg: number; goals: number; opponent: number | null };
-  }>();
-  for (const row of rows) {
-    let entry = byFixture.get(row.fixtureId);
-    if (!entry) {
-      entry = {
-        gameweek: row.gameweek,
-        home: { xg: 0, goals: 0, opponent: null },
-        away: { xg: 0, goals: 0, opponent: null },
-      };
-      byFixture.set(row.fixtureId, entry);
-    }
-    const side = row.wasHome ? entry.home : entry.away;
-    side.xg += row.expectedGoals ?? 0;
-    side.goals += row.goals ?? 0;
-    side.opponent = row.opponentTeamId;
-  }
-  const fixtures: Fixture[] = [];
-  for (const [fixtureId, entry] of byFixture) {
-    if (entry.home.opponent === null || entry.away.opponent === null) continue;
-    fixtures.push({
-      fixtureId,
-      gameweek: entry.gameweek,
-      homeTeamId: entry.away.opponent,
-      awayTeamId: entry.home.opponent,
-      homeXg: entry.home.xg,
-      awayXg: entry.away.xg,
-      homeGoals: entry.home.goals,
-      awayGoals: entry.away.goals,
-    });
-  }
-  return fixtures.sort((a, b) => a.gameweek - b.gameweek || a.fixtureId - b.fixtureId);
 }
 
 export function loadSeason(): Season {
   const rows = read<MatchRow[]>("historical-match-stats.json");
   const playerList = read<SeasonPlayer[]>("historical-players.json");
-  const rawStrengths = read<RawTeamStrength[]>("team-strength.json");
+  const priorFile = existsSync(path.join(dataDir, "preseason-team-strength.json"))
+    ? "preseason-team-strength.json"
+    : "team-strength.json";
+  const rawStrengths = read<RawTeamStrength[]>(priorFile);
+  const hasPreparedPriors = existsSync(path.join(dataDir, "previous-player-anchors.json"));
+  const previousAnchors = hasPreparedPriors
+    ? read<PreparedPlayerAnchor[]>("previous-player-anchors.json")
+    : [];
 
   const players = new Map(playerList.map((player) => [player.historicalPlayerId, player]));
-  const fixtures = buildFixtures(rows);
+  const fixtures = buildFixturesFromMatchRows(rows);
   const fixtureById = new Map(fixtures.map((fixture) => [fixture.fixtureId, fixture]));
 
   const rowsByGameweek = new Map<number, MatchRow[]>();
@@ -189,6 +160,8 @@ export function loadSeason(): Season {
     fixtures,
     fixturesByGameweek,
     priorStrengths: deriveTeamStrengths(enrichmentTeams).strengths,
+    previousStatsByPlayerId: new Map(previousAnchors.map((anchor) => [anchor.historicalPlayerId, anchor.stats])),
+    hasPreparedPriors,
     leagueAverageXg: totalXg / (fixtures.length * 2),
   };
 }
@@ -233,8 +206,8 @@ export function currentBefore(season: Season, playerId: number, gameweek: number
 
 /**
  * Builds the Player the projector sees at `gameweek`, with one upcoming fixture.
- * `historical` carries only the two season-aggregate rates listed in KNOWN_LEAKS;
- * every other input is season-to-date.
+ * With prepared inputs, `historical` comes from the preceding season. The
+ * legacy corpus keeps its aggregate-rate fallback for comparable old runs.
  */
 export function playerAt(
   season: Season,
@@ -255,6 +228,9 @@ export function playerAt(
   if (!source || teamId === undefined) return undefined;
   const current = currentBefore(season, playerId, gameweek);
   const seasonStats = source.stats;
+  const previousStats = anchorThrough === undefined
+    ? season.previousStatsByPlayerId.get(playerId)
+    : undefined;
   const upcoming: PlayerFixture = {
     gameweek,
     opponentTeamId: wasHome ? fixture.awayTeamId : fixture.homeTeamId,
@@ -265,7 +241,8 @@ export function playerAt(
     difficulty: 3,
   };
   const anchor = anchorThrough === undefined ? undefined : currentBefore(season, playerId, anchorThrough + 1);
-  const historical: HistoricalStats | undefined = seasonStats.minutes > 0
+  const mayUseTargetAggregate = anchorThrough !== undefined || !season.hasPreparedPriors;
+  const historical: HistoricalStats | undefined = previousStats ?? (mayUseTargetAggregate && seasonStats.minutes > 0
     ? {
         season: seasonStats.season,
         minutes: seasonStats.minutes,
@@ -285,7 +262,7 @@ export function playerAt(
             }
           : {}),
       }
-    : undefined;
+    : undefined);
   return {
     id: playerId,
     firstName: source.displayName,

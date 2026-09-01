@@ -95,6 +95,7 @@ interface PlayerAccumulator {
 export function aggregateHistoricalPlayers(
   mergedText: string,
   playersRawText = "",
+  season = HISTORICAL_SEASON,
 ): HistoricalPlayerRecord[] {
   const rawRows = parseCsv(playersRawText);
   const staticById = new Map(
@@ -159,7 +160,7 @@ export function aggregateHistoricalPlayers(
       teamName: value.teamName,
       position: value.position,
       stats: {
-        season: HISTORICAL_SEASON,
+        season,
         minutes: value.minutes,
         starts: value.starts,
         totalPoints: value.totalPoints,
@@ -257,6 +258,8 @@ async function download(url: string): Promise<string> {
 export interface IngestOptions {
   outputDir?: string;
   seasonPath?: string;
+  season?: string;
+  includeCurrentMappings?: boolean;
 }
 
 export async function ingestHistoricalData(options: IngestOptions = {}): Promise<{
@@ -266,6 +269,7 @@ export async function ingestHistoricalData(options: IngestOptions = {}): Promise
   currentDataAvailable: boolean;
 }> {
   const seasonPath = options.seasonPath ?? HISTORICAL_REPOSITORY;
+  const season = options.season ?? HISTORICAL_SEASON;
   const outputDir = options.outputDir ?? path.join(process.cwd(), "data", "generated");
   const [merged, playersRaw, teams] = await Promise.all([
     download(`${seasonPath}/gws/merged_gw.csv`),
@@ -274,17 +278,19 @@ export async function ingestHistoricalData(options: IngestOptions = {}): Promise
   ]);
   let currentDataAvailable = false;
   let currentPlayers: Player[] = [];
-  try {
-    const bootstrapResponse = await fetch("https://fantasy.premierleague.com/api/bootstrap-static/", { cache: "no-store" });
-    if (bootstrapResponse.ok) {
-      const bootstrap = parseExternal(FplBootstrapSchema, await bootstrapResponse.json(), "bootstrap-static");
-      currentPlayers = normalizeBootstrap(bootstrap).players;
-      currentDataAvailable = true;
+  if (options.includeCurrentMappings !== false) {
+    try {
+      const bootstrapResponse = await fetch("https://fantasy.premierleague.com/api/bootstrap-static/", { cache: "no-store" });
+      if (bootstrapResponse.ok) {
+        const bootstrap = parseExternal(FplBootstrapSchema, await bootstrapResponse.json(), "bootstrap-static");
+        currentPlayers = normalizeBootstrap(bootstrap).players;
+        currentDataAvailable = true;
+      }
+    } catch {
+      // Historical files remain useful without a live player universe; mappings stay empty.
     }
-  } catch {
-    // Historical files remain useful without a live player universe; mappings stay empty.
   }
-  const historicalPlayers = aggregateHistoricalPlayers(merged, playersRaw);
+  const historicalPlayers = aggregateHistoricalPlayers(merged, playersRaw, season);
   const matchStats = normalizeHistoricalMatchStats(merged);
   const teamStrength = normalizeTeamStrength(teams);
   const playerMappings = mapHistoricalPlayers(currentPlayers, historicalPlayers);

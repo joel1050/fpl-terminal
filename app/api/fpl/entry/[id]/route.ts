@@ -22,7 +22,13 @@ export async function GET(
     return fplJson(null, null, ["Gameweek must be an integer from 1 to 38"], 400);
   }
 
-  const [entry, event] = await Promise.all([getEntry(entryId), getEntryPicks(entryId, gameweek)]);
+  const entry = await getEntry(entryId);
+  const profile = entry.data ? normalizeManagerProfile(entry.data) : null;
+  const currentEvent = profile?.currentEvent;
+  const picksGameweek = currentEvent && Number.isSafeInteger(currentEvent) && currentEvent >= 1 && currentEvent <= 38
+    ? Math.min(gameweek, currentEvent)
+    : gameweek;
+  const event = await getEntryPicks(entryId, picksGameweek);
   const errors = errorList(entry.error, event.error);
   if (!entry.data || !event.data) {
     return fplJson(null, { entry: entry.freshness, picks: event.freshness }, errors, errors.some((error) => /HTTP 404/.test(error)) ? 404 : 503);
@@ -62,10 +68,10 @@ export async function GET(
     budgetTenths,
     teamName: entry.data.name,
     managerName: [entry.data.player_first_name, entry.data.player_last_name].filter(Boolean).join(" "),
-    profile: normalizeManagerProfile(entry.data),
+    profile,
     squad: { playerIds, byPosition },
     lineup: {
-      gameweek,
+      gameweek: picksGameweek,
       benchGoalkeeperId: benchGoalkeepers[0].element,
       benchOrder,
       captainId: captains[0].element,
