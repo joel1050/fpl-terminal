@@ -781,6 +781,10 @@ export default function TerminalApp() {
       setNotice("Optimization needs a live player universe.");
       return;
     }
+    if (store.playerIds.length === 15 && store.playerIds.every((id) => store.lockedPlayerIds.includes(id))) {
+      setNotice("Unlock players to get the optimized lineup.");
+      return;
+    }
     setOptimizing(true);
     setNotice("Running exact optimizer…");
     try {

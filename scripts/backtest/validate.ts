@@ -40,7 +40,7 @@ function main(): void {
 
       const mine = expectedPoints(
         player, player.fixtures[0], row.minutes,
-        playerRates(player, form, gameweek), strengths, BASELINE,
+        playerRates(player, form, gameweek, undefined, strengths), strengths, BASELINE,
       );
 
       compared += 1;

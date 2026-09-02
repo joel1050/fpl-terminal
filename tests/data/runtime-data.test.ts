@@ -10,7 +10,10 @@ describe("production projection data", () => {
     ]);
 
     expect(historical?.players.length).toBeGreaterThan(500);
-    expect(rotowire?.snapshot?.fixtures).toHaveLength(10);
+    // RotoWire publishes a rolling date window, so an auto-refreshed snapshot
+    // can carry the tail of the previous gameweek alongside the next one. A
+    // full gameweek is the floor; a partial page falls below it.
+    expect(rotowire?.snapshot?.fixtures.length ?? 0).toBeGreaterThanOrEqual(10);
     expect(rotowire?.mappings.length).toBeGreaterThan(200);
   });
 });

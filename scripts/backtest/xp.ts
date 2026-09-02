@@ -57,13 +57,14 @@ function hasUsableHistoricalRate(player: Player, primary: "expectedGoals" | "exp
 function regressedPlayerRate(
   player: Player, primary: RateField, fallback: "goals" | "assists" | undefined,
   prior: number, currentGameweek: number, ceiling: number = RATE_CEILING.goalInvolvement,
+  currentWeightDivisor = 10, currentWeightCap = 0.6,
 ): number {
   const historical = historicalRate(player, primary) ?? (fallback ? historicalRate(player, fallback) : undefined);
   const current = currentRate(player, primary) ?? (fallback ? currentRate(player, fallback) : undefined);
   let rate = historical?.rate ?? prior;
   let sample = historical?.minutes ?? 0;
   if (current) {
-    const currentWeight = clamp(currentGameweek / 10, 0, 0.6);
+    const currentWeight = clamp(currentGameweek / currentWeightDivisor, 0, currentWeightCap);
     rate = rate * (1 - currentWeight) + current.rate * currentWeight;
     sample += current.minutes * currentWeight;
   }
@@ -75,6 +76,10 @@ function regressedFormRate(
   prior: number, form: readonly PlayerMatchRate[] | undefined, currentGameweek: number,
   ceiling: number = RATE_CEILING.goalInvolvement,
   shrinkMinutes = 0, poolRate?: number,
+  formDecay: number = PLAYER_FORM_DECAY,
+  formPriorWeight: number = PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
+  currentWeightDivisor = 10, currentWeightCap = 0.6,
+  ownTeam?: TeamStrength, strengths?: Record<number, TeamStrength>,
 ): number {
   const historical = historicalRate(player, primary) ?? historicalRate(player, fallback);
   // A player's own prior-period rate is used raw today. It is an estimate, so
@@ -88,17 +93,20 @@ function regressedFormRate(
   if (form && form.length > 0) {
     const field = primary === "expectedGoals" ? "xg" : "xa";
     const matchRates = form.map((m) => (m.minutes > 0 ? (m[field] / m.minutes) * 90 : 0));
-    return clamp(blendPlayerRate(matchRates, basePrior, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES), 0, ceiling);
+    return clamp(blendPlayerRate(matchRates, basePrior, formDecay, formPriorWeight), 0, ceiling);
   }
   const current = currentRate(player, primary) ?? currentRate(player, fallback);
   let rate = basePrior;
   let sample = historical?.minutes ?? 0;
   if (current) {
-    const currentWeight = clamp(currentGameweek / 10, 0, 0.6);
+    const currentWeight = clamp(currentGameweek / currentWeightDivisor, 0, currentWeightCap);
     rate = rate * (1 - currentWeight) + current.rate * currentWeight;
     sample += current.minutes * currentWeight;
   }
-  return clamp(regressPer90(rate, sample, prior, 900), 0, ceiling);
+  const regressed = regressPer90(rate, sample, prior, 900);
+  const ownAttack = ownTeam && strengths ? (ownTeam.attackHome + ownTeam.attackAway) / 2 : 1;
+  const normalized = ownAttack > 0 ? regressed / ownAttack : regressed;
+  return clamp(normalized, 0, ceiling);
 }
 
 function attackingPrior(player: Player, primary: "expectedGoals" | "expectedAssists", fallback: "goals" | "assists") {
@@ -113,6 +121,13 @@ export interface RateOverrides {
   priorXa?: Record<Position, number>;
   /** Shrink the player's own anchor toward the pool rate, in minutes of prior weight. */
   anchorShrinkMinutes?: number;
+  /** Recency decay per match back in blendPlayerRate. Defaults to the shipped 0.95. */
+  formDecay?: number;
+  /** The anchor's weight in "matches worth". Defaults to the shipped 10. */
+  formPriorWeight?: number;
+  /** currentWeight = clamp(gameweek / divisor, 0, cap). Defaults to the shipped 10 / 0.6. */
+  currentWeightDivisor?: number;
+  currentWeightCap?: number;
 }
 
 export function playerRates(
@@ -120,18 +135,24 @@ export function playerRates(
   form: readonly PlayerMatchRate[] | undefined,
   currentGameweek: number,
   overrides: RateOverrides = {},
+  strengths?: Record<number, TeamStrength>,
 ) {
+  const ownTeam = strengths ? strengths[player.teamId] : undefined;
   const priorXg = overrides.priorXg?.[player.position];
   const priorXa = overrides.priorXa?.[player.position];
   const shrink = overrides.anchorShrinkMinutes ?? 0;
+  const fd = overrides.formDecay ?? PLAYER_FORM_DECAY;
+  const fw = overrides.formPriorWeight ?? PLAYER_FORM_PRIOR_WEIGHT_MATCHES;
+  const cd = overrides.currentWeightDivisor ?? 10;
+  const cc = overrides.currentWeightCap ?? 0.6;
   return {
-    xg: regressedFormRate(player, "expectedGoals", "goals", priorXg ?? attackingPrior(player, "expectedGoals", "goals"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXg),
-    xa: regressedFormRate(player, "expectedAssists", "assists", priorXa ?? attackingPrior(player, "expectedAssists", "assists"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXa),
-    saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves),
-    defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution),
-    bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus),
-    yellowCards: regressedPlayerRate(player, "yellowCards", undefined, PRIOR_YELLOW_CARDS[player.position], currentGameweek, RATE_CEILING.yellowCards),
-    redCards: regressedPlayerRate(player, "redCards", undefined, PRIOR_RED_CARDS[player.position], currentGameweek, RATE_CEILING.redCards),
+    xg: regressedFormRate(player, "expectedGoals", "goals", priorXg ?? attackingPrior(player, "expectedGoals", "goals"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXg, fd, fw, cd, cc, ownTeam, strengths),
+    xa: regressedFormRate(player, "expectedAssists", "assists", priorXa ?? attackingPrior(player, "expectedAssists", "assists"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXa, fd, fw, cd, cc, ownTeam, strengths),
+    saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves, cd, cc),
+    defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution, cd, cc),
+    bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus, cd, cc),
+    yellowCards: regressedPlayerRate(player, "yellowCards", undefined, PRIOR_YELLOW_CARDS[player.position], currentGameweek, RATE_CEILING.yellowCards, cd, cc),
+    redCards: regressedPlayerRate(player, "redCards", undefined, PRIOR_RED_CARDS[player.position], currentGameweek, RATE_CEILING.redCards, cd, cc),
   };
 }
 

@@ -7,11 +7,13 @@ import type {
   Position,
 } from "@/types/player";
 import type { HistoricalBundle } from "@/lib/historical/types";
+import type { RotowireRefreshResult } from "@/lib/availability/refreshLineups";
 import {
   enrichPlayersWithHistory,
   type PlayerEnrichmentMetadata,
 } from "@/lib/historical/enrichPlayers";
-import { loadInSeasonPlayerRates, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
+import { loadInSeasonPlayerRates, loadInSeasonStarts, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
+import { ensureFreshRotowireLineups } from "@/lib/availability/refreshLineups";
 import {
   type FplBootstrapPayload,
   type FplFixturePayload,
@@ -89,7 +91,10 @@ export interface NormalizedBootstrap {
   totalPlayers?: number;
 }
 
-export type BootstrapProjectionMetadata = PlayerEnrichmentMetadata;
+export type BootstrapProjectionMetadata = PlayerEnrichmentMetadata & {
+  /** Outcome of the automatic RotoWire lineup refresh for this request. */
+  lineups?: RotowireRefreshResult;
+};
 
 export type NormalizedPlayerDetail = PlayerProfileData;
 
@@ -329,10 +334,19 @@ export async function enrichBootstrapWithProjections(
   bootstrap: NormalizedBootstrap,
   historical: HistoricalBundle | null,
 ): Promise<{ bootstrap: NormalizedBootstrap; metadata: BootstrapProjectionMetadata }> {
-  const [inSeasonForm, playerForm] = await Promise.all([
+  // All three must settle before enrichPlayersWithHistory, which reads the
+  // generated lineup files off disk synchronously. They are independent of each
+  // other: the refresh writes data/generated, the two form loaders read the
+  // snapshot cache.
+  const [inSeasonForm, playerForm, startHistory, lineups] = await Promise.all([
     loadInSeasonTeamXG(bootstrap.players, bootstrap.fixtures),
-    loadInSeasonPlayerRates(bootstrap.fixtures),
+    loadInSeasonPlayerRates(bootstrap.players, bootstrap.fixtures),
+    loadInSeasonStarts(bootstrap.players, bootstrap.fixtures),
+    ensureFreshRotowireLineups(bootstrap.players),
   ]);
+  if (lineups.reason === "failed") {
+    console.warn(`RotoWire auto-refresh failed, keeping the ${lineups.fetchedAt ?? "existing"} snapshot:`, lineups.error);
+  }
   const enriched = enrichPlayersWithHistory(
     bootstrap.players,
     bootstrap.teams,
@@ -340,10 +354,11 @@ export async function enrichBootstrapWithProjections(
     historical,
     inSeasonForm,
     playerForm,
+    startHistory,
   );
   return {
     bootstrap: { ...bootstrap, players: enriched.players },
-    metadata: enriched.metadata,
+    metadata: { ...enriched.metadata, lineups },
   };
 }
 

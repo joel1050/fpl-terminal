@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test --pass-with-no-tests",
+    "backtest:prepare": "tsx scripts/backtest/prepare-seasons.ts",
     "data:ingest": "tsx scripts/ingestHistorical.ts",
     "data:lineups": "tsx scripts/ingestRotowireLineups.ts",
     "data:capture": "tsx scripts/captureUpstreamFixtures.ts"

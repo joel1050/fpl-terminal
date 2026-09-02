@@ -140,6 +140,34 @@ function regressedPlayerRate(
 }
 
 /**
+ * The attacking multiplier a past match was played under, so it can be divided
+ * back out before the match joins the blend. Base is left at 1: no fixture
+ * difficulty is stored for a finished gameweek, only the opponent and venue.
+ * Backtested over 2022/23-2025/26; the asymmetry against a live-FDR upcoming
+ * fixture costs 0.001-0.003 RMSE and does not move the bias (arm E,
+ * scripts/backtest/schedule-adjust.ts).
+ */
+function pastFixtureMultiplier(
+  match: PlayerMatchRate,
+  ownTeam: TeamStrength,
+  strengths: Record<number, TeamStrength>,
+): number | undefined {
+  if (match.opponentTeamId === undefined || match.wasHome === undefined) return undefined;
+  const opponent = strengths[match.opponentTeamId];
+  if (!opponent) return undefined;
+  return calculateFixtureAdjustment(
+    {
+      gameweek: 0,
+      opponentTeamId: match.opponentTeamId,
+      opponentShortName: "",
+      isHome: match.wasHome,
+      difficulty: 3,
+    },
+    { ownTeam, opponentTeam: opponent },
+  ).attackMultiplier;
+}
+
+/**
  * xG/xA-specific replacement for regressedPlayerRate's current-season half.
  * A player's own historical (or position-prior) rate still anchors the
  * blend, preserving personalization. When a per-gameweek match history is
@@ -158,6 +186,8 @@ function regressedFormRate(
   prior: number,
   form: readonly PlayerMatchRate[] | undefined,
   currentGameweek: number,
+  ownTeam: TeamStrength | undefined,
+  strengths: Record<number, TeamStrength> | undefined,
   ceiling: number = RATE_CEILING.goalInvolvement,
 ): number {
   const historical = historicalRate(player, primary) ?? historicalRate(player, fallback);
@@ -166,6 +196,33 @@ function regressedFormRate(
   if (form && form.length > 0) {
     const field = primary === "expectedGoals" ? "xg" : "xa";
     const matchRates = form.map((match) => (match.minutes > 0 ? (match[field] / match.minutes) * 90 : 0));
+    // Schedule adjustment: a match played against a weak defence produced a
+    // higher rate for that reason, and the upcoming fixture's multiplier is
+    // about to be applied on top. Dividing each match out by the fixture it
+    // was played in, and the anchor out by the team's own attacking strength,
+    // stops the same fixture quality being counted twice. Both halves must be
+    // normalized together - normalizing the form alone leaves an inflated
+    // anchor against a deflated form estimate and scores worse in every season
+    // tested. Falls back to the raw blend whenever the fixture context or the
+    // strengths are missing.
+    const multipliers = ownTeam && strengths
+      ? form.map((match) => pastFixtureMultiplier(match, ownTeam, strengths))
+      : [];
+    if (multipliers.length === form.length && multipliers.every((value) => value !== undefined && value > 0)) {
+      const ownAttack = (ownTeam!.attackHome + ownTeam!.attackAway) / 2;
+      if (ownAttack > 0) {
+        return clamp(
+          blendPlayerRate(
+            matchRates.map((rate, index) => rate / (multipliers[index] as number)),
+            basePrior / ownAttack,
+            PLAYER_FORM_DECAY,
+            PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
+          ),
+          0,
+          ceiling,
+        );
+      }
+    }
     return clamp(
       blendPlayerRate(matchRates, basePrior, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES),
       0,
@@ -181,7 +238,10 @@ function regressedFormRate(
     rate = rate * (1 - currentWeight) + current.rate * currentWeight;
     sample += current.minutes * currentWeight;
   }
-  return clamp(regressPer90(rate, sample, prior, 900), 0, ceiling);
+  const regressed = regressPer90(rate, sample, prior, 900);
+  const ownAttack = ownTeam && strengths ? (ownTeam.attackHome + ownTeam.attackAway) / 2 : 1;
+  const normalized = ownAttack > 0 ? regressed / ownAttack : regressed;
+  return clamp(normalized, 0, ceiling);
 }
 
 function teamFor(
@@ -430,9 +490,10 @@ export function projectPlayer(
   const useSelection = options.expectedMinutes === undefined && options.expectedMinutesOptions?.override === undefined;
   const confidence = projectionConfidence(player);
   const form = options.playerForm?.[player.id];
+  const ownTeam = teamFor(player, options);
   const rates = {
-    xg: regressedFormRate(player, "expectedGoals", "goals", attackingPrior(player, options, "expectedGoals", "goals"), form, currentGameweek),
-    xa: regressedFormRate(player, "expectedAssists", "assists", attackingPrior(player, options, "expectedAssists", "assists"), form, currentGameweek),
+    xg: regressedFormRate(player, "expectedGoals", "goals", attackingPrior(player, options, "expectedGoals", "goals"), form, currentGameweek, ownTeam, options.teamStrengths),
+    xa: regressedFormRate(player, "expectedAssists", "assists", attackingPrior(player, options, "expectedAssists", "assists"), form, currentGameweek, ownTeam, options.teamStrengths),
     saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves),
     defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution),
     bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus),

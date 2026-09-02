@@ -14,7 +14,7 @@ import { getBootstrap, getFixtures } from "@/lib/fpl/client";
 import { normalizeBootstrap } from "@/lib/fpl/normalize";
 import { enrichPlayersWithHistory } from "@/lib/historical/enrichPlayers";
 import { loadHistoricalBundle } from "@/lib/historical/load";
-import { loadInSeasonPlayerRates, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
+import { loadInSeasonPlayerRates, loadInSeasonStarts, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
 import { analyzeSquad } from "@/lib/analysis/analyzeSquad";
 import { suggestForSlot } from "@/lib/analysis/replacements";
 import { findBestSingleTransfers } from "@/lib/analysis/singleTransfers";
@@ -111,10 +111,11 @@ export function createFplToolAdapters(): AIDataAdapters {
     playersPromise ??= Promise.all([getBootstrap(), getFixtures()]).then(async ([bootstrap, fixtures]) => {
       if (!bootstrap.data) throw new Error(bootstrap.error ?? "FPL data is unavailable");
       const normalized = normalizeBootstrap(bootstrap.data, fixtures.data ?? []);
-      const [historical, inSeasonForm, playerForm] = await Promise.all([
+      const [historical, inSeasonForm, playerForm, startHistory] = await Promise.all([
         loadHistoricalBundle(),
         loadInSeasonTeamXG(normalized.players, normalized.fixtures),
-        loadInSeasonPlayerRates(normalized.fixtures),
+        loadInSeasonPlayerRates(normalized.players, normalized.fixtures),
+        loadInSeasonStarts(normalized.players, normalized.fixtures),
       ]);
       return enrichPlayersWithHistory(
         normalized.players,
@@ -123,6 +124,7 @@ export function createFplToolAdapters(): AIDataAdapters {
         historical,
         inSeasonForm,
         playerForm,
+        startHistory,
       ).players;
     });
     return playersPromise;

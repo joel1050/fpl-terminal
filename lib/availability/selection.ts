@@ -8,6 +8,7 @@ import type {
 } from "@/types/player";
 import type { HistoricalBundle, HistoricalMatchStat } from "@/lib/historical/types";
 import type { RotowireMappedRecord } from "./rotowireMapping";
+import { blendCameoRate, blendStartRate, MINUTES_FOR_START, type StartObservation } from "./startRate";
 
 export interface RotowireSelectionSource {
   snapshot?: { fetchedAt?: string } | null;
@@ -19,6 +20,8 @@ export interface PlayerSelectionOptions {
   historical?: Pick<HistoricalBundle, "players" | "matchStats" | "playerMappings" | "generatedAt"> | null;
   historicalMatchStats?: readonly HistoricalMatchStat[];
   historicalStats?: ReadonlyMap<number, HistoricalStats> | Readonly<Record<number, HistoricalStats>>;
+  /** Current-season start/appearance history per player, oldest first. */
+  startHistory?: Readonly<Record<number, readonly StartObservation[]>>;
   updatedAt?: string;
 }
 
@@ -73,7 +76,7 @@ function historicalSignal(
   const appearances = rows.filter((row) => row.minutes > 0).length;
   const starts = finite(stats?.starts)
     ? Math.max(0, stats.starts)
-    : rows.filter((row) => row.minutes >= 60).length;
+    : rows.filter((row) => row.minutes >= MINUTES_FOR_START).length;
   const sample = Math.max(matches, starts, stats?.minutes ? Math.ceil(stats.minutes / 90) : 0);
   const startRate = sample > 0 ? clamp(starts / sample, 0, 1) : 0;
   const cameoRate = sample > 0 ? clamp(Math.max(0, appearances - starts) / sample, 0, 1 - startRate) : 0;
@@ -107,6 +110,21 @@ function fallbackStartRate(player: Player): number {
 function fallbackCameoRate(player: Player): number {
   return player.current.minutes > 0 ? 0.12 : 0.08;
 }
+
+/**
+ * Seeds for a player with no previous season - a promoted club's squad, or a
+ * new signing - once this season has matches to show.
+ *
+ * The two fallbacks above read `player.current.minutes`, which is this
+ * season's running total. That is the right guess when it is the only evidence
+ * there is, but it is the *same* evidence the recursion is about to replay
+ * match by match: seeding from it counts this season twice, at two different
+ * speeds. These are the fallbacks with that term removed - what they return
+ * for a player who has not played - so the current-season signal reaches the
+ * estimate exactly once, through the recursion.
+ */
+const UNKNOWN_START_SEED = 0.15;
+const UNKNOWN_CAMEO_SEED = 0.08;
 
 function rotowireSignals(source: RotowireSelectionSource | null | undefined): Map<number, RotowireSignal> {
   const signals = new Map<number, RotowireSignal>();
@@ -189,9 +207,13 @@ function confidence(
   teamCovered: boolean,
   history: HistoricalSignal,
   player: Player,
+  observations: readonly StartObservation[],
 ): ProjectionConfidence {
-  if (signal || teamCovered || history.matches >= 10) return "HIGH";
-  if (history.matches > 0 || player.current.minutes > 0 || (player.chanceOfPlaying !== null && player.chanceOfPlaying !== undefined)) return "MEDIUM";
+  // Five matches take the EWMA most of the way from its seed to what this
+  // season says, so by then the estimate rests on observed starts rather than
+  // on last season's rate.
+  if (signal || teamCovered || history.matches >= 10 || observations.length >= 5) return "HIGH";
+  if (history.matches > 0 || observations.length > 0 || player.current.minutes > 0 || (player.chanceOfPlaying !== null && player.chanceOfPlaying !== undefined)) return "MEDIUM";
   return "LOW";
 }
 
@@ -200,6 +222,7 @@ function evidenceFor(
   signal: RotowireSignal | undefined,
   teamCovered: boolean,
   history: HistoricalSignal,
+  observations: readonly StartObservation[],
 ): SelectionEvidence[] {
   const evidence: SelectionEvidence[] = [];
   if (signal?.starter) {
@@ -212,6 +235,14 @@ function evidenceFor(
   }
   if (history.matches > 0) {
     evidence.push({ source: "HISTORICAL_STARTS", detail: `${history.starts} starts across ${history.matches} historical matches` });
+  }
+  if (observations.length > 0) {
+    const started = observations.filter((item) => item.started).length;
+    const recent = observations.slice(-5).map((item) => (item.started ? "S" : item.appeared ? "s" : "-")).join("");
+    evidence.push({
+      source: "CURRENT_SEASON",
+      detail: `${started} starts in ${observations.length} matches this season (last ${Math.min(observations.length, 5)}: ${recent})`,
+    });
   }
   if (player.current.minutes > 0) {
     evidence.push({ source: "CURRENT_SEASON", detail: `${player.current.minutes} current-season minutes` });
@@ -260,10 +291,26 @@ export function buildPlayerSelections(
   return new Map(players.map((player) => {
     const history = historicalSignal(player, options, mappings.get(player.id));
     const signal = rwSignals.get(player.id);
-    const historicalStart = history.matches > 0 ? history.startRate : fallbackStartRate(player);
-    const historicalCameo = history.matches > 0 ? history.cameoRate : fallbackCameoRate(player);
-    let start = historicalStart * 0.75 + fallbackStartRate(player) * 0.25;
-    let cameo = historicalCameo * 0.75 + fallbackCameoRate(player) * 0.25;
+    // The previous season seeds the recursion; every completed fixture this
+    // season updates it. With no fixtures played these fall through to the
+    // seed unchanged, so GW1 behaves exactly as it did before.
+    const observations = options.startHistory?.[player.id] ?? [];
+    const seedStart = history.matches > 0
+      ? history.startRate
+      : observations.length > 0 ? UNKNOWN_START_SEED : fallbackStartRate(player);
+    const seedCameo = history.matches > 0
+      ? history.cameoRate
+      : observations.length > 0 ? UNKNOWN_CAMEO_SEED : fallbackCameoRate(player);
+    const historicalStart = blendStartRate(seedStart, observations);
+    const historicalCameo = blendCameoRate(seedStart, seedCameo, observations);
+    // The 0.25 fallback term existed to temper an estimate whose only evidence
+    // was last season. Once this season's own matches are in the estimate that
+    // term only dilutes them - it is clamped to 0.15-0.8, so it would drag a
+    // measured 0.99 down to 0.94 and push a measured 0.02 up to 0.05. Keep it
+    // only while there is nothing better.
+    const seedWeight = observations.length > 0 ? 0 : 0.25;
+    let start = historicalStart * (1 - seedWeight) + fallbackStartRate(player) * seedWeight;
+    let cameo = historicalCameo * (1 - seedWeight) + fallbackCameoRate(player) * seedWeight;
     const teamCovered = coveredTeams.has(player.teamId);
     if (teamCovered) {
       const rotowireStart = signal?.starter ? (signal.confirmed ? 0.96 : 0.9) : 0.1;
@@ -317,9 +364,9 @@ export function buildPlayerSelections(
       expectedStartMinutes,
       expectedCameoMinutes,
       nailedRating: rating(scenarios.startProbability),
-      confidence: confidence(signal, teamCovered, history, player),
+      confidence: confidence(signal, teamCovered, history, player, observations),
       updatedAt,
-      evidence: evidenceFor(player, signal, teamCovered, history),
+      evidence: evidenceFor(player, signal, teamCovered, history, observations),
     }];
   }));
 }

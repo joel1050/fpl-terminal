@@ -110,6 +110,26 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByLabel(/enter fpl id/i)).toHaveCount(0);
   });
 
+  test("blocks optimization while every player is locked and explains why", async ({ page }) => {
+    let optimizerRequests = 0;
+    page.on("request", (request) => { if (request.url().includes("/api/optimizer") && request.method() === "POST") optimizerRequests += 1; });
+    await chooseMode(page, /analyze (?:a )?team/i);
+    await waitForMarket(page);
+    await expect(page.getByText(/15\s*\/\s*15 selected/i)).toBeVisible();
+
+    await clickButton(page, /^OPTIMIZE$/i);
+    await expect(page.getByRole("status")).toContainText(/unlock players to get the optimized lineup/i);
+    await page.waitForTimeout(250);
+    expect(optimizerRequests).toBe(0);
+
+    const haaland = page.getByRole("article").filter({ hasText: "Haaland" }).first();
+    await haaland.hover();
+    await haaland.getByRole("button", { name: /unlock haaland/i }).click();
+    await clickButton(page, /^OPTIMIZE$/i);
+    await expect(page.getByRole("status")).toContainText(/exact optimizer applied/i);
+    await expect.poll(() => optimizerRequests).toBe(1);
+  });
+
   test("builds and completes a legal squad while preserving locked premiums", async ({ page }) => {
     await chooseMode(page, /build from scratch/i);
     await waitForMarket(page);
@@ -148,7 +168,15 @@ test.describe("FPL Terminal acceptance", () => {
     await replacements.getByRole("button", { name: /simulate/i }).first().click();
     await expect(page.getByText(/simulation|before|after|price effect|gw effect/i).first()).toBeVisible();
     await clickButton(page, /apply/i);
-    await expect(page.getByText(/applied|updated|total cost|projected/i).first()).toBeVisible();
+    await expect(page.getByText(/cannot be applied while the outgoing player is locked/i)).toBeVisible();
+    await page.getByRole("button", { name: /close simulation/i }).click();
+    const rice = page.getByRole("article").filter({ hasText: "Rice" }).first();
+    await rice.hover();
+    await rice.getByRole("button", { name: /unlock rice/i }).click();
+    await replacements.getByRole("button", { name: /simulate/i }).first().click();
+    await expect(page.getByText(/simulation|before|after|price effect|gw effect/i).first()).toBeVisible();
+    await clickButton(page, /apply/i);
+    await expect(page.getByText(/Rice\s*→\s*Saka applied/i)).toBeVisible();
     const squadPanel = page.getByRole("region", { name: /squad builder and analysis/i });
     await expect(squadPanel.getByRole("button", { name: /pick team · outdated/i })).toBeVisible();
     await expect(squadPanel.getByTestId("squad-roster")).toContainText(/Saka/i);

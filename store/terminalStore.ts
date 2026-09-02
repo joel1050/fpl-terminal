@@ -541,7 +541,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       benchOrder: checked.benchOrder,
       lineupGameweek: lineup.gameweek,
       lineupProjectionFingerprint: lineup.lineupProjectionFingerprint.trim(),
-      lockedPlayerIds: [],
+      lockedPlayerIds: [...squad.playerIds],
       captainId: checked.captainId,
       viceCaptainId: checked.viceCaptainId,
       selectedPlayerId: undefined,

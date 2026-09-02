@@ -95,17 +95,37 @@ function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
-function nearestStrengthTier(value: number): number {
-  let nearestIndex = 0;
-  let nearestDistance = Number.POSITIVE_INFINITY;
-  consensusStrengthTiers.forEach((tier, index) => {
-    const distance = Math.abs(value - tier);
-    if (distance < nearestDistance) {
-      nearestIndex = index;
-      nearestDistance = distance;
-    }
-  });
-  return nearestIndex;
+const TIER_STEP = 0.08;
+
+function cleanPosition(value: number): number {
+  const pos = (value - consensusStrengthTiers[0]) / TIER_STEP;
+  const snapped = Math.abs(pos - Math.round(pos)) < 1e-7 ? Math.round(pos) : pos;
+  return clamp(snapped, 0, 4);
+}
+
+/**
+ * Bilinear interpolation over the market-calibrated clean-sheet probabilities.
+ * Instead of snapping continuous defence and attack ratings onto discrete rungs,
+ * this computes a smooth 2D surface across the 5 tiers ([0.84, 0.92, 1.00, 1.08, 1.16]),
+ * so that clean sheet probabilities update continuously as team form shifts.
+ */
+export function interpolatedCleanSheet(
+  isHome: boolean,
+  ownDefence: number,
+  opponentAttack: number,
+): number {
+  const grid = cleanSheetProbabilities[isHome ? "home" : "away"];
+  const r = cleanPosition(ownDefence);
+  const c = cleanPosition(opponentAttack);
+  const r0 = clamp(Math.floor(r), 0, 3);
+  const c0 = clamp(Math.floor(c), 0, 3);
+  const fr = r - r0;
+  const fc = c - c0;
+  const val = grid[r0][c0] * (1 - fr) * (1 - fc)
+    + grid[r0 + 1][c0] * fr * (1 - fc)
+    + grid[r0][c0 + 1] * (1 - fr) * fc
+    + grid[r0 + 1][c0 + 1] * fr * fc;
+  return Math.round(clamp(val, 0.02, 0.9) * 10000) / 10000;
 }
 
 /** Returns transparent attacking and clean-sheet adjustments for one fixture. */
@@ -136,10 +156,7 @@ export function calculateFixtureAdjustment(
       attackMultiplier *= clamp(ownAttack / opponentDefence, ATTACK_RATIO_CLAMP[0], ATTACK_RATIO_CLAMP[1]);
     }
     if (ownDefence > 0 && opponentAttack > 0) {
-      const ownDefenceTier = nearestStrengthTier(ownDefence);
-      const opponentAttackTier = nearestStrengthTier(opponentAttack);
-      cleanSheetProbability = cleanSheetProbabilities[fixture.isHome ? "home" : "away"]
-        [ownDefenceTier][opponentAttackTier];
+      cleanSheetProbability = interpolatedCleanSheet(fixture.isHome, ownDefence, opponentAttack);
     }
   } else {
     expectedGoalsAgainst /= Math.pow(base, 2);

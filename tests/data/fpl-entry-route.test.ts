@@ -58,6 +58,14 @@ describe("FPL team import route", () => {
     await expect(response.json()).resolves.toMatchObject({ data: { lineup: { gameweek: 7 } } });
   });
 
+  it("imports the latest available picks when the app is planning the next gameweek", async () => {
+    mocks.getEntry.mockResolvedValue({ data: { id: 4827193, current_event: 2 }, freshness: null });
+    const response = await GET(new Request("http://localhost/api/fpl/entry/4827193?gameweek=3"), { params: Promise.resolve({ id: "4827193" }) });
+    expect(response.status).toBe(200);
+    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 2);
+    await expect(response.json()).resolves.toMatchObject({ data: { lineup: { gameweek: 2 } } });
+  });
+
   it("rejects an invalid gameweek before fetching the entry", async () => {
     mocks.getEntry.mockClear();
     mocks.getEntryPicks.mockClear();
