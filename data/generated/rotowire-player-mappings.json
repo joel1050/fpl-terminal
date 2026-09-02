@@ -1,445 +1,9 @@
 {
-  "sourceFetchedAt": "2026-08-31T23:31:29.994Z",
-  "mappedAt": "2026-08-31T23:31:30.089Z",
+  "sourceFetchedAt": "2026-09-02T23:55:51.992Z",
+  "mappedAt": "2026-09-02T23:55:52.262Z",
   "mappings": [
     {
       "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 35017,
-      "name": "Zion Suzuki",
-      "position": "GK",
-      "profileUrl": "https://www.rotowire.com/soccer/player/zion-suzuki-35017",
-      "source": "STARTER",
-      "playerId": 597,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 32666,
-      "name": "Ian Maatsen",
-      "position": "DL",
-      "profileUrl": "https://www.rotowire.com/soccer/player/ian-maatsen-32666",
-      "source": "STARTER",
-      "playerId": 36,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 25009,
-      "name": "Pau Torres",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/pau-torres-25009",
-      "source": "STARTER",
-      "playerId": 34,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 18234,
-      "name": "Victor Lindelof",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/victor-lindelof-18234",
-      "source": "STARTER",
-      "playerId": 37,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 31043,
-      "name": "Matty Cash",
-      "position": "DR",
-      "profileUrl": "https://www.rotowire.com/soccer/player/matty-cash-31043",
-      "source": "STARTER",
-      "playerId": 32,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 17201,
-      "name": "Ross Barkley",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/ross-barkley-17201",
-      "source": "STARTER",
-      "playerId": 46,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 23566,
-      "name": "Boubacar Kamara",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/boubacar-kamara-23566",
-      "source": "STARTER",
-      "playerId": 47,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 47458,
-      "name": "George Hemmings",
-      "position": "AML",
-      "profileUrl": "https://www.rotowire.com/soccer/player/george-hemmings-47458",
-      "source": "STARTER",
-      "playerId": 51,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 20646,
-      "name": "Emiliano Buendia",
-      "position": "AMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/emiliano-buendia-20646",
-      "source": "STARTER",
-      "playerId": 41,
-      "method": "CONFIRMED_MAPPING"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 28588,
-      "name": "John McGinn",
-      "position": "AMR",
-      "profileUrl": "https://www.rotowire.com/soccer/player/john-mcginn-28588",
-      "source": "STARTER",
-      "playerId": 45,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 35956,
-      "name": "Nicolas Jackson",
-      "position": "FW",
-      "profileUrl": "https://www.rotowire.com/soccer/player/nicolas-jackson-35956",
-      "source": "STARTER",
-      "playerId": 166,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 38731,
-      "name": "Joao Gomes",
-      "position": "M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/joao-gomes-38731",
-      "status": "SUS",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "SUS",
-      "playerId": 54,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 23459,
-      "name": "Leon Bailey",
-      "position": "F/M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/leon-bailey-23459",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 44,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 46822,
-      "name": "Brian Madjo",
-      "position": "F",
-      "profileUrl": "https://www.rotowire.com/soccer/player/brian-madjo-46822",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 582,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 44680,
-      "name": "Johan Manzambi",
-      "position": "M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/johan-manzambi-44680",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 53,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "HOME",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 35483,
-      "name": "Amadou Onana",
-      "position": "M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/amadou-onana-35483",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 48,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 31126,
-      "name": "David Raya",
-      "position": "GK",
-      "profileUrl": "https://www.rotowire.com/soccer/player/david-raya-31126",
-      "source": "STARTER",
-      "playerId": 1,
-      "method": "CONFIRMED_MAPPING"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 30620,
-      "name": "Riccardo Calafiori",
-      "position": "DL",
-      "profileUrl": "https://www.rotowire.com/soccer/player/riccardo-calafiori-30620",
-      "source": "STARTER",
-      "playerId": 8,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 23477,
-      "name": "Gabriel",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/gabriel-23477",
-      "source": "STARTER",
-      "playerId": 4,
-      "method": "CONFIRMED_MAPPING"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 35765,
-      "name": "Cristhian Mosquera",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/cristhian-mosquera-35765",
-      "source": "STARTER",
-      "playerId": 11,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 29182,
-      "name": "Ben White",
-      "position": "DR",
-      "profileUrl": "https://www.rotowire.com/soccer/player/ben-white-29182",
-      "source": "STARTER",
-      "playerId": 10,
-      "method": "CONFIRMED_MAPPING"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 23542,
-      "name": "Declan Rice",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/declan-rice-23542",
-      "source": "STARTER",
-      "playerId": 13,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 40827,
-      "name": "Myles Lewis-Skelly",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/myles-lewis-skelly-40827",
-      "source": "STARTER",
-      "playerId": 7,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 33736,
-      "name": "Christos Tzolis",
-      "position": "AML",
-      "profileUrl": "https://www.rotowire.com/soccer/player/christos-tzolis-33736",
-      "source": "STARTER",
-      "playerId": 557,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 18746,
-      "name": "Martin Odegaard",
-      "position": "AMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/martin-odegaard-18746",
-      "source": "STARTER",
-      "playerId": 15,
-      "method": "CONFIRMED_MAPPING"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 29889,
-      "name": "Bukayo Saka",
-      "position": "AMR",
-      "profileUrl": "https://www.rotowire.com/soccer/player/bukayo-saka-29889",
-      "source": "STARTER",
-      "playerId": 12,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 23157,
-      "name": "Kai Havertz",
-      "position": "FW",
-      "profileUrl": "https://www.rotowire.com/soccer/player/kai-havertz-23157",
-      "source": "STARTER",
-      "playerId": 26,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 35765,
-      "name": "Cristhian Mosquera",
-      "position": "D",
-      "profileUrl": "https://www.rotowire.com/soccer/player/cristhian-mosquera-35765",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 11,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 26575,
-      "name": "William Saliba",
-      "position": "D",
-      "profileUrl": "https://www.rotowire.com/soccer/player/william-saliba-26575",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 6,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "teamSide": "AWAY",
-      "teamName": "Arsenal",
-      "teamAbbreviation": "ARS",
-      "lineupStatus": "CONFIRMED",
-      "rotowireId": 30868,
-      "name": "Jurrien Timber",
-      "position": "D",
-      "profileUrl": "https://www.rotowire.com/soccer/player/jurrien-timber-30868",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 5,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -453,7 +17,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -467,7 +31,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -481,7 +45,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -495,7 +59,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -509,7 +73,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -523,7 +87,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -537,7 +101,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -551,7 +115,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -565,7 +129,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -579,7 +143,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -593,7 +157,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -609,7 +173,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -625,7 +189,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -641,7 +205,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -657,7 +221,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "HOME",
       "teamName": "Ipswich Town",
       "teamAbbreviation": "IPS",
@@ -673,7 +237,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -687,7 +251,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -701,7 +265,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -715,7 +279,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -729,7 +293,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -743,21 +307,21 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
       "lineupStatus": "PREDICTED",
-      "rotowireId": 29041,
-      "name": "Alexis Mac Allister",
+      "rotowireId": 29729,
+      "name": "Dominik Szoboszlai",
       "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/alexis-mac-allister-29041",
+      "profileUrl": "https://www.rotowire.com/soccer/player/dominik-szoboszlai-29729",
       "source": "STARTER",
-      "playerId": 372,
+      "playerId": 368,
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -771,21 +335,21 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
       "lineupStatus": "PREDICTED",
-      "rotowireId": 44878,
-      "name": "Victor Munoz",
+      "rotowireId": 26727,
+      "name": "Cody Gakpo",
       "position": "AML",
-      "profileUrl": "https://www.rotowire.com/soccer/player/victor-munoz-44878",
+      "profileUrl": "https://www.rotowire.com/soccer/player/cody-gakpo-26727",
       "source": "STARTER",
-      "playerId": 377,
+      "playerId": 367,
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -799,21 +363,21 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
       "lineupStatus": "PREDICTED",
-      "rotowireId": 29729,
-      "name": "Dominik Szoboszlai",
+      "rotowireId": 44878,
+      "name": "Victor Munoz",
       "position": "AMR",
-      "profileUrl": "https://www.rotowire.com/soccer/player/dominik-szoboszlai-29729",
+      "profileUrl": "https://www.rotowire.com/soccer/player/victor-munoz-44878",
       "source": "STARTER",
-      "playerId": 368,
+      "playerId": 377,
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -827,7 +391,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -843,23 +407,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
-      "teamSide": "AWAY",
-      "teamName": "Liverpool",
-      "teamAbbreviation": "LIV",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 29475,
-      "name": "Harvey Elliott",
-      "position": "F/M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/harvey-elliott-29475",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 383,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -875,7 +423,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -891,7 +439,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -907,7 +455,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "teamSide": "AWAY",
       "teamName": "Liverpool",
       "teamAbbreviation": "LIV",
@@ -923,7 +471,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -937,7 +485,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -951,21 +499,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
-      "teamSide": "HOME",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 31009,
-      "name": "Malick Thiaw",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/malick-thiaw-31009",
-      "source": "STARTER",
-      "playerId": 445,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -979,7 +513,21 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
+      "teamSide": "HOME",
+      "teamName": "Newcastle United",
+      "teamAbbreviation": "NEW",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 31009,
+      "name": "Malick Thiaw",
+      "position": "DC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/malick-thiaw-31009",
+      "source": "STARTER",
+      "playerId": 445,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -993,7 +541,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -1007,7 +555,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -1021,7 +569,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -1035,7 +583,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -1049,7 +597,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -1063,7 +611,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -1079,7 +627,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -1095,7 +643,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -1111,7 +659,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
@@ -1127,7 +675,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1141,7 +689,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1155,7 +703,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1169,7 +717,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1183,7 +731,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1197,7 +745,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1211,7 +759,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1225,7 +773,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1239,7 +787,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1253,7 +801,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1267,7 +815,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1281,7 +829,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1297,7 +845,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1313,7 +861,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1329,7 +877,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "teamSide": "AWAY",
       "teamName": "AFC Bournemouth",
       "teamAbbreviation": "BOU",
@@ -1345,7 +893,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1359,7 +907,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1373,7 +921,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1387,7 +935,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1401,7 +949,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1415,7 +963,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1429,7 +977,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1443,7 +991,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1457,7 +1005,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1471,7 +1019,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1485,7 +1033,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1499,7 +1047,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1515,7 +1063,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "HOME",
       "teamName": "Nottingham Forest",
       "teamAbbreviation": "NOT",
@@ -1531,7 +1079,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1545,7 +1093,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1559,7 +1107,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1573,7 +1121,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1587,7 +1135,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1601,7 +1149,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1615,7 +1163,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1629,7 +1177,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1643,7 +1191,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1657,7 +1205,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1671,7 +1219,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1685,7 +1233,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1701,7 +1249,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1717,7 +1265,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1733,23 +1281,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 3,
-      "teamSide": "AWAY",
-      "teamName": "Tottenham Hotspur",
-      "teamAbbreviation": "TOT",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 34078,
-      "name": "Pape Sarr",
-      "position": "M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/pape-sarr-34078",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 518,
-      "method": "CONFIRMED_MAPPING"
-    },
-    {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1765,7 +1297,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "teamSide": "AWAY",
       "teamName": "Tottenham Hotspur",
       "teamAbbreviation": "TOT",
@@ -1781,7 +1313,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1795,7 +1327,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1809,7 +1341,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1823,7 +1355,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1837,7 +1369,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1851,7 +1383,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1865,7 +1397,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1879,7 +1411,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1893,7 +1425,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1907,7 +1439,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1921,7 +1453,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1935,7 +1467,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1951,7 +1483,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
+      "teamSide": "HOME",
+      "teamName": "Manchester City",
+      "teamAbbreviation": "MCI",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 29769,
+      "name": "Josko Gvardiol",
+      "position": "D",
+      "profileUrl": "https://www.rotowire.com/soccer/player/josko-gvardiol-29769",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 391,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 3,
       "teamSide": "HOME",
       "teamName": "Manchester City",
       "teamAbbreviation": "MCI",
@@ -1967,7 +1515,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -1981,7 +1529,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -1995,7 +1543,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2009,7 +1557,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2023,7 +1571,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2037,7 +1585,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2051,7 +1599,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2065,7 +1613,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2079,7 +1627,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2093,7 +1641,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2107,7 +1655,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2121,7 +1669,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2137,7 +1685,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2153,7 +1701,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2169,7 +1717,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "teamSide": "AWAY",
       "teamName": "Coventry City",
       "teamAbbreviation": "COV",
@@ -2185,7 +1733,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2199,7 +1747,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2213,7 +1761,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2227,7 +1775,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2241,7 +1789,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2255,7 +1803,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2269,7 +1817,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2283,7 +1831,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2297,7 +1845,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2311,7 +1859,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2325,7 +1873,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2339,7 +1887,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2355,7 +1903,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
+      "teamSide": "HOME",
+      "teamName": "Fulham",
+      "teamAbbreviation": "FUL",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 38022,
+      "name": "Hugo Larsson",
+      "position": "M",
+      "profileUrl": "https://www.rotowire.com/soccer/player/hugo-larsson-38022",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 635,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 4,
       "teamSide": "HOME",
       "teamName": "Fulham",
       "teamAbbreviation": "FUL",
@@ -2371,7 +1935,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2385,7 +1949,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2399,7 +1963,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2413,7 +1977,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2427,7 +1991,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2441,7 +2005,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2455,7 +2019,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2469,7 +2033,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2483,7 +2047,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2497,7 +2061,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2511,7 +2075,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2525,7 +2089,39 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
+      "teamSide": "AWAY",
+      "teamName": "Crystal Palace",
+      "teamAbbreviation": "CRY",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 44051,
+      "name": "Honest Ahanor",
+      "position": "D",
+      "profileUrl": "https://www.rotowire.com/soccer/player/honest-ahanor-44051",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 633,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 4,
+      "teamSide": "AWAY",
+      "teamName": "Crystal Palace",
+      "teamAbbreviation": "CRY",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 19577,
+      "name": "Ben Chilwell",
+      "position": "M/D",
+      "profileUrl": "https://www.rotowire.com/soccer/player/ben-chilwell-19577",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 643,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2541,7 +2137,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2557,7 +2153,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "teamSide": "AWAY",
       "teamName": "Crystal Palace",
       "teamAbbreviation": "CRY",
@@ -2573,7 +2169,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2587,7 +2183,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2601,7 +2197,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2615,7 +2211,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2629,7 +2225,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2643,7 +2239,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2657,7 +2253,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2671,7 +2267,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2685,7 +2281,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2699,7 +2295,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2713,7 +2309,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2727,7 +2323,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2743,7 +2339,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2759,7 +2355,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
+      "teamSide": "HOME",
+      "teamName": "Brighton & Hove Albion",
+      "teamAbbreviation": "BHA",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 37919,
+      "name": "Mats Wieffer",
+      "position": "M/D",
+      "profileUrl": "https://www.rotowire.com/soccer/player/mats-wieffer-37919",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 130,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2775,7 +2387,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2791,7 +2403,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2807,7 +2419,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2823,7 +2435,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "HOME",
       "teamName": "Brighton & Hove Albion",
       "teamAbbreviation": "BHA",
@@ -2839,7 +2451,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2853,7 +2465,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2867,7 +2479,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2881,7 +2493,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2895,7 +2507,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2909,7 +2521,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2923,7 +2535,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2937,7 +2549,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2951,7 +2563,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2965,7 +2577,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2979,7 +2591,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -2993,7 +2605,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -3009,7 +2621,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -3025,7 +2637,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "teamSide": "AWAY",
       "teamName": "Leeds United",
       "teamAbbreviation": "LEE",
@@ -3041,7 +2653,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3055,7 +2667,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3069,7 +2681,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3083,7 +2695,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3097,7 +2709,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3111,7 +2723,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3125,7 +2737,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3139,7 +2751,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3153,7 +2765,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3167,7 +2779,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3181,7 +2793,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3195,7 +2807,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3211,7 +2823,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3227,7 +2839,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3243,7 +2855,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "HOME",
       "teamName": "Brentford",
       "teamAbbreviation": "BRE",
@@ -3259,7 +2871,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3273,7 +2885,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3287,7 +2899,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3301,7 +2913,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3315,7 +2927,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3329,7 +2941,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3343,7 +2955,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3357,7 +2969,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3371,7 +2983,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3385,7 +2997,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3399,7 +3011,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3413,23 +3025,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
-      "teamSide": "AWAY",
-      "teamName": "Sunderland",
-      "teamAbbreviation": "SUN",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 37070,
-      "name": "Simon Adingra",
-      "position": "F/M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/simon-adingra-37070",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 546,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
@@ -3445,7 +3041,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3459,7 +3055,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3473,7 +3069,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3487,7 +3083,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3501,7 +3097,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3515,7 +3111,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3529,7 +3125,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3543,21 +3139,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
-      "teamSide": "HOME",
-      "teamName": "Hull City",
-      "teamAbbreviation": "HUL",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 28833,
-      "name": "Hidemasa Morita",
-      "position": "MC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/hidemasa-morita-28833",
-      "source": "STARTER",
-      "playerId": 563,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3571,7 +3153,21 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
+      "teamSide": "HOME",
+      "teamName": "Hull City",
+      "teamAbbreviation": "HUL",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 33139,
+      "name": "Matt Crooks",
+      "position": "MC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/matt-crooks-33139",
+      "source": "STARTER",
+      "playerId": 289,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3585,7 +3181,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3599,7 +3195,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3615,7 +3211,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3631,7 +3227,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3647,23 +3243,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
-      "teamSide": "HOME",
-      "teamName": "Hull City",
-      "teamAbbreviation": "HUL",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 38431,
-      "name": "Matthew Jacob",
-      "position": "D",
-      "profileUrl": "https://www.rotowire.com/soccer/player/matthew-jacob-38431",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 283,
-      "method": "CONFIRMED_MAPPING"
-    },
-    {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3679,7 +3259,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3695,7 +3275,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3711,7 +3291,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3727,7 +3307,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3743,7 +3323,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "HOME",
       "teamName": "Hull City",
       "teamAbbreviation": "HUL",
@@ -3759,7 +3339,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3773,7 +3353,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3787,21 +3367,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
-      "teamSide": "AWAY",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 25009,
-      "name": "Pau Torres",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/pau-torres-25009",
-      "source": "STARTER",
-      "playerId": 34,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3815,7 +3381,21 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
+      "teamSide": "AWAY",
+      "teamName": "Aston Villa",
+      "teamAbbreviation": "AVL",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 25009,
+      "name": "Pau Torres",
+      "position": "DC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/pau-torres-25009",
+      "source": "STARTER",
+      "playerId": 34,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3829,21 +3409,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
-      "teamSide": "AWAY",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 17825,
-      "name": "Leon Goretzka",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/leon-goretzka-17825",
-      "source": "STARTER",
-      "playerId": 618,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3857,21 +3423,35 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
       "lineupStatus": "PREDICTED",
-      "rotowireId": 36637,
-      "name": "Alejandro Garnacho",
-      "position": "AML",
-      "profileUrl": "https://www.rotowire.com/soccer/player/alejandro-garnacho-36637",
+      "rotowireId": 17201,
+      "name": "Ross Barkley",
+      "position": "DMC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/ross-barkley-17201",
       "source": "STARTER",
-      "playerId": 160,
-      "method": "CONFIRMED_MAPPING"
+      "playerId": 46,
+      "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
+      "teamSide": "AWAY",
+      "teamName": "Aston Villa",
+      "teamAbbreviation": "AVL",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 47577,
+      "name": "Alysson",
+      "position": "AML",
+      "profileUrl": "https://www.rotowire.com/soccer/player/alysson-47577",
+      "source": "STARTER",
+      "playerId": 52,
+      "method": "UNIQUE_FALLBACK"
+    },
+    {
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3885,7 +3465,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3899,7 +3479,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3913,7 +3493,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
+      "teamSide": "AWAY",
+      "teamName": "Aston Villa",
+      "teamAbbreviation": "AVL",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 46822,
+      "name": "Brian Madjo",
+      "position": "F",
+      "profileUrl": "https://www.rotowire.com/soccer/player/brian-madjo-46822",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 582,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3929,39 +3525,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
-      "teamSide": "AWAY",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 23459,
-      "name": "Leon Bailey",
-      "position": "F/M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/leon-bailey-23459",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 44,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 8,
-      "teamSide": "AWAY",
-      "teamName": "Aston Villa",
-      "teamAbbreviation": "AVL",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 46822,
-      "name": "Brian Madjo",
-      "position": "F",
-      "profileUrl": "https://www.rotowire.com/soccer/player/brian-madjo-46822",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 582,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3977,7 +3541,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "teamSide": "AWAY",
       "teamName": "Aston Villa",
       "teamAbbreviation": "AVL",
@@ -3993,7 +3557,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4007,7 +3571,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4021,7 +3585,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4035,7 +3599,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4049,7 +3613,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4063,7 +3627,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4077,7 +3641,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4091,7 +3655,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4105,7 +3669,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4119,21 +3683,21 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
       "lineupStatus": "PREDICTED",
-      "rotowireId": 34436,
-      "name": "Iliman Ndiaye",
+      "rotowireId": 31046,
+      "name": "Brennan Johnson",
       "position": "AMR",
-      "profileUrl": "https://www.rotowire.com/soccer/player/iliman-ndiaye-34436",
+      "profileUrl": "https://www.rotowire.com/soccer/player/brennan-johnson-31046",
       "source": "STARTER",
-      "playerId": 237,
+      "playerId": 209,
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4147,7 +3711,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "HOME",
       "teamName": "Everton",
       "teamAbbreviation": "EVE",
@@ -4163,7 +3727,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4177,7 +3741,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4191,7 +3755,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4205,7 +3769,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4219,7 +3783,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4233,7 +3797,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4247,7 +3811,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4261,7 +3825,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4275,7 +3839,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4289,7 +3853,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4303,7 +3867,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4317,7 +3881,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4333,7 +3897,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4349,7 +3913,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4365,7 +3929,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4381,7 +3945,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4397,7 +3961,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "teamSide": "AWAY",
       "teamName": "Manchester United",
       "teamAbbreviation": "MUN",
@@ -4413,7 +3977,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4427,7 +3991,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4441,7 +4005,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4455,7 +4019,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4469,7 +4033,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4483,7 +4047,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4497,7 +4061,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4511,7 +4075,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4525,7 +4089,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4539,7 +4103,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4553,7 +4117,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4567,7 +4131,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4576,14 +4140,14 @@
       "name": "Cristhian Mosquera",
       "position": "D",
       "profileUrl": "https://www.rotowire.com/soccer/player/cristhian-mosquera-35765",
-      "status": "OUT",
+      "status": "QUES",
       "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
+      "availabilityStatus": "QUES",
       "playerId": 11,
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4599,7 +4163,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "HOME",
       "teamName": "Arsenal",
       "teamAbbreviation": "ARS",
@@ -4615,7 +4179,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4629,7 +4193,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4643,7 +4207,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4657,7 +4221,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4671,7 +4235,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4685,7 +4249,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4699,7 +4263,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4713,7 +4277,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4727,21 +4291,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
-      "teamSide": "AWAY",
-      "teamName": "Chelsea",
-      "teamAbbreviation": "CHE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 35779,
-      "name": "Morgan Rogers",
-      "position": "AMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/morgan-rogers-35779",
-      "source": "STARTER",
-      "playerId": 40,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4755,7 +4305,21 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
+      "teamSide": "AWAY",
+      "teamName": "Chelsea",
+      "teamAbbreviation": "CHE",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 35779,
+      "name": "Morgan Rogers",
+      "position": "AMC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/morgan-rogers-35779",
+      "source": "STARTER",
+      "playerId": 40,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4769,7 +4333,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4785,23 +4349,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
-      "teamSide": "AWAY",
-      "teamName": "Chelsea",
-      "teamAbbreviation": "CHE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 37578,
-      "name": "Enzo Fernandez",
-      "position": "M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/enzo-fernandez-37578",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 155,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",
@@ -4817,7 +4365,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "teamSide": "AWAY",
       "teamName": "Chelsea",
       "teamAbbreviation": "CHE",

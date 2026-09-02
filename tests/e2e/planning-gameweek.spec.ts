@@ -101,5 +101,37 @@ test.describe("persisted planning gameweeks", () => {
     expect(settings).not.toBeNull();
     expect(settings!.x).toBeGreaterThanOrEqual(0);
     expect(settings!.x + settings!.width).toBeLessThanOrEqual(390);
+
+    const riskLabels = await region.locator(".strategy-popover .segmented").nth(1).locator("button").allInnerTexts();
+    expect(riskLabels).toEqual(["SAFE", "BALANCED", "AGGRESSIVE"]);
+  });
+
+  test("keeps the squad header on two lines and the market table inside its pane", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const region = page.getByRole("region", { name: /squad builder and analysis/i });
+
+    const header = await region.locator(".panel-header").first().boundingBox();
+    expect(header?.height).toBeLessThan(52);
+    const actionTops = await region.locator(".header-actions > .compact-action, .header-actions > .strategy-settings").evaluateAll(
+      (nodes) => nodes.filter((node) => node.getBoundingClientRect().width > 0).map((node) => Math.round(node.getBoundingClientRect().top)),
+    );
+    expect(new Set(actionTops).size).toBe(1);
+
+    await page.locator(".mobile-tabs button", { hasText: "MARKET" }).click();
+    const table = await page.locator(".table-wrap").evaluate((wrap) => ({
+      overflow: wrap.scrollWidth - wrap.clientWidth,
+      textUnderAdd: Array.from(wrap.querySelectorAll("tbody tr")).slice(0, 10).reduce((total, row) => {
+        const add = row.lastElementChild!.getBoundingClientRect();
+        return total + Array.from(row.children).filter((cell) => {
+          if (cell === row.lastElementChild) return false;
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          const text = range.getBoundingClientRect();
+          return text.width > 0 && text.right > add.left + 0.5;
+        }).length;
+      }, 0),
+    }));
+    expect(table.overflow).toBeLessThanOrEqual(2);
+    expect(table.textUnderAdd).toBe(0);
   });
 });

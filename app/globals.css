@@ -184,7 +184,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .metric-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; margin-top: 6px; border: 1px solid var(--border); background: var(--border); }
 .metric-strip > div { display: grid; gap: 2px; min-width: 0; padding: 4px 6px; background: var(--panel-alt); }
 .metric-strip strong { overflow: hidden; font-size: 11px; font-weight: 500; text-overflow: ellipsis; }
-.strategy-settings { position: relative; }.strategy-settings > summary { display: inline-flex; align-items: center; list-style: none; }.strategy-settings > summary::-webkit-details-marker { display: none; }.strategy-settings[open] > summary { background: color-mix(in srgb, var(--amber) 10%, transparent); }.strategy-popover { position: absolute; z-index: 25; top: calc(100% + 4px); right: 0; width: min(340px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--amber); background: var(--panel-alt); box-shadow: 0 16px 32px rgba(0,0,0,.5); }.strategy-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }.strategy-panel > .section-kicker { grid-column: 1 / -1; }.strategy-panel > div { display: grid; gap: 6px; }.strategy-label { color: var(--muted); font-size: 9px; letter-spacing: .08em; }.segmented { display: flex; }.segmented button { flex: 1; overflow: hidden; padding-inline: 3px; font-size: 8px; text-overflow: ellipsis; }
+.strategy-settings { position: relative; }.strategy-settings > summary { display: inline-flex; align-items: center; list-style: none; }.strategy-settings > summary::-webkit-details-marker { display: none; }.strategy-settings[open] > summary { background: color-mix(in srgb, var(--amber) 10%, transparent); }.strategy-popover { position: absolute; z-index: 25; top: calc(100% + 4px); right: 0; width: min(340px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--amber); background: var(--panel-alt); box-shadow: 0 16px 32px rgba(0,0,0,.5); }.strategy-panel { display: grid; grid-template-columns: 1fr; gap: 9px; }.strategy-panel > .section-kicker { grid-column: 1 / -1; }.strategy-panel > div { display: grid; gap: 6px; }.strategy-label { color: var(--muted); font-size: 9px; letter-spacing: .08em; }.segmented { display: flex; }.segmented button { flex: 1; overflow: hidden; padding-inline: 3px; font-size: 8px; text-overflow: ellipsis; }
 .settings-divider { margin: 10px 0 8px; border-top: 1px solid var(--border); }
 .settings-danger { width: 100%; min-height: 30px; padding: 0 7px; border: 1px solid color-mix(in srgb, var(--red) 60%, var(--border)); background: transparent; color: var(--red); font-size: 8px; letter-spacing: .06em; }
 .settings-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--red) 10%, transparent); }
@@ -604,6 +604,18 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 /* ── Mobile overhaul: compact header, readable tables, tappable controls ── */
 @media (max-width: 900px) {
   .topbar { position: static; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-height: 0; padding-block: 8px; padding-inline: 10px; }
+
+  /* Panel header: one title line, then one row of equal actions, instead of
+     "selected" and PICK TEAM each wrapping onto a line of their own. */
+  .squad-column > .panel-header { flex-wrap: wrap; align-items: center; gap: 6px; }
+  .squad-column > .panel-header > div:first-child { display: flex; flex: 1 1 100%; align-items: baseline; gap: 7px; }
+  .squad-column > .panel-header .panel-count { white-space: nowrap; }
+  .squad-column .header-actions { flex: 1 1 100%; flex-wrap: nowrap; justify-content: stretch; gap: 5px; }
+  .squad-column .header-actions > .strategy-settings, .squad-column .header-actions > .compact-action { flex: 1 1 0; min-width: 0; }
+  .squad-column .header-actions .strategy-settings > summary { width: 100%; justify-content: center; }
+
+  /* Keep the position you are scrolled to labelled inside the roster pane. */
+  .squad-column.mobile-visible .position-heading { position: sticky; z-index: 2; top: 0; padding: 2px 0; background: var(--panel); }
   .topbar .brand { flex: 0 0 auto; font-size: 11px; }
   .topbar-stats { order: 3; flex: 1 1 100%; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; border-top: 1px solid var(--border-soft); padding-top: 6px; }
   .topbar-stats::-webkit-scrollbar { display: none; }
@@ -695,6 +707,9 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 
   /* Smallest phones: also drop XP/£ so PLAYER/PRICE/XP/FIXTURES/ADD fit. */
   .player-table th:nth-child(8), .player-table td:nth-child(8) { display: none; }
+  /* FIXTURES is the last 117px keeping the table wider than the pane; without
+     it the sticky ADD column has nothing left to park on top of. */
+  .player-table th:nth-child(12), .player-table td:nth-child(12) { display: none; }
   .player-name-button { max-width: 132px; }
   .fixture-run { gap: 3px; }
 
