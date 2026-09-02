@@ -615,7 +615,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .mobile-tabs, .leagues-mobile-tabs { top: 0; }
   .terminal-grid, .leagues-grid { min-height: calc(100dvh - 41px); }
   .market-column.mobile-visible { height: calc(100dvh - 41px); }
-  .squad-column.mobile-visible { height: calc(100dvh - 41px); min-height: 0; }
+  .squad-column.mobile-visible { height: calc(100dvh - 41px); min-height: 0; grid-template-rows: auto auto minmax(220px, 1fr) auto minmax(90px, .35fr) auto; }
 
   /* Player universe: drop secondary columns so the table fits without scrolling. */
   .player-table { min-width: 0; }
@@ -634,21 +634,42 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .add-button, .icon-button { width: 36px; height: 36px; }
   .slot-flags { opacity: 1; pointer-events: auto; }
   .slot-flags button { width: 28px; height: 28px; font-size: 12px; }
-  .role-button { min-width: 28px; height: 28px; font-size: 9px; padding: 0 6px; }
-  .lineup-controls { right: 4px; bottom: 4px; gap: 3px; }
+  /* Pitch cards keep no per-card controls on touch layouts: tapping a card
+     selects it and drives the sticky action bar below. */
+  .squad-slot .lineup-controls, .squad-slot .slot-flags { display: none; }
+  .squad-slot.picked { border-color: var(--amber); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--amber) 55%, transparent); }
+  .slot-role { position: absolute; z-index: 1; top: 4px; left: 4px; display: inline-grid; place-items: center; min-width: 18px; height: 15px; padding: 0 4px; font-size: 8px; font-weight: 700; line-height: 1; pointer-events: none; }
+  .slot-role.captain { background: var(--amber); color: var(--background); }
+  .slot-role.vice { border: 1px solid var(--cyan); color: var(--cyan); }
+  .mobile-lineup-bar { position: sticky; bottom: 0; z-index: 12; display: grid; gap: 6px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid color-mix(in srgb, var(--amber) 55%, var(--border)); background: color-mix(in srgb, var(--panel-alt) 96%, transparent); box-shadow: 0 -12px 28px rgba(0,0,0,.4); }
+  .mobile-bar-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; color: var(--text); font-size: 10px; font-weight: 600; letter-spacing: .04em; }
+  .mobile-bar-head > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-close { display: inline-grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 16px; }
+  .bar-close:hover { border-color: var(--amber); color: var(--amber); }
+  .mobile-bar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .bar-action { flex: 1 1 0; min-width: 52px; min-height: 48px; padding: 0 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .05em; }
+  .bar-action:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); }
+  .bar-action.active-captain { border-color: var(--amber); background: var(--amber); color: var(--background); }
+  .bar-action.active-vice { border-color: var(--cyan); background: var(--cyan); color: var(--background); }
+  .bar-action.bar-danger:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
 
-  /* Squad: keep positional shape instead of forcing 2 columns. */
-  .slot-grid.starting-slot-grid { grid-template-columns: repeat(var(--slot-count, 3), minmax(0, 1fr)); max-width: 100%; }
-  .slot-grid.bench-slot-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+  /* Squad: positional pitch rows instead of forced 2-column grids. Each
+     position keeps its own centered row; the bench is a roomy 2×2. */
+  .starting-position .slot-grid.starting-slot-grid { display: flex; flex-wrap: nowrap; justify-content: center; gap: 5px; width: 100%; max-width: 100%; }
+  .starting-position .squad-slot { flex: 1 1 0; min-width: 0; max-width: 190px; }
+  /* Fixture badges sit above the name instead of over it on narrow cards. */
+  .squad-slot .slot-main { padding-top: 20px; }
+  .slot-bench-tag { position: absolute; right: 4px; bottom: 4px; padding: 2px 4px; border: 1px solid var(--border); color: var(--dim); font-size: 7px; letter-spacing: .06em; pointer-events: none; }
+  .slot-grid.bench-slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; max-width: 100%; }
   .squad-slot, .empty-slot { min-height: 84px; padding: 6px; }
   .slot-player { font-size: 9px; }
   .slot-sub { font-size: 8px; }
   .slot-xp { font-size: 12px; }
 
-  /* Metrics: 3 columns so five strip cells fit in two compact rows. */
-  .metric-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .metric-strip > div { padding: 6px; }
-  .metric-strip span { font-size: 8px; }
+  /* Metrics stay a single scrollable row on mobile (compact, <50px tall). */
+  .metric-strip { grid-template-columns: repeat(5, minmax(68px, 1fr)); overflow-x: auto; }
+  .metric-strip > div { padding: 4px 6px; }
+  .metric-strip span { font-size: 8px; white-space: nowrap; }
   .metric-strip strong { font-size: 11px; }
   .live-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .live-metrics span { font-size: 8px; }

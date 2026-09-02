@@ -485,6 +485,18 @@ function usePlayerProfile(playerId: number) {
   return state;
 }
 
+function useMatchMedia(query: string): boolean {
+  const [matches, setMatches] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches);
+  useEffect(() => {
+    const list = window.matchMedia(query);
+    const update = () => setMatches(list.matches);
+    update();
+    list.addEventListener("change", update);
+    return () => list.removeEventListener("change", update);
+  }, [query]);
+  return matches;
+}
+
 export default function TerminalApp() {
   const bootstrap = useBootstrap();
   const store = useTerminalStore();
@@ -507,6 +519,8 @@ export default function TerminalApp() {
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
   const [simulationMove, setSimulationMove] = useState<{ outId: number; inId: number } | null>(null);
   const [gwSwapSelection, setGWSwapSelection] = useState<{ starterId?: number; benchId?: number }>({});
+  const [mobilePickedId, setMobilePickedId] = useState<number | null>(null);
+  const isMobileLineup = useMatchMedia("(max-width: 900px)");
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<ResizeState | null>(null);
@@ -1014,10 +1028,29 @@ export default function TerminalApp() {
     store.setMobileTab("MARKET");
     store.setSelectedPlayer(playerId);
   };
+  const activateSquadSlot = (player: TerminalPlayer, starter: boolean) => {
+    if (!isMobileLineup) {
+      openPlayer(player.id);
+      return;
+    }
+    if (currentGWPlan) {
+      if (starter && gwSwapSelection.benchId !== undefined && gwSwapSelection.starterId === undefined) {
+        selectGWSwapPlayer("starter", player.id);
+        setMobilePickedId(null);
+        return;
+      }
+      if (!starter && gwSwapSelection.starterId !== undefined && gwSwapSelection.benchId === undefined) {
+        selectGWSwapPlayer("bench", player.id);
+        setMobilePickedId(null);
+        return;
+      }
+    }
+    setMobilePickedId((current) => (current === player.id ? null : player.id));
+  };
   const renderSquadPlayer = (player: TerminalPlayer, starter: boolean, benchLabel?: string) => {
     const benchIndex = (lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(player.id);
     const swapSelected = benchLabel ? gwSwapSelection.benchId === player.id : gwSwapSelection.starterId === player.id;
-    return <SquadSlot key={player.id} player={player} gameweek={planningGameweek} locked={store.lockedPlayerIds.includes(player.id)} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === player.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === player.id} starter={starter} benchLabel={benchLabel} benchIndex={benchIndex} lineupActive={Boolean(currentGWPlan)} swapSelected={swapSelected} onRemove={() => store.removePlayer(player.id)} onToggleLock={() => store.toggleLock(player.id)} onSelect={() => openPlayer(player.id)} onSwap={() => selectGWSwapPlayer(benchLabel ? "bench" : "starter", player.id)} onCaptain={() => makeGWCaptain(player.id)} onViceCaptain={() => makeGWViceCaptain(player.id)} onMoveBench={(direction) => moveGWBench(player.id, direction)} />;
+    return <SquadSlot key={player.id} player={player} gameweek={planningGameweek} locked={store.lockedPlayerIds.includes(player.id)} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === player.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === player.id} starter={starter} benchLabel={benchLabel} benchIndex={benchIndex} lineupActive={Boolean(currentGWPlan)} swapSelected={swapSelected} picked={mobilePickedId === player.id} onRemove={() => store.removePlayer(player.id)} onToggleLock={() => store.toggleLock(player.id)} onActivate={() => activateSquadSlot(player, starter)} onSwap={() => selectGWSwapPlayer(benchLabel ? "bench" : "starter", player.id)} onCaptain={() => makeGWCaptain(player.id)} onViceCaptain={() => makeGWViceCaptain(player.id)} onMoveBench={(direction) => moveGWBench(player.id, direction)} />;
   };
   const choosePlayer = (position: Position) => {
     const maxPriceTenths = slotMaxPrices[position];
@@ -1035,6 +1068,10 @@ export default function TerminalApp() {
     ? [currentGWPlan.benchGoalkeeperId, ...currentGWPlan.benchOrder].map((id, index) => ({ id, position: playerById.get(id)?.position ?? (index === 0 ? "GK" : "DEF"), label: index === 0 ? "BGK" : `B${index}` } as const))
     : draftBenchSlots;
   const draftStarterCount = POSITIONS.reduce((sum, position) => sum + Math.min(store.byPosition[position].length, DRAFT_XI_COUNTS[position]), 0);
+  const mobilePickedPlayer = mobilePickedId === null ? undefined : playerById.get(mobilePickedId);
+  const mobilePickedBenchSlot = mobilePickedPlayer ? benchSlots.find((slot) => slot.id === mobilePickedPlayer.id) : undefined;
+  const mobilePickedStarter = mobilePickedPlayer ? !mobilePickedBenchSlot && (currentGWPlan ? currentGWPlan.starterIds.includes(mobilePickedPlayer.id) : true) : false;
+  const mobilePickedBenchIndex = mobilePickedPlayer ? (lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(mobilePickedPlayer.id) : -1;
   return (
     <main className="terminal-app">
       <header className="topbar">
@@ -1077,6 +1114,7 @@ export default function TerminalApp() {
           </div>
           <MetricStrip spent={spent} bankTenths={bankTenths} projected={projected} risk={risk} teamRating={teamRating} />
           <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} playerById={playerById} onSimulate={simulateMove} onDismiss={store.dismissTransferSuggestion} />
+          {isMobileLineup && mobilePickedPlayer && <MobileLineupBar player={mobilePickedPlayer} starter={mobilePickedStarter} benchLabel={mobilePickedBenchSlot?.label} benchIndex={mobilePickedBenchIndex} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === mobilePickedPlayer.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === mobilePickedPlayer.id} locked={store.lockedPlayerIds.includes(mobilePickedPlayer.id)} lineupActive={Boolean(currentGWPlan)} onClose={() => setMobilePickedId(null)} onInfo={() => openPlayer(mobilePickedPlayer.id)} onCaptain={() => makeGWCaptain(mobilePickedPlayer.id)} onViceCaptain={() => makeGWViceCaptain(mobilePickedPlayer.id)} onSwap={() => selectGWSwapPlayer(mobilePickedStarter ? "starter" : "bench", mobilePickedPlayer.id)} onMoveBench={(direction) => moveGWBench(mobilePickedPlayer.id, direction)} onToggleLock={() => store.toggleLock(mobilePickedPlayer.id)} onRemove={() => { store.removePlayer(mobilePickedPlayer.id); setMobilePickedId(null); }} />}
           {simulation && simulationMove && <div className="squad-overlay"><SimulationPanel result={simulation} move={simulationMove} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMove(null); }} /></div>}
           <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
         </section>
@@ -1333,11 +1371,36 @@ function PreviousSeasonsTable({ seasons }: { seasons: PlayerProfileData["history
 
 function Metric({ label, value, tone, title }: { label: string; value: string; tone?: string; title?: string }) { return <div title={title}><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
 
-function SquadSlot({ player, gameweek, locked, captain, vice, starter, benchLabel, benchIndex, lineupActive, swapSelected, onRemove, onToggleLock, onSelect, onSwap, onCaptain, onViceCaptain, onMoveBench }: { player: TerminalPlayer; gameweek: number; locked: boolean; captain: boolean; vice: boolean; starter: boolean; benchLabel?: string; benchIndex: number; lineupActive: boolean; swapSelected: boolean; onRemove: () => void; onToggleLock: () => void; onSelect: () => void; onSwap: () => void; onCaptain: () => void; onViceCaptain: () => void; onMoveBench: (direction: -1 | 1) => void }) {
+function MobileLineupBar({ player, starter, benchLabel, benchIndex, captain, vice, locked, lineupActive, onClose, onInfo, onCaptain, onViceCaptain, onSwap, onMoveBench, onToggleLock, onRemove }: { player: TerminalPlayer; starter: boolean; benchLabel?: string; benchIndex: number; captain: boolean; vice: boolean; locked: boolean; lineupActive: boolean; onClose: () => void; onInfo: () => void; onCaptain: () => void; onViceCaptain: () => void; onSwap: () => void; onMoveBench: (direction: -1 | 1) => void; onToggleLock: () => void; onRemove: () => void }) {
+  return <div className="mobile-lineup-bar" role="toolbar" aria-label={`Lineup actions for ${player.displayName}`}>
+    <div className="mobile-bar-head"><span>{player.displayName} · {player.teamShortName}{starter ? "" : ` · ${benchLabel ?? "BENCH"}`}{captain ? " · ©" : vice ? " · VC" : ""}</span><button type="button" className="bar-close" onClick={onClose} aria-label={`Close actions for ${player.displayName}`}>×</button></div>
+    <div className="mobile-bar-actions">
+      {lineupActive && starter && <>
+        <button type="button" className={`bar-action ${captain ? "active-captain" : ""}`} onClick={onCaptain} aria-label={`Make ${player.displayName} captain`} aria-pressed={captain}>C</button>
+        <button type="button" className={`bar-action ${vice ? "active-vice" : ""}`} onClick={onViceCaptain} aria-label={`Make ${player.displayName} vice-captain`} aria-pressed={vice}>VC</button>
+        <button type="button" className="bar-action" onClick={onSwap} aria-label={`Select ${player.displayName} to move to bench`}>BENCH</button>
+      </>}
+      {lineupActive && !starter && <>
+        <button type="button" className="bar-action" onClick={onSwap} aria-label={`Select ${player.displayName} to move into the starting XI`}>START</button>
+        {benchIndex >= 0 && <>
+          <button type="button" className="bar-action" disabled={benchIndex === 0} onClick={() => onMoveBench(-1)} aria-label={`Move ${player.displayName} up the bench order`}>↑</button>
+          <button type="button" className="bar-action" disabled={benchIndex === 2} onClick={() => onMoveBench(1)} aria-label={`Move ${player.displayName} down the bench order`}>↓</button>
+        </>}
+      </>}
+      <button type="button" className="bar-action" onClick={onInfo} aria-label={`Open ${player.displayName} details`}>INFO</button>
+      <button type="button" className="bar-action" onClick={onToggleLock} aria-label={`${locked ? "Unlock" : "Lock"} ${player.displayName}`} aria-pressed={locked}>{locked ? "UNLOCK" : "LOCK"}</button>
+      <button type="button" className="bar-action bar-danger" onClick={onRemove} aria-label={`Remove ${player.displayName}`}>DROP</button>
+    </div>
+  </div>;
+}
+
+function SquadSlot({ player, gameweek, locked, captain, vice, starter, benchLabel, benchIndex, lineupActive, swapSelected, picked, onRemove, onToggleLock, onActivate, onSwap, onCaptain, onViceCaptain, onMoveBench }: { player: TerminalPlayer; gameweek: number; locked: boolean; captain: boolean; vice: boolean; starter: boolean; benchLabel?: string; benchIndex: number; lineupActive: boolean; swapSelected: boolean; picked: boolean; onRemove: () => void; onToggleLock: () => void; onActivate: () => void; onSwap: () => void; onCaptain: () => void; onViceCaptain: () => void; onMoveBench: (direction: -1 | 1) => void }) {
   const benched = Boolean(benchLabel);
-  return <article className={`squad-slot filled ${locked ? "locked" : ""} ${benched ? "benched" : ""} ${swapSelected ? "lineup-selected" : ""}`}>
+  return <article className={`squad-slot filled ${locked ? "locked" : ""} ${benched ? "benched" : ""} ${swapSelected ? "lineup-selected" : ""} ${picked ? "picked" : ""}`}>
     <SquadFixtureBadges player={player} gameweek={gameweek} />
-    <button className="slot-main" onClick={onSelect}><span className="slot-player">{player.displayName}</span><span className="slot-sub">{player.teamShortName} · {money(player.priceTenths)}</span><span className="slot-xp">{points(weeklyPlayerMetrics(player, gameweek).points * (captain ? 2 : 1))} <small>xP</small></span></button>
+    {(captain || vice) && <span className={`slot-role ${captain ? "captain" : "vice"}`} aria-hidden="true">{captain ? "C" : "VC"}</span>}
+    {benched && benchLabel && <span className="slot-bench-tag" aria-hidden="true">{benchLabel}</span>}
+    <button className="slot-main" onClick={onActivate} aria-pressed={picked}><span className="slot-player">{player.displayName}</span><span className="slot-sub">{player.teamShortName} · {money(player.priceTenths)}</span><span className="slot-xp">{points(weeklyPlayerMetrics(player, gameweek).points * (captain ? 2 : 1))} <small>xP</small></span></button>
     <div className="slot-flags"><button className={`lock-flag ${locked ? "on" : ""}`} onClick={onToggleLock} aria-label={`${locked ? "Unlock" : "Lock"} ${player.displayName}`} aria-pressed={locked}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d="M4 7V5a4 4 0 0 1 8 0v2" /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button>{!locked && <button className="remove-flag" onClick={onRemove} aria-label={`Remove ${player.displayName}`}>×</button>}</div>
     {lineupActive && <div className="lineup-controls">{starter ? <><button className={`role-button captain ${captain ? "active" : ""}`} onClick={onCaptain} aria-label={`Make ${player.displayName} captain`} aria-pressed={captain}>C</button><button className={`role-button vice ${vice ? "active" : ""}`} onClick={onViceCaptain} aria-label={`Make ${player.displayName} vice-captain`} aria-pressed={vice}>VC</button><button className="role-button bench-toggle" onClick={onSwap} aria-label={`Select ${player.displayName} to move to bench`} aria-pressed={swapSelected}>B</button></> : <><button className="role-button bench-toggle active" onClick={onSwap} aria-label={`Select ${player.displayName} to move into the starting XI`} aria-pressed={swapSelected}>{benchLabel}</button>{benchIndex >= 0 && <><button className="role-button bench-order" disabled={benchIndex === 0} onClick={() => onMoveBench(-1)} aria-label={`Move ${player.displayName} up the bench order`}>↑</button><button className="role-button bench-order" disabled={benchIndex === 2} onClick={() => onMoveBench(1)} aria-label={`Move ${player.displayName} down the bench order`}>↓</button></>}</>}</div>}
   </article>;
