@@ -79,6 +79,7 @@ function regressedFormRate(
   formDecay: number = PLAYER_FORM_DECAY,
   formPriorWeight: number = PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
   currentWeightDivisor = 10, currentWeightCap = 0.6,
+  ownTeam?: TeamStrength, strengths?: Record<number, TeamStrength>,
 ): number {
   const historical = historicalRate(player, primary) ?? historicalRate(player, fallback);
   // A player's own prior-period rate is used raw today. It is an estimate, so
@@ -102,7 +103,10 @@ function regressedFormRate(
     rate = rate * (1 - currentWeight) + current.rate * currentWeight;
     sample += current.minutes * currentWeight;
   }
-  return clamp(regressPer90(rate, sample, prior, 900), 0, ceiling);
+  const regressed = regressPer90(rate, sample, prior, 900);
+  const ownAttack = ownTeam && strengths ? (ownTeam.attackHome + ownTeam.attackAway) / 2 : 1;
+  const normalized = ownAttack > 0 ? regressed / ownAttack : regressed;
+  return clamp(normalized, 0, ceiling);
 }
 
 function attackingPrior(player: Player, primary: "expectedGoals" | "expectedAssists", fallback: "goals" | "assists") {
@@ -131,7 +135,9 @@ export function playerRates(
   form: readonly PlayerMatchRate[] | undefined,
   currentGameweek: number,
   overrides: RateOverrides = {},
+  strengths?: Record<number, TeamStrength>,
 ) {
+  const ownTeam = strengths ? strengths[player.teamId] : undefined;
   const priorXg = overrides.priorXg?.[player.position];
   const priorXa = overrides.priorXa?.[player.position];
   const shrink = overrides.anchorShrinkMinutes ?? 0;
@@ -140,8 +146,8 @@ export function playerRates(
   const cd = overrides.currentWeightDivisor ?? 10;
   const cc = overrides.currentWeightCap ?? 0.6;
   return {
-    xg: regressedFormRate(player, "expectedGoals", "goals", priorXg ?? attackingPrior(player, "expectedGoals", "goals"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXg, fd, fw, cd, cc),
-    xa: regressedFormRate(player, "expectedAssists", "assists", priorXa ?? attackingPrior(player, "expectedAssists", "assists"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXa, fd, fw, cd, cc),
+    xg: regressedFormRate(player, "expectedGoals", "goals", priorXg ?? attackingPrior(player, "expectedGoals", "goals"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXg, fd, fw, cd, cc, ownTeam, strengths),
+    xa: regressedFormRate(player, "expectedAssists", "assists", priorXa ?? attackingPrior(player, "expectedAssists", "assists"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXa, fd, fw, cd, cc, ownTeam, strengths),
     saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves, cd, cc),
     defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution, cd, cc),
     bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus, cd, cc),

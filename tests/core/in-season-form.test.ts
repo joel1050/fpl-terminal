@@ -38,6 +38,19 @@ describe("in-season form blending", () => {
     expect(hot[1].attack).toBeGreaterThan(cold[1].attack);
   });
 
+  it("weights current form as matches / (matches + prior weight)", () => {
+    const prior = { 1: { attack: 1, defence: 1 }, 2: { attack: 1, defence: 1 } };
+    const history = {
+      1: Array.from({ length: 12 }, () => ({ xgFor: 2, xgAgainst: 1 })),
+      2: Array.from({ length: 12 }, () => ({ xgFor: 1, xgAgainst: 2 })),
+    };
+    const blended = blendInSeasonForm(prior, history);
+
+    // With 12 matches against the default 12-match prior, current form is 50%.
+    expect(blended[1].attack).toBeCloseTo((1 + 2 / 1.5) / 2, 10);
+    expect(blended[1].defence).toBeCloseTo((1 + 1.5 / 1) / 2, 10);
+  });
+
   it("never lets a shutout collapse a team's blended attack or defence to zero", () => {
     const prior = { 1: { attack: 1.0, defence: 1.0 } };
     const shutOut = { 1: [{ xgFor: 0, xgAgainst: 0 }] };
@@ -56,5 +69,30 @@ describe("in-season form blending", () => {
     expect(result[1].attackHome).toBe(result[1].attackAway);
     expect(result[1].defenceHome).toBe(result[1].defenceAway);
     expect(result[1].overall).toBeCloseTo((result[1].attackHome + result[1].defenceHome) / 2, 10);
+  });
+
+  it("schedule-adjusts team xG by opponent strength when opponent is known", () => {
+    const prior = {
+      1: { attack: 1.0, defence: 1.0 },
+      2: { attack: 1.0, defence: 1.25 }, // Tough defence
+      3: { attack: 1.0, defence: 0.8 },  // Weak defence
+      4: { attack: 1.0, defence: 1.0 },  // Neutral benchmark
+    };
+    const neutralMatch = { xgFor: 1.35, xgAgainst: 1.35, opponentTeamId: 4 };
+    // Team 1 creates 1.5 xG against a tough defence (Team 2) vs weak defence (Team 3)
+    const toughHistory = {
+      1: [{ xgFor: 1.5, xgAgainst: 1.0, opponentTeamId: 2 }],
+      4: [neutralMatch],
+    };
+    const weakHistory = {
+      1: [{ xgFor: 1.5, xgAgainst: 1.0, opponentTeamId: 3 }],
+      4: [neutralMatch],
+    };
+
+    const toughBlend = blendInSeasonForm(prior, toughHistory, 0.9, 12);
+    const weakBlend = blendInSeasonForm(prior, weakHistory, 0.9, 12);
+
+    // Creating 1.5 xG against a 1.25 defence produces a higher attack rating than against a 0.8 defence
+    expect(toughBlend[1].attack).toBeGreaterThan(weakBlend[1].attack);
   });
 });

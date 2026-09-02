@@ -12,7 +12,7 @@ import {
   enrichPlayersWithHistory,
   type PlayerEnrichmentMetadata,
 } from "@/lib/historical/enrichPlayers";
-import { loadInSeasonPlayerRates, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
+import { loadInSeasonPlayerRates, loadInSeasonStarts, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
 import { ensureFreshRotowireLineups } from "@/lib/availability/refreshLineups";
 import {
   type FplBootstrapPayload,
@@ -338,9 +338,10 @@ export async function enrichBootstrapWithProjections(
   // generated lineup files off disk synchronously. They are independent of each
   // other: the refresh writes data/generated, the two form loaders read the
   // snapshot cache.
-  const [inSeasonForm, playerForm, lineups] = await Promise.all([
+  const [inSeasonForm, playerForm, startHistory, lineups] = await Promise.all([
     loadInSeasonTeamXG(bootstrap.players, bootstrap.fixtures),
     loadInSeasonPlayerRates(bootstrap.players, bootstrap.fixtures),
+    loadInSeasonStarts(bootstrap.players, bootstrap.fixtures),
     ensureFreshRotowireLineups(bootstrap.players),
   ]);
   if (lineups.reason === "failed") {
@@ -353,6 +354,7 @@ export async function enrichBootstrapWithProjections(
     historical,
     inSeasonForm,
     playerForm,
+    startHistory,
   );
   return {
     bootstrap: { ...bootstrap, players: enriched.players },

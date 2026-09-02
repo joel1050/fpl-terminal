@@ -82,4 +82,13 @@ describe("market-calibrated clean-sheet probabilities", () => {
       10,
     );
   });
+
+  it("interpolates smoothly between tiers without discrete jumps", () => {
+    // Tier 1 (0.92) is 0.27; Tier 2 (1.00) is 0.28.
+    // Midpoint 0.96 should interpolate smoothly to 0.275.
+    const mid = cleanSheetProbability(true, 0.96, 1.0);
+    expect(mid).toBe(0.275);
+    expect(mid).toBeGreaterThan(cleanSheetProbability(true, 0.92, 1.0));
+    expect(mid).toBeLessThan(cleanSheetProbability(true, 1.00, 1.0));
+  });
 });

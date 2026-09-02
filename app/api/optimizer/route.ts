@@ -5,7 +5,7 @@ import { getBootstrap, getFixtures } from "@/lib/fpl/client";
 import { normalizeBootstrap } from "@/lib/fpl/normalize";
 import { enrichPlayersWithHistory } from "@/lib/historical/enrichPlayers";
 import { loadHistoricalBundle } from "@/lib/historical/load";
-import { loadInSeasonPlayerRates, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
+import { loadInSeasonPlayerRates, loadInSeasonStarts, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
 import { exactCompletePartialSquad, exactOptimizeFullSquad } from "@/lib/optimizer/exactOptimizer";
 
 export const runtime = "nodejs";
@@ -29,12 +29,13 @@ export async function POST(request: Request) {
     const [bootstrap, fixtures] = await Promise.all([getBootstrap(), getFixtures()]);
     if (!bootstrap.data) return NextResponse.json({ error: bootstrap.error ?? "FPL data is unavailable" }, { status: 503 });
     const normalized = normalizeBootstrap(bootstrap.data, fixtures.data ?? []);
-    const [historical, inSeasonForm, playerForm] = await Promise.all([
+    const [historical, inSeasonForm, playerForm, startHistory] = await Promise.all([
       loadHistoricalBundle(),
       loadInSeasonTeamXG(normalized.players, normalized.fixtures),
       loadInSeasonPlayerRates(normalized.players, normalized.fixtures),
+      loadInSeasonStarts(normalized.players, normalized.fixtures),
     ]);
-    const players = enrichPlayersWithHistory(normalized.players, normalized.teams, normalized.events, historical, inSeasonForm, playerForm).players;
+    const players = enrichPlayersWithHistory(normalized.players, normalized.teams, normalized.events, historical, inSeasonForm, playerForm, startHistory).players;
     const gameweek = parsed.data.gameweek
       ?? normalized.events.find((event) => event.isCurrent)?.id
       ?? normalized.events.find((event) => event.isNext)?.id
