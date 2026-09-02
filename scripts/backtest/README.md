@@ -16,7 +16,24 @@ npx tsx scripts/backtest/cs-fit.ts        # fits a table correction, checks it o
 npx tsx scripts/backtest/form-weight.ts   # form decay, anchor weight, and the current-season share
 npx tsx scripts/backtest/reliability.ts   # how many appearances each stat needs to mean anything
 npx tsx scripts/backtest/evidence-weights.ts  # turns those reliabilities into walk-forward weighting rules
+BACKTEST_DATA_DIR=... npx tsx scripts/backtest/schedule-adjust.ts 2024-25  # schedule-adjusting a player's own form
 ```
+
+`schedule-adjust.ts` is the only script here that runs on seasons other than the
+ingested one. `season.ts` reads `BACKTEST_DATA_DIR` once at import, so ingest each
+season to its own directory (never `data/generated`) and loop in the shell:
+
+```bash
+for s in 2022-23 2023-24 2024-25 2025-26; do
+  BACKTEST_DATA_DIR=$SCRATCH/$s npx tsx scripts/backtest/schedule-adjust.ts $s
+done
+```
+
+FPL published no xG before gameweek 16 of 2022/23, so that season carries 14
+gameweeks of minutes with a hard zero. The script drops any gameweek whose total
+xG is zero - rows *and* fixtures, or `strengthsBefore` folds those blanks into
+every team's in-season form. 2022/23 is therefore a reduced replication:
+gameweeks 16-38, a 12-match anchor over 16-27, and one rest-of-season cutoff.
 
 `validate.ts` reproduces `projectPlayer()` to 0.0e+0 on all 9,972 played rows, so
 an arm difference is a model difference and not a harness difference. Run it
@@ -162,3 +179,114 @@ One season, 9,972 player-rows and 660 team-fixtures. The minimum detectable
 effect is about ±0.0007 RMSE on xP and ±0.0025 Brier on clean sheets. Several
 arms sit inside that band: "no measurable difference" here means the test could
 not resolve it, not that the change is proven neutral.
+
+## Schedule-adjusting a player's own form
+
+`blendPlayerRate` averages a player's past match xG/xA with no regard for who he
+faced, and the result is then multiplied by the *next* fixture's attack
+multiplier. A player coming off a soft run is therefore counted twice. Three arms
+over 2022/23-2025/26, `validate.ts` passing on each season:
+
+```
+A shipped    blend(r_i)                       x m_next
+B form-only  blend(r_i / m_i)                 x m_next
+C both       blend(r_i / m_i, prior / m_bar)  x m_next
+```
+
+| Change | Verdict |
+|---|---|
+| Schedule-adjust the form window only (arm B) | **Reject in favour of C.** Normalizing the form half while leaving the anchor raw mixes scales: a player on a strong team keeps an inflated anchor against a deflated form estimate. B is worse than C in all four seasons on next-match RMSE. |
+| Schedule-adjust form and anchor together, on production's information (arms D/E) | **Shipped.** Arm C needs walk-forward strengths and a realized anchor multiplier, neither of which production has. Arm D re-scores past matches with *current* strengths and normalizes the anchor by the team's own attack strength; it beats both A and C in every season. Arm E adds the live-FDR asymmetry production really has (base=1 on past matches, live base on the upcoming one) and matches D to 0.001-0.003 RMSE. Gradient A -> E: +0.164 -> +0.034, +0.078 -> -0.040, +0.098 -> -0.003, +0.092 -> -0.011. |
+| Schedule-adjust form and anchor together (arm C, idealized) | **Superseded by D.** Kept as the upper bound. RMSE is a wash - 2 of 8 season-metric tests resolve, one in each direction - and it was underpowered by construction: the mean prediction gap between arms is 0.016-0.026 xGI/90 against a residual of 0.17-0.25. What resolves is bias: C shrinks the absolute bias in **8 of 8** season-metric comparisons. `schedule-adjust.ts` |
+
+**The tilt, and what it actually is.** Bias by quintile of `mBar(form)`, the
+decay-weighted mean attack multiplier over the matches being averaged. Arm A
+rises monotonically across all five quintiles in all four seasons:
+
+| Q5 - Q1 bias gradient, xGI/90 | A shipped | C both | \|C\|-\|A\| (CI95) |
+|---|---|---|---|
+| 2022/23 (reduced) | +0.164 | +0.064 | -0.100 [-0.105, -0.079] |
+| 2023/24 | +0.078 | -0.018 | -0.061 [-0.099, +0.016] |
+| 2024/25 | +0.098 | +0.035 | -0.063 [-0.067, -0.059] |
+| 2025/26 | +0.092 | +0.007 | -0.085 [-0.089, -0.036] |
+
+C leaves 8-39% of the gradient behind, so it narrows the error without closing
+it - except in 2023/24, where it overshoots into a sign flip and starts
+under-projecting players off soft runs. The correction's direction is right in
+every season; its magnitude is not uniformly right.
+
+**That gradient is mostly not the schedule.** `mBar(form)` loads heavily on team
+strength - a strong attack clears 1.0 in nearly every fixture - so the same
+monotone rise is predicted by two different defects. Splitting them (pooled
+quintiles, three full seasons, `biasBy` at the foot of the script):
+
+- by `mBarForm / mBarAnchor`, the player's recent run against **his own**
+  baseline, roughly orthogonal to team level: A's bias is mixed. Non-monotone in
+  2023/24, rising in 2024/25 and 2025/26, and never clean.
+- by `mBarAnchor` alone, team level with the swing averaged out: A's bias is
+  **monotone in all three seasons**, and concentrated in the top quintile
+  (2023/24 -0.039 -> +0.055, 2024/25 +0.001 -> +0.076, 2025/26 +0.009 -> +0.090).
+
+So the large, consistent defect is a **level** double count, not a schedule one:
+a player's own xG rate already carries his team's attacking quality, and the
+fixture multiplier applies that quality a second time. Players on the strongest
+attacks are over-projected by roughly 0.05-0.09 xGI/90. The schedule effect that
+arm C was built to remove is real but secondary.
+
+Arm C removes most of the level tilt as a side effect, because dividing the
+anchor by `mBarAnchor` deflates strong teams' anchors directly. That is the right
+symptom treated by the wrong lever. Ship C for its 8/8 bias improvement, but the
+finding worth acting on is the level double count, which wants the share
+decomposition (player rate = team rate x player share, with the multiplier
+scaling only the team half) rather than a schedule adjustment.
+
+**What it costs to ship C.** `PlayerMatchRate` carries
+`{playerId, xg, xa, minutes}` and needs `opponentTeamId` and `wasHome`;
+`loadInSeasonForm.ts` already has the fixture pairing that supplies them, but the
+persisted aggregate is cached, so the schema change needs a version bump and a
+re-fetch. Nothing in this test used FPL difficulty - none of these seasons has
+it - so `base` stayed at 1.0 and the arms differ only through team strengths and
+venue.
+
+## FPL difficulty against the strength ratio
+
+Section 7 multiplies `base`, read from FPL's 1-5 difficulty, by
+`ownAttack / opponentDefence`, read from the model's own strengths. Both encode
+fixture difficulty, so the suspicion was that one is redundant and the pair
+double-counts the opponent. Arms: `BASELINE` against
+`{ useDifficultyBase: false }`, which sets `base = 1` whenever both strengths
+exist and leaves FDR as the no-strengths fallback it already is.
+
+| Season | corr(base, ratio) | opposite ways | team xG RMSE with / without | residual-after-ratio corr with base | xP RMSE without - with [CI95] | GW sign test |
+|---|---|---|---|---|---|---|
+| 2022/23 | 0.194 | 30.6% | 0.86246 / 0.87408 | +0.089 | +0.00417 [+0.0014, +0.0069] | 23/32 |
+| 2023/24 | 0.457 | 27.9% | 0.51706 / 0.51793 | +0.055 | 0.00000 [-0.0049, +0.0050] | 20/33 |
+| 2024/25 | 0.631 | 9.7% | 0.53333 / 0.53739 | +0.071 | +0.00203 [-0.0012, +0.0052] | 20/33 |
+| 2025/26 | 0.460 | 9.5% | 0.52499 / 0.52678 | +0.157 | -0.00012 [-0.0034, +0.0031] | 20/33 |
+
+**Verdict: keep both.** The redundancy story does not survive contact with the
+data. The two terms correlate at only 0.19-0.63 and disagree in direction on up
+to a third of team-fixtures, and after regressing actual team xG on the strength
+ratio the residual still moves with `base` in every season. Dropping `base`
+raises team-xG RMSE in 4 seasons of 4. On xP it is close to a null - one season
+resolves, three span zero - but the sign is consistent, and team xG is the
+sharper instrument for an attacking term, exactly as `sweep.ts` argued.
+
+The open question is the *weighting*. Two partially correlated signals are
+combined by plain multiplication, which is an assumption nobody has fitted.
+
+**Bonus, now that `base` is live in the harness:** the outer multiplier clamp
+binds on 0.8% (2022/23), 4.4%, 6.4% and 3.8% of team-fixtures. README previously
+recorded that this could not be checked here "because FDR is neutralized in the
+backtest". It can be now.
+
+### A note on what `validate.ts` gates after this change
+
+`formBefore` in `season.ts` does not attach `opponentTeamId` / `wasHome`, so the
+form entries the harness feeds `projectPlayer` carry no fixture context and the
+schedule adjustment falls back to the raw blend. `validate.ts` therefore still
+reproduces `projectPlayer()` exactly, but it is now gating the *unadjusted* path.
+The adjusted path is covered by `tests/core/schedule-adjusted-form.test.ts` and
+by `schedule-adjust.ts`, which computes its arms standalone rather than through
+`xp.ts`. Porting the adjustment into `xp.ts` would move the baseline for every
+arm recorded above, so it was left alone deliberately.

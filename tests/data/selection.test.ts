@@ -162,3 +162,85 @@ describe("player selection model", () => {
     expect(evidence.some((item) => item.source === "FPL_STATUS" && item.detail.includes("Hamstring injury"))).toBe(true);
   });
 });
+
+describe("current-season start history", () => {
+  const observations = (pattern: string) =>
+    [...pattern].map((mark) => ({ started: mark === "S", appeared: mark !== "-" }));
+
+  it("lifts a fringe player who starts five in a row", () => {
+    const cold = buildPlayerSelections([player(1, 1, 0)]).get(1)!;
+    const hot = buildPlayerSelections([player(1, 1, 0)], {
+      startHistory: { 1: observations("SSSSS") },
+    }).get(1)!;
+    expect(cold.startProbability).toBeLessThan(0.2);
+    expect(hot.startProbability).toBeGreaterThan(0.90);
+    expect(hot.nailedRating).toBe(5);
+  });
+
+  it("drops a player who loses his place", () => {
+    const dropped = buildPlayerSelections([player(1)], {
+      startHistory: { 1: observations("SSSSS-----") },
+    }).get(1)!;
+    expect(dropped.startProbability).toBeLessThan(0.1);
+    expect(dropped.cameoProbability).toBeLessThan(0.1);
+    expect(dropped.noAppearanceProbability).toBeGreaterThan(0.8);
+  });
+
+  it("never lets start history raise an unavailable player", () => {
+    const injured = { ...player(1), status: "i", chanceOfPlaying: 0 };
+    const selection = buildPlayerSelections([injured], {
+      startHistory: { 1: observations("SSSSS") },
+    }).get(1)!;
+    expect(selection.startProbability).toBeLessThanOrEqual(0.01);
+    expect(selection.cameoProbability).toBeLessThanOrEqual(0.01);
+  });
+
+  it("leaves a player with no observations exactly where he was", () => {
+    const without = buildPlayerSelections([player(1)]).get(1)!;
+    const withEmpty = buildPlayerSelections([player(1)], { startHistory: { 1: [] } }).get(1)!;
+    expect(withEmpty.startProbability).toBe(without.startProbability);
+    expect(withEmpty.cameoProbability).toBe(without.cameoProbability);
+  });
+
+  it("does not count current-season minutes twice for a player with no history", () => {
+    // A promoted club's player or a new signing has no historical sample, so
+    // the seed would otherwise come from fallbackStartRate - which reads this
+    // season's running minutes, the same evidence the recursion is about to
+    // replay. 900 minutes with only two observations (the rest lost to double
+    // gameweeks) is where that bites hardest.
+    const heavyMinutes = buildPlayerSelections([player(1, 1, 900)], {
+      startHistory: { 1: observations("SS") },
+    }).get(1)!;
+    const noMinutes = buildPlayerSelections([player(1, 1, 0)], {
+      startHistory: { 1: observations("SS") },
+    }).get(1)!;
+    // Identical: the minutes reach the estimate only through the observations.
+    expect(heavyMinutes.startProbability).toBe(noMinutes.startProbability);
+    expect(heavyMinutes.startProbability).toBeCloseTo(0.694, 3);
+  });
+
+  it("still seeds from current-season minutes when there is nothing else at all", () => {
+    // No history and no observations yet: the fallback is the only evidence
+    // there is, so it must keep working exactly as before.
+    const busy = buildPlayerSelections([player(1, 1, 900)]).get(1)!;
+    const idle = buildPlayerSelections([player(1, 1, 0)]).get(1)!;
+    expect(busy.startProbability).toBeGreaterThan(idle.startProbability);
+  });
+
+  it("records the run of starts as current-season evidence", () => {
+    const evidence = buildPlayerSelections([player(1)], {
+      startHistory: { 1: observations("SSsS-S") },
+    }).get(1)!.evidence;
+    expect(evidence).toContainEqual({
+      source: "CURRENT_SEASON",
+      detail: "4 starts in 6 matches this season (last 5: SsS-S)",
+    });
+  });
+
+  it("raises confidence once five matches have been observed", () => {
+    const thin = buildPlayerSelections([player(1, 1, 0)], { startHistory: { 1: observations("S") } }).get(1)!;
+    const settled = buildPlayerSelections([player(1, 1, 0)], { startHistory: { 1: observations("SSSSS") } }).get(1)!;
+    expect(thin.confidence).toBe("MEDIUM");
+    expect(settled.confidence).toBe("HIGH");
+  });
+});

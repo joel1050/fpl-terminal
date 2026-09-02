@@ -34,7 +34,7 @@ export const BASELINE: Variant = {
   venue: [1.102, 0.898],
   attackRatioClamp: [0.7, 1.35],
   multiplierClamp: [0.55, 1.6],
-  cleanSheet: "TABLE",
+  cleanSheet: "BILINEAR",
   leagueAverageGoals: 1.35,
   savesEnvironment: "LAMBDA",
 };
@@ -82,19 +82,21 @@ const TIER_STEP = 0.08;
  * true carries the edge gradient onwards, held inside [-3, 7] so one freak
  * strength cannot run the extrapolation off a cliff.
  */
+function cleanPosition(value: number, open: boolean): number {
+  const pos = (value - consensusStrengthTiers[0]) / TIER_STEP;
+  const snapped = Math.abs(pos - Math.round(pos)) < 1e-7 ? Math.round(pos) : pos;
+  return open ? clamp(snapped, -3, 7) : clamp(snapped, 0, 4);
+}
+
 function interpolatedCleanSheet(isHome: boolean, ownDefence: number, opponentAttack: number, open: boolean): number {
   const grid = cleanSheetProbabilities[isHome ? "home" : "away"];
-  const position = (value: number) => (open
-    ? clamp((value - consensusStrengthTiers[0]) / TIER_STEP, -3, 7)
-    : clamp((value - consensusStrengthTiers[0]) / TIER_STEP, 0, 4));
-  const r = position(ownDefence), c = position(opponentAttack);
+  const r = cleanPosition(ownDefence, open);
+  const c = cleanPosition(opponentAttack, open);
   const r0 = clamp(Math.floor(r), 0, 3), c0 = clamp(Math.floor(c), 0, 3);
   const fr = r - r0, fc = c - c0;
-  return clamp(
-    grid[r0][c0] * (1 - fr) * (1 - fc) + grid[r0 + 1][c0] * fr * (1 - fc)
-      + grid[r0][c0 + 1] * (1 - fr) * fc + grid[r0 + 1][c0 + 1] * fr * fc,
-    0.02, 0.9,
-  );
+  const val = grid[r0][c0] * (1 - fr) * (1 - fc) + grid[r0 + 1][c0] * fr * (1 - fc)
+    + grid[r0][c0 + 1] * (1 - fr) * fc + grid[r0 + 1][c0 + 1] * fr * fc;
+  return Math.round(clamp(val, 0.02, 0.9) * 10000) / 10000;
 }
 
 function nearestStrengthTier(value: number): number {

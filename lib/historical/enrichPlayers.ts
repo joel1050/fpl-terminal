@@ -3,6 +3,7 @@ import type { PlayerMatchRate, TeamStrength } from "@/types/projection";
 import { projectPlayers } from "@/lib/projections/projectPlayer";
 import { loadRotowireSelectionData } from "@/lib/availability/loadSelectionData";
 import { buildPlayerSelections } from "@/lib/availability/selection";
+import type { StartObservation } from "@/lib/availability/startRate";
 import { applyInSeasonForm, type TeamMatchXG } from "./inSeasonForm";
 import type { HistoricalBundle } from "./types";
 
@@ -160,6 +161,7 @@ export function enrichPlayersWithHistory(
   historical: HistoricalBundle | null,
   inSeasonForm?: Record<number, readonly TeamMatchXG[]>,
   playerForm?: Record<number, readonly PlayerMatchRate[]>,
+  startHistory?: Record<number, readonly StartObservation[]>,
 ): EnrichedPlayers {
   const historicalById = new Map(
     (historical?.players ?? []).map((player) => [player.historicalPlayerId, player]),
@@ -186,6 +188,7 @@ export function enrichPlayersWithHistory(
   const selections = buildPlayerSelections(enrichedPlayers, {
     rotowire: loadRotowireSelectionData(),
     historical,
+    startHistory,
   });
   const selectedPlayers = enrichedPlayers.map((player) => ({
     ...player,

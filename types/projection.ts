@@ -6,6 +6,14 @@ export interface PlayerMatchRate {
   xg: number;
   xa: number;
   minutes: number;
+  /**
+   * Who the player faced, and where. Optional so a caller that has not wired up
+   * the fixture context still gets the previous behaviour rather than an error;
+   * when present, projectPlayer divides the match out by the fixture it was
+   * played in before blending (calculations.md 6.3.2).
+   */
+  opponentTeamId?: number;
+  wasHome?: boolean;
 }
 
 export interface TeamStrength {

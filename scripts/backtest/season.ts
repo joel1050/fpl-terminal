@@ -31,6 +31,10 @@ export const KNOWN_LEAKS = existsSync(path.join(dataDir, "previous-player-anchor
     ];
 const read = <T,>(file: string): T =>
   JSON.parse(readFileSync(path.join(dataDir, file), "utf8")) as T;
+/** Optional inputs: absent for a plain `npm run data:ingest`, so callers degrade. */
+const readOptional = <T,>(file: string): T | undefined => {
+  try { return read<T>(file); } catch { return undefined; }
+};
 
 export interface MatchRow {
   historicalPlayerId: number;
@@ -71,7 +75,11 @@ interface RawTeamStrength {
   defenceAway: number;
 }
 
-export type Fixture = PreparedFixture;
+export type Fixture = PreparedFixture & {
+  /** FPL's 1-5 difficulty for each side. Present only when fixture-difficulty.json is. */
+  homeDifficulty?: number;
+  awayDifficulty?: number;
+};
 
 export interface Season {
   players: Map<number, SeasonPlayer>;
@@ -92,6 +100,13 @@ export interface Season {
 
 export function loadSeason(): Season {
   const rows = read<MatchRow[]>("historical-match-stats.json");
+  // vaastav's fixtures.csv carries team_h_difficulty / team_a_difficulty for every
+  // season; merged_gw.csv does not, which is why FDR was long recorded here as
+  // untestable. Ingest it separately and the difficulty arms become runnable.
+  const difficulty = readOptional<{ fixtureId: number; homeDifficulty: number; awayDifficulty: number }[]>(
+    "fixture-difficulty.json",
+  );
+  const difficultyById = new Map((difficulty ?? []).map((d) => [d.fixtureId, d]));
   const playerList = read<SeasonPlayer[]>("historical-players.json");
   const priorFile = existsSync(path.join(dataDir, "preseason-team-strength.json"))
     ? "preseason-team-strength.json"
@@ -103,7 +118,10 @@ export function loadSeason(): Season {
     : [];
 
   const players = new Map(playerList.map((player) => [player.historicalPlayerId, player]));
-  const fixtures = buildFixturesFromMatchRows(rows);
+  const fixtures: Fixture[] = buildFixturesFromMatchRows(rows).map((fixture) => {
+    const d = difficultyById.get(fixture.fixtureId);
+    return d ? { ...fixture, homeDifficulty: d.homeDifficulty, awayDifficulty: d.awayDifficulty } : fixture;
+  });
   const fixtureById = new Map(fixtures.map((fixture) => [fixture.fixtureId, fixture]));
 
   const rowsByGameweek = new Map<number, MatchRow[]>();
@@ -169,13 +187,13 @@ export function loadSeason(): Season {
 /** Team strengths as they would have been known before `gameweek` kicked off. */
 export function strengthsBefore(season: Season, gameweek: number): Record<number, TeamStrength> {
   const history: Record<number, TeamMatchXG[]> = {};
-  const push = (teamId: number, xgFor: number, xgAgainst: number) => {
-    (history[teamId] ??= []).push({ xgFor, xgAgainst });
+  const push = (teamId: number, xgFor: number, xgAgainst: number, opponentTeamId?: number, wasHome?: boolean) => {
+    (history[teamId] ??= []).push({ xgFor, xgAgainst, opponentTeamId, wasHome });
   };
   for (const fixture of season.fixtures) {
     if (fixture.gameweek >= gameweek) continue;
-    push(fixture.homeTeamId, fixture.homeXg, fixture.awayXg);
-    push(fixture.awayTeamId, fixture.awayXg, fixture.homeXg);
+    push(fixture.homeTeamId, fixture.homeXg, fixture.awayXg, fixture.awayTeamId, true);
+    push(fixture.awayTeamId, fixture.awayXg, fixture.homeXg, fixture.homeTeamId, false);
   }
   return applyInSeasonForm(season.priorStrengths, history);
 }
@@ -236,9 +254,9 @@ export function playerAt(
     opponentTeamId: wasHome ? fixture.awayTeamId : fixture.homeTeamId,
     opponentShortName: "OPP",
     isHome: wasHome,
-    // No FDR exists for this season; a neutral 3 keeps `base` at 1.0 so the
-    // arms differ only in the parts of section 7 that are actually testable.
-    difficulty: 3,
+    // Real FPL difficulty when fixture-difficulty.json was ingested; otherwise a
+    // neutral 3, which keeps `base` at 1.0 and leaves every other arm unchanged.
+    difficulty: (wasHome ? fixture.homeDifficulty : fixture.awayDifficulty) ?? 3,
   };
   const anchor = anchorThrough === undefined ? undefined : currentBefore(season, playerId, anchorThrough + 1);
   const mayUseTargetAggregate = anchorThrough !== undefined || !season.hasPreparedPriors;

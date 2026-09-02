@@ -16,6 +16,7 @@ vi.mock("@/lib/historical/load", () => ({ loadHistoricalBundle: vi.fn(async () =
 vi.mock("@/lib/historical/loadInSeasonForm", () => ({
   loadInSeasonTeamXG: vi.fn(async () => ({})),
   loadInSeasonPlayerRates: vi.fn(async () => ({})),
+  loadInSeasonStarts: vi.fn(async () => ({})),
 }));
 vi.mock("@/lib/historical/enrichPlayers", () => ({
   enrichPlayersWithHistory: vi.fn((players: Player[]) => ({ players })),

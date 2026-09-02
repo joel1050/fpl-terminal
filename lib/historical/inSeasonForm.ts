@@ -3,42 +3,51 @@ import type { TeamStrength } from "@/types/projection";
 export interface TeamMatchXG {
   xgFor: number;
   xgAgainst: number;
+  opponentTeamId?: number;
+  wasHome?: boolean;
 }
 
 /**
- * decay=0.90 and priorWeight=10 are backtested, not guessed: walking forward
- * through the 2023/24 and 2024-25 seasons, this pair maximized clean-sheet
- * AUC and goals-scored correlation against actual results, using team xG
- * (not goals or win/draw/loss - both scored worse than never updating the
- * preseason prior at all) as the in-season observed signal.
- *
- * priorWeight was re-derived against a prior quantized into 5 tiers - the
- * same granularity as data/manual/team-strengths.json - rather than FPL's
- * continuous preseason rating. A coarser prior deserves less trust relative
- * to observed form, so this app's optimal weight (10) is lower than what a
- * continuous-rating backtest found (16): both beat a never-updated prior in
- * both seasons checked individually, and this app's real prior is the
- * coarse one. Both parameters sit in a flat plateau (decay 0.85-0.95, W
- * 7-13 all land within ~0.1% AUC), so this is a defensible default, not a
- * razor's-edge optimum.
+ * Decay 0.90 controls recency inside the current-season xG estimate. The
+ * estimate's share then grows independently as n / (n + 12), where n is the
+ * team's number of matches this season. This deliberately lets current form
+ * keep gaining influence instead of capping it at the decay window's effective
+ * sample size.
  */
 export const DEFAULT_DECAY = 0.9;
-export const DEFAULT_PRIOR_WEIGHT = 10;
+export const DEFAULT_PRIOR_WEIGHT = 12;
 
 function mean(values: number[]): number {
   return values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 1;
 }
 
+function adjustedMatchXG(
+  match: TeamMatchXG,
+  prior: Record<number, { attack: number; defence: number }>,
+): { xgFor: number; xgAgainst: number } {
+  if (match.opponentTeamId === undefined || !prior[match.opponentTeamId]) {
+    return { xgFor: match.xgFor, xgAgainst: match.xgAgainst };
+  }
+  const oppPrior = prior[match.opponentTeamId];
+  const oppDef = Math.max(oppPrior.defence, 0.2);
+  const oppAtt = Math.max(oppPrior.attack, 0.2);
+  return {
+    xgFor: match.xgFor * oppDef,
+    xgAgainst: match.xgAgainst / oppAtt,
+  };
+}
+
 /**
  * Blends each team's prior attack/defence ratio with a recency-weighted
- * average of its own observed xG for/against. Weight decays geometrically
- * per match (most recent match played = weight 1, one match before that =
- * decay, two before = decay^2, ...), so the blend tracks a team's current
- * process without a hard "last N matches" cliff. `priorWeight` is the
- * preseason prior's influence in "matches worth" of evidence; the observed
- * side's influence grows toward its own ceiling (1 / (1 - decay)) as more
- * matches are played, so the prior never fully disappears but stops
- * dominating once a real sample exists.
+ * average of its own observed xG for/against. Matches are schedule-adjusted
+ * by the opponent's prior strength when known, so soft/hard schedules do not
+ * distort the team's form estimate.
+ *
+ * Weight decays geometrically per match (most recent match played = weight 1,
+ * one match before that = decay, two before = decay^2, ...), so the blend
+ * tracks a team's current process without a hard "last N matches" cliff.
+ * `priorWeight` is the preseason prior's influence in "matches worth" of
+ * evidence, while every current-season match increases the observed side's share.
  */
 export function blendInSeasonForm(
   prior: Record<number, { attack: number; defence: number }>,
@@ -52,7 +61,9 @@ export function blendInSeasonForm(
   // average covers both directions.
   const allXg: number[] = [];
   for (const matches of Object.values(history)) {
-    for (const match of matches) allXg.push(match.xgFor);
+    for (const match of matches) {
+      allXg.push(adjustedMatchXG(match, prior).xgFor);
+    }
   }
   const leagueAverageXg = Math.max(mean(allXg), 0.15);
 
@@ -72,8 +83,9 @@ export function blendInSeasonForm(
       const match = matches[n - 1 - i]; // i=0 is the most recent match played
       const weight = decay ** i;
       weightSum += weight;
-      weightedFor += weight * match.xgFor;
-      weightedAgainst += weight * match.xgAgainst;
+      const adj = adjustedMatchXG(match, prior);
+      weightedFor += weight * adj.xgFor;
+      weightedAgainst += weight * adj.xgAgainst;
     }
     const weightedXgFor = weightedFor / weightSum;
     const weightedXgAgainst = weightedAgainst / weightSum;
@@ -82,11 +94,9 @@ export function blendInSeasonForm(
     // ratio, matching the "higher = stronger" convention used everywhere
     // else in this app.
     const observedDefence = leagueAverageXg / Math.max(weightedXgAgainst, 0.15);
-    const effectiveMatches = weightSum;
-    const blendedAttack = (teamPrior.attack * priorWeight + observedAttack * effectiveMatches)
-      / (priorWeight + effectiveMatches);
-    const blendedDefence = (teamPrior.defence * priorWeight + observedDefence * effectiveMatches)
-      / (priorWeight + effectiveMatches);
+    const currentShare = n / (n + priorWeight);
+    const blendedAttack = teamPrior.attack * (1 - currentShare) + observedAttack * currentShare;
+    const blendedDefence = teamPrior.defence * (1 - currentShare) + observedDefence * currentShare;
     blended[teamId] = { attack: Math.max(blendedAttack, 0.05), defence: Math.max(blendedDefence, 0.05) };
   }
   return blended;

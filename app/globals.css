@@ -600,3 +600,95 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .feed-scroll { max-height: 65vh; }
   .league-table-wrap { max-height: none; }
 }
+
+/* ── Mobile overhaul: compact header, readable tables, tappable controls ── */
+@media (max-width: 900px) {
+  .topbar { position: static; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-height: 0; padding-block: 8px; padding-inline: 10px; }
+  .topbar .brand { flex: 0 0 auto; font-size: 11px; }
+  .topbar-stats { order: 3; flex: 1 1 100%; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; border-top: 1px solid var(--border-soft); padding-top: 6px; }
+  .topbar-stats::-webkit-scrollbar { display: none; }
+  .topbar-actions { flex: 0 0 auto; margin-left: auto; }
+  .topbar-actions .text-button { min-height: 36px; padding-inline: 6px; font-size: 9px; }
+  .status-cell { min-width: 0; padding-inline: 8px; }
+  /* Header scrolls away on mobile; tab bar sticks to viewport top instead of
+     tracking the wrapping topbar height. */
+  .mobile-tabs, .leagues-mobile-tabs { top: 0; }
+  .terminal-grid, .leagues-grid { min-height: calc(100dvh - 41px); }
+  .market-column.mobile-visible { height: calc(100dvh - 41px); }
+  .squad-column.mobile-visible { height: calc(100dvh - 41px); min-height: 0; }
+
+  /* Player universe: drop secondary columns so the table fits without scrolling. */
+  .player-table { min-width: 0; }
+  .player-table th:nth-child(4), .player-table td:nth-child(4),
+  .player-table th:nth-child(5), .player-table td:nth-child(5),
+  .player-table th:nth-child(9), .player-table td:nth-child(9),
+  .player-table th:nth-child(10), .player-table td:nth-child(10),
+  .player-table th:nth-child(11), .player-table td:nth-child(11) { display: none; }
+  .table-wrap { position: relative; max-height: calc(100dvh - 340px); -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  .table-wrap:focus-within { scroll-behavior: smooth; }
+
+  /* Touch targets: 40px+ for filters, add buttons, transfers. */
+  .filter-row input, .filter-row select { height: 40px; font-size: 11px; }
+  .quick-filters button { min-height: 36px; padding: 0 10px; font-size: 9px; }
+  .search-wrap { height: 44px; }
+  .add-button, .icon-button { width: 36px; height: 36px; }
+  .slot-flags { opacity: 1; pointer-events: auto; }
+  .slot-flags button { width: 28px; height: 28px; font-size: 12px; }
+  .role-button { min-width: 28px; height: 28px; font-size: 9px; padding: 0 6px; }
+  .lineup-controls { right: 4px; bottom: 4px; gap: 3px; }
+
+  /* Squad: keep positional shape instead of forcing 2 columns. */
+  .slot-grid.starting-slot-grid { grid-template-columns: repeat(var(--slot-count, 3), minmax(0, 1fr)); max-width: 100%; }
+  .slot-grid.bench-slot-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+  .squad-slot, .empty-slot { min-height: 84px; padding: 6px; }
+  .slot-player { font-size: 9px; }
+  .slot-sub { font-size: 8px; }
+  .slot-xp { font-size: 12px; }
+
+  /* Metrics: 3 columns so five strip cells fit in two compact rows. */
+  .metric-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .metric-strip > div { padding: 6px; }
+  .metric-strip span { font-size: 8px; }
+  .metric-strip strong { font-size: 11px; }
+  .live-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .live-metrics span { font-size: 8px; }
+  .live-metrics strong { font-size: 11px; }
+
+  /* Detail modal: keep availability visible as a compact badge. */
+  .leagues-mobile-tabs button { min-height: 44px; font-size: 9px; letter-spacing: .05em; padding: 0 2px; }
+  .strategy-popover { top: 48px; }
+  .league-table-wrap { max-height: 42vh; overflow-y: auto; }
+  .feed-filters button { min-height: 32px; }
+  .market-column.mobile-visible, .squad-column.mobile-visible,
+  .leagues-column.mobile-visible { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .toast { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (max-width: 560px) {
+  .topbar { gap: 6px; padding-inline: 8px; }
+  .status-cell:nth-child(2) { display: none; }
+  .status-cell span { font-size: 8px; }
+  .status-cell strong { font-size: 11px; }
+  .topbar-actions .text-button { font-size: 8px; padding-inline: 4px; }
+  .mobile-tabs, .leagues-mobile-tabs { top: 0; }
+
+  /* Smallest phones: also drop XP/£ so PLAYER/PRICE/XP/FIXTURES/ADD fit. */
+  .player-table th:nth-child(8), .player-table td:nth-child(8) { display: none; }
+  .player-name-button { max-width: 132px; }
+  .fixture-run { gap: 3px; }
+
+  .filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filter-row-last { grid-template-columns: minmax(0, 1fr); }
+  .metric-strip > div span { font-size: 8px; }
+  .live-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Positional shape holds on narrow screens with tighter cards. */
+  .slot-grid.starting-slot-grid { gap: 4px; }
+  .slot-gk { max-width: 100%; }
+  .squad-slot, .empty-slot { min-height: 88px; }
+  .squad-fixture-badges { left: 4px; right: auto; max-width: calc(100% - 8px); }
+
+  .profile-status { display: inline-flex; min-height: 24px; padding: 0 6px; font-size: 8px; }
+  .detail-head h2 { font-size: 20px; }
+  .detail-scroll { padding: 0 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
+}
