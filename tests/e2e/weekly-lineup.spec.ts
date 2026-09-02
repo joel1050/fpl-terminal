@@ -242,8 +242,18 @@ test.describe("weekly lineup acceptance", () => {
     const region = await openWeeklyTeam(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(region).toBeVisible();
-    const captain = region.getByRole("button", { name: /make .* captain/i }).first();
+    // Narrow viewports use tap-to-select pitch cards with a sticky action bar.
+    await region.locator(".starting-xi .slot-main").first().click();
+    const bar = region.locator(".mobile-lineup-bar");
+    await expect(bar).toBeVisible();
+    const captain = bar.getByRole("button", { name: /make .* captain/i });
     await expect(captain).toBeVisible();
     expect((await captain.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    // Captaincy through the bar applies and marks the pitch card.
+    // Keyboard activation: the Next.js dev-tools overlay sits over this
+    // bottom-anchored bar in dev and would swallow a pointer tap.
+    await captain.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByText(/captaincy updated/i)).toBeVisible();
   });
 });
