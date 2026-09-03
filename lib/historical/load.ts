@@ -1,15 +1,59 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { HistoricalBundleSchema } from "./schemas";
 import type { HistoricalBundle, HistoricalDataStatus } from "./types";
 
 const GENERATED_DIR = path.join(process.cwd(), "data", "generated");
 
-export async function loadHistoricalBundle(): Promise<HistoricalBundle | null> {
+const BUNDLE_FILES = [
+  "historical-players.json",
+  "historical-match-stats.json",
+  "team-strength.json",
+  "player-mappings.json",
+] as const;
+
+interface CachedBundle {
+  /** The mtimes and sizes the bundle was parsed from. */
+  key: string;
+  bundle: HistoricalBundle;
+}
+
+const cache = new Map<string, CachedBundle>();
+
+/**
+ * Identifies the generation of the files on disk. `npm run data:ingest` and
+ * `npm run data:lineups` rewrite them, which moves an mtime and retires the
+ * cached bundle. Null means the files could not be read at all.
+ */
+async function generationKey(generatedDir: string): Promise<string | null> {
+  try {
+    const stats = await Promise.all(BUNDLE_FILES.map((name) => stat(path.join(generatedDir, name))));
+    return stats.map((entry) => `${entry.mtimeMs}:${entry.size}`).join("|");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parses the generated historical inputs, reusing the last parse while the
+ * files are untouched. The four files run to megabytes and every projection
+ * request needs all of them, so reparsing per request cost real time for an
+ * answer that could not have changed.
+ */
+export async function loadHistoricalBundle(
+  generatedDir: string = GENERATED_DIR,
+): Promise<HistoricalBundle | null> {
+  const cached = cache.get(generatedDir);
+  const key = await generationKey(generatedDir);
+  // Files that cannot be stat'd — a half-finished ingest, say — keep the last
+  // good bundle rather than blanking every projection that depends on it.
+  if (key === null) return cached?.bundle ?? null;
+  if (cached && cached.key === key) return cached.bundle;
+
   try {
     const [players, matchStats, teamStrength, playerMappings] = await Promise.all(
-      ["historical-players.json", "historical-match-stats.json", "team-strength.json", "player-mappings.json"].map(
-        async (name) => JSON.parse(await readFile(path.join(GENERATED_DIR, name), "utf8")) as unknown,
+      BUNDLE_FILES.map(
+        async (name) => JSON.parse(await readFile(path.join(generatedDir, name), "utf8")) as unknown,
       ),
     );
     const parsed = HistoricalBundleSchema.safeParse({
@@ -19,7 +63,9 @@ export async function loadHistoricalBundle(): Promise<HistoricalBundle | null> {
       playerMappings,
       sourceSeason: "2025/26",
     });
-    return parsed.success ? parsed.data : null;
+    if (!parsed.success) return null;
+    cache.set(generatedDir, { key, bundle: parsed.data });
+    return parsed.data;
   } catch {
     return null;
   }
