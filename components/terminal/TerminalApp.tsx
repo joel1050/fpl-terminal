@@ -125,14 +125,19 @@ function selectionConfidence(value: unknown): PlayerSelection["confidence"] {
  * Reads a typed bank figure as integer tenths, or null when the text is not a
  * figure yet.
  *
- * Null is the important case. Typing "12.5" passes through "1", "12" and "12."
- * and a person may clear the field first; committing on every keystroke would
+ * Null is the important case. Typing "12.5" passes through "1" and "12", and a
+ * person may clear the field first; committing on every keystroke would
  * rewrite the box under them and leave "" reading as zero. Null means the
  * draft stands and nothing is written.
+ *
+ * It accepts the shapes people actually write, ".8" and "12." among them.
+ * Refusing those was worse than it sounds: the field falls back to the figure
+ * it held before, so a refusal reads as the app changing the number to
+ * something else rather than declining to take it.
  */
 export function parseBankInput(text: string): number | null {
   const trimmed = text.trim().replace(/^£/, "");
-  if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
+  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(trimmed)) return null;
   const pounds = Number(trimmed);
   if (!Number.isFinite(pounds) || pounds < 0) return null;
   const tenths = Math.round(pounds * 10);
