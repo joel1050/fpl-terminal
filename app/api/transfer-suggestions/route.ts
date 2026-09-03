@@ -36,7 +36,12 @@ export async function POST(request: Request) {
     const projected = (await enrichBootstrapWithProjections(normalized, historical, {
       cacheKey: projectionCacheKey(bootstrap.freshness, fixtures.freshness),
     })).bootstrap;
-    const legality = legalSquad(parsed.data.squad, playerMap(projected.players), { budgetTenths: parsed.data.budgetTenths });
+    // With a real bank the squad is already owned, so its market cost says
+    // nothing about legality: team value is selling value plus bank, and
+    // selling value is below market for every player who has risen.
+    const legality = legalSquad(parsed.data.squad, playerMap(projected.players), {
+      budgetTenths: parsed.data.bankTenths === undefined ? parsed.data.budgetTenths : Number.POSITIVE_INFINITY,
+    });
     if (!legality.legal) return NextResponse.json({ error: legality.errors[0] ?? "A legal 15-player squad is required" }, { status: 422 });
     const gameweek = parsed.data.gameweek
       ?? projected.events.find((event) => event.isCurrent)?.id

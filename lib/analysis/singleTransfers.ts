@@ -96,7 +96,14 @@ export function findBestSingleTransfers(input: SingleTransferSearchInput): Singl
   const squadIds = idsOf(input.squad);
   const budgetTenths = input.budgetTenths ?? DEFAULT_BUDGET_TENTHS;
   const maxPlayersPerClub = input.maxPlayersPerClub ?? DEFAULT_MAX_PLAYERS_PER_CLUB;
-  if (!legalSquad(squadIds, byId, { budgetTenths, maxPlayersPerClub }).legal) return [];
+  // The squad is a fact the manager already owns, so its market cost is not a
+  // budget question: team value is selling value plus bank, and selling value
+  // is below market for anyone who has risen. Check shape and club limits, and
+  // leave affordability to the per-candidate check below.
+  const entryBudgetTenths = input.bankTenths === undefined
+    ? budgetTenths
+    : Number.POSITIVE_INFINITY;
+  if (!legalSquad(squadIds, byId, { budgetTenths: entryBudgetTenths, maxPlayersPerClub }).legal) return [];
 
   const selected = new Set(squadIds);
   const locked = new Set(input.lockedPlayerIds ?? []);

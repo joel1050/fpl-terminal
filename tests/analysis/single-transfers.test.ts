@@ -133,6 +133,24 @@ describe("selling prices", () => {
     expect(suggestions.some((item) => item.incomingPlayerId === 21)).toBe(false);
   });
 
+  it("still searches when the squad costs more at market than the team value", () => {
+    // A real imported team: budgetTenths is selling value + bank, which is
+    // below the squad's 885 market cost whenever anyone has risen. The squad
+    // is a fact the manager owns, so it must not be rejected as illegal.
+    const suggestions = findBestSingleTransfers({
+      squad: selected,
+      players: [...selected, cheaper],
+      gameweek: 1,
+      horizon: 5,
+      risk: "BALANCED",
+      outgoingPlayerId: 11,
+      budgetTenths: 880,
+      bankTenths: 0,
+      purchasePricesTenths,
+    });
+    expect(suggestions.map((item) => item.incomingPlayerId)).toContain(20);
+  });
+
   it("keeps market-price behaviour when no bank is supplied", () => {
     const suggestions = findBestSingleTransfers({
       squad: selected, players: [...selected, cheaper], gameweek: 1, horizon: 5, risk: "BALANCED", outgoingPlayerId: 11,
