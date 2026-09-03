@@ -379,7 +379,6 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .panel { box-shadow: none; }
 .mode-screen { width: min(100%, 600px); max-width: none; align-content: center; padding: 32px 26px; background: var(--background); }
 .mode-brand { justify-content: center; gap: 12px; margin: 0; color: var(--text); font-size: 19px; letter-spacing: .25em; }
-.mode-brand .brand-mark { width: 8px; height: 8px; border: 0; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px rgba(244,169,0,.7); }
 .mode-tagline { margin: 12px 0 32px; color: var(--muted); font-size: 10px; letter-spacing: .3em; text-align: center; }
 .mode-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 0; }
 .mode-card { min-height: 166px; gap: 16px; padding: 20px; background: var(--panel-alt); }
@@ -405,8 +404,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   body { font-size: 11px; }
   .topbar { height: 36px; min-height: 36px; gap: 12px; padding: 0 10px; box-shadow: none; }
   .topbar .brand { gap: 8px; font-size: 11px; letter-spacing: .18em; }
-  .topbar .brand-mark { width: 6px; height: 6px; overflow: hidden; border: 0; border-radius: 50%; background: var(--amber); color: transparent; font-size: 0; }
-  .topbar .brand > span:last-child::before { content: "FPL "; }
+  .topbar .brand-mark { width: 27px; }
   .topbar-stats { align-items: center; }
   .status-cell { display: flex; align-items: center; gap: 7px; min-width: auto; padding: 0 8px; }
   .status-cell:nth-child(3), .status-cell:nth-child(4) { margin-left: 4px; border-left-color: var(--border); }

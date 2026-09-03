@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-09-02T21:56:06.420467+00:00",
+  "generated_at": "2026-09-03T05:54:52.718745+00:00",
   "nodes": {
     "lib_ai_tools": {
-      "code_fingerprint": "6b8d95bdb6f272f939932d3a301bb9341df769c4ca2bca4a6e723708d13e4f3e",
+      "code_fingerprint": "",
       "label": "tools.ts",
       "last": "2026-08-21T08:17:07.022508+00:00",
       "provenance": [
@@ -12,7 +12,7 @@
           "q": "ok integraye into the app"
         }
       ],
-      "score": 0.747964601,
+      "score": 0.742240806,
       "source_file": "lib/ai/tools.ts",
       "status": "tentative",
       "uses": 1
@@ -38,7 +38,7 @@
           "q": "look at the pts/pound does it look more accurate"
         }
       ],
-      "score": 2.239949995,
+      "score": 2.222808787,
       "source_file": "lib/analysis/context.ts",
       "status": "preferred",
       "uses": 3
@@ -54,7 +54,7 @@
           "q": "@calculations.md do section 4 now\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 0.808330267,
+      "score": 0.802144523,
       "source_file": "lib/availability/rotowireMapping.ts",
       "status": "tentative",
       "uses": 1
@@ -85,7 +85,7 @@
           "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
         }
       ],
-      "score": 3.049707596,
+      "score": 3.026369722,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "preferred",
       "uses": 4
@@ -111,7 +111,7 @@
           "q": "@calculations.md lets go section by section and try to improve the metrics formulation in this app, start with section 3\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 2.575645209,
+      "score": 2.555935096,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "preferred",
       "uses": 3
@@ -127,7 +127,7 @@
           "q": "Fix the xG input first just do this,&#x20;\n\nafter this show me the team strength rankings"
         }
       ],
-      "score": 0.807757933,
+      "score": 0.801576569,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "tentative",
       "uses": 1
@@ -143,7 +143,7 @@
           "q": "1. this mostly fine 2. yeah how do we make this more realistic, it should be closer to zero, do we have access to last seasons stats 3. thats whatever its fine 4. look at betting odds for recent matches for clean sheets match it against our strength rating system and design appropriate clean sheet odds, it should be closer to 0 for ars - cov"
         }
       ],
-      "score": 0.759344713,
+      "score": 0.753533831,
       "source_file": "lib/historical/ingest.ts",
       "status": "tentative",
       "uses": 1
@@ -164,7 +164,7 @@
           "q": "i want to backtest for more than 1 season is there any way you can get data for more seasons"
         }
       ],
-      "score": 1.923421977,
+      "score": 1.908702998,
       "source_file": "lib/historical/ingest.ts",
       "status": "preferred",
       "uses": 2
@@ -200,16 +200,21 @@
           "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
         }
       ],
-      "score": 8.065832212,
+      "score": 8.004108467,
       "source_file": "lib/historical/types.ts",
       "status": "preferred",
       "uses": 10
     },
     "lib_optimizer_optimizer": {
-      "code_fingerprint": "ffd9eef2d97b265df9da22133b87f94ef15a3dd6eabbe073cecd8f8f1eef47e0",
+      "code_fingerprint": "215020c09afa15b6f11989a218b0e50c26742acf85123d65055705da3c7200cc",
       "label": "optimizer.ts",
-      "last": "2026-08-21T08:17:07.022508+00:00",
+      "last": "2026-09-03T05:27:00.460744+00:00",
       "provenance": [
+        {
+          "date": "2026-09-03T05:27:00.460744+00:00",
+          "outcome": "useful",
+          "q": "analyse the chip planning logic in the new branch for issues or a more efficient way to do it"
+        },
         {
           "date": "2026-08-21T08:17:07.022508+00:00",
           "outcome": "useful",
@@ -226,10 +231,10 @@
           "q": "what algorithm do you use for optimized lineups, will it always determine the highest xp for gw"
         }
       ],
-      "score": 2.243109435,
+      "score": 3.225496958,
       "source_file": "lib/optimizer/optimizer.ts",
       "status": "preferred",
-      "uses": 3
+      "uses": 4
     },
     "lib_projections_expectedminutes": {
       "code_fingerprint": "b770bed063cf12c4c5dd09c29fc480164fca7113f39ae80607ffab12c8958df8",
@@ -262,7 +267,7 @@
           "q": "can you recap how xmin is calculated"
         }
       ],
-      "score": 4.559033646,
+      "score": 4.524145661,
       "source_file": "lib/projections/expectedMinutes.ts",
       "status": "preferred",
       "uses": 6
@@ -298,7 +303,7 @@
           "q": "Implement conservative unmapped-defender xG/xA priors and market-calibrated clean-sheet probabilities using Luna xhigh subagents"
         }
       ],
-      "score": 7.413953556,
+      "score": 7.357218309,
       "source_file": "lib/projections/fixtureAdjustment.ts",
       "status": "preferred",
       "uses": 9
@@ -334,7 +339,7 @@
           "q": "@calculations.md lets go section by section and try to improve the metrics formulation in this app, start with section 3\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 4.652862504,
+      "score": 4.617256494,
       "source_file": "lib/projections/fixtureAdjustment.ts",
       "status": "preferred",
       "uses": 5
@@ -355,7 +360,7 @@
           "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
         }
       ],
-      "score": 1.525554528,
+      "score": 1.513880228,
       "source_file": "lib/projections/metrics.ts",
       "status": "preferred",
       "uses": 2
@@ -363,8 +368,13 @@
     "lib_projections_projectplayer": {
       "code_fingerprint": "56d911583e1395e6242e15352670270e73e6fae3afb18644d052b3bfbad24602",
       "label": "projectPlayer.ts",
-      "last": "2026-08-22T04:02:34.197546+00:00",
+      "last": "2026-09-03T05:53:06.868558+00:00",
       "provenance": [
+        {
+          "date": "2026-09-03T05:53:06.868558+00:00",
+          "outcome": "useful",
+          "q": "are double gameweeks and blank gameweeks handled in this app"
+        },
         {
           "date": "2026-08-22T04:02:34.197546+00:00",
           "outcome": "useful",
@@ -376,10 +386,10 @@
           "q": "Implement conservative unmapped-defender xG/xA priors and market-calibrated clean-sheet probabilities using Luna xhigh subagents"
         }
       ],
-      "score": 1.521786212,
+      "score": 2.510112444,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "preferred",
-      "uses": 2
+      "uses": 3
     },
     "lib_projections_projectplayer_projectplayer": {
       "code_fingerprint": "56d911583e1395e6242e15352670270e73e6fae3afb18644d052b3bfbad24602",
@@ -412,7 +422,7 @@
           "q": "try shaw and calafiori"
         }
       ],
-      "score": 7.837857794,
+      "score": 7.777878622,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "preferred",
       "uses": 10
@@ -428,7 +438,7 @@
           "q": "cool ok, we need to run further model tuning because of this, can you break down every single calculation that could need tuning in xp calculations"
         }
       ],
-      "score": 0.961661507,
+      "score": 0.954302396,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "tentative",
       "uses": 1
@@ -444,16 +454,26 @@
           "q": "look at the pts/pound does it look more accurate"
         }
       ],
-      "score": 0.746504815,
+      "score": 0.74079219,
       "source_file": "lib/projections/value.ts",
       "status": "tentative",
       "uses": 1
     },
     "lib_squad_weeklylineup": {
-      "code_fingerprint": "a476d23b67a8285eebf57a1e865d47292e1b280048afee2e8b21106684a90270",
+      "code_fingerprint": "64c262a761a680e952a459720b57e08d28b7a4549fffc9f10b10755522436d9f",
       "label": "weeklyLineup.ts",
-      "last": "2026-08-21T07:38:14.618836+00:00",
+      "last": "2026-09-03T05:53:06.868558+00:00",
       "provenance": [
+        {
+          "date": "2026-09-03T05:53:06.868558+00:00",
+          "outcome": "useful",
+          "q": "are double gameweeks and blank gameweeks handled in this app"
+        },
+        {
+          "date": "2026-09-03T05:27:00.460744+00:00",
+          "outcome": "useful",
+          "q": "analyse the chip planning logic in the new branch for issues or a more efficient way to do it"
+        },
         {
           "date": "2026-08-21T07:38:14.618836+00:00",
           "outcome": "useful",
@@ -465,10 +485,10 @@
           "q": "How does TerminalApp compose the player universe squad weekly lineup analysis and analyst panels while preserving API store and projection behavior?"
         }
       ],
-      "score": 1.494317451,
+      "score": 3.482406796,
       "source_file": "lib/squad/weeklyLineup.ts",
       "status": "preferred",
-      "uses": 2
+      "uses": 4
     }
   },
   "version": 1
