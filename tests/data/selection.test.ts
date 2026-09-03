@@ -52,8 +52,8 @@ describe("player selection model", () => {
     expect(absent.startProbability).toBe(0.275);
     expect(absent.cameoProbability).toBe(0.12);
     expect(starter.startProbability).toBeGreaterThan(absent.startProbability * 3);
-    expect(starter.evidence.some((item) => item.source === "ROTOWIRE_XI")).toBe(true);
-    expect(absent.evidence.some((item) => item.detail.includes("Not in the RotoWire predicted XI"))).toBe(true);
+    expect(starter.evidence.some((item) => item.source === "PREDICTED_XI")).toBe(true);
+    expect(absent.evidence.some((item) => item.detail.includes("Not in the predicted XI"))).toBe(true);
     for (const selection of selections.values()) {
       expect(selection.startProbability + selection.cameoProbability + selection.noAppearanceProbability).toBeCloseTo(1, 6);
       expect(selection.updatedAt).toBe("2026-08-20T12:00:00.000Z");
@@ -107,7 +107,7 @@ describe("player selection model", () => {
     expect(selections.get(1)!.startProbability).toBeLessThan(0.05);
     expect(selections.get(2)!.startProbability).toBeLessThan(0.05);
     expect(selections.get(3)!.startProbability).toBeLessThan(selections.get(4)!.startProbability);
-    expect(selections.get(3)!.evidence.some((item) => item.source === "ROTOWIRE_AVAILABILITY")).toBe(true);
+    expect(selections.get(3)!.evidence.some((item) => item.source === "TEAM_NEWS")).toBe(true);
   });
 
   it("never lets a RotoWire starter signal raise injured or suspended probabilities", () => {

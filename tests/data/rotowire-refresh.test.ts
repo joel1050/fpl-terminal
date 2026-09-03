@@ -51,18 +51,14 @@ function snapshotAt(fetchedAt: string): RotowireLineupSnapshot {
 
 const squad = [player(106, "Igor", "Thiago", "Thiago")];
 
-describe("ensureFreshRotowireLineups", () => {
+describe("manual lineup import", () => {
   let directory: string;
 
   beforeEach(async () => {
     directory = await mkdtemp(path.join(tmpdir(), "fpl-rotowire-refresh-"));
-    const { resetRotowireRefreshState } = await import("@/lib/availability/refreshLineups");
-    resetRotowireRefreshState();
-    process.env.FPL_ROTOWIRE_AUTO_REFRESH = "1";
   });
 
   afterEach(async () => {
-    delete process.env.FPL_ROTOWIRE_AUTO_REFRESH;
     await rm(directory, { recursive: true, force: true });
   });
 
@@ -74,36 +70,13 @@ describe("ensureFreshRotowireLineups", () => {
     );
   }
 
-  it("leaves the snapshot alone when it is younger than the maximum age", async () => {
-    const now = Date.parse("2026-09-05T12:00:00Z");
-    await writeExisting("2026-09-04T18:00:00Z"); // 18 hours old
-    const fetchSnapshot = vi.fn();
+  it("writes the snapshot and its mappings together", async () => {
+    const fetchSnapshot = vi.fn(async () => snapshotAt("2026-09-05T11:55:00Z"));
 
-    const { ensureFreshRotowireLineups } = await import("@/lib/availability/refreshLineups");
-    const result = await ensureFreshRotowireLineups([], {
-      generatedDir: directory,
-      fetchSnapshot,
-      now,
-    });
+    const { refreshRotowireLineups } = await import("@/lib/availability/refreshLineups");
+    const result = await refreshRotowireLineups(squad, { generatedDir: directory, fetchSnapshot });
 
-    expect(result).toMatchObject({ refreshed: false, reason: "fresh" });
-    expect(fetchSnapshot).not.toHaveBeenCalled();
-  });
-
-  it("refetches and rewrites the snapshot once it is older than the maximum age", async () => {
-    const now = Date.parse("2026-09-05T12:00:00Z");
-    await writeExisting("2026-09-03T23:00:00Z"); // 37 hours old
-    const fresh = snapshotAt("2026-09-05T11:55:00Z");
-    const fetchSnapshot = vi.fn(async () => fresh);
-
-    const { ensureFreshRotowireLineups } = await import("@/lib/availability/refreshLineups");
-    const result = await ensureFreshRotowireLineups(squad, {
-      generatedDir: directory,
-      fetchSnapshot,
-      now,
-    });
-
-    expect(result).toMatchObject({ refreshed: true, reason: "refreshed" });
+    expect(result.mapped).toBeGreaterThan(0);
     expect(fetchSnapshot).toHaveBeenCalledTimes(1);
     const written = JSON.parse(await readFile(path.join(directory, "rotowire-lineups.json"), "utf8"));
     expect(written.fetchedAt).toBe("2026-09-05T11:55:00Z");
@@ -111,83 +84,61 @@ describe("ensureFreshRotowireLineups", () => {
     expect(mappings.sourceFetchedAt).toBe("2026-09-05T11:55:00Z");
   });
 
-  it("keeps the previous snapshot when the refresh fails", async () => {
-    const now = Date.parse("2026-09-05T12:00:00Z");
+  it("keeps the committed snapshot when the fetch fails", async () => {
     await writeExisting("2026-09-03T23:00:00Z");
-    const fetchSnapshot = vi.fn(async () => {
-      throw new Error("RotoWire returned HTTP 503.");
-    });
+    const fetchSnapshot = vi.fn(async () => { throw new Error("Upstream returned HTTP 503."); });
 
-    const { ensureFreshRotowireLineups } = await import("@/lib/availability/refreshLineups");
-    const result = await ensureFreshRotowireLineups([], {
-      generatedDir: directory,
-      fetchSnapshot,
-      now,
-    });
+    const { refreshRotowireLineups } = await import("@/lib/availability/refreshLineups");
+    await expect(refreshRotowireLineups(squad, { generatedDir: directory, fetchSnapshot }))
+      .rejects.toThrow(/503/);
 
-    expect(result).toMatchObject({ refreshed: false, reason: "failed" });
-    expect(result.error).toContain("503");
     const kept = JSON.parse(await readFile(path.join(directory, "rotowire-lineups.json"), "utf8"));
     expect(kept.fetchedAt).toBe("2026-09-03T23:00:00Z");
   });
 
-  it("does not refetch after a failure until the retry cooldown has passed", async () => {
-    await writeExisting("2026-09-03T23:00:00Z");
-    const fetchSnapshot = vi.fn(async () => {
-      throw new Error("RotoWire returned HTTP 503.");
-    });
-
-    const { ensureFreshRotowireLineups } = await import("@/lib/availability/refreshLineups");
-    const options = { generatedDir: directory, fetchSnapshot };
-    await ensureFreshRotowireLineups([], { ...options, now: Date.parse("2026-09-05T12:00:00Z") });
-    const second = await ensureFreshRotowireLineups([], { ...options, now: Date.parse("2026-09-05T12:01:00Z") });
-
-    expect(second).toMatchObject({ refreshed: false, reason: "cooling-down" });
-    expect(fetchSnapshot).toHaveBeenCalledTimes(1);
-  });
-
-  it("refreshes when no snapshot exists yet", async () => {
-    const fresh = snapshotAt("2026-09-05T11:55:00Z");
-    const fetchSnapshot = vi.fn(async () => fresh);
-
-    const { ensureFreshRotowireLineups } = await import("@/lib/availability/refreshLineups");
-    const result = await ensureFreshRotowireLineups(squad, {
-      generatedDir: directory,
-      fetchSnapshot,
-      now: Date.parse("2026-09-05T12:00:00Z"),
-    });
-
-    expect(result).toMatchObject({ refreshed: true, reason: "refreshed" });
-    expect(fetchSnapshot).toHaveBeenCalledTimes(1);
-  });
-
-  it("keeps the previous snapshot when the refreshed one maps no players", async () => {
-    const now = Date.parse("2026-09-05T12:00:00Z");
+  it("keeps the committed snapshot when the new one maps no players", async () => {
+    // A snapshot nothing maps onto silently strips every predicted XI, so it
+    // is refused the same way a partial page is - the run fails and the file
+    // on disk is left as it was.
     await writeExisting("2026-09-03T23:00:00Z");
     const fetchSnapshot = vi.fn(async () => snapshotAt("2026-09-05T11:55:00Z"));
 
-    const { ensureFreshRotowireLineups } = await import("@/lib/availability/refreshLineups");
-    const result = await ensureFreshRotowireLineups([], { generatedDir: directory, fetchSnapshot, now });
+    const { refreshRotowireLineups } = await import("@/lib/availability/refreshLineups");
+    await expect(refreshRotowireLineups([], { generatedDir: directory, fetchSnapshot }))
+      .rejects.toThrow(/no players/i);
 
-    expect(result).toMatchObject({ refreshed: false, reason: "failed" });
-    expect(result.error).toMatch(/no players/i);
     const kept = JSON.parse(await readFile(path.join(directory, "rotowire-lineups.json"), "utf8"));
     expect(kept.fetchedAt).toBe("2026-09-03T23:00:00Z");
   });
+});
 
-  it("does not reach RotoWire during a test run unless explicitly opted in", async () => {
-    delete process.env.FPL_ROTOWIRE_AUTO_REFRESH;
-    await writeExisting("2026-09-03T23:00:00Z");
-    const fetchSnapshot = vi.fn();
+describe("snapshot age", () => {
+  let directory: string;
 
-    const { ensureFreshRotowireLineups } = await import("@/lib/availability/refreshLineups");
-    const result = await ensureFreshRotowireLineups(squad, {
-      generatedDir: directory,
-      fetchSnapshot,
-      now: Date.parse("2026-09-05T12:00:00Z"),
-    });
+  beforeEach(async () => {
+    directory = await mkdtemp(path.join(tmpdir(), "fpl-rotowire-age-"));
+  });
 
-    expect(result).toMatchObject({ refreshed: false, reason: "disabled" });
-    expect(fetchSnapshot).not.toHaveBeenCalled();
+  afterEach(async () => {
+    await rm(directory, { recursive: true, force: true });
+  });
+
+  it("reports how old the committed snapshot is", async () => {
+    await writeFile(
+      path.join(directory, "rotowire-lineups.json"),
+      JSON.stringify(snapshotAt("2026-09-04T18:00:00Z")),
+      "utf8",
+    );
+
+    const { rotowireSnapshotAge } = await import("@/lib/availability/refreshLineups");
+    const age = await rotowireSnapshotAge({ generatedDir: directory, now: Date.parse("2026-09-05T12:00:00Z") });
+
+    expect(age?.fetchedAt).toBe("2026-09-04T18:00:00Z");
+    expect(age?.ageMs).toBe(18 * 60 * 60 * 1000);
+  });
+
+  it("says nothing rather than guessing when there is no snapshot", async () => {
+    const { rotowireSnapshotAge } = await import("@/lib/availability/refreshLineups");
+    expect(await rotowireSnapshotAge({ generatedDir: directory })).toBeNull();
   });
 });

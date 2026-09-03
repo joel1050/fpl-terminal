@@ -3,7 +3,12 @@ export type ProjectionConfidence = "HIGH" | "MEDIUM" | "LOW";
 export type NailedRating = 1 | 2 | 3 | 4 | 5;
 
 export interface SelectionEvidence {
-  source: "ROTOWIRE_XI" | "ROTOWIRE_AVAILABILITY" | "HISTORICAL_STARTS" | "CURRENT_SEASON" | "FPL_STATUS";
+  /**
+   * Provider-neutral on purpose. This union and the `detail` strings beside it
+   * are the only part of the selection model that reaches a browser, so they
+   * must never name the upstream lineup source.
+   */
+  source: "PREDICTED_XI" | "TEAM_NEWS" | "HISTORICAL_STARTS" | "CURRENT_SEASON" | "FPL_STATUS";
   detail: string;
 }
 

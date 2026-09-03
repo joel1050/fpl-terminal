@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  SAVED_STATE_VERSION,
   deriveStartingXI,
   exportTerminalState,
   isLineupStale,
@@ -288,5 +289,29 @@ describe("last opened league", () => {
     useTerminalStore.getState().setSelectedLeagueKey("overall");
     useTerminalStore.getState().hydrate({ squad, selectedLeagueKey: "classic-0" });
     expect(useTerminalStore.getState().selectedLeagueKey).toBe("overall");
+  });
+});
+
+describe("saved state versioning", () => {
+  it("stamps a version on everything it writes", () => {
+    useTerminalStore.getState().hydrate({ squad });
+    expect(exportTerminalState(useTerminalStore.getState()).version).toBe(SAVED_STATE_VERSION);
+  });
+
+  it("still reads a save written before the stamp existed", () => {
+    // Everyone with a squad today has one of these. Dropping them would clear
+    // real saved squads on the deploy that introduced the version.
+    const saved: Record<string, unknown> = { ...exportTerminalState({ ...useTerminalStore.getState(), playerIds: squad.playerIds, byPosition: squad.byPosition }) };
+    delete saved.version;
+    const parsed = parseSavedState(JSON.stringify(saved));
+    expect(parsed?.squad?.playerIds).toEqual(squad.playerIds);
+  });
+
+  it("refuses a save written by a newer build", () => {
+    // Another tab on a newer deploy may have written fields this build cannot
+    // read. Refusing leaves that save intact for the build that understands it.
+    const saved = exportTerminalState({ ...useTerminalStore.getState(), playerIds: squad.playerIds, byPosition: squad.byPosition });
+    expect(parseSavedState(JSON.stringify({ ...saved, version: SAVED_STATE_VERSION + 1 }))).toBeNull();
+    expect(parseSavedState(JSON.stringify({ ...saved, version: "next" }))).toBeNull();
   });
 });

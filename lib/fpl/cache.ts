@@ -71,10 +71,17 @@ export function getFreshness(
   };
 }
 
-function snapshotDirectory(): string {
-  return process.env.FPL_SNAPSHOT_DIR
-    ? path.resolve(process.env.FPL_SNAPSHOT_DIR)
-    : path.join(process.cwd(), "data", "snapshots");
+/**
+ * Where snapshots are written. A deployed build has a read-only working
+ * directory, so writing beside the source throws on every successful fetch and
+ * leaves nothing to fall back on; `/tmp` is the one writable path there. It
+ * lasts as long as the instance, same as the memory cache above it, so treat
+ * this as keeping the write path quiet rather than as durable storage.
+ */
+export function snapshotDirectory(): string {
+  if (process.env.FPL_SNAPSHOT_DIR) return path.resolve(process.env.FPL_SNAPSHOT_DIR);
+  if (process.env.VERCEL) return path.join("/tmp", "fpl-snapshots");
+  return path.join(process.cwd(), "data", "snapshots");
 }
 
 function snapshotFile(name: string): string {

@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { RotowireRefreshResult } from "@/lib/availability/refreshLineups";
-
-const mocks = vi.hoisted(() => ({ ensureFreshRotowireLineups: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rotowireSnapshotAge: vi.fn() }));
 vi.mock("@/lib/availability/refreshLineups", () => ({
-  ensureFreshRotowireLineups: mocks.ensureFreshRotowireLineups,
+  rotowireSnapshotAge: mocks.rotowireSnapshotAge,
 }));
 
 const { enrichBootstrapWithProjections, normalizeBootstrap } = await import("@/lib/fpl/normalize");
@@ -26,21 +24,19 @@ function normalized() {
   return normalizeBootstrap(payload, [{ id: 100, event: 1, team_h: 1, team_a: 2 }]);
 }
 
-/** Same snapshot, checked again later: the key holds, the age does not. */
-const checkedAt = (ageSeconds: number): RotowireRefreshResult => ({
-  refreshed: false,
-  reason: "fresh",
+/** Same snapshot, read again later: the key holds, the age does not. */
+const readAt = (ageSeconds: number) => ({
   fetchedAt: "2026-09-01T00:00:00Z",
-  ageSeconds,
+  ageMs: ageSeconds * 1_000,
 });
 
 describe("lineup freshness on a cache hit", () => {
-  it("reports the current lineup check, not the one the cache was filled with", async () => {
-    mocks.ensureFreshRotowireLineups.mockResolvedValueOnce(checkedAt(3_600));
+  it("reports the age just read, not the one the cache was filled with", async () => {
+    mocks.rotowireSnapshotAge.mockResolvedValueOnce(readAt(3_600));
     const first = await enrichBootstrapWithProjections(normalized(), null, { cacheKey: "gen-1" });
     expect(first.metadata.lineups?.ageSeconds).toBe(3_600);
 
-    mocks.ensureFreshRotowireLineups.mockResolvedValueOnce(checkedAt(7_200));
+    mocks.rotowireSnapshotAge.mockResolvedValueOnce(readAt(7_200));
     const second = await enrichBootstrapWithProjections(normalized(), null, { cacheKey: "gen-1" });
 
     // Still a cache hit — the expensive part was not recomputed...

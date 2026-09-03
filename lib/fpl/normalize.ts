@@ -7,13 +7,12 @@ import type {
   Position,
 } from "@/types/player";
 import type { HistoricalBundle } from "@/lib/historical/types";
-import type { RotowireRefreshResult } from "@/lib/availability/refreshLineups";
 import {
   enrichPlayersWithHistory,
   type PlayerEnrichmentMetadata,
 } from "@/lib/historical/enrichPlayers";
 import { loadInSeasonPlayerRates, loadInSeasonStarts, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
-import { ensureFreshRotowireLineups } from "@/lib/availability/refreshLineups";
+import { rotowireSnapshotAge } from "@/lib/availability/refreshLineups";
 import { historicalBundleGeneration } from "@/lib/historical/load";
 import type { FreshnessMetadata } from "./cache";
 import {
@@ -93,9 +92,22 @@ export interface NormalizedBootstrap {
   totalPlayers?: number;
 }
 
+/**
+ * How old the committed lineup snapshot is. Nothing here names the upstream
+ * source: this is the one part of the lineup pipeline a browser sees, and the
+ * freshness badge only needs the age.
+ *
+ * Both fields are absent when there is no readable snapshot, which is how a
+ * build that shipped without one reads.
+ */
+export interface LineupSnapshotStatus {
+  fetchedAt?: string;
+  ageSeconds?: number;
+}
+
 export type BootstrapProjectionMetadata = PlayerEnrichmentMetadata & {
-  /** Outcome of the automatic RotoWire lineup refresh for this request. */
-  lineups?: RotowireRefreshResult;
+  /** Age of the lineup snapshot behind this request. */
+  lineups?: LineupSnapshotStatus;
 };
 
 export type NormalizedPlayerDetail = PlayerProfileData;
@@ -403,29 +415,29 @@ export async function enrichBootstrapWithProjections(
   historical: HistoricalBundle | null,
   options: EnrichProjectionsOptions = {},
 ): Promise<EnrichedBootstrap> {
-  // Hoisted above the cache deliberately. This is the 24-hour max-age check on
-  // the lineup snapshot; leave it below and a warm cache would keep a stale
-  // snapshot alive forever. Its own in-flight guard and cooldown make calling
-  // it per request cheap.
-  const lineups = await ensureFreshRotowireLineups(bootstrap.players);
-  if (lineups.reason === "failed") {
-    console.warn(`RotoWire auto-refresh failed, keeping the ${lineups.fetchedAt ?? "existing"} snapshot:`, lineups.error);
-  }
+  // Hoisted above the cache deliberately: a warm cache would otherwise keep
+  // reporting the age the snapshot had when the slot was filled, which grows
+  // wrong by exactly as long as the cache holds. Reading it is a small file
+  // read against everything else this function does.
+  const snapshot = await rotowireSnapshotAge();
+  const lineups: LineupSnapshotStatus = snapshot
+    ? { fetchedAt: snapshot.fetchedAt, ageSeconds: Math.floor(snapshot.ageMs / 1000) }
+    : {};
 
   // The caller's key covers the FPL payloads. The rest of the inputs move on
   // their own schedule, so each contributes its own generation.
   const key = options.cacheKey
     ? [
         options.cacheKey,
-        lineups.fetchedAt ?? "no-lineups",
+        snapshot?.fetchedAt ?? "no-lineups",
         historicalBundleGeneration() ?? "no-history-files",
         historical === null ? "unmapped" : "mapped",
       ].join("|")
     : null;
   if (key && !options.forceRefresh && projectionCache?.key === key) {
-    // The projections are reused, but the lineup check just ran: report the
-    // age it found rather than the age recorded when the slot was filled.
-    // `fetchedAt` is part of the key, so only the age and reason can differ.
+    // The projections are reused, but the age was just re-read: report that
+    // rather than the age recorded when the slot was filled. `fetchedAt` is
+    // part of the key, so only the age can differ.
     return { ...projectionCache.result, metadata: { ...projectionCache.result.metadata, lineups } };
   }
 

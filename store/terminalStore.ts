@@ -53,7 +53,19 @@ export type ApplyLineupInput = {
   viceCaptainId?: number;
 };
 
+/**
+ * The shape written to local storage and to a downloaded export.
+ *
+ * Bump `SAVED_STATE_VERSION` only for a change existing saved state cannot
+ * survive - a renamed or re-typed field, not a new optional one. Additive
+ * changes need no bump: every field is sanitized on read, so an older save
+ * simply arrives without it.
+ */
+export const SAVED_STATE_VERSION = 1;
+
 export type PersistedTerminalState = PersistentFPLState & {
+  /** Absent on anything saved before versioning; read as version 0. */
+  version?: number;
   mode?: TerminalMode | null;
   entryId?: number;
   budgetTenths?: number;
@@ -941,7 +953,6 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       benchOrder: state.benchOrder.map((id) => id === outgoingId ? incomingId : id),
       captainId: state.captainId === outgoingId ? incomingId : state.captainId,
       viceCaptainId: state.viceCaptainId === outgoingId ? incomingId : state.viceCaptainId,
-      selectedPlayerId: incomingId,
     }, squadChangeFor(state, { outgoingId, incomingId })));
     return true;
   },
@@ -1434,6 +1445,7 @@ export function exportTerminalState(state: TerminalState): PersistedTerminalStat
     return result;
   }, {} as Record<number, GameweekPlanSnapshot>);
   return {
+    version: SAVED_STATE_VERSION,
     mode: state.mode,
     entryId: state.entryId,
     budgetTenths: state.budgetTenths,
@@ -1465,6 +1477,14 @@ export function parseSavedState(raw: string): Partial<PersistedTerminalState> | 
   try {
     const value = JSON.parse(raw) as Partial<PersistedTerminalState>;
     if (!value || typeof value !== "object" || Array.isArray(value) || !sanitizeSquad(value.squad)) return null;
+    // Unversioned saves predate the stamp and are read as version 0: their
+    // fields go through the same sanitizers, so they load rather than vanish.
+    // A save from a newer build is the one case worth refusing - this build
+    // cannot know what its fields mean, and guessing would corrupt a squad
+    // that is still fine in the tab that wrote it. Refusing keeps that save
+    // untouched on disk for the newer build to pick up again.
+    const version = value.version ?? 0;
+    if (typeof version !== "number" || !Number.isFinite(version) || version > SAVED_STATE_VERSION) return null;
     const parsed: Partial<PersistedTerminalState> = { ...value, squad: sanitizeSquad(value.squad) };
     if (Object.prototype.hasOwnProperty.call(value, "gameweekPlans")) parsed.gameweekPlans = sanitizePlans(value.gameweekPlans);
     else parsed.gameweekPlans = {};

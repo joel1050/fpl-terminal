@@ -12,7 +12,7 @@ describe("player selection payloads", () => {
       confidence: "HIGH",
       updatedAt: "2026-08-20T18:00:00.000Z",
       evidence: [
-        { source: "ROTOWIRE_XI", detail: "Named in predicted XI" },
+        { source: "PREDICTED_XI", detail: "Named in predicted XI" },
         { source: "HISTORICAL_STARTS", detail: "Started 8 of last 10" },
       ],
     })).toEqual({
@@ -24,7 +24,7 @@ describe("player selection payloads", () => {
       confidence: "HIGH",
       updatedAt: "2026-08-20T18:00:00.000Z",
       evidence: [
-        { source: "ROTOWIRE_XI", detail: "Named in predicted XI" },
+        { source: "PREDICTED_XI", detail: "Named in predicted XI" },
         { source: "HISTORICAL_STARTS", detail: "Started 8 of last 10" },
       ],
     });

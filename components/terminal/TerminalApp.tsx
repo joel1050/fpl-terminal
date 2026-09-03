@@ -123,8 +123,8 @@ function selectionConfidence(value: unknown): PlayerSelection["confidence"] {
 
 function selectionSource(value: unknown): SelectionEvidence["source"] | undefined {
   const normalized = String(value ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_");
-  if (normalized === "ROTOWIRE_XI" || normalized === "ROTOWIREXI" || normalized === "ROTOWIRE_STARTING_XI") return "ROTOWIRE_XI";
-  if (normalized === "ROTOWIRE_AVAILABILITY" || normalized === "ROTOWIREAVAILABILITY") return "ROTOWIRE_AVAILABILITY";
+  if (normalized === "PREDICTED_XI" || normalized === "PREDICTEDXI" || normalized === "PREDICTED_STARTING_XI") return "PREDICTED_XI";
+  if (normalized === "TEAM_NEWS" || normalized === "TEAMNEWS") return "TEAM_NEWS";
   if (normalized === "HISTORICAL_STARTS" || normalized === "HISTORICALSTARTS") return "HISTORICAL_STARTS";
   if (normalized === "CURRENT_SEASON" || normalized === "CURRENTSEASON") return "CURRENT_SEASON";
   if (normalized === "FPL_STATUS" || normalized === "FPLSTATUS") return "FPL_STATUS";
@@ -790,6 +790,7 @@ export default function TerminalApp() {
       return;
     }
     if (useTerminalStore.getState().addPlayer(player.id, player.position)) {
+      useTerminalStore.getState().setSelectedPlayer(undefined);
       setNotice(`${player.displayName} added to ${player.position}.`);
     } else {
       setNotice(`No open ${player.position} slot, or the squad already contains this player.`);
@@ -965,6 +966,7 @@ export default function TerminalApp() {
       setNotice("That transfer is no longer legal for the current squad.");
       return;
     }
+    store.setSelectedPlayer(undefined);
     setSimulation(null);
     setSimulationMove(null);
     setNotice(`${outgoing.displayName} → ${incoming.displayName} applied.`);
@@ -1160,7 +1162,7 @@ export default function TerminalApp() {
 }
 
 function ModeChooser({ status, message, gameweek, onChoose }: { status: DataState; message?: string; gameweek: number | null; onChoose: (mode: TerminalMode) => void }) {
-  return <main className="mode-screen"><div className="mode-brand"><span className="brand-mark" aria-hidden="true" /><span>FPL TERMINAL</span></div><p className="mode-tagline">QUANTITATIVE FPL SQUAD INTELLIGENCE</p><div className="mode-grid"><button className="mode-card" onClick={() => onChoose("BUILD")}><span className="mode-index">MODE A</span><strong>BUILD FROM SCRATCH</strong><span>Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.</span></button><button className="mode-card" onClick={() => onChoose("ANALYZE")}><span className="mode-index">MODE B</span><strong>ANALYZE A TEAM</strong><span>Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities.</span></button></div><div className="mode-footer"><span className={`status-pip ${status.toLowerCase()}`} />{status === "LIVE" ? `LIVE DATA · GAMEWEEK ${gameweek ?? "—"} · MODEL ESTIMATES · SQUAD RULES ENFORCED LOCALLY` : status === "SNAPSHOT" ? `SNAPSHOT DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "STALE" ? `STALE DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "SYNCING" ? "SYNCING FPL MARKET…" : message ?? "FPL data is unavailable."}</div></main>;
+  return <main className="mode-screen"><div className="mode-brand"><span className="brand-mark" aria-hidden="true" /><span>FPL TERMINAL</span></div><p className="mode-tagline">QUANTITATIVE FPL SQUAD INTELLIGENCE</p><div className="mode-grid"><button className="mode-card" onClick={() => onChoose("BUILD")}><span className="mode-index">MODE A</span><strong>BUILD FROM SCRATCH</strong><span>Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.</span></button><button className="mode-card" onClick={() => onChoose("ANALYZE")}><span className="mode-index">MODE B</span><strong>ANALYZE A TEAM</strong><span>Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities.</span></button></div><div className="mode-footer"><span className={`status-pip ${status.toLowerCase()}`} />{status === "LIVE" ? `LIVE DATA · GAMEWEEK ${gameweek ?? "—"} · MODEL ESTIMATES · SQUAD RULES ENFORCED LOCALLY` : status === "SNAPSHOT" ? `SNAPSHOT DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "STALE" ? `STALE DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "SYNCING" ? "SYNCING FPL MARKET…" : message ?? "FPL data is unavailable."}</div><p className="mode-disclaimer">Not affiliated with, endorsed by, or connected to the Premier League or Fantasy Premier League. Player data comes from public FPL endpoints; projections are estimates, not advice.</p></main>;
 }
 
 type ImportedTeam = { entryId: number; budgetTenths: number; teamName?: string; managerName?: string; squad: SquadState; lineup: Omit<ApplyLineupInput, "lineupProjectionFingerprint">; transferBaseline?: TransferBaseline | null; usedChips?: Array<{ kind: ChipKind; gameweek: number }>; financialConfidence?: "EXACT" | "ESTIMATED"; importWarnings?: string[] };

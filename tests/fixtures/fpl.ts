@@ -160,7 +160,7 @@ const browserPlayers = fixturePlayers.map((current) => {
       confidence: "HIGH",
       updatedAt: "2026-08-20T18:00:00.000Z",
       evidence: [
-        { source: "ROTOWIRE_XI", detail: "RotoWire predicted starter" },
+        { source: "PREDICTED_XI", detail: "Predicted to start" },
         { source: "HISTORICAL_STARTS", detail: "28 starts across 38 historical matches" },
         { source: "FPL_STATUS", detail: "FPL status: available" },
       ],

@@ -226,12 +226,12 @@ function evidenceFor(
 ): SelectionEvidence[] {
   const evidence: SelectionEvidence[] = [];
   if (signal?.starter) {
-    evidence.push({ source: "ROTOWIRE_XI", detail: signal.confirmed ? "RotoWire confirmed starter" : "RotoWire predicted starter" });
+    evidence.push({ source: "PREDICTED_XI", detail: signal.confirmed ? "Confirmed in the published XI" : "Predicted to start" });
   } else if (teamCovered) {
-    evidence.push({ source: "ROTOWIRE_XI", detail: "Not in the RotoWire predicted XI" });
+    evidence.push({ source: "PREDICTED_XI", detail: "Not in the predicted XI" });
   }
   if (signal?.availability) {
-    evidence.push({ source: "ROTOWIRE_AVAILABILITY", detail: `RotoWire availability: ${signal.availability}` });
+    evidence.push({ source: "TEAM_NEWS", detail: `Team news: ${signal.availability}` });
   }
   if (history.matches > 0) {
     evidence.push({ source: "HISTORICAL_STARTS", detail: `${history.starts} starts across ${history.matches} historical matches` });
