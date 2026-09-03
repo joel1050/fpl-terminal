@@ -14,6 +14,8 @@ const requestSchema = z.object({
   squad: z.array(z.number().int().positive()).length(15),
   lockedPlayerIds: z.array(z.number().int().positive()).max(15),
   budgetTenths: z.number().int().nonnegative().optional(),
+  purchasePricesTenths: z.record(z.string(), z.number().int()).optional(),
+  bankTenths: z.number().int().optional(),
   excludedPlayerIds: z.array(z.number().int().positive()).max(600).optional(),
   gameweek: z.number().int().min(1).max(38).optional(),
   horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]),
@@ -48,6 +50,10 @@ export async function POST(request: Request) {
       risk: parsed.data.risk,
       lockedPlayerIds: parsed.data.lockedPlayerIds,
       budgetTenths: parsed.data.budgetTenths,
+      purchasePricesTenths: parsed.data.purchasePricesTenths
+        ? Object.fromEntries(Object.entries(parsed.data.purchasePricesTenths).map(([key, value]) => [Number(key), value]))
+        : undefined,
+      bankTenths: parsed.data.bankTenths,
       excludedPlayerIds: parsed.data.excludedPlayerIds,
     }).slice(0, 5);
     return NextResponse.json({ gameweek, horizon: parsed.data.horizon, suggestions });

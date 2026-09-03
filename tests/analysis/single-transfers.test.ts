@@ -96,3 +96,47 @@ describe("exact single-transfer optimizer", () => {
     expect(exact).toEqual(frontier);
   });
 });
+
+describe("selling prices", () => {
+  // Player 11 was bought at 58 and is now 64: profit 6, so it sells for 58 + 3 = 61.
+  const purchasePricesTenths = { 11: 58 };
+  const cheaper = player(20, "MID", 55, 6);
+  const dearer = player(21, "MID", 62, 6.5);
+
+  it("releases the selling price, not the market price", () => {
+    const suggestions = findBestSingleTransfers({
+      squad: selected,
+      players: [...selected, cheaper],
+      gameweek: 1,
+      horizon: 5,
+      risk: "BALANCED",
+      outgoingPlayerId: 11,
+      bankTenths: 0,
+      purchasePricesTenths,
+    });
+    expect(suggestions[0]).toMatchObject({ incomingPlayerId: 20, cashReleasedTenths: 6 }); // 61 − 55
+  });
+
+  it("refuses a transfer the bank cannot fund", () => {
+    // Selling releases 61 with nothing in the bank, so a 62 target is out of
+    // reach even though the squad's market total leaves plenty of headroom.
+    const suggestions = findBestSingleTransfers({
+      squad: selected,
+      players: [...selected, dearer],
+      gameweek: 1,
+      horizon: 5,
+      risk: "BALANCED",
+      outgoingPlayerId: 11,
+      bankTenths: 0,
+      purchasePricesTenths,
+    });
+    expect(suggestions.some((item) => item.incomingPlayerId === 21)).toBe(false);
+  });
+
+  it("keeps market-price behaviour when no bank is supplied", () => {
+    const suggestions = findBestSingleTransfers({
+      squad: selected, players: [...selected, cheaper], gameweek: 1, horizon: 5, risk: "BALANCED", outgoingPlayerId: 11,
+    });
+    expect(suggestions[0]).toMatchObject({ incomingPlayerId: 20, cashReleasedTenths: 9 }); // 64 − 55
+  });
+});
