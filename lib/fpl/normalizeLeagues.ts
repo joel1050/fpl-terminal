@@ -15,6 +15,7 @@ import type {
   FplEntryHistoryPayload,
   FplEntryPicksPayload,
   FplEntryPayload,
+  FplEntryTransfersPayload,
 } from "./schemas";
 import { optionalNumber } from "./normalize";
 
@@ -145,6 +146,19 @@ export function normalizeEntryPicks(
         }
       : undefined,
   };
+}
+
+export function normalizeEntryTransfers(
+  payload: FplEntryTransfersPayload,
+): Array<{ elementIn: number; elementOut: number; elementInCost: number; elementOutCost: number; event: number; time?: string }> {
+  return payload.map((row) => ({
+    elementIn: row.element_in,
+    elementOut: row.element_out,
+    elementInCost: Math.trunc(Number(row.element_in_cost)),
+    elementOutCost: Math.trunc(Number(row.element_out_cost)),
+    event: row.event,
+    time: row.time ?? undefined,
+  }));
 }
 
 export function normalizeClassicLeagueStandings(payload: FplClassicLeagueStandingsPayload): ClassicLeagueStandings {

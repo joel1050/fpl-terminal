@@ -15,6 +15,7 @@ import {
   FplEntryHistorySchema,
   FplEntryPicksSchema,
   FplEntrySchema,
+  FplEntryTransfersSchema,
   FplFixturesSchema,
   FplLiveResponseSchema,
   FplPlayerSummarySchema,
@@ -24,6 +25,7 @@ import {
   type FplEntryHistoryPayload,
   type FplEntryPicksPayload,
   type FplEntryPayload,
+  type FplEntryTransfersPayload,
   type FplFixturePayload,
   type FplLiveResponsePayload,
   type FplPlayerSummaryPayload,
@@ -219,6 +221,22 @@ export function getEntryPicks(
   });
 }
 
+export function getEntryTransfers(
+  entryId: number,
+  options: FplRequestOptions = {},
+): Promise<FplResponse<FplEntryTransfersPayload>> {
+  if (!Number.isSafeInteger(entryId) || entryId < 1) {
+    return Promise.resolve({ data: null, freshness: null, error: "Team id must be a positive integer" });
+  }
+  return requestJson({
+    key: `entry-${entryId}-transfers`,
+    path: `entry/${entryId}/transfers/`,
+    schema: FplEntryTransfersSchema,
+    ttlMs: FPL_CACHE_TTLS_MS.entryTransfers,
+    ...options,
+  });
+}
+
 export function getClassicLeagueStandings(
   leagueId: number,
   page = 1,
@@ -249,5 +267,6 @@ export const fetchPlayerSummary = getPlayerSummary;
 export const fetchLiveGameweek = getLiveGameweek;
 export const fetchEntry = getEntry;
 export const fetchEntryHistory = getEntryHistory;
+export const fetchEntryTransfers = getEntryTransfers;
 export const fetchEntryPicks = getEntryPicks;
 export const fetchClassicLeagueStandings = getClassicLeagueStandings;

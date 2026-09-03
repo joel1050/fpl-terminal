@@ -350,6 +350,17 @@ export const FplEntryPicksSchema = z.object({
   }).passthrough()),
 }).passthrough();
 
+export const FplEntryTransferSchema = z.object({
+  element_in: z.number().int().positive(),
+  element_out: z.number().int().positive(),
+  element_in_cost: numberLike,
+  element_out_cost: numberLike,
+  event: z.number().int().positive(),
+  time: z.string().nullable().optional(),
+}).passthrough();
+
+export const FplEntryTransfersSchema = z.array(FplEntryTransferSchema);
+
 export const FplClassicStandingRowSchema = z.object({
   entry: z.number().int().positive(),
   entry_name: z.string().nullable().optional(),
@@ -387,6 +398,8 @@ export type FplLiveResponsePayload = z.infer<typeof FplLiveResponseSchema>;
 export type FplEntryPayload = z.infer<typeof FplEntrySchema>;
 export type FplEntryHistoryPayload = z.infer<typeof FplEntryHistorySchema>;
 export type FplEntryPicksPayload = z.infer<typeof FplEntryPicksSchema>;
+export type FplEntryTransferPayload = z.infer<typeof FplEntryTransferSchema>;
+export type FplEntryTransfersPayload = z.infer<typeof FplEntryTransfersSchema>;
 export type FplClassicLeagueStandingsPayload = z.infer<typeof FplClassicLeagueStandingsSchema>;
 
 export function parseExternal<T>(

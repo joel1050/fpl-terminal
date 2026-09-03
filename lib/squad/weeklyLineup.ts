@@ -1,4 +1,5 @@
 import type { Player, Position } from "@/types/player";
+import type { ChipKind } from "@/types/chips";
 import type {
   LineupRiskMode,
   OutfieldBenchOrder,
@@ -280,8 +281,12 @@ export function expectedAutosubValue(
   return round(keeperExpected + outfieldExpected);
 }
 
-function fingerprint(players: readonly Player[], gameweek: number): string {
-  const source = `${gameweek}|${orderedPlayers(players).map((player) => `${player.id}:${basePoints(player, gameweek).toFixed(3)}:${probabilityDidNotPlay(player, gameweek).toFixed(3)}`).join("|")}`;
+function fingerprint(players: readonly Player[], gameweek: number, chip: ChipKind | null = null): string {
+  // The chip is part of the fingerprint so changing chips makes an applied
+  // lineup stale, but the no-chip format is byte-identical to the legacy
+  // one so pre-chip saved lineups do not flag as outdated on upgrade.
+  const playersSegment = orderedPlayers(players).map((player) => `${player.id}:${basePoints(player, gameweek).toFixed(3)}:${probabilityDidNotPlay(player, gameweek).toFixed(3)}`).join("|");
+  const source = chip ? `${gameweek}|${chip}|${playersSegment}` : `${gameweek}|${playersSegment}`;
   let hash = 2166136261;
   for (let index = 0; index < source.length; index += 1) {
     hash ^= source.charCodeAt(index);
@@ -290,7 +295,7 @@ function fingerprint(players: readonly Player[], gameweek: number): string {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
-function invalidPlan(gameweek: number, warnings: string[]): WeeklyLineupPlan {
+function invalidPlan(gameweek: number, warnings: string[], chip: ChipKind | null = null): WeeklyLineupPlan {
   return {
     gameweek,
     starterIds: [],
@@ -306,6 +311,7 @@ function invalidPlan(gameweek: number, warnings: string[]): WeeklyLineupPlan {
     explanations: [],
     warnings,
     projectionFingerprint: "",
+    chip: chip ?? null,
   };
 }
 
@@ -324,14 +330,34 @@ function captainPair(ids: readonly number[], byId: ReadonlyMap<number, Player>, 
   return [captain, vice];
 }
 
+/** Expected extra points from the armband with vice-captain promotion. */
+export function expectedCaptainBonus(
+  captainId: number,
+  viceCaptainId: number,
+  byId: ReadonlyMap<number, Player>,
+  gameweek: number,
+  multiplier = 1,
+): number {
+  const captain = byId.get(captainId);
+  const vice = byId.get(viceCaptainId);
+  if (!captain || !vice) return 0;
+  const captainPoints = metrics(captain, gameweek).points;
+  const vicePoints = metrics(vice, gameweek).points;
+  const pCaptainDNP = probabilityDidNotPlay(captain, gameweek);
+  const pViceDNP = probabilityDidNotPlay(vice, gameweek);
+  const expected = (1 - pCaptainDNP) * captainPoints + pCaptainDNP * (1 - pViceDNP) * vicePoints;
+  return round(expected * multiplier);
+}
+
 /** Picks a weekly team from all legal XIs and all legal bench permutations. */
 export function pickWeeklyTeam(input: WeeklyLineupInput): WeeklyLineupPlan {
   const { squad, gameweek, riskMode } = input;
+  const chip: ChipKind | null = input.chip ?? null;
   const validation = validateOwnedSquad(squad);
-  if (!validation.legal) return invalidPlan(gameweek, validation.errors);
+  if (!validation.legal) return invalidPlan(gameweek, validation.errors, chip);
   const byId = new Map(squad.map((player) => [player.id, player]));
   const candidates = enumerateLegalStartingXIs(squad).map((ids) => candidateFor(ids, byId, gameweek));
-  if (!candidates.length) return invalidPlan(gameweek, ["The squad cannot produce a legal starting XI."]);
+  if (!candidates.length) return invalidPlan(gameweek, ["The squad cannot produce a legal starting XI."], chip);
   const bestScore = Math.max(...candidates.map((candidate) => candidate.projectedXI));
   const nearEqual = candidates.filter((candidate) => bestScore - candidate.projectedXI <= NEAR_EQUAL_XP_WINDOW);
   const chosen = [...nearEqual].sort((left, right) => compareCandidates(left, right, riskMode))[0];
@@ -342,17 +368,47 @@ export function pickWeeklyTeam(input: WeeklyLineupInput): WeeklyLineupPlan {
     .filter((player) => player.position !== "GK")
     .sort((left, right) => metrics(right, gameweek).points - metrics(left, gameweek).points || left.id - right.id)
     .map((player) => player.id);
-  if (!benchKeeper || outfield.length !== 3) return invalidPlan(gameweek, ["The selected XI does not leave one goalkeeper and three outfield substitutes."]);
+  if (!benchKeeper || outfield.length !== 3) return invalidPlan(gameweek, ["The selected XI does not leave one goalkeeper and three outfield substitutes."], chip);
   const orders = permutations(outfield);
   const bestBench = orders
     .map((order) => ({ order, value: expectedAutosubValue(starterIds, benchKeeper.id, order, squad, gameweek) }))
     .sort((left, right) => right.value - left.value || compareIds(left.order, right.order))[0];
   const benchOrder = bestBench.order;
+  const formation = formationString(starterIds, byId);
+
+  if (chip === "bboost") {
+    // Bench Boost: all 15 players score with the normal captain bonus; no autosubs.
+    const allIds = squad.map((player) => player.id);
+    const [captainId, viceCaptainId] = captainPair(allIds, byId, gameweek);
+    const projectedXI = round(squad.reduce((sum, player) => sum + metrics(player, gameweek).points, 0));
+    const captainBonus = expectedCaptainBonus(captainId, viceCaptainId, byId, gameweek, 1);
+    return {
+      gameweek,
+      starterIds,
+      formation,
+      benchGoalkeeperId: benchKeeper.id,
+      benchOrder,
+      captainId,
+      viceCaptainId,
+      projectedXI,
+      captainBonus,
+      projectedTotal: round(projectedXI + captainBonus),
+      autosubValue: 0,
+      explanations: [
+        `${formation} selected from ${candidates.length} legal starting XIs.`,
+        `Bench Boost: all 15 players score plus the captain bonus; autosubs do not apply.`,
+      ],
+      warnings: [],
+      projectionFingerprint: fingerprint(squad, gameweek, chip),
+      chip,
+    };
+  }
+
   const [captainId, viceCaptainId] = captainPair(starterIds, byId, gameweek);
-  const captainBonus = metrics(byId.get(captainId)!, gameweek).points;
+  const multiplier = chip === "3xc" ? 2 : 1;
+  const captainBonus = expectedCaptainBonus(captainId, viceCaptainId, byId, gameweek, multiplier);
   const autosubValue = bestBench.value;
   const projectedTotal = round(chosen.projectedXI + captainBonus + autosubValue);
-  const formation = formationString(starterIds, byId);
   return {
     gameweek,
     starterIds,
@@ -368,10 +424,64 @@ export function pickWeeklyTeam(input: WeeklyLineupInput): WeeklyLineupPlan {
     explanations: [
       `${formation} selected from ${candidates.length} legal starting XIs.`,
       `${riskMode} mode used a ${NEAR_EQUAL_XP_WINDOW.toFixed(2)}-point near-equal XI window and pDNP-adjusted tie-breaking.`,
-      `Bench order maximizes expected autosub value while preserving FPL formation rules.`,
+      chip === "3xc"
+        ? `Triple Captain: double captain bonus with vice-captain promotion on a captain blank.`
+        : `Bench order maximizes expected autosub value while preserving FPL formation rules.`,
     ],
     warnings: [],
-    projectionFingerprint: fingerprint(squad, gameweek),
+    projectionFingerprint: fingerprint(squad, gameweek, chip),
+    chip,
+  };
+}
+
+/**
+ * Single chip-aware scoring boundary. Scores a saved XI (or the optimal XI when
+ * the saved one is absent) with chip effects and vice-captain promotion.
+ */
+export function scoreLineupWithChip(
+  squad: readonly Player[],
+  gameweek: number,
+  riskMode: WeeklyLineupInput["riskMode"],
+  chip: ChipKind | null,
+  saved?: { starterIds: readonly number[]; benchGoalkeeperId: number; benchOrder: readonly number[]; captainId: number; viceCaptainId: number },
+): WeeklyLineupPlan {
+  const optimal = pickWeeklyTeam({ squad, gameweek, riskMode, chip });
+  if (!saved) return optimal;
+  const byId = new Map(squad.map((player) => [player.id, player]));
+  const starterIds = [...saved.starterIds];
+  if (chip === "bboost") {
+    const projectedXI = round(squad.reduce((sum, player) => sum + metrics(byId.get(player.id)!, gameweek).points, 0));
+    const captainBonus = expectedCaptainBonus(saved.captainId, saved.viceCaptainId, byId, gameweek, 1);
+    return {
+      ...optimal,
+      starterIds,
+      benchGoalkeeperId: saved.benchGoalkeeperId,
+      benchOrder: [...saved.benchOrder] as [number, number, number],
+      captainId: saved.captainId,
+      viceCaptainId: saved.viceCaptainId,
+      projectedXI,
+      captainBonus,
+      projectedTotal: round(projectedXI + captainBonus),
+      autosubValue: 0,
+      chip,
+    };
+  }
+  const multiplier = chip === "3xc" ? 2 : 1;
+  const projectedXI = round(starterIds.reduce((sum, id) => sum + metrics(byId.get(id)!, gameweek).points, 0));
+  const captainBonus = expectedCaptainBonus(saved.captainId, saved.viceCaptainId, byId, gameweek, multiplier);
+  const autosubValue = expectedAutosubValue(starterIds, saved.benchGoalkeeperId, saved.benchOrder, squad, gameweek);
+  return {
+    ...optimal,
+    starterIds,
+    benchGoalkeeperId: saved.benchGoalkeeperId,
+    benchOrder: [...saved.benchOrder] as [number, number, number],
+    captainId: saved.captainId,
+    viceCaptainId: saved.viceCaptainId,
+    projectedXI,
+    captainBonus,
+    projectedTotal: round(projectedXI + captainBonus + autosubValue),
+    autosubValue,
+    chip,
   };
 }
 
@@ -418,7 +528,7 @@ export function validateWeeklyLineup(plan: WeeklyLineupPlan, squad: readonly Pla
   if (plan.captainId === plan.viceCaptainId) errors.push("Captain and vice-captain must be different starters.");
   if (!starters.has(plan.captainId) || !starters.has(plan.viceCaptainId)) errors.push("Captain and vice-captain must both be starters.");
   if (plan.formation !== (legalFormation(counts) ? `${counts.DEF}-${counts.MID}-${counts.FWD}` : plan.formation)) errors.push("Formation does not match the starting XI.");
-  if (plan.projectionFingerprint && plan.projectionFingerprint !== fingerprint(squad, plan.gameweek)) warnings.push("Projection fingerprint is stale for the current player data.");
+  if (plan.projectionFingerprint && plan.projectionFingerprint !== fingerprint(squad, plan.gameweek, plan.chip ?? null)) warnings.push("Projection fingerprint is stale for the current player data.");
   return { legal: errors.length === 0, errors, warnings };
 }
 
