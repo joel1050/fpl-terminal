@@ -346,6 +346,38 @@ export interface EnrichProjectionsOptions {
 type EnrichedBootstrap = { bootstrap: NormalizedBootstrap; metadata: BootstrapProjectionMetadata };
 
 /**
+ * Drops the per-fixture expected-points breakdown.
+ *
+ * It is an intermediate: `projectPlayer` sums it into `projection.components`
+ * and nothing reads it again — not the pitch, not the optimizer, not the weekly
+ * lineup. Shipped, it is 6.7MB of a 14.8MB bootstrap payload, so every browser
+ * downloads and parses it to ignore it. `projectPlayer` still returns it, which
+ * is what the backtests and projection tests read.
+ *
+ * The fields are listed rather than spread so the wire shape is stated in one
+ * place; a new required field on FixtureProjection will fail to compile here,
+ * which is the right moment to decide whether the client needs it.
+ */
+function withoutFixtureComponents(players: readonly Player[]): Player[] {
+  return players.map((player) => {
+    const projection = player.projection;
+    if (!projection?.fixtures.length) return player;
+    return {
+      ...player,
+      projection: {
+        ...projection,
+        fixtures: projection.fixtures.map((entry) => ({
+          gameweek: entry.gameweek,
+          expectedPoints: entry.expectedPoints,
+          expectedMinutes: entry.expectedMinutes,
+          fixture: entry.fixture,
+        })),
+      },
+    };
+  });
+}
+
+/**
  * Names the upstream generation a projection run belongs to. Null whenever
  * either freshness is unknown — unlike the historical bundle, where an
  * unreadable file falls back to the last good parse, an unknown generation
@@ -413,7 +445,7 @@ export async function enrichBootstrapWithProjections(
     startHistory,
   );
   const result: EnrichedBootstrap = {
-    bootstrap: { ...bootstrap, players: enriched.players },
+    bootstrap: { ...bootstrap, players: withoutFixtureComponents(enriched.players) },
     metadata: { ...enriched.metadata, lineups },
   };
   if (key) projectionCache = { key, result };
