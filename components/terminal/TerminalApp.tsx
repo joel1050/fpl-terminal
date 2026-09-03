@@ -121,6 +121,24 @@ function selectionConfidence(value: unknown): PlayerSelection["confidence"] {
   return normalized === "HIGH" ? "HIGH" : normalized === "MEDIUM" ? "MEDIUM" : "LOW";
 }
 
+/**
+ * Reads a typed bank figure as integer tenths, or null when the text is not a
+ * figure yet.
+ *
+ * Null is the important case. Typing "12.5" passes through "1", "12" and "12."
+ * and a person may clear the field first; committing on every keystroke would
+ * rewrite the box under them and leave "" reading as zero. Null means the
+ * draft stands and nothing is written.
+ */
+export function parseBankInput(text: string): number | null {
+  const trimmed = text.trim().replace(/^£/, "");
+  if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
+  const pounds = Number(trimmed);
+  if (!Number.isFinite(pounds) || pounds < 0) return null;
+  const tenths = Math.round(pounds * 10);
+  return Number.isSafeInteger(tenths) ? tenths : null;
+}
+
 function selectionSource(value: unknown): SelectionEvidence["source"] | undefined {
   const normalized = String(value ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_");
   if (normalized === "PREDICTED_XI" || normalized === "PREDICTEDXI" || normalized === "PREDICTED_STARTING_XI") return "PREDICTED_XI";
@@ -1456,7 +1474,49 @@ function SquadSlot({ player, gameweek, locked, captain, vice, starter, benchLabe
 
 function EmptySlot({ position, maxPriceTenths, onChoose }: { position: Position; maxPriceTenths: number; onChoose: () => void }) { return <button className="squad-slot empty-slot" onClick={onChoose}><span className="empty-plus">+</span><span className="slot-player">Open {position}</span><span className="slot-sub">Max {money(maxPriceTenths)}</span><span className="suggest-label">SUGGEST →</span></button>; }
 
-function MetricStrip({ spent, bankTenths, confidence, handBuilt, onBankChange, projected, risk, teamRating }: { spent: number; bankTenths: number; confidence: "EXACT" | "ESTIMATED"; handBuilt: boolean; onBankChange: (tenths: number) => boolean; projected: { nextGW?: number }; risk?: number; teamRating?: number }) { return <div className="metric-strip" aria-label="Squad projection metrics"><Metric label="COST" value={money(spent)} /><div className="metric-editable"><span>{confidence === "ESTIMATED" ? "ITB · EST" : "ITB"}</span><span className="metric-money"><span aria-hidden="true">£</span><input className="metric-input" type="number" step="0.1" min="0" value={(bankTenths / 10).toFixed(1)} aria-label="Cash in the bank in millions" title={handBuilt ? "Type what you have left to spend. It sets the budget, so the optimizer and team rating follow it." : confidence === "ESTIMATED" ? "Estimated. Type the value your FPL team page shows." : "From your FPL entry. Editing this overrides the imported figure."} onChange={(event) => { const tenths = Math.round(Number(event.target.value) * 10); if (Number.isSafeInteger(tenths) && tenths >= 0) onBankChange(tenths); }} /></span></div><Metric label="TEAM RATING" value={teamRating === undefined ? "—" : `${teamRating}%`} title={teamRating === undefined ? "Team rating needs a picked squad and live market data." : "Starting XI plus captain xP as a share of the best legal XI the market can field for the same budget."} tone={teamRating === undefined ? undefined : teamRating >= 90 ? "green" : teamRating >= 80 ? "bright-green" : teamRating >= 70 ? "yellow" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" title="Chip-adjusted xP minus transfer hit costs." /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} tone={risk === undefined ? undefined : risk < 30 ? "green" : risk < 60 ? "yellow" : "red"} /></div>; }
+/**
+ * Cash in the bank, editable.
+ *
+ * The text being typed lives here rather than in the store. A person typing
+ * "12.5" passes through "1", "12" and "12.", none of which is a figure to
+ * commit; writing each one back and re-rendering the box from the store would
+ * overwrite the keystrokes as they arrive. The draft holds until they leave
+ * the field or press Enter, and Escape abandons it.
+ */
+function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankTenths: number; confidence: "EXACT" | "ESTIMATED"; handBuilt: boolean; onBankChange: (tenths: number) => boolean }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = (text: string) => {
+    const tenths = parseBankInput(text);
+    if (tenths !== null) onBankChange(tenths);
+    setDraft(null);
+  };
+  return <div className="metric-editable">
+    <span>{confidence === "ESTIMATED" ? "ITB · EST" : "ITB"}</span>
+    <span className="metric-money">
+      <span aria-hidden="true">£</span>
+      <input
+        className="metric-input"
+        type="text"
+        inputMode="decimal"
+        value={draft ?? (bankTenths / 10).toFixed(1)}
+        aria-label="Cash in the bank in millions"
+        title={handBuilt
+          ? "Type what you have left to spend. It sets the budget, so the optimizer and team rating follow it."
+          : confidence === "ESTIMATED"
+            ? "Estimated. Type the value your FPL team page shows."
+            : "From your FPL entry. Editing this overrides the imported figure."}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={(event) => commit(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") commit(event.currentTarget.value);
+          else if (event.key === "Escape") setDraft(null);
+        }}
+      />
+    </span>
+  </div>;
+}
+
+function MetricStrip({ spent, bankTenths, confidence, handBuilt, onBankChange, projected, risk, teamRating }: { spent: number; bankTenths: number; confidence: "EXACT" | "ESTIMATED"; handBuilt: boolean; onBankChange: (tenths: number) => boolean; projected: { nextGW?: number }; risk?: number; teamRating?: number }) { return <div className="metric-strip" aria-label="Squad projection metrics"><Metric label="COST" value={money(spent)} /><BankMetric bankTenths={bankTenths} confidence={confidence} handBuilt={handBuilt} onBankChange={onBankChange} /><Metric label="TEAM RATING" value={teamRating === undefined ? "—" : `${teamRating}%`} title={teamRating === undefined ? "Team rating needs a picked squad and live market data." : "Starting XI plus captain xP as a share of the best legal XI the market can field for the same budget."} tone={teamRating === undefined ? undefined : teamRating >= 90 ? "green" : teamRating >= 80 ? "bright-green" : teamRating >= 70 ? "yellow" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" title="Chip-adjusted xP minus transfer hit costs." /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} tone={risk === undefined ? undefined : risk < 30 ? "green" : risk < 60 ? "yellow" : "red"} /></div>; }
 
 function StrategyControls({ horizon, riskMode, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; riskMode: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; riskMode?: "SAFE" | "BALANCED" | "AGGRESSIVE"; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">RISK</span><div className="segmented">{(["SAFE", "BALANCED", "AGGRESSIVE"] as const).map((value) => <button key={value} className={riskMode === value ? "active" : ""} onClick={() => setStrategy({ riskMode: value })}>{value}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value}</button>)}</div></div></div>; }
 
