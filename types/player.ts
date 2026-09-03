@@ -133,6 +133,11 @@ export interface FixtureProjection {
   expectedPoints: number;
   expectedMinutes: number;
   fixture: PlayerFixture;
+  /**
+   * Server-side only. `projectPlayer` fills this and sums it into
+   * `PlayerProjection.components`; `withoutFixtureComponents` then strips it
+   * before the bootstrap response, so client code never sees it.
+   */
   components?: import("./projection").ProjectionComponents;
 }
 
