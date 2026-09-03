@@ -191,6 +191,20 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .metric-strip .metric-money > span { color: var(--text); font-size: 11px; letter-spacing: 0; }
 .metric-input { width: 100%; min-width: 0; padding: 0; border: 0; border-bottom: 1px dotted var(--border); background: transparent; color: inherit; font: inherit; font-size: 11px; font-weight: 500; }
 .metric-input:focus { border-bottom-color: var(--cyan); outline: none; }
+.metric-steppers { display: flex; flex: none; gap: 2px; }
+.metric-step { display: grid; place-items: center; width: 14px; height: 14px; padding: 0; border: 1px solid var(--border); background: var(--panel); color: var(--amber); font: inherit; font-size: 10px; line-height: 1; cursor: pointer; }
+.metric-step:hover:not(:disabled) { border-color: var(--amber); }
+.metric-step:disabled { color: var(--dim); cursor: default; }
+@media (max-width: 560px) {
+  /* A tile is about 75px on a phone. Beside the figure the steppers leave too
+     little for a full "100.0", so while editing they sit on the label line and
+     the label gives up its tail to make room. */
+  .metric-editable { position: relative; }
+  .metric-strip .metric-steppers { position: absolute; top: 3px; right: 3px; }
+  .metric-editable.editing > span:first-child { overflow: hidden; padding-right: 28px; text-overflow: ellipsis; }
+  .metric-step { width: 12px; height: 12px; font-size: 9px; }
+  .metric-input { font-size: 9px; }
+}
 .metric-input::-webkit-outer-spin-button, .metric-input::-webkit-inner-spin-button { margin: 0; -webkit-appearance: none; appearance: none; }
 .metric-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .strategy-settings { position: relative; }.strategy-settings > summary { display: inline-flex; align-items: center; list-style: none; }.strategy-settings > summary::-webkit-details-marker { display: none; }.strategy-settings[open] > summary { background: color-mix(in srgb, var(--amber) 10%, transparent); }.strategy-popover { position: absolute; z-index: 25; top: calc(100% + 4px); right: 0; width: min(340px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--amber); background: var(--panel-alt); box-shadow: 0 16px 32px rgba(0,0,0,.5); }.strategy-panel { display: grid; grid-template-columns: 1fr; gap: 9px; }.strategy-panel > .section-kicker { grid-column: 1 / -1; }.strategy-panel > div { display: grid; gap: 6px; }.strategy-label { color: var(--muted); font-size: 9px; letter-spacing: .08em; }.segmented { display: flex; }.segmented button { flex: 1; overflow: hidden; padding-inline: 3px; font-size: 8px; text-overflow: ellipsis; }

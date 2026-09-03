@@ -1,5 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { parseBankInput } from "@/components/terminal/TerminalApp";
+import { parseBankInput, steppedBankText } from "@/components/terminal/TerminalApp";
+
+describe("nudging a bank figure by a tenth", () => {
+  it("steps up and down from what is showing", () => {
+    expect(steppedBankText("1.0", 1)).toBe("1.1");
+    expect(steppedBankText("1.0", -1)).toBe("0.9");
+    expect(steppedBankText("0.9", 1)).toBe("1.0");
+  });
+
+  it("steps from a half-typed figure the same way", () => {
+    expect(steppedBankText(".8", 1)).toBe("0.9");
+    expect(steppedBankText("2.", -1)).toBe("1.9");
+  });
+
+  it("stops at zero rather than going negative", () => {
+    expect(steppedBankText("0.0", -1)).toBe("0.0");
+    expect(steppedBankText("0.1", -1)).toBe("0.0");
+  });
+
+  it("treats text that is not a figure as zero", () => {
+    expect(steppedBankText("", 1)).toBe("0.1");
+    expect(steppedBankText("abc", 1)).toBe("0.1");
+    expect(steppedBankText("", -1)).toBe("0.0");
+  });
+
+  it("keeps money in whole tenths across many steps", () => {
+    let text = "0.0";
+    for (let i = 0; i < 12; i += 1) text = steppedBankText(text, 1);
+    expect(text).toBe("1.2");
+  });
+});
 
 describe("typing a bank figure", () => {
   it("reads a plain number as tenths", () => {

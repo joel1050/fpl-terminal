@@ -144,6 +144,18 @@ export function parseBankInput(text: string): number | null {
   return Number.isSafeInteger(tenths) ? tenths : null;
 }
 
+/**
+ * Nudges a bank figure by whole tenths, working from the text on screen so a
+ * half-typed figure steps from what the typist can see rather than from the
+ * last committed value. Text that is not a figure counts as nothing, and the
+ * bank stops at zero.
+ */
+export function steppedBankText(text: string, deltaTenths: number): string {
+  const current = parseBankInput(text) ?? 0;
+  const next = Math.max(0, current + Math.trunc(deltaTenths));
+  return (next / 10).toFixed(1);
+}
+
 function selectionSource(value: unknown): SelectionEvidence["source"] | undefined {
   const normalized = String(value ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_");
   if (normalized === "PREDICTED_XI" || normalized === "PREDICTEDXI" || normalized === "PREDICTED_STARTING_XI") return "PREDICTED_XI";
@@ -1490,12 +1502,28 @@ function EmptySlot({ position, maxPriceTenths, onChoose }: { position: Position;
  */
 function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankTenths: number; confidence: "EXACT" | "ESTIMATED"; handBuilt: boolean; onBankChange: (tenths: number) => boolean }) {
   const [draft, setDraft] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const shown = draft ?? (bankTenths / 10).toFixed(1);
   const commit = (text: string) => {
     const tenths = parseBankInput(text);
     if (tenths !== null) onBankChange(tenths);
     setDraft(null);
   };
-  return <div className="metric-editable">
+  // Stepping keeps the field in hand: it moves the draft and leaves focus
+  // where it was, so several nudges are one edit, committed like any other.
+  const step = (deltaTenths: number) => setDraft(steppedBankText(shown, deltaTenths));
+  const stepper = (deltaTenths: number, label: string, glyph: string) => <button
+    type="button"
+    className="metric-step"
+    aria-label={label}
+    tabIndex={-1}
+    disabled={deltaTenths < 0 && (parseBankInput(shown) ?? 0) === 0}
+    // Taking focus would blur the field, committing and closing the edit
+    // before the click landed.
+    onMouseDown={(event) => event.preventDefault()}
+    onClick={() => step(deltaTenths)}
+  >{glyph}</button>;
+  return <div className={editing ? "metric-editable editing" : "metric-editable"}>
     <span>{confidence === "ESTIMATED" ? "ITB · EST" : "ITB"}</span>
     <span className="metric-money">
       <span aria-hidden="true">£</span>
@@ -1503,7 +1531,7 @@ function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankT
         className="metric-input"
         type="text"
         inputMode="decimal"
-        value={draft ?? (bankTenths / 10).toFixed(1)}
+        value={shown}
         aria-label="Cash in the bank in millions"
         title={handBuilt
           ? "Type what you have left to spend. It sets the budget, so the optimizer and team rating follow it."
@@ -1511,12 +1539,19 @@ function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankT
             ? "Estimated. Type the value your FPL team page shows."
             : "From your FPL entry. Editing this overrides the imported figure."}
         onChange={(event) => setDraft(event.target.value)}
-        onBlur={(event) => commit(event.target.value)}
+        onFocus={() => setEditing(true)}
+        onBlur={(event) => { setEditing(false); commit(event.target.value); }}
         onKeyDown={(event) => {
           if (event.key === "Enter") commit(event.currentTarget.value);
           else if (event.key === "Escape") setDraft(null);
+          else if (event.key === "ArrowUp") { event.preventDefault(); step(1); }
+          else if (event.key === "ArrowDown") { event.preventDefault(); step(-1); }
         }}
       />
+      {editing && <span className="metric-steppers">
+        {stepper(-1, "Lower the bank by £0.1m", "−")}
+        {stepper(1, "Raise the bank by £0.1m", "+")}
+      </span>}
     </span>
   </div>;
 }
