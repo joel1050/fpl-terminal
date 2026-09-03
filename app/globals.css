@@ -388,7 +388,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .mode-index { color: var(--muted); font-size: 9px; letter-spacing: .14em; }
 .mode-footer { justify-content: center; margin-top: 34px; color: var(--dim); font-size: 9px; letter-spacing: .12em; text-align: center; }
 .mode-footer .status-pip { display: none; }
-.mode-disclaimer { max-width: 56ch; margin: 16px auto 0; color: var(--dim); font-family: var(--font-prose), sans-serif; font-size: 10px; line-height: 1.65; text-align: center; text-wrap: balance; }
+.mode-disclaimer { position: fixed; inset-inline: 18px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: 56ch; margin: 0 auto; color: var(--dim); font-family: var(--font-prose), sans-serif; font-size: 10px; line-height: 1.65; text-align: center; text-wrap: balance; }
 .import-screen { position: relative; }
 .import-back { position: absolute; top: 28px; left: 26px; border: 0; background: transparent; color: var(--muted); font-size: 9px; letter-spacing: .12em; }
 .import-back:hover { color: var(--amber); }
@@ -398,6 +398,13 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .import-controls input { min-width: 0; height: 38px; padding: 0 11px; border: 1px solid var(--border); outline: 0; background: var(--background); color: var(--text); font: inherit; }
 .import-controls input:focus { border-color: var(--amber); }
 .import-card p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.import-guide { border-top: 1px solid var(--border); }
+.import-guide > summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; color: var(--cyan); font-size: 10px; cursor: pointer; list-style: none; }
+.import-guide > summary::-webkit-details-marker { display: none; }
+.import-guide > summary::after { color: var(--amber); font-size: 14px; content: "+"; }
+.import-guide[open] > summary::after { content: "−"; }
+.import-guide ol { display: grid; gap: 6px; margin: 0 0 4px; padding-inline-start: 18px; color: var(--muted); font-family: var(--font-prose), sans-serif; font-size: 10px; line-height: 1.55; }
+.import-guide a, .import-guide code { color: var(--amber); }
 .import-error { color: var(--red); font-size: 10px; }
 
 @media (min-width: 901px) {
