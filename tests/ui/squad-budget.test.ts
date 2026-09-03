@@ -46,4 +46,34 @@ describe("add guard budget", () => {
     const budgetTenths = effectiveBudgetTenths(8, squad); // one tenth short of 9
     expect(explainIllegalSelection(target, squad, pool, { constraints: { budgetTenths } }).legal).toBe(false);
   });
+
+  it("says when a refusal is about money, so the UI can offer a way out", () => {
+    expect(explainIllegalSelection(target, squad, pool).reason).toBe("BUDGET");
+    const budgetTenths = effectiveBudgetTenths(8, squad);
+    expect(explainIllegalSelection(target, squad, pool, { constraints: { budgetTenths } }).reason).toBe("BUDGET");
+  });
+
+  it("does not blame money for a full position or a fourth club pick", () => {
+    // Three from club 1 already; a fourth breaks the club limit, not the bank.
+    const clubHeavy = [player(201, "FWD", 5, 1), player(202, "FWD", 5, 1), player(203, "FWD", 5, 1)];
+    const fourth = player(204, "MID", 5, 1);
+    const explanation = explainIllegalSelection(fourth, clubHeavy, [...clubHeavy, fourth]);
+    expect(explanation.legal).toBe(false);
+    expect(explanation.reason).not.toBe("BUDGET");
+  });
+
+  it("does not blame money when the club limit is broken too", () => {
+    // Over budget AND a fourth pick from club 1. Money is not the only
+    // problem, so offering to raise the bank would be useless advice.
+    const heavy = [...squad, player(205, "FWD", 71, 1)];
+    const fourthFromClub1 = player(206, "FWD", 71, 1);
+    const explanation = explainIllegalSelection(fourthFromClub1, heavy, [...heavy, fourthFromClub1]);
+    expect(explanation.legal).toBe(false);
+    expect(explanation.reason).toBe("SHAPE");
+  });
+
+  it("reports OK on a legal add", () => {
+    const budgetTenths = effectiveBudgetTenths(BANK_TENTHS, squad);
+    expect(explainIllegalSelection(target, squad, pool, { constraints: { budgetTenths } }).reason).toBe("OK");
+  });
 });

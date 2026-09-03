@@ -22,10 +22,18 @@ export interface BudgetRequest extends BudgetOptions {
   playerPool: SquadPlayers;
 }
 
+/**
+ * Why a selection was refused. `BUDGET` means money alone; callers use it to
+ * offer a way out, since a squad the manager already owns can cost more than a
+ * new entry's budget.
+ */
+export type IllegalSelectionReason = "OK" | "BUDGET" | "SHAPE" | "EXCLUDED";
+
 export interface IllegalSelectionExplanation {
   legal: boolean;
   message: string;
   errors: string[];
+  reason: IllegalSelectionReason;
   shortfallTenths: number;
   bankTenths: number;
   minimumRequiredTenths: number;
@@ -316,6 +324,7 @@ export function explainIllegalSelection(
       legal: false,
       message,
       errors: [message],
+      reason: "EXCLUDED",
       shortfallTenths,
       bankTenths: remainingBank,
       minimumRequiredTenths,
@@ -323,10 +332,16 @@ export function explainIllegalSelection(
   }
 
   if (!direct.legal) {
+    // Money alone, rather than shape or club limits. Re-checking with the
+    // budget lifted is what proves it: if the squad is legal then, cost was
+    // the only thing wrong and more money would fix it.
+    const overBudget = squadCostTenths(withPlayer) > rules.budgetTenths
+      && validatePartialSquad(withPlayer, { ...rules, budgetTenths: Number.POSITIVE_INFINITY }).legal;
     return {
       legal: false,
       message: direct.errors.join(" "),
       errors: direct.errors,
+      reason: overBudget ? "BUDGET" : "SHAPE",
       shortfallTenths,
       bankTenths: remainingBank,
       minimumRequiredTenths,
@@ -341,6 +356,7 @@ export function explainIllegalSelection(
       legal: false,
       message,
       errors: [message],
+      reason: "BUDGET",
       shortfallTenths,
       bankTenths: remainingBank,
       minimumRequiredTenths,
@@ -350,6 +366,7 @@ export function explainIllegalSelection(
     legal: true,
     message: `Adding ${player.displayName} keeps the partial squad completable.`,
     errors: [],
+    reason: "OK",
     shortfallTenths: 0,
     bankTenths: remainingBank,
     minimumRequiredTenths,

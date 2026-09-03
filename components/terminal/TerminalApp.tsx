@@ -792,7 +792,13 @@ export default function TerminalApp() {
   const addPlayer = useCallback((player: TerminalPlayer) => {
     const explanation = explainIllegalSelection(player, selected, data.players, { constraints: { budgetTenths: budgetForAdds } });
     if (!explanation.legal) {
-      setNotice(explanation.message);
+      // A squad the manager already owns can cost more than a new entry's
+      // budget, so a refusal about money needs to name the way through.
+      const wayOut = explanation.reason !== "BUDGET" ? ""
+        : store.entryId === undefined
+          ? " If you already own this squad, import your team, or type your real bank into the ITB field."
+          : " If your bank is wrong, correct it in the ITB field.";
+      setNotice(`${explanation.message}${wayOut}`);
       return;
     }
     if (useTerminalStore.getState().addPlayer(player.id, player.position)) {
@@ -800,7 +806,7 @@ export default function TerminalApp() {
     } else {
       setNotice(`No open ${player.position} slot, or the squad already contains this player.`);
     }
-  }, [budgetForAdds, data.players, selected, setNotice]);
+  }, [budgetForAdds, data.players, selected, setNotice, store.entryId]);
 
   const runOptimize = async (complete: boolean) => {
     if (!data.players.length) {
