@@ -2,6 +2,13 @@ import { expect, test } from "@playwright/test";
 import { bootstrapStaticFixture } from "../fixtures/fpl";
 import { interceptFplData } from "../fixtures/network";
 
+/**
+ * The import mode card, matched by its index rather than its wording. The
+ * wording has changed once already ("ANALYZE A TEAM" -> "IMPORT A TEAM"), and
+ * which mode a test picks is not what the test is about.
+ */
+const IMPORT_MODE = /mode b/i;
+
 const planningBootstrap = {
   ...bootstrapStaticFixture,
   players: bootstrapStaticFixture.players.map((player) => ({
@@ -29,7 +36,7 @@ test.describe("persisted planning gameweeks", () => {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(planningBootstrap) });
     });
     await page.goto("/");
-    await page.getByRole("button", { name: /analyze (?:a )?team/i }).click();
+    await page.getByRole("button", { name: IMPORT_MODE }).click();
     await page.getByLabel(/enter fpl id/i).fill("4827193");
     await page.getByRole("button", { name: /import team/i }).click();
     await expect(page.getByText(/15\s*\/\s*15 selected/i).first()).toBeVisible();

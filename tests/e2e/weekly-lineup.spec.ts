@@ -3,6 +3,13 @@ import { bootstrapStaticFixture } from "../fixtures/fpl";
 import { interceptFplData } from "../fixtures/network";
 
 /**
+ * The import mode card, matched by its index rather than its wording. The
+ * wording has changed once already ("ANALYZE A TEAM" -> "IMPORT A TEAM"), and
+ * which mode a test picks is not what the test is about.
+ */
+const IMPORT_MODE = /mode b/i;
+
+/**
  * Weekly-pick acceptance coverage deliberately uses the visible terminal
  * controls. The test fixture is intercepted at the FPL boundary, so these
  * checks never depend on a live deadline or a changing player universe.
@@ -49,7 +56,7 @@ test.describe("weekly lineup acceptance", () => {
   }
 
   async function importLegalSquad(page: Page) {
-    await chooseMode(page, /analyze (?:a )?team/i);
+    await chooseMode(page, IMPORT_MODE);
     await waitForMarket(page);
     await expect(page.getByText(/15\s*\/\s*15 selected/i).first()).toBeVisible();
   }

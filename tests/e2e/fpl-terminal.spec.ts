@@ -1,6 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
 import { interceptFplData } from "../fixtures/network";
 
+/**
+ * The import mode card, matched by its index rather than its wording. The
+ * wording has changed once already ("ANALYZE A TEAM" -> "IMPORT A TEAM"), and
+ * which mode a test picks is not what the test is about.
+ */
+const IMPORT_MODE = /mode b/i;
+
 test.describe("FPL Terminal acceptance", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
@@ -82,7 +89,7 @@ test.describe("FPL Terminal acceptance", () => {
   test("imports an official FPL team by ID", async ({ page }) => {
     let importRequests = 0;
     page.on("request", (request) => { if (request.url().includes("/api/fpl/entry/")) importRequests += 1; });
-    await clickButton(page, /analyze (?:a )?team/i);
+    await clickButton(page, IMPORT_MODE);
     const input = page.getByLabel(/enter fpl id/i);
     await expect(input).toBeVisible();
     await input.fill("4827193");
@@ -113,7 +120,7 @@ test.describe("FPL Terminal acceptance", () => {
   test("blocks optimization while every player is locked and explains why", async ({ page }) => {
     let optimizerRequests = 0;
     page.on("request", (request) => { if (request.url().includes("/api/optimizer") && request.method() === "POST") optimizerRequests += 1; });
-    await chooseMode(page, /analyze (?:a )?team/i);
+    await chooseMode(page, IMPORT_MODE);
     await waitForMarket(page);
     await expect(page.getByText(/15\s*\/\s*15 selected/i)).toBeVisible();
 
@@ -153,7 +160,7 @@ test.describe("FPL Terminal acceptance", () => {
   });
 
   test("imports an existing squad, inspects replacements, simulates, and applies a move", async ({ page }) => {
-    await chooseMode(page, /analyze (?:a )?team/i);
+    await chooseMode(page, IMPORT_MODE);
     await waitForMarket(page);
 
     await expect(page.getByRole("region", { name: /weakest links/i })).toHaveCount(0);
@@ -193,7 +200,7 @@ test.describe("FPL Terminal acceptance", () => {
       if (!request.url().includes("/api/transfer-suggestions") || request.method() !== "POST") return;
       horizons.push(JSON.parse(request.postData() ?? "{}").horizon);
     });
-    await chooseMode(page, /analyze (?:a )?team/i);
+    await chooseMode(page, IMPORT_MODE);
     await waitForMarket(page);
 
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
@@ -220,7 +227,7 @@ test.describe("FPL Terminal acceptance", () => {
   });
 
   test("keeps the transfer horizon toggles on-screen on a phone", async ({ page }) => {
-    await chooseMode(page, /analyze (?:a )?team/i);
+    await chooseMode(page, IMPORT_MODE);
     await waitForMarket(page);
     await page.setViewportSize({ width: 390, height: 844 });
 
@@ -236,7 +243,7 @@ test.describe("FPL Terminal acceptance", () => {
   test("dismisses a transfer suggestion across reloads", async ({ page }) => {
     let suggestionRequests = 0;
     page.on("request", (request) => { if (request.url().includes("/api/transfer-suggestions")) suggestionRequests += 1; });
-    await chooseMode(page, /analyze (?:a )?team/i);
+    await chooseMode(page, IMPORT_MODE);
     await waitForMarket(page);
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
     const dismiss = replacements.getByRole("button", { name: /dismiss rice to saka suggestion/i });
@@ -314,7 +321,7 @@ test.describe("FPL Terminal acceptance", () => {
   });
 
   test("keeps every roster card visible in the unified desktop panel", async ({ page }) => {
-    await chooseMode(page, /analyze (?:a )?team/i);
+    await chooseMode(page, IMPORT_MODE);
     await waitForMarket(page);
     await expect(page.getByText(/15\s*\/\s*15 selected/i)).toBeVisible();
 

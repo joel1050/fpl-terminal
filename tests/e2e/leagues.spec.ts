@@ -1,6 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 import { interceptLeaguesData } from "../fixtures/network";
 
+/**
+ * The import mode card, matched by its index rather than its wording. The
+ * wording has changed once already ("ANALYZE A TEAM" -> "IMPORT A TEAM"), and
+ * which mode a test picks is not what the test is about.
+ */
+const IMPORT_MODE = /mode b/i;
+
 test.describe("FPL Terminal Leagues workspace", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
@@ -295,7 +302,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await importTeam(page);
 
     await page.goto("/");
-    await page.getByRole("button", { name: /analyze (?:a )?team/i }).click();
+    await page.getByRole("button", { name: IMPORT_MODE }).click();
 
     const switcher = page.locator(".workspace-switcher");
     await expect(switcher).toBeVisible();
