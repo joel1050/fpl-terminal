@@ -202,6 +202,19 @@ export function minimumRemainingSpend(
   return cost;
 }
 
+/**
+ * The budget to hand the selection guards when the real bank is known.
+ *
+ * They derive their own bank as `budget − Σ market price`, so adding what the
+ * squad costs at market makes that come out as the bank itself. A team's bank
+ * is not `teamValue − Σ market price`: selling returns the purchase price plus
+ * half the rise, so that subtraction understates the bank by the unbanked
+ * profit on every player who has risen.
+ */
+export function effectiveBudgetTenths(bankTenths: number, squad: SquadPlayers): number {
+  return Math.trunc(bankTenths) + squadCostTenths(squad);
+}
+
 export function calculateBudgetFeasibility(
   squadOrRequest: SquadPlayers | BudgetRequest,
   playerPool?: SquadPlayers,
