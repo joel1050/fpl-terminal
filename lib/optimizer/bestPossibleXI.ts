@@ -10,6 +10,7 @@ import {
   DEFAULT_MAX_PLAYERS_PER_CLUB,
   playerMap,
   POSITIONS,
+  POSITION_MINIMUMS,
   type PlayerUniverse,
 } from "@/lib/analysis/context";
 
@@ -56,24 +57,24 @@ function failure(errors: string[]): BestPossibleXIResult {
 }
 
 /**
- * Solves for the highest-scoring legal XI the whole market can field inside the
- * squad budget. Used as the ceiling in the squad builder's team rating, so it
- * scores players with the same weekly metrics the lineup engine uses and leaves
- * the bench and autosub out on both sides of the comparison.
+ * Solves for the highest-scoring legal XI backed by a legal 15-player squad.
+ * Used as the ceiling in the squad builder's team rating, so substitutes consume
+ * budget and club slots even though their points are left out on both sides.
  */
 export async function exactBestPossibleXI(input: BestPossibleXIInput): Promise<BestPossibleXIResult> {
   const players = asPlayers(input.players).sort((a, b) => a.id - b.id);
   const map = playerMap(players);
   const budget = input.budgetTenths ?? DEFAULT_BUDGET_TENTHS;
   const maxPerClub = input.maxPlayersPerClub ?? DEFAULT_MAX_PLAYERS_PER_CLUB;
-  if (players.length < XI_SIZE) return failure(["The player universe cannot produce an eleven-player XI."]);
+  if (players.length < 15) return failure(["The player universe cannot produce a complete squad."]);
   for (const position of POSITIONS) {
-    if (players.filter((player) => player.position === position).length < STARTER_MINIMUMS[position]) {
-      return failure([`The player universe has no legal ${position} options for a starting XI.`]);
+    if (players.filter((player) => player.position === position).length < POSITION_MINIMUMS[position]) {
+      return failure([`The player universe has no legal ${position} options for a complete squad.`]);
     }
   }
 
   const points = new Map(players.map((player) => [player.id, Math.max(0, weeklyPlayerMetrics(player, input.gameweek).points)]));
+  const squad = (id: number) => `q_${id}`;
   const starter = (id: number) => `x_${id}`;
   const captain = (id: number) => `c_${id}`;
   const objective: Array<[number, string]> = [];
@@ -82,25 +83,28 @@ export async function exactBestPossibleXI(input: BestPossibleXIInput): Promise<B
 
   for (const player of players) {
     const value = points.get(player.id) ?? 0;
-    binaries.push(starter(player.id), captain(player.id));
+    binaries.push(squad(player.id), starter(player.id), captain(player.id));
     objective.push([value, starter(player.id)], [value, captain(player.id)]);
+    constraints.push(`starter_squad_${player.id}: ${expression([[1, starter(player.id)], [-1, squad(player.id)]])} <= 0`);
     constraints.push(`captain_starter_${player.id}: ${expression([[1, captain(player.id)], [-1, starter(player.id)]])} <= 0`);
   }
 
+  constraints.push(`squad_size: ${expression(players.map((player) => [1, squad(player.id)]))} = 15`);
   constraints.push(`xi_size: ${expression(players.map((player) => [1, starter(player.id)]))} = ${XI_SIZE}`);
   constraints.push(`captain_size: ${expression(players.map((player) => [1, captain(player.id)]))} = 1`);
   for (const position of POSITIONS) {
     const members = players.filter((player) => player.position === position);
+    constraints.push(`squad_${position}: ${expression(members.map((player) => [1, squad(player.id)]))} = ${POSITION_MINIMUMS[position]}`);
     constraints.push(`starters_${position}: ${expression(members.map((player) => [1, starter(player.id)]))} >= ${STARTER_MINIMUMS[position]}`);
     // Only the goalkeeper slot is capped: eleven players and the outfield
     // minimums already bound defenders, midfielders, and forwards.
     if (position === "GK") constraints.push(`starters_GK_max: ${expression(members.map((player) => [1, starter(player.id)]))} <= 1`);
   }
-  constraints.push(`budget: ${expression(players.map((player) => [player.priceTenths, starter(player.id)]))} <= ${budget}`);
+  constraints.push(`budget: ${expression(players.map((player) => [player.priceTenths, squad(player.id)]))} <= ${budget}`);
   for (const teamId of new Set(players.map((player) => player.teamId))) {
     const members = players.filter((player) => player.teamId === teamId);
     if (members.length <= maxPerClub) continue;
-    constraints.push(`club_${teamId}: ${expression(members.map((player) => [1, starter(player.id)]))} <= ${maxPerClub}`);
+    constraints.push(`club_${teamId}: ${expression(members.map((player) => [1, squad(player.id)]))} <= ${maxPerClub}`);
   }
 
   const lp = [
@@ -117,12 +121,14 @@ export async function exactBestPossibleXI(input: BestPossibleXIInput): Promise<B
   const result = highs.solve(lp, { output_flag: false, log_to_console: false, mip_rel_gap: 0, presolve: "on", random_seed: 0 });
   if (result.Status !== "Optimal") return failure([`Best possible XI solver returned ${result.Status}.`]);
 
+  const selectedSquad = players.filter((player) => result.Columns[squad(player.id)]?.Primal > 0.5);
   const selected = players.filter((player) => result.Columns[starter(player.id)]?.Primal > 0.5);
   const ids = selected.map((player) => player.id);
   if (!isLegalStartingXI(selected)) return failure(["The best possible XI solver returned an illegal starting XI."]);
-  const cost = costOf(ids, map);
+  const squadIds = selectedSquad.map((player) => player.id);
+  const cost = costOf(squadIds, map);
   if (cost > budget) return failure([`The best possible XI costs ${cost} tenths and exceeds the ${budget}-tenths budget.`]);
-  const clubs = clubCounts(ids, map);
+  const clubs = clubCounts(squadIds, map);
   if ([...clubs.values()].some((count) => count > maxPerClub)) return failure(["The best possible XI breaks the club limit."]);
 
   const captainId = players.find((player) => result.Columns[captain(player.id)]?.Primal > 0.5)?.id ?? 0;

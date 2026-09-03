@@ -177,6 +177,10 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .slot-flags button:hover { color: var(--amber); }
 .lock-icon { width: 11px; height: 11px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.4; }.lock-body { fill: transparent; transition-property: fill; transition-duration: 120ms; }.lock-flag.on { color: var(--amber) !important; }.lock-flag.on .lock-body { fill: currentColor; }.lock-flag:active, .remove-flag:active { transform: scale(.96); }.remove-flag:hover { color: var(--red) !important; }
 .lineup-controls { position: absolute; right: 3px; bottom: 3px; display: flex; gap: 1px; }.role-button { display: inline-grid; place-items: center; min-width: 19px; height: 18px; padding: 0 3px; border: 1px solid var(--border); background: color-mix(in srgb, var(--panel) 92%, transparent); color: var(--dim); font-size: 7px; line-height: 1; }.role-button:hover:not(:disabled), .role-button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }.role-button.captain.active { border-color: var(--amber); background: var(--amber); color: var(--background); }.role-button.vice.active { border-color: var(--cyan); background: var(--cyan); color: var(--background); }.role-button.bench-toggle.active { border-color: var(--dim); color: var(--text); }.role-button.bench-order { min-width: 17px; padding: 0; }
+/* The C/VC and bench-order labels exist for touch, where the per-card role
+   buttons are hidden. On desktop those buttons are on the card and already
+   lit, so the labels only repeat them and cost a row. */
+@media (min-width: 901px) { .slot-role, .slot-bench-tag { display: none; } }
 .empty-slot { align-content: center; justify-items: start; min-height: 75px; border-style: dashed; color: var(--muted); }
 .empty-slot:hover { border-color: var(--amber); color: var(--text); }
 .empty-plus { position: absolute; top: 5px; right: 7px; color: var(--amber); font-size: 18px; font-weight: 300; }
@@ -185,6 +189,10 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .metric-strip > div { display: grid; gap: 2px; min-width: 0; padding: 4px 6px; background: var(--panel-alt); }
 .metric-strip strong { overflow: hidden; font-size: 11px; font-weight: 500; text-overflow: ellipsis; }
 .strategy-settings { position: relative; }.strategy-settings > summary { display: inline-flex; align-items: center; list-style: none; }.strategy-settings > summary::-webkit-details-marker { display: none; }.strategy-settings[open] > summary { background: color-mix(in srgb, var(--amber) 10%, transparent); }.strategy-popover { position: absolute; z-index: 25; top: calc(100% + 4px); right: 0; width: min(340px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--amber); background: var(--panel-alt); box-shadow: 0 16px 32px rgba(0,0,0,.5); }.strategy-panel { display: grid; grid-template-columns: 1fr; gap: 9px; }.strategy-panel > .section-kicker { grid-column: 1 / -1; }.strategy-panel > div { display: grid; gap: 6px; }.strategy-label { color: var(--muted); font-size: 9px; letter-spacing: .08em; }.segmented { display: flex; }.segmented button { flex: 1; overflow: hidden; padding-inline: 3px; font-size: 8px; text-overflow: ellipsis; }
+/* The popover otherwise only closes by hitting SETTINGS again, which on a phone
+   is behind the panel once it is pinned to the viewport. Give it its own exit. */
+.strategy-close { position: absolute; top: 6px; right: 6px; }
+.strategy-popover .strategy-panel > .section-kicker { padding-right: 44px; }
 .settings-divider { margin: 10px 0 8px; border-top: 1px solid var(--border); }
 .settings-danger { width: 100%; min-height: 30px; padding: 0 7px; border: 1px solid color-mix(in srgb, var(--red) 60%, var(--border)); background: transparent; color: var(--red); font-size: 8px; letter-spacing: .06em; }
 .settings-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--red) 10%, transparent); }
@@ -621,6 +629,18 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .topbar-stats::-webkit-scrollbar { display: none; }
   .topbar-actions { flex: 0 0 auto; margin-left: auto; }
   .topbar-actions .text-button { min-height: 36px; padding-inline: 6px; font-size: 9px; }
+
+  /* Planner header is one line on a phone: brand, switcher, actions. The
+     gameweek/data readout goes — the planning toolbar below names the
+     gameweek and the market panel carries the live badge. The Leagues header
+     keeps its row, because STALE appears nowhere else on that screen. */
+  .terminal-app .topbar { flex-wrap: nowrap; gap: 6px; }
+  .terminal-app .topbar .brand { gap: 6px; letter-spacing: .06em; }
+  .terminal-app .topbar .brand-mark { width: 27px; }
+  .terminal-app .topbar-stats { display: none; }
+  .terminal-app .workspace-switcher a { padding: 0 6px; letter-spacing: .06em; }
+  .terminal-app .topbar-actions { flex: 0 1 auto; min-width: 0; }
+  .terminal-app .topbar-actions .text-button { padding-inline: 3px; font-size: 8px; }
   .status-cell { min-width: 0; padding-inline: 8px; }
   /* Header scrolls away on mobile; tab bar sticks to viewport top instead of
      tracking the wrapping topbar height. */
@@ -650,9 +670,13 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
      selects it and drives the sticky action bar below. */
   .squad-slot .lineup-controls, .squad-slot .slot-flags { display: none; }
   .squad-slot.picked { border-color: var(--amber); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--amber) 55%, transparent); }
-  .slot-role { position: absolute; z-index: 1; top: 4px; left: 4px; display: inline-grid; place-items: center; min-width: 18px; height: 15px; padding: 0 4px; font-size: 8px; font-weight: 700; line-height: 1; pointer-events: none; }
+  /* The C/VC marker used to share the top-left corner with the fixture badge
+     and print over it. The flags that owned the right corner are hidden on
+     touch, so the marker takes that corner and the badge keeps the left. */
+  .slot-role { position: absolute; z-index: 1; top: 4px; right: 4px; display: inline-grid; place-items: center; min-width: 18px; height: 15px; padding: 0 4px; font-size: 8px; font-weight: 700; line-height: 1; pointer-events: none; }
   .slot-role.captain { background: var(--amber); color: var(--background); }
   .slot-role.vice { border: 1px solid var(--cyan); color: var(--cyan); }
+  .squad-slot:has(.slot-role) .squad-fixture-badges { max-width: calc(100% - 32px); }
   .mobile-lineup-bar { position: sticky; bottom: 0; z-index: 12; display: grid; gap: 6px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid color-mix(in srgb, var(--amber) 55%, var(--border)); background: color-mix(in srgb, var(--panel-alt) 96%, transparent); box-shadow: 0 -12px 28px rgba(0,0,0,.4); }
   .mobile-bar-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; color: var(--text); font-size: 10px; font-weight: 600; letter-spacing: .04em; }
   .mobile-bar-head > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -690,6 +714,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   /* Detail modal: keep availability visible as a compact badge. */
   .leagues-mobile-tabs button { min-height: 44px; font-size: 9px; letter-spacing: .05em; padding: 0 2px; }
   .strategy-popover { top: 48px; }
+  .strategy-close { width: 44px; height: 44px; }
   .league-table-wrap { max-height: 42vh; overflow-y: auto; }
   .feed-filters button { min-height: 32px; }
   .market-column.mobile-visible, .squad-column.mobile-visible,
@@ -728,3 +753,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .detail-head h2 { font-size: 20px; }
   .detail-scroll { padding: 0 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* Below ~384px the four actions, the switcher and the wordmark cannot share a
+   line. The boxed FPL mark carries the branding on its own; the word goes. */
+@media (max-width: 384px) { .terminal-app .topbar { padding-inline: 6px; } .terminal-app .topbar .brand > span:last-child { display: none; } .terminal-app .topbar-actions .text-button { padding-inline: 2px; } }

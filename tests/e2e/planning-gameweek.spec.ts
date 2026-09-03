@@ -134,4 +134,101 @@ test.describe("persisted planning gameweeks", () => {
     expect(table.overflow).toBeLessThanOrEqual(2);
     expect(table.textUnderAdd).toBe(0);
   });
+
+  test("keeps the captain marker clear of the fixture badge on a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const markers = await page.evaluate(() => {
+      const intersects = (a: DOMRect, b: DOMRect) =>
+        Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top) && Math.min(a.right, b.right) > Math.max(a.left, b.left);
+      return Array.from(document.querySelectorAll(".squad-slot")).flatMap((slot) => {
+        const role = slot.querySelector(".slot-role");
+        const badge = slot.querySelector(".squad-fixture-badges");
+        if (!role || !badge) return [];
+        return [{
+          role: role.textContent?.trim() ?? "",
+          collides: intersects(role.getBoundingClientRect(), badge.getBoundingClientRect()),
+        }];
+      });
+    });
+
+    expect(markers.map((marker) => marker.role).sort()).toEqual(["C", "VC"]);
+    expect(markers.filter((marker) => marker.collides)).toEqual([]);
+  });
+
+  test("shows the C/VC and bench labels only where the role buttons are hidden", async ({ page }) => {
+    const countVisible = () => page.evaluate(() => {
+      const visible = (selector: string) =>
+        Array.from(document.querySelectorAll(selector)).filter((el) => el.getBoundingClientRect().width > 0).length;
+      return { labels: visible(".slot-role") + visible(".slot-bench-tag"), buttons: visible(".role-button") };
+    });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const phone = await countVisible();
+    expect(phone.labels).toBeGreaterThan(0);
+    expect(phone.buttons).toBe(0);
+
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const desktop = await countVisible();
+    expect(desktop.labels).toBe(0);
+    expect(desktop.buttons).toBeGreaterThan(0);
+  });
+
+  test("puts the planner header on one line without the gameweek readout", async ({ page }) => {
+    for (const width of [320, 375, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      const header = await page.evaluate(() => {
+        const topbar = document.querySelector(".terminal-app .topbar")!;
+        const stats = document.querySelector(".terminal-app .topbar-stats");
+        const bar = topbar.getBoundingClientRect();
+        const offCentre = Array.from(topbar.children)
+          .filter((child) => child.getBoundingClientRect().width > 0)
+          .map((child) => {
+            const box = child.getBoundingClientRect();
+            return Math.abs((box.top + box.bottom) / 2 - (bar.top + bar.bottom) / 2);
+          });
+        return {
+          statsShown: !!stats && getComputedStyle(stats).display !== "none",
+          height: Math.round(bar.height),
+          worstOffCentre: Math.round(Math.max(...offCentre)),
+          overflow: topbar.scrollWidth - topbar.clientWidth,
+          documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          actions: Array.from(topbar.querySelectorAll(".topbar-actions .text-button")).map((button) => button.textContent?.trim()),
+        };
+      });
+
+      expect(header.statsShown, `gameweek readout hidden at ${width}`).toBe(false);
+      expect(header.height, `one header row at ${width}`).toBeLessThan(60);
+      expect(header.worstOffCentre, `every item on that row at ${width}`).toBeLessThan(8);
+      expect(header.overflow, `header fits at ${width}`).toBeLessThanOrEqual(0);
+      expect(header.documentOverflow, `page fits at ${width}`).toBeLessThanOrEqual(0);
+      expect(header.actions).toEqual(["REFRESH", "EXPORT", "IMPORT", "RESET"]);
+    }
+  });
+
+  test("closes the optimizer settings popover from its own close button", async ({ page }) => {
+    for (const size of [{ width: 390, height: 844 }, { width: 1280, height: 720 }]) {
+      await page.setViewportSize(size);
+      if (size.width < 901) await page.getByRole("button", { name: "SQUAD", exact: true }).click().catch(() => {});
+      await page.locator(".strategy-settings > summary").click();
+      const popover = page.locator(".strategy-popover");
+      await expect(popover).toBeVisible();
+
+      const close = page.locator(".strategy-close");
+      const box = (await close.boundingBox())!;
+      const pop = (await popover.boundingBox())!;
+      const title = await popover.locator(".section-kicker").evaluate((el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const rect = range.getBoundingClientRect();
+        return { right: rect.right };
+      });
+
+      expect(box.x, `close button clears the title at ${size.width}`).toBeGreaterThan(title.right - 2);
+      expect(box.x + box.width, `close button inside the popover at ${size.width}`).toBeLessThanOrEqual(pop.x + pop.width + 1);
+      if (size.width < 901) expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+
+      await close.click();
+      await expect(popover).toBeHidden();
+    }
+  });
 });

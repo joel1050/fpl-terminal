@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { exactBestPossibleXI } from "../../lib/optimizer/bestPossibleXI";
+import { exactCompletePartialSquad } from "../../lib/optimizer/exactOptimizer";
+import { pickWeeklyTeam } from "../../lib/squad/weeklyLineup";
 import type { Player, Position } from "../../types/player";
 
 /** A player whose projected points are fixed per gameweek, blank gameweeks included. */
@@ -97,11 +99,20 @@ describe("best possible XI from the market", () => {
   });
 
   it("holds the ceiling under budget when the squad pot cannot afford the best XI", async () => {
-    const result = await exactBestPossibleXI({ players: market, gameweek: 1, budgetTenths: 640 });
+    const result = await exactBestPossibleXI({ players: market, gameweek: 1, budgetTenths: 910 });
 
     expect(result.legal).toBe(true);
-    expect(result.costTenths).toBeLessThanOrEqual(640);
+    expect(result.costTenths).toBe(910);
     expect(result.projectedXI).toBeLessThan(66.3);
+  });
+
+  it("rates an exact blank-squad completion at 100% for the gameweek", async () => {
+    const completed = await exactCompletePartialSquad({ players: market, squad: [], gameweek: 1, horizon: 1, risk: "BALANCED", bench: "BALANCED", budgetTenths: 910 });
+    const ceiling = await exactBestPossibleXI({ players: market, gameweek: 1, budgetTenths: 910 });
+    const squad = market.filter((player) => completed.playerIds.includes(player.id));
+    const lineup = pickWeeklyTeam({ squad, gameweek: 1, riskMode: "BALANCED" });
+
+    expect(Math.round((lineup.projectedXI + lineup.captainBonus) / ceiling.projectedTotal * 100)).toBe(100);
   });
 
   it("reports an error instead of an illegal XI when no formation fits the pot", async () => {

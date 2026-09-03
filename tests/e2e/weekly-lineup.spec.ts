@@ -154,7 +154,7 @@ test.describe("weekly lineup acceptance", () => {
     await expect(reloadedRegion.locator('button[aria-label$=" vice-captain"][aria-pressed="true"]')).toHaveCount(1);
     await expect(reloadedRegion.getByRole("button", { name: /make .* captain/i }).first()).toBeVisible();
     await expect(reloadedRegion.getByRole("button", { name: /make .* vice-captain/i }).first()).toBeVisible();
-    await expect(reloadedRegion.getByText(/^B[123]$/).first()).toBeVisible();
+    await expect(reloadedRegion.locator(".role-button.bench-toggle").filter({ hasText: /^B[123]$/ }).first()).toBeVisible();
     const reloaded = await page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");
       return state && {
