@@ -127,6 +127,7 @@ describe("import reconstruction", () => {
     const result = reconstructImportBaseline({
       initialSquadIds: [...SQUAD],
       initialPricesTenths: Object.fromEntries(SQUAD.map((id) => [id, 50])),
+      verifiedInitialPriceIds: [...SQUAD],
       startedEvent: 1,
       currentGameweek: 3,
       currentSquadIds: [...SQUAD.filter((id) => id !== 15), 16],
@@ -247,5 +248,52 @@ describe("import reconstruction", () => {
     });
     // GW2 idles to two banked; the GW3 wildcard consumes the new one only.
     expect(result.baseline.freeTransfers).toBe(2);
+  });
+});
+
+describe("import price provenance", () => {
+  const baseInput = {
+    initialSquadIds: [...SQUAD],
+    startedEvent: 1,
+    currentGameweek: 3,
+    currentSquadIds: [...SQUAD],
+    currentPricesTenths: Object.fromEntries(SQUAD.map((id) => [id, 52])),
+    bankTenths: 0,
+    transfers: [],
+    chips: [],
+    byPosition: BY_POSITION,
+  };
+
+  it("marks ESTIMATED when initial prices are unverified stand-ins", () => {
+    const result = reconstructImportBaseline({
+      ...baseInput,
+      initialPricesTenths: Object.fromEntries(SQUAD.map((id) => [id, 52])),
+    });
+    expect(result.baseline.financialConfidence).toBe("ESTIMATED");
+    expect(result.baseline.warnings.join(" ")).toContain("current price");
+  });
+
+  it("keeps EXACT when every initial price is verified", () => {
+    const result = reconstructImportBaseline({
+      ...baseInput,
+      initialPricesTenths: Object.fromEntries(SQUAD.map((id) => [id, 50])),
+      verifiedInitialPriceIds: [...SQUAD],
+    });
+    expect(result.baseline.financialConfidence).toBe("EXACT");
+    expect(result.baseline.purchasePricesTenths[1]).toBe(50);
+  });
+
+  it("keeps EXACT when unverified players were all transferred in", () => {
+    // Player 15 was sold; 16 was bought at 60, an exact price from the transfer row.
+    const result = reconstructImportBaseline({
+      ...baseInput,
+      currentSquadIds: [...SQUAD.filter((id) => id !== 15), 16],
+      currentPricesTenths: { ...baseInput.currentPricesTenths, 16: 62 },
+      initialPricesTenths: Object.fromEntries(SQUAD.map((id) => [id, 50])),
+      verifiedInitialPriceIds: [...SQUAD],
+      transfers: [{ elementIn: 16, elementOut: 15, elementInCost: 60, elementOutCost: 50, event: 2 }],
+    });
+    expect(result.baseline.financialConfidence).toBe("EXACT");
+    expect(result.baseline.purchasePricesTenths[16]).toBe(60);
   });
 });

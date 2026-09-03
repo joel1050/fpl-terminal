@@ -16,6 +16,12 @@ export interface ImportReconstructionInput {
   /** Initial picks (GW1 or started_event) element ids in squad order. */
   initialSquadIds: number[];
   initialPricesTenths: Record<number, number>;
+  /**
+   * Ids whose `initialPricesTenths` entry is a real opening price read from the
+   * player's own history. Any other entry is a current-price stand-in and
+   * forces ESTIMATED, because today's price is not what the manager paid.
+   */
+  verifiedInitialPriceIds?: readonly number[];
   startedEvent: number;
   currentGameweek: number;
   /** Current official squad element ids (permanent squad; FH weeks resolved by caller). */
@@ -44,7 +50,8 @@ export function reconstructImportBaseline(input: ImportReconstructionInput): Imp
   const purchasePrices: Record<number, number> = {};
   let confidence: FinancialConfidence = "EXACT";
 
-  const initialSet = new Set(input.initialSquadIds);
+  const verified = new Set(input.verifiedInitialPriceIds ?? []);
+  const standIns: number[] = [];
   for (const id of input.initialSquadIds) {
     const price = input.initialPricesTenths[id];
     if (price === undefined) {
@@ -53,6 +60,7 @@ export function reconstructImportBaseline(input: ImportReconstructionInput): Imp
       warnings.push(`Missing starting price for player ${id}; current price used.`);
     } else {
       purchasePrices[id] = Math.trunc(price);
+      if (!verified.has(id)) standIns.push(id);
     }
   }
 
@@ -60,7 +68,18 @@ export function reconstructImportBaseline(input: ImportReconstructionInput): Imp
   const sorted = [...input.transfers].sort((a, b) => a.event - b.event);
   for (const transfer of sorted) {
     purchasePrices[transfer.elementIn] = Math.trunc(transfer.elementInCost);
-    void initialSet;
+  }
+
+  // A stand-in only matters if that player is still owned and was never bought
+  // through a recorded transfer — otherwise the transfer cost already replaced it.
+  const boughtIds = new Set(sorted.map((transfer) => transfer.elementIn));
+  const currentSet = new Set(input.currentSquadIds);
+  const unverifiedOwned = standIns.filter((id) => currentSet.has(id) && !boughtIds.has(id));
+  if (unverifiedOwned.length > 0) {
+    confidence = "ESTIMATED";
+    warnings.push(
+      `Opening prices unavailable for ${unverifiedOwned.length} owned player(s); current price used, so selling values may be too high.`,
+    );
   }
 
   // Players in the current squad never bought via a recorded transfer keep
