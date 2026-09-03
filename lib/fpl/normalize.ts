@@ -390,7 +390,12 @@ export async function enrichBootstrapWithProjections(
         historical === null ? "unmapped" : "mapped",
       ].join("|")
     : null;
-  if (key && !options.forceRefresh && projectionCache?.key === key) return projectionCache.result;
+  if (key && !options.forceRefresh && projectionCache?.key === key) {
+    // The projections are reused, but the lineup check just ran: report the
+    // age it found rather than the age recorded when the slot was filled.
+    // `fetchedAt` is part of the key, so only the age and reason can differ.
+    return { ...projectionCache.result, metadata: { ...projectionCache.result.metadata, lineups } };
+  }
 
   // Both loaders read the snapshot cache and are independent of each other.
   const [inSeasonForm, playerForm, startHistory] = await Promise.all([
