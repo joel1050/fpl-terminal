@@ -541,6 +541,12 @@ git commit -m "Check reconstructed finances against FPL's reported team value"
 
 At most 15 extra requests, all cached by `lib/fpl/cache.ts`. Every fetch is best-effort: a failure falls back to the current price, which Task 2 already turns into `ESTIMATED`.
 
+**Two decisions, made here rather than at the keyboard:**
+
+*An inexact opening price counts as unverified.* `openingPriceFromSummary` returns `exact: false` when the player had no fixture in `startedEvent` and the price came from a later week. Do **not** promote that to verified. For a GW1 entry the purchase happened before the season's first deadline, when prices are frozen — so a round-1 row is exactly right, while a round-2 row already reflects price movement during GW1 and genuinely may differ. The cost of this strictness is low: every club plays in GW1, so almost every player has a round-1 row.
+
+*The checksum only runs against a real reported value.* `budgetTenths` is `entry_history.value ?? entry.last_deadline_value ?? 1000`. Comparing the reconstruction against a stale `last_deadline_value` — or the `1000` literal — would downgrade every import to `ESTIMATED` with an alarming delta. Guard on the field actually being present.
+
 - [ ] **Step 1: Write the failing test**
 
 Open `tests/data/fpl-entry-route.test.ts`, add `getPlayerSummary` to the existing `vi.mock("@/lib/fpl/client", ...)` factory alongside the other mocked fetchers, and append this case. Match the file's existing mock and request-construction helpers rather than inventing new ones:
@@ -567,8 +573,11 @@ it("marks finances ESTIMATED when an opening price cannot be read", async () => 
   const body = await response.json();
 
   expect(body.data.financialConfidence).toBe("ESTIMATED");
+  expect(body.data.transferBaseline.warnings.join(" ")).toContain("current price used");
 });
 ```
+
+The warning assertion matters. This file's fixture reports `entry_history: { bank: 10, value: 1003 }`, which will not agree with the mocked squad's prices, so the Task 3 checksum downgrades to `ESTIMATED` too. Without the warning check the test would pass for the wrong reason.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -635,8 +644,13 @@ Then, immediately after `transferBaseline = reconstruction.baseline;` and before
 
 ```typescript
     // FPL reports the answer: entry_history.value is bank + squad selling value.
-    const check = verifyBaselineValue(transferBaseline, priceById, budgetTenths);
-    transferBaseline = applyBaselineCheck(transferBaseline, check);
+    // Only check against the real field — last_deadline_value is stale and the
+    // 1000 fallback is fiction, and either would downgrade every import.
+    const reportedValue = event.data.entry_history?.value;
+    if (reportedValue !== undefined) {
+      const check = verifyBaselineValue(transferBaseline, priceById, Math.trunc(Number(reportedValue)));
+      transferBaseline = applyBaselineCheck(transferBaseline, check);
+    }
     financialConfidence = transferBaseline.financialConfidence;
 ```
 
