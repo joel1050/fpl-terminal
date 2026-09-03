@@ -98,6 +98,17 @@ describe("weekly lineup engine", () => {
     expect(value).toBe(5); // MID 12 is skipped; DEF 6 is the first legal replacement.
   });
 
+  it("orders tied autosub options by projected points", () => {
+    const benchPoints = new Map([[7, 1], [12, 3], [15, 2]]);
+    const players = squad().map((item) => benchPoints.has(item.id)
+      ? player(item.id, item.position, benchPoints.get(item.id)!)
+      : item);
+
+    const plan = pickWeeklyTeam({ squad: players, gameweek: 1, riskMode: "AGGRESSIVE" });
+
+    expect(plan.benchOrder).toEqual([12, 15, 7]);
+  });
+
   it("uses the near-equal window for risk-aware tie-breaking", () => {
     const players = squad().map((item) => item.id === 8 ? { ...item, status: "d" } : item);
     const safe = pickWeeklyTeam({ squad: players, gameweek: 1, riskMode: "SAFE" });

@@ -90,48 +90,52 @@ export function applyFallbackAutosubs(
 ): Map<number, number> {
   const context: SquadContext = { picks, statsByElement, statusByElement };
   const multipliers = new Map(picks.picks.map((pick) => [pick.element, pick.multiplier]));
+  const activeStarters = new Set(picks.picks.filter((pick) => pick.position <= 11).map((pick) => pick.element));
   const positionCode = (pick: EntryPick): Position =>
     ELEMENT_TYPE_POSITION[pick.elementType] ?? "FWD";
+  const captain = picks.picks.find((pick) => pick.isCaptain);
+  const vice = picks.picks.find((pick) => pick.isViceCaptain);
+  const captainMultiplier = captain ? multipliers.get(captain.element) ?? 0 : 0;
 
   const startingGoalkeeper = picks.picks.find((pick) => pick.position <= 11 && pick.elementType === 1);
   const benchGoalkeeper = picks.picks.find((pick) => pick.position > 11 && pick.elementType === 1);
   if (startingGoalkeeper && benchGoalkeeper && idleFinished(context, startingGoalkeeper.element) && hasPlayed(context, benchGoalkeeper.element)) {
     multipliers.set(startingGoalkeeper.element, 0);
-    multipliers.set(benchGoalkeeper.element, Math.max(multipliers.get(benchGoalkeeper.element) ?? 0, startingGoalkeeper.multiplier));
+    multipliers.set(benchGoalkeeper.element, Math.max(multipliers.get(benchGoalkeeper.element) ?? 0, 1));
+    activeStarters.delete(startingGoalkeeper.element);
+    activeStarters.add(benchGoalkeeper.element);
   }
 
-  const substituted = new Set<number>();
   const benchOutfield = picks.picks
     .filter((pick) => pick.position > 11 && pick.elementType !== 1)
     .sort((left, right) => left.position - right.position);
   for (const candidate of benchOutfield) {
-    if (!hasPlayed(context, candidate.element) || substituted.has(candidate.element)) continue;
+    if (!hasPlayed(context, candidate.element)) continue;
     const idleStarters = picks.picks
-      .filter((pick) => pick.position <= 11 && pick.elementType !== 1 && idleFinished(context, pick.element) && !substituted.has(pick.element))
+      .filter((pick) => activeStarters.has(pick.element) && pick.elementType !== 1 && idleFinished(context, pick.element))
       .sort((left, right) =>
         DISPLACEMENT_PRIORITY[positionCode(left)] - DISPLACEMENT_PRIORITY[positionCode(right)] || left.position - right.position);
     for (const outgoing of idleStarters) {
       const counts = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
       for (const pick of picks.picks) {
-        if (pick.position > 11 || pick.element === outgoing.element) continue;
+        if (!activeStarters.has(pick.element) || pick.element === outgoing.element) continue;
         counts[positionCode(pick)] += 1;
       }
       counts[positionCode(candidate)] += 1;
       const legal = counts.GK === 1 && counts.DEF >= 3 && counts.MID >= 2 && counts.FWD >= 1;
       if (!legal) continue;
       multipliers.set(outgoing.element, 0);
-      multipliers.set(candidate.element, Math.max(multipliers.get(candidate.element) ?? 0, outgoing.multiplier));
-      substituted.add(outgoing.element);
-      substituted.add(candidate.element);
+      multipliers.set(candidate.element, Math.max(multipliers.get(candidate.element) ?? 0, 1));
+      activeStarters.delete(outgoing.element);
+      activeStarters.add(candidate.element);
       break;
     }
   }
 
-  const captain = picks.picks.find((pick) => pick.isCaptain);
-  const vice = picks.picks.find((pick) => pick.isViceCaptain);
-  if (captain && vice && (multipliers.get(captain.element) ?? 0) > 0 && idleFinished(context, captain.element) && hasPlayed(context, vice.element)) {
-    multipliers.set(vice.element, Math.max(multipliers.get(vice.element) ?? 0, multipliers.get(captain.element) ?? 0));
+  const viceMultiplier = vice ? multipliers.get(vice.element) ?? 0 : 0;
+  if (captain && vice && viceMultiplier > 0 && idleFinished(context, captain.element) && hasPlayed(context, vice.element)) {
     multipliers.set(captain.element, 0);
+    multipliers.set(vice.element, Math.max(viceMultiplier, captainMultiplier));
   }
   return multipliers;
 }

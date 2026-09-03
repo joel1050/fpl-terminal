@@ -338,7 +338,10 @@ export function pickWeeklyTeam(input: WeeklyLineupInput): WeeklyLineupPlan {
   const starterIds = chosen.ids;
   const bench = squad.filter((player) => !starterIds.includes(player.id));
   const benchKeeper = bench.find((player) => player.position === "GK");
-  const outfield = bench.filter((player) => player.position !== "GK").map((player) => player.id);
+  const outfield = bench
+    .filter((player) => player.position !== "GK")
+    .sort((left, right) => metrics(right, gameweek).points - metrics(left, gameweek).points || left.id - right.id)
+    .map((player) => player.id);
   if (!benchKeeper || outfield.length !== 3) return invalidPlan(gameweek, ["The selected XI does not leave one goalkeeper and three outfield substitutes."]);
   const orders = permutations(outfield);
   const bestBench = orders

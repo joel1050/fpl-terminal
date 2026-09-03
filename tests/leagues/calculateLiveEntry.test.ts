@@ -331,6 +331,69 @@ describe("calculateLiveEntry", () => {
     expect(result.grossPoints).toBe(8);
   });
 
+  it("keeps an autosub at 1x and moves a blanking captain's multiplier to the vice-captain", () => {
+    const captainIdle = pick(131, 7, 4, 2, { captain: true });
+    const vicePlaying = pick(121, 5, 3, 1, { vice: true });
+    const result = calculateLiveEntry({
+      picks: picksOf([
+        ...BASE_XI.slice(0, 4),
+        vicePlaying,
+        BASE_XI[5],
+        captainIdle,
+        BASE_XI[7],
+        ...BASE_BENCH,
+      ]),
+      liveElementsByElement: new Map([
+        [101, stats(0, { minutes: 90 })],
+        [111, stats(0, { minutes: 90 })],
+        [112, stats(0, { minutes: 90 })],
+        [113, stats(0, { minutes: 90 })],
+        [131, stats(0, { minutes: 0 })],
+        [121, stats(4, { minutes: 75 })],
+        [122, stats(0, { minutes: 90 })],
+        [141, stats(0, { minutes: 90 })],
+        [103, stats(6, { minutes: 90 })],
+      ]),
+      fixtures: [
+        fixture(1, 8, 12, "FINISHED", 90),
+        fixture(2, 9, 10, "FINISHED", 90),
+        fixture(3, 11, 7, "FINISHED", 90),
+      ],
+      teamIdByElement: TEAM_BY_ELEMENT,
+    });
+    const byId = new Map(result.playerPoints.map((player) => [player.elementId, player]));
+    expect(byId.get(131)?.multiplier).toBe(0);
+    expect(byId.get(103)?.multiplier).toBe(1);
+    expect(byId.get(121)?.multiplier).toBe(2);
+    expect(result.grossPoints).toBe(14);
+  });
+
+  it("checks each fallback autosub against the formation produced by earlier autosubs", () => {
+    const starters = [
+      pick(1, 1, 1, 1),
+      pick(2, 2, 2, 1), pick(3, 3, 2, 1), pick(4, 4, 2, 1), pick(5, 5, 2, 1),
+      pick(6, 6, 3, 1), pick(7, 7, 3, 1), pick(8, 8, 3, 1), pick(9, 9, 3, 1),
+      pick(10, 10, 4, 1), pick(11, 11, 4, 1),
+    ];
+    const multipliers = applyFallbackAutosubs(
+      picksOf([...starters, pick(12, 12, 1), pick(13, 13, 3), pick(14, 14, 4), pick(15, 15, 2)]),
+      new Map([
+        [2, { total_points: 0, minutes: 0 }],
+        [3, { total_points: 0, minutes: 0 }],
+        [13, { total_points: 5, minutes: 90 }],
+        [14, { total_points: 6, minutes: 90 }],
+      ]),
+      new Map([
+        [2, { status: "DONE", started: true, remaining: 0, finished: 1, live: 0 }],
+        [3, { status: "DONE", started: true, remaining: 0, finished: 1, live: 0 }],
+      ]),
+    );
+    expect(multipliers.get(2)).toBe(0);
+    expect(multipliers.get(13)).toBe(1);
+    expect(multipliers.get(3)).toBe(1);
+    expect(multipliers.get(14)).toBe(0);
+  });
+
   it("counts only the players FPL is scoring, never the bench", () => {
     // Team 9 has not kicked off, so bench midfielder 103 (team 11, upcoming)
     // and starter 121 (team 9) would both read as TO PLAY without the guard.
