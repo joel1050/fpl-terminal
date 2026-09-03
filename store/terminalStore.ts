@@ -778,7 +778,8 @@ export type TerminalState = {
   dismissedTransferKeys: string[];
   isHydrated: boolean;
   setMode: (mode: TerminalMode | null) => void;
-  setBankTenths: (tenths: number) => boolean;
+  /** `spentTenths` is what the squad costs at market; it is used only when no import backs the squad. */
+  setBankTenths: (tenths: number, spentTenths: number) => boolean;
   initializeGameweek: (currentGameweek: number) => number;
   setPlanningGameweek: (gameweek: number) => boolean;
   switchGameweek: (gameweek: number) => boolean;
@@ -865,22 +866,31 @@ const initial = {
 export const useTerminalStore = create<TerminalState>((set, get) => ({
   ...initial,
   setMode: (mode) => set({ mode }),
-  setBankTenths: (tenths) => {
+  setBankTenths: (tenths, spentTenths) => {
     if (!Number.isSafeInteger(tenths) || tenths < 0) return false;
     const state = get();
-    const baseline = state.transferBaseline
-      ?? estimatedBaselineFallback(state.playerIds, state.byPosition, state.budgetTenths, state.planningGameweek);
-    set({
-      transferBaseline: {
-        ...baseline,
-        bankTenths: tenths,
-        financialConfidence: "ESTIMATED",
-        warnings: [
-          ...baseline.warnings.filter((text) => !text.startsWith("Bank set by hand")),
-          "Bank set by hand; finances are ESTIMATED.",
-        ],
-      },
-    });
+    // An imported team has a real baseline, so the bank is a fact about it and
+    // the replay debits it as transfers are planned.
+    if (state.entryId !== undefined && state.transferBaseline) {
+      const baseline = state.transferBaseline;
+      set({
+        transferBaseline: {
+          ...baseline,
+          bankTenths: tenths,
+          financialConfidence: "ESTIMATED",
+          warnings: [
+            ...baseline.warnings.filter((text) => !text.startsWith("Bank set by hand")),
+            "Bank set by hand; finances are ESTIMATED.",
+          ],
+        },
+      });
+      return true;
+    }
+    // A squad built by hand has no bank of its own: what is left to spend is
+    // the budget minus what the squad costs. Move the budget, so the figure
+    // keeps falling as players are added rather than freezing.
+    if (!Number.isSafeInteger(spentTenths) || spentTenths < 0) return false;
+    set({ budgetTenths: spentTenths + tenths });
     return true;
   },
   initializeGameweek: (currentGameweek) => {
