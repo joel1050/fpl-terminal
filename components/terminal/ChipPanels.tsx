@@ -108,9 +108,9 @@ export function usePlanningWeekFinance(
 
   return useMemo(() => {
     if (!playerIds.length) return null;
-    const baseline = baselineWithMigrationFallback(transferBaseline, playerIds, byPosition, budgetTenths, planningGameweek);
-    const from = Math.min(baseline.startGameweek, planningGameweek);
     const priceById = new Map(players.map((player) => [player.id, player.priceTenths]));
+    const baseline = baselineWithMigrationFallback(transferBaseline, playerIds, byPosition, budgetTenths, planningGameweek, priceById);
+    const from = Math.min(baseline.startGameweek, planningGameweek);
     const positionById = new Map(players.map((player) => [player.id, player.position]));
     const plans: Record<number, { playerIds: number[]; chip: ChipKind | null }> = {};
     for (const [key, plan] of Object.entries(gameweekPlans)) {
@@ -199,7 +199,8 @@ export function ChipStrategyPanel({
         };
       }
     }
-    const baseline = baselineWithMigrationFallback(transferBaseline, playerIds, byPosition, budgetTenths, planningGameweek);
+    const priceById = new Map(players.map((player) => [player.id, player.priceTenths]));
+    const baseline = baselineWithMigrationFallback(transferBaseline, playerIds, byPosition, budgetTenths, planningGameweek, priceById);
     const fingerprint = pickWeeklyTeam({
       squad: playerIds.map((id) => playerById.get(id)).filter((player): player is Player => Boolean(player)),
       gameweek: planningGameweek,

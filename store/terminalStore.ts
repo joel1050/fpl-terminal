@@ -273,17 +273,38 @@ function sanitizeUsedChips(value: unknown): Array<{ kind: ChipKind; gameweek: nu
   return result;
 }
 
-export function estimatedBaselineFallback(playerIds: number[], byPosition: SlotMap, budgetTenths: number, gameweek: number): TransferBaseline {
-  void budgetTenths;
+/**
+ * Baseline for a squad with no import behind it. Purchase price is the market
+ * price, because a hand-built squad is bought at today's prices, and the bank
+ * is whatever the budget leaves. Always ESTIMATED: a real team's purchase
+ * prices and bank cannot be derived from a list of players.
+ */
+export function estimatedBaselineFallback(
+  playerIds: number[],
+  byPosition: SlotMap,
+  budgetTenths: number,
+  gameweek: number,
+  priceById?: ReadonlyMap<number, number>,
+): TransferBaseline {
+  const purchasePricesTenths: Record<number, number> = {};
+  let spent = 0;
+  if (priceById) {
+    for (const id of playerIds) {
+      const price = priceById.get(id);
+      if (price === undefined) continue;
+      purchasePricesTenths[id] = Math.trunc(price);
+      spent += Math.trunc(price);
+    }
+  }
   return {
     squadPlayerIds: [...playerIds],
     byPosition: cloneSlotMap(byPosition),
-    bankTenths: 0,
+    bankTenths: priceById ? Math.max(0, Math.trunc(budgetTenths) - spent) : 0,
     freeTransfers: 1,
-    purchasePricesTenths: {},
+    purchasePricesTenths,
     financialConfidence: "ESTIMATED",
     startGameweek: validGameweek(gameweek) ? gameweek : 1,
-    warnings: ["Migrated from a pre-chip export; purchase prices are unknown so finances are ESTIMATED."],
+    warnings: ["Squad was built by hand, so purchase prices use market prices and finances are ESTIMATED."],
   };
 }
 
@@ -769,6 +790,8 @@ export type TerminalState = {
   dismissedTransferKeys: string[];
   isHydrated: boolean;
   setMode: (mode: TerminalMode | null) => void;
+  /** `spentTenths` is what the squad costs at market; it is used only when no import backs the squad. */
+  setBankTenths: (tenths: number, spentTenths: number) => boolean;
   initializeGameweek: (currentGameweek: number) => number;
   setPlanningGameweek: (gameweek: number) => boolean;
   switchGameweek: (gameweek: number) => boolean;
@@ -855,6 +878,33 @@ const initial = {
 export const useTerminalStore = create<TerminalState>((set, get) => ({
   ...initial,
   setMode: (mode) => set({ mode }),
+  setBankTenths: (tenths, spentTenths) => {
+    if (!Number.isSafeInteger(tenths) || tenths < 0) return false;
+    const state = get();
+    // An imported team has a real baseline, so the bank is a fact about it and
+    // the replay debits it as transfers are planned.
+    if (state.entryId !== undefined && state.transferBaseline) {
+      const baseline = state.transferBaseline;
+      set({
+        transferBaseline: {
+          ...baseline,
+          bankTenths: tenths,
+          financialConfidence: "ESTIMATED",
+          warnings: [
+            ...baseline.warnings.filter((text) => !text.startsWith("Bank set by hand")),
+            "Bank set by hand; finances are ESTIMATED.",
+          ],
+        },
+      });
+      return true;
+    }
+    // A squad built by hand has no bank of its own: what is left to spend is
+    // the budget minus what the squad costs. Move the budget, so the figure
+    // keeps falling as players are added rather than freezing.
+    if (!Number.isSafeInteger(spentTenths) || spentTenths < 0) return false;
+    set({ budgetTenths: spentTenths + tenths });
+    return true;
+  },
   initializeGameweek: (currentGameweek) => {
     const normalized = validGameweek(currentGameweek) ? currentGameweek : 1;
     set({ currentGameweek: normalized });
@@ -1512,7 +1562,8 @@ export function baselineWithMigrationFallback(
   byPosition: SlotMap,
   budgetTenths: number,
   gameweek: number,
+  priceById?: ReadonlyMap<number, number>,
 ): TransferBaseline {
   if (baseline) return baseline;
-  return estimatedBaselineFallback(playerIds, byPosition, budgetTenths, gameweek);
+  return estimatedBaselineFallback(playerIds, byPosition, budgetTenths, gameweek, priceById);
 }

@@ -1122,6 +1122,18 @@ git commit -m "Show the real bank and guard squad adds against it"
 
 ---
 
+## What executing this changed
+
+Three things the plan got wrong, found while building it. The commits carry the detail.
+
+**`setBankTenths` takes the squad's market cost, and a hand-built squad moves the budget.** Writing a typed bank onto a fallback baseline froze it: `replayTimeline` pairs sales with purchases, so a squad growing from one player to two yields no costed transfer and the bank never moves. Confirmed in the browser — after typing £90.0 and adding a £7.7m player, the cost rose to £23.2 while the bank stayed at £90.0. A squad built by hand has no bank of its own, so the typed figure now moves `budgetTenths` instead and keeps falling. An imported team still writes its real baseline. The field's tooltip says which is happening, because the budget also drives the optimizer and the Team Rating denominator.
+
+**The transfer search's entry gate rejected owned squads.** `findBestSingleTransfers` and its route both opened by checking the squad's market cost against `budgetTenths`. That budget is selling value plus bank, which drops below market cost as soon as anyone has risen — so the search returned `[]` and the route answered 422 for exactly the teams this work targets. That gate now checks shape and club limits only; affordability belongs to the per-candidate check.
+
+**Task 7's step 2 did not fail as written.** The test called `explainIllegalSelection` directly, and the library already accepted the constraint — the defect was in the component's call site. `effectiveBudgetTenths` now lives in `lib/squad/budget.ts` so the test binds to the code the component actually uses, and the e2e suite covers the wiring.
+
+Two smaller ones: `SummaryLike.value` had to accept `string | number`, because the upstream schema uses `numberLike`; and the ITB field needed a `£` prefix to read in the same units as the cost beside it.
+
 ## Out of scope
 
 Named here so nobody folds them in:

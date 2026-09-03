@@ -14,6 +14,8 @@ const requestSchema = z.object({
   squad: z.array(z.number().int().positive()).length(15),
   lockedPlayerIds: z.array(z.number().int().positive()).max(15),
   budgetTenths: z.number().int().nonnegative().optional(),
+  purchasePricesTenths: z.record(z.string(), z.number().int()).optional(),
+  bankTenths: z.number().int().optional(),
   excludedPlayerIds: z.array(z.number().int().positive()).max(600).optional(),
   gameweek: z.number().int().min(1).max(38).optional(),
   horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]),
@@ -34,7 +36,12 @@ export async function POST(request: Request) {
     const projected = (await enrichBootstrapWithProjections(normalized, historical, {
       cacheKey: projectionCacheKey(bootstrap.freshness, fixtures.freshness),
     })).bootstrap;
-    const legality = legalSquad(parsed.data.squad, playerMap(projected.players), { budgetTenths: parsed.data.budgetTenths });
+    // With a real bank the squad is already owned, so its market cost says
+    // nothing about legality: team value is selling value plus bank, and
+    // selling value is below market for every player who has risen.
+    const legality = legalSquad(parsed.data.squad, playerMap(projected.players), {
+      budgetTenths: parsed.data.bankTenths === undefined ? parsed.data.budgetTenths : Number.POSITIVE_INFINITY,
+    });
     if (!legality.legal) return NextResponse.json({ error: legality.errors[0] ?? "A legal 15-player squad is required" }, { status: 422 });
     const gameweek = parsed.data.gameweek
       ?? projected.events.find((event) => event.isCurrent)?.id
@@ -48,6 +55,10 @@ export async function POST(request: Request) {
       risk: parsed.data.risk,
       lockedPlayerIds: parsed.data.lockedPlayerIds,
       budgetTenths: parsed.data.budgetTenths,
+      purchasePricesTenths: parsed.data.purchasePricesTenths
+        ? Object.fromEntries(Object.entries(parsed.data.purchasePricesTenths).map(([key, value]) => [Number(key), value]))
+        : undefined,
+      bankTenths: parsed.data.bankTenths,
       excludedPlayerIds: parsed.data.excludedPlayerIds,
     }).slice(0, 5);
     return NextResponse.json({ gameweek, horizon: parsed.data.horizon, suggestions });

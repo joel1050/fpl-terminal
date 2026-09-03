@@ -1,6 +1,7 @@
 import type { Player, ProjectionConfidence } from "@/types/player";
 import type { SingleTransferKind, SingleTransferSuggestion } from "@/types/analysis";
 import { projectWeeklyLineupTotal, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
+import { sellingPriceTenths } from "@/lib/chips/finance";
 import {
   asPlayers,
   availabilityRisk,
@@ -95,7 +96,14 @@ export function findBestSingleTransfers(input: SingleTransferSearchInput): Singl
   const squadIds = idsOf(input.squad);
   const budgetTenths = input.budgetTenths ?? DEFAULT_BUDGET_TENTHS;
   const maxPlayersPerClub = input.maxPlayersPerClub ?? DEFAULT_MAX_PLAYERS_PER_CLUB;
-  if (!legalSquad(squadIds, byId, { budgetTenths, maxPlayersPerClub }).legal) return [];
+  // The squad is a fact the manager already owns, so its market cost is not a
+  // budget question: team value is selling value plus bank, and selling value
+  // is below market for anyone who has risen. Check shape and club limits, and
+  // leave affordability to the per-candidate check below.
+  const entryBudgetTenths = input.bankTenths === undefined
+    ? budgetTenths
+    : Number.POSITIVE_INFINITY;
+  if (!legalSquad(squadIds, byId, { budgetTenths: entryBudgetTenths, maxPlayersPerClub }).legal) return [];
 
   const selected = new Set(squadIds);
   const locked = new Set(input.lockedPlayerIds ?? []);
@@ -103,6 +111,11 @@ export function findBestSingleTransfers(input: SingleTransferSearchInput): Singl
   const riskMode = input.risk ?? input.strategy?.risk ?? "BALANCED";
   const horizon = input.horizon ?? input.strategy?.horizon ?? 5;
   const squad = squadIds.map((id) => byId.get(id)).filter((player): player is Player => Boolean(player));
+  // Selling a player returns the purchase price plus half the rise, not today's
+  // market price. Without purchase prices the two are the same by definition.
+  const sellingOf = (player: Player): number =>
+    sellingPriceTenths(input.purchasePricesTenths?.[player.id] ?? player.priceTenths, player.priceTenths);
+  const spentBefore = squad.reduce((sum, player) => sum + player.priceTenths, 0);
   const beforeXp = projectWeeklyLineupTotal({ squad, gameweek: input.gameweek, riskMode }, horizon);
   const candidates: SingleTransferSuggestion[] = [];
   const weeklyMetrics = new Map(universe.map((player) => [player.id, Array.from(
@@ -115,11 +128,16 @@ export function findBestSingleTransfers(input: SingleTransferSearchInput): Singl
     const outgoing = byId.get(outgoingId);
     if (!outgoing) continue;
     const outgoingWeeks = weeklyMetrics.get(outgoingId)!;
+    // Affordability is bank + selling value of the outgoing player. Expressed as
+    // a budget so the existing legality check needs no change.
+    const affordableBudget = input.bankTenths === undefined
+      ? budgetTenths
+      : spentBefore - outgoing.priceTenths + input.bankTenths + sellingOf(outgoing);
     const viable = universe.flatMap((incoming): IncomingCandidate[] => {
       if (incoming.position !== outgoing.position || selected.has(incoming.id) || excluded.has(incoming.id) || !allowedByRisk(incoming, riskMode)) return [];
       if (cannotImproveXp(outgoingWeeks, weeklyMetrics.get(incoming.id)!)) return [];
       const afterIds = squadIds.map((id) => id === outgoingId ? incoming.id : id);
-      if (!legalSquad(afterIds, byId, { budgetTenths, maxPlayersPerClub, excludedPlayerIds: input.excludedPlayerIds }).legal) return [];
+      if (!legalSquad(afterIds, byId, { budgetTenths: affordableBudget, maxPlayersPerClub, excludedPlayerIds: input.excludedPlayerIds }).legal) return [];
       return [{ player: incoming, afterIds, weeks: weeklyMetrics.get(incoming.id)! }];
     });
     const frontier = viable.filter((candidate, index) => !viable.some((other, otherIndex) => otherIndex !== index && dominatesIncoming(other, candidate)));
@@ -128,7 +146,7 @@ export function findBestSingleTransfers(input: SingleTransferSearchInput): Singl
       const afterXp = projectWeeklyLineupTotal({ squad: afterSquad, gameweek: input.gameweek, riskMode }, horizon);
       const projectedDelta = rounded(afterXp - beforeXp);
       const projectedDeltaPerGW = rounded(projectedDelta / horizon);
-      const cashReleasedTenths = outgoing.priceTenths - incoming.priceTenths;
+      const cashReleasedTenths = sellingOf(outgoing) - incoming.priceTenths;
       if (projectedDelta <= EPSILON) continue;
       const moveKind = kind(projectedDelta, cashReleasedTenths);
       const move: SingleTransferSuggestion = {

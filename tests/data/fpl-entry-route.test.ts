@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   getEntryHistory: vi.fn(),
   getEntryTransfers: vi.fn(),
   getBootstrap: vi.fn(),
+  getPlayerSummary: vi.fn(),
 }));
 
 vi.mock("@/lib/fpl/client", () => mocks);
@@ -40,7 +41,12 @@ describe("FPL team import route", () => {
     mocks.getEntryHistory.mockResolvedValue({ data: { chips: [], current: [], past: [] }, freshness: null });
     mocks.getEntryTransfers.mockResolvedValue({ data: [], freshness: null });
     mocks.getBootstrap.mockResolvedValue({ data: { elements: [] }, freshness: null });
+    mocks.getPlayerSummary.mockResolvedValue({ data: { history: [], history_past: [] }, freshness: null });
   });
+
+  /** Squad ids priced at market, with player 3 a riser from 45 to 47. */
+  const squadIds = picks.map((pick) => pick.element);
+  const marketPrices = squadIds.map((id) => ({ id, now_cost: id === 3 ? 47 : 50 }));
 
   it("imports and groups all 15 Gameweek 1 picks", async () => {
     const response = await GET(new Request("http://localhost/api/fpl/entry/4827193"), { params: Promise.resolve({ id: "4827193" }) });
@@ -109,5 +115,66 @@ describe("FPL team import route", () => {
     mocks.getEntryPicks.mockResolvedValue({ data: { picks: [] }, freshness: null });
     const incomplete = await GET(new Request("http://localhost/api/fpl/entry/1"), { params: Promise.resolve({ id: "1" }) });
     expect(incomplete.status).toBe(422);
+  });
+
+  describe("purchase prices", () => {
+    beforeEach(() => {
+      mocks.getBootstrap.mockResolvedValue({ data: { elements: marketPrices }, freshness: null });
+    });
+
+    const call = async () => {
+      const response = await GET(
+        new Request("http://localhost/api/fpl/entry/4827193"),
+        { params: Promise.resolve({ id: "4827193" }) },
+      );
+      return (await response.json()).data;
+    };
+
+    it("reads opening prices for players never transferred in", async () => {
+      // Player 3 was held since GW1 at 45 and is now 47. The purchase price is
+      // 45, so the selling price is 46 — not today's 47.
+      mocks.getPlayerSummary.mockImplementation(async (id: number) => ({
+        data: { history: [{ round: 1, value: id === 3 ? 45 : 50 }], history_past: [] },
+        freshness: null,
+      }));
+
+      const data = await call();
+
+      expect(mocks.getPlayerSummary).toHaveBeenCalled();
+      expect(data.transferBaseline.purchasePricesTenths[3]).toBe(45);
+    });
+
+    it("marks finances ESTIMATED when an opening price cannot be read", async () => {
+      mocks.getPlayerSummary.mockResolvedValue({ data: { history: [], history_past: [] }, freshness: null });
+
+      const data = await call();
+
+      expect(data.financialConfidence).toBe("ESTIMATED");
+      expect(data.transferBaseline.warnings.join(" ")).toContain("current price used");
+    });
+
+    it("earns EXACT when every price is verified and the checksum agrees", async () => {
+      // 15 players held from GW1 at 50, none risen, plus £1.0m in the bank:
+      // FPL's reported team value is 15 * 50 + 10 = 760.
+      mocks.getBootstrap.mockResolvedValue({ data: { elements: squadIds.map((id) => ({ id, now_cost: 50 })) }, freshness: null });
+      mocks.getEntryPicks.mockResolvedValue({ data: { picks, entry_history: { bank: 10, value: 760 } }, freshness: null });
+      mocks.getPlayerSummary.mockResolvedValue({ data: { history: [{ round: 1, value: 50 }], history_past: [] }, freshness: null });
+
+      const data = await call();
+
+      expect(data.financialConfidence).toBe("EXACT");
+    });
+
+    it("downgrades when the checksum disagrees with the reported team value", async () => {
+      // Prices verified, but FPL reports a value the reconstruction cannot reach.
+      mocks.getBootstrap.mockResolvedValue({ data: { elements: squadIds.map((id) => ({ id, now_cost: 50 })) }, freshness: null });
+      mocks.getEntryPicks.mockResolvedValue({ data: { picks, entry_history: { bank: 10, value: 999 } }, freshness: null });
+      mocks.getPlayerSummary.mockResolvedValue({ data: { history: [{ round: 1, value: 50 }], history_past: [] }, freshness: null });
+
+      const data = await call();
+
+      expect(data.financialConfidence).toBe("ESTIMATED");
+      expect(data.transferBaseline.warnings.join(" ")).toContain("FPL reports");
+    });
   });
 });

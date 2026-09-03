@@ -21,6 +21,10 @@ export interface CommonOptions extends AnalysisStrategy {
   lockedPlayerIds?: readonly number[];
   excludedPlayerIds?: readonly number[];
   players?: PlayerUniverse;
+  /** Purchase price per owned player in integer tenths, for official selling values. */
+  purchasePricesTenths?: Record<number, number>;
+  /** Cash in bank in integer tenths. When set, affordability uses bank + selling value. */
+  bankTenths?: number;
 }
 
 export interface NormalizedSquad {

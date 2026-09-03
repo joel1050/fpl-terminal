@@ -1,4 +1,6 @@
-import { getBootstrap, getEntry, getEntryHistory, getEntryPicks, getEntryTransfers } from "@/lib/fpl/client";
+import { getBootstrap, getEntry, getEntryHistory, getEntryPicks, getEntryTransfers, getPlayerSummary } from "@/lib/fpl/client";
+import { openingPricesFromSummaries } from "@/lib/chips/openingPrices";
+import { applyBaselineCheck, verifyBaselineValue } from "@/lib/chips/verifyBaseline";
 import { errorList, fplJson } from "@/lib/fpl/http";
 import { normalizeEntryTransfers, normalizeManagerHistory, normalizeManagerProfile } from "@/lib/fpl/normalizeLeagues";
 import { normalizeChipName } from "@/lib/chips/seasonPolicy";
@@ -169,14 +171,39 @@ export async function GET(
         importWarnings.push(`GW${startedEvent} starting picks are unavailable; purchase prices use current prices.`);
       }
     }
+    // Opening prices are only needed for players never bought through a
+    // recorded transfer; a transfer row already gives their exact cost.
+    const boughtIds = new Set(transfers.map((transfer) => transfer.elementIn));
+    const needOpening = initialIds.filter((id) => !boughtIds.has(id));
+    const summaries = new Map(
+      await Promise.all(needOpening.map(async (id) => {
+        const summary = await getPlayerSummary(id).catch(() => null);
+        return [id, summary?.data ?? null] as const;
+      })),
+    );
+    const opening = openingPricesFromSummaries(summaries, startedEvent);
+
     const initialPrices: Record<number, number> = {};
+    const verifiedInitialPriceIds: number[] = [];
     for (const id of initialIds) {
-      if (priceById[id] !== undefined) initialPrices[id] = priceById[id];
+      const found = opening[id];
+      if (found?.exact) {
+        initialPrices[id] = found.priceTenths;
+        verifiedInitialPriceIds.push(id);
+      } else if (found) {
+        initialPrices[id] = found.priceTenths;
+      } else if (priceById[id] !== undefined) {
+        initialPrices[id] = priceById[id];
+      }
+    }
+    if (verifiedInitialPriceIds.length < needOpening.length) {
+      importWarnings.push("Some opening prices could not be read; those purchase prices use current prices.");
     }
 
     const reconstruction = reconstructImportBaseline({
       initialSquadIds: initialIds,
       initialPricesTenths: initialPrices,
+      verifiedInitialPriceIds,
       startedEvent,
       currentGameweek: picksGameweek,
       currentSquadIds: activeSquad.playerIds,
@@ -194,7 +221,15 @@ export async function GET(
       byPosition: activeSquad.byPosition,
     });
     transferBaseline = reconstruction.baseline;
-    financialConfidence = reconstruction.baseline.financialConfidence;
+    // FPL reports the answer: entry_history.value is bank + squad selling value.
+    // Only check against the real field — last_deadline_value is stale and the
+    // 1000 fallback is fiction, and either would downgrade every import.
+    const reportedValue = event.data.entry_history?.value;
+    if (reportedValue !== undefined) {
+      const check = verifyBaselineValue(transferBaseline, priceById, Math.trunc(Number(reportedValue)));
+      transferBaseline = applyBaselineCheck(transferBaseline, check);
+    }
+    financialConfidence = transferBaseline.financialConfidence;
     importWarnings.push(...reconstruction.warnings);
     transferBaseline = { ...transferBaseline, warnings: [...transferBaseline.warnings, ...importWarnings.filter((w) => !transferBaseline!.warnings.includes(w))] };
   } catch (error) {

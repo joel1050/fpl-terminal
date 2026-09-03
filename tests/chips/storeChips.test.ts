@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   baselineWithMigrationFallback,
+  estimatedBaselineFallback,
   exportTerminalState,
   invalidateDownstreamPlans,
   parseSavedState,
@@ -270,5 +271,69 @@ describe("chip store", () => {
     const saved = exportTerminalState(state);
     expect(saved.gameweekPlans?.[1]).toMatchObject({ chip: null });
     expect(saved.budgetTenths).toBe(1003);
+  });
+});
+
+describe("hand-built baseline", () => {
+  it("seeds the bank from the budget and prices the squad at market", () => {
+    const priceById = new Map([[1, 50], [2, 50], [3, 50], [4, 50], [5, 50]]);
+    const baseline = estimatedBaselineFallback(
+      [1, 2, 3, 4, 5],
+      { GK: [1], DEF: [2, 3], MID: [4], FWD: [5] },
+      1000,
+      3,
+      priceById,
+    );
+    expect(baseline.bankTenths).toBe(750);
+    expect(baseline.purchasePricesTenths).toEqual({ 1: 50, 2: 50, 3: 50, 4: 50, 5: 50 });
+    expect(baseline.financialConfidence).toBe("ESTIMATED");
+  });
+
+  it("never reports a negative bank", () => {
+    const priceById = new Map([[1, 900], [2, 900]]);
+    expect(estimatedBaselineFallback([1, 2], { GK: [1], DEF: [2], MID: [], FWD: [] }, 1000, 3, priceById).bankTenths).toBe(0);
+  });
+
+  it("keeps a zero bank when no prices are supplied", () => {
+    expect(estimatedBaselineFallback([1], { GK: [1], DEF: [], MID: [], FWD: [] }, 1000, 3).bankTenths).toBe(0);
+  });
+});
+
+describe("setBankTenths", () => {
+  const importedBaseline = {
+    squadPlayerIds: [1],
+    byPosition: { GK: [1], DEF: [], MID: [], FWD: [] },
+    bankTenths: 3,
+    freeTransfers: 1,
+    purchasePricesTenths: { 1: 50 },
+    financialConfidence: "EXACT" as const,
+    startGameweek: 1,
+    warnings: [],
+  };
+
+  it("writes the bank onto an imported baseline", () => {
+    useTerminalStore.setState({ entryId: 4827193, transferBaseline: importedBaseline, playerIds: [1], budgetTenths: 1000 });
+    expect(useTerminalStore.getState().setBankTenths(7, 50)).toBe(true);
+    expect(useTerminalStore.getState().transferBaseline?.bankTenths).toBe(7);
+    expect(useTerminalStore.getState().transferBaseline?.financialConfidence).toBe("ESTIMATED");
+    expect(useTerminalStore.getState().budgetTenths).toBe(1000);
+  });
+
+  it("moves the budget for a hand-built squad so the figure keeps falling", () => {
+    // Freezing a bank onto a fallback baseline would stop it decrementing as
+    // players are added, because the replay pairs sales with purchases.
+    useTerminalStore.setState({ entryId: undefined, transferBaseline: null, playerIds: [1], budgetTenths: 1000 });
+    expect(useTerminalStore.getState().setBankTenths(900, 50)).toBe(true);
+    expect(useTerminalStore.getState().budgetTenths).toBe(950);
+    expect(useTerminalStore.getState().transferBaseline).toBeNull();
+  });
+
+  it("rejects a negative or non-integer bank and leaves state untouched", () => {
+    useTerminalStore.setState({ entryId: undefined, transferBaseline: null, budgetTenths: 1000 });
+    expect(useTerminalStore.getState().setBankTenths(-1, 0)).toBe(false);
+    expect(useTerminalStore.getState().setBankTenths(1.5, 0)).toBe(false);
+    expect(useTerminalStore.getState().setBankTenths(7, -1)).toBe(false);
+    expect(useTerminalStore.getState().transferBaseline).toBeNull();
+    expect(useTerminalStore.getState().budgetTenths).toBe(1000);
   });
 });
