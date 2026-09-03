@@ -35,6 +35,15 @@ async function generationKey(generatedDir: string): Promise<string | null> {
 }
 
 /**
+ * Which generation of the generated files the cached bundle came from, or null
+ * when nothing has been loaded yet. Callers that cache their own work derived
+ * from the bundle fold this into their key, so an ingest retires that too.
+ */
+export function historicalBundleGeneration(generatedDir: string = GENERATED_DIR): string | null {
+  return cache.get(generatedDir)?.key ?? null;
+}
+
+/**
  * Parses the generated historical inputs, reusing the last parse while the
  * files are untouched. The four files run to megabytes and every projection
  * request needs all of them, so reparsing per request cost real time for an

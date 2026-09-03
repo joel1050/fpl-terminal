@@ -42,6 +42,7 @@ const players = [
 vi.mock("@/lib/fpl/normalize", () => ({
   normalizeBootstrap: vi.fn(() => mocks.normalized),
   enrichBootstrapWithProjections: vi.fn((bootstrap) => ({ bootstrap, metadata: {} })),
+  projectionCacheKey: vi.fn(() => "test-generation"),
 }));
 
 mocks.normalized = { players, teams: [], fixtures: [], events: [{ id: 3, isCurrent: true, isNext: false }] };

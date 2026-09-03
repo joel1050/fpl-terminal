@@ -1,7 +1,7 @@
 import { getBootstrap, getFixtures } from "@/lib/fpl/client";
 import { loadHistoricalBundle } from "@/lib/historical/load";
 import { fplJson, errorList, refreshRequested } from "@/lib/fpl/http";
-import { enrichBootstrapWithProjections, normalizeBootstrap } from "@/lib/fpl/normalize";
+import { enrichBootstrapWithProjections, normalizeBootstrap, projectionCacheKey } from "@/lib/fpl/normalize";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,10 @@ export async function GET(request: Request): Promise<Response> {
   const enriched = await enrichBootstrapWithProjections(
     normalizeBootstrap(bootstrap.data, fixtures.data ?? []),
     historical,
+    {
+      cacheKey: projectionCacheKey(bootstrap.freshness, fixtures.freshness),
+      forceRefresh: options.forceRefresh,
+    },
   );
   return fplJson(
     enriched.bootstrap,

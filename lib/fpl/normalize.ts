@@ -14,6 +14,8 @@ import {
 } from "@/lib/historical/enrichPlayers";
 import { loadInSeasonPlayerRates, loadInSeasonStarts, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
 import { ensureFreshRotowireLineups } from "@/lib/availability/refreshLineups";
+import { historicalBundleGeneration } from "@/lib/historical/load";
+import type { FreshnessMetadata } from "./cache";
 import {
   type FplBootstrapPayload,
   type FplFixturePayload,
@@ -330,23 +332,72 @@ export function normalizeBootstrap(
   };
 }
 
+export interface EnrichProjectionsOptions {
+  /**
+   * Identifies the upstream generation these projections are computed from,
+   * from `projectionCacheKey`. Omit it and nothing is cached: a caller that
+   * cannot say what it holds must not be served another caller's work.
+   */
+  cacheKey?: string | null;
+  /** Recompute even on a key match, so `?refresh=1` reaches this layer too. */
+  forceRefresh?: boolean;
+}
+
+type EnrichedBootstrap = { bootstrap: NormalizedBootstrap; metadata: BootstrapProjectionMetadata };
+
+/**
+ * Names the upstream generation a projection run belongs to. Null whenever
+ * either freshness is unknown — unlike the historical bundle, where an
+ * unreadable file falls back to the last good parse, an unknown generation
+ * here means we cannot tell what we are holding, so the safe answer is to
+ * recompute rather than to serve.
+ */
+export function projectionCacheKey(
+  bootstrap: FreshnessMetadata | null,
+  fixtures: FreshnessMetadata | null,
+): string | null {
+  if (!bootstrap || !fixtures) return null;
+  return `${bootstrap.source}@${bootstrap.fetchedAt}|${fixtures.source}@${fixtures.fetchedAt}`;
+}
+
+/**
+ * One slot, not a map: only one generation is ever current, and an enriched
+ * bootstrap runs to megabytes.
+ */
+let projectionCache: { key: string; result: EnrichedBootstrap } | null = null;
+
 export async function enrichBootstrapWithProjections(
   bootstrap: NormalizedBootstrap,
   historical: HistoricalBundle | null,
-): Promise<{ bootstrap: NormalizedBootstrap; metadata: BootstrapProjectionMetadata }> {
-  // All three must settle before enrichPlayersWithHistory, which reads the
-  // generated lineup files off disk synchronously. They are independent of each
-  // other: the refresh writes data/generated, the two form loaders read the
-  // snapshot cache.
-  const [inSeasonForm, playerForm, startHistory, lineups] = await Promise.all([
-    loadInSeasonTeamXG(bootstrap.players, bootstrap.fixtures),
-    loadInSeasonPlayerRates(bootstrap.players, bootstrap.fixtures),
-    loadInSeasonStarts(bootstrap.players, bootstrap.fixtures),
-    ensureFreshRotowireLineups(bootstrap.players),
-  ]);
+  options: EnrichProjectionsOptions = {},
+): Promise<EnrichedBootstrap> {
+  // Hoisted above the cache deliberately. This is the 24-hour max-age check on
+  // the lineup snapshot; leave it below and a warm cache would keep a stale
+  // snapshot alive forever. Its own in-flight guard and cooldown make calling
+  // it per request cheap.
+  const lineups = await ensureFreshRotowireLineups(bootstrap.players);
   if (lineups.reason === "failed") {
     console.warn(`RotoWire auto-refresh failed, keeping the ${lineups.fetchedAt ?? "existing"} snapshot:`, lineups.error);
   }
+
+  // The caller's key covers the FPL payloads. The rest of the inputs move on
+  // their own schedule, so each contributes its own generation.
+  const key = options.cacheKey
+    ? [
+        options.cacheKey,
+        lineups.fetchedAt ?? "no-lineups",
+        historicalBundleGeneration() ?? "no-history-files",
+        historical === null ? "unmapped" : "mapped",
+      ].join("|")
+    : null;
+  if (key && !options.forceRefresh && projectionCache?.key === key) return projectionCache.result;
+
+  // Both loaders read the snapshot cache and are independent of each other.
+  const [inSeasonForm, playerForm, startHistory] = await Promise.all([
+    loadInSeasonTeamXG(bootstrap.players, bootstrap.fixtures),
+    loadInSeasonPlayerRates(bootstrap.players, bootstrap.fixtures),
+    loadInSeasonStarts(bootstrap.players, bootstrap.fixtures),
+  ]);
   const enriched = enrichPlayersWithHistory(
     bootstrap.players,
     bootstrap.teams,
@@ -356,10 +407,12 @@ export async function enrichBootstrapWithProjections(
     playerForm,
     startHistory,
   );
-  return {
+  const result: EnrichedBootstrap = {
     bootstrap: { ...bootstrap, players: enriched.players },
     metadata: { ...enriched.metadata, lineups },
   };
+  if (key) projectionCache = { key, result };
+  return result;
 }
 
 function normalizePerformanceStats(

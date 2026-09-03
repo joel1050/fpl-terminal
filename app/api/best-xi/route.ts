@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getBootstrap, getFixtures } from "@/lib/fpl/client";
-import { enrichBootstrapWithProjections, normalizeBootstrap } from "@/lib/fpl/normalize";
+import { enrichBootstrapWithProjections, normalizeBootstrap, projectionCacheKey } from "@/lib/fpl/normalize";
 import { loadHistoricalBundle } from "@/lib/historical/load";
 import { exactBestPossibleXI } from "@/lib/optimizer/bestPossibleXI";
 import { DEFAULT_BUDGET_TENTHS } from "@/lib/analysis/context";
@@ -26,7 +26,9 @@ export async function POST(request: Request) {
     const [bootstrap, fixtures, historical] = await Promise.all([getBootstrap(), getFixtures(), loadHistoricalBundle()]);
     if (!bootstrap.data) return NextResponse.json({ error: bootstrap.error ?? "FPL data is unavailable" }, { status: 503 });
     const normalized = normalizeBootstrap(bootstrap.data, fixtures.data ?? []);
-    const projected = (await enrichBootstrapWithProjections(normalized, historical)).bootstrap;
+    const projected = (await enrichBootstrapWithProjections(normalized, historical, {
+      cacheKey: projectionCacheKey(bootstrap.freshness, fixtures.freshness),
+    })).bootstrap;
     const gameweek = parsed.data.gameweek
       ?? projected.events.find((event) => event.isCurrent)?.id
       ?? projected.events.find((event) => event.isNext)?.id
