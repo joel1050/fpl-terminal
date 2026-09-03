@@ -1,5 +1,9 @@
-/** One row of FPL's element-summary history: the player's price that gameweek. */
-export type SummaryLike = { history: ReadonlyArray<{ round?: number; value?: number }> };
+/**
+ * One row of FPL's element-summary history: the player's price that gameweek.
+ * `value` is number-like — upstream sends some numeric fields as strings, which
+ * is why the schema uses `numberLike`.
+ */
+export type SummaryLike = { history: ReadonlyArray<{ round?: number; value?: number | string }> };
 
 export interface OpeningPrice {
   priceTenths: number;
@@ -21,8 +25,8 @@ export function openingPriceFromSummary(
   let best: { round: number; value: number } | undefined;
   for (const row of summary.history) {
     const round = row.round;
-    const value = row.value;
-    if (round === undefined || value === undefined) continue;
+    if (round === undefined || row.value === undefined) continue;
+    const value = Number(row.value);
     if (!Number.isSafeInteger(round) || !Number.isFinite(value)) continue;
     if (round < gameweek) continue;
     if (!best || round < best.round) best = { round, value: Math.trunc(value) };

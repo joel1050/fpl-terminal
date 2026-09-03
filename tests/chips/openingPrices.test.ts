@@ -29,6 +29,12 @@ describe("opening prices", () => {
       .toEqual({ priceTenths: 45, exact: true });
   });
 
+  it("accepts a number-like string, as the upstream schema allows", () => {
+    expect(openingPriceFromSummary({ history: [{ round: 1, value: "45" }] }, 1))
+      .toEqual({ priceTenths: 45, exact: true });
+    expect(openingPriceFromSummary({ history: [{ round: 1, value: "nope" }] }, 1)).toBeUndefined();
+  });
+
   it("maps many summaries and skips nulls", () => {
     const summaries = new Map([
       [115, { history: [{ round: 1, value: 45 }] }],
