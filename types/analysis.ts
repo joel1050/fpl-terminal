@@ -91,18 +91,6 @@ export interface SimulationResult {
   explanationFactors: string[];
 }
 
-export type AnalystAction =
-  | { type: "VIEW_PLAYER"; playerId: number }
-  | { type: "SIMULATE_TRANSFER"; outId: number; inId: number }
-  | { type: "APPLY_TRANSFER"; outId: number; inId: number }
-  | { type: "LOCK_PLAYER"; playerId: number }
-  | { type: "OPTIMIZE" };
-
-export interface AIResponse {
-  message: string;
-  actions?: AnalystAction[];
-}
-
 export interface SearchPlayersInput {
   query?: string;
   position?: Position;

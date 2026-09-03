@@ -252,15 +252,6 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("region", { name: /^transfer suggestions$/i })).not.toContainText(/Rice\s*→\s*Saka/i);
   });
 
-  test("keeps the quantitative workspace usable without the AI analyst", async ({ page }) => {
-    await chooseMode(page, /build from scratch/i);
-    await waitForMarket(page);
-
-    await expect(page.getByText(/projection|xpts|expected points|data/i).first()).toBeVisible();
-    await expect(page.getByRole("region", { name: /ai analyst/i })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^ai$/i })).toHaveCount(0);
-  });
-
   test("shows recent matches, dense season stats, previous years, and compact projections in player details", async ({ page }) => {
     await chooseMode(page, /build from scratch/i);
     await waitForMarket(page);

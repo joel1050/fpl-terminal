@@ -160,11 +160,9 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(page.getByTestId("live-roster")).not.toContainText("BGK");
   });
 
-  test("keeps the Live Feed as the whole right rail without an AI analyst or status footer", async ({ page }) => {
+  test("keeps the Live Feed as the whole right rail without a status footer", async ({ page }) => {
     await importTeam(page);
 
-    await expect(page.getByText(/^AI ANALYST$/i)).toHaveCount(0);
-    await expect(page.getByRole("region", { name: /ai analyst/i })).toHaveCount(0);
     await expect(page.getByText(/DEADLINE PASSED|AUTO-SUBS ON/i)).toHaveCount(0);
 
     const feed = page.getByRole("complementary", { name: "Live feed" });

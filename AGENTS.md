@@ -41,8 +41,6 @@ Keep the three data tiers strictly separate:
 - **Evidence**: Prior-season match statistics (Vaastav dataset), RotoWire predicted/confirmed lineups, and published injury labels (`QUES`, `OUT`, `SUS`).
 - **Estimates**: Expected minutes, scenario-weighted xP, team strengths, nailed ratings, risk scores, and confidence levels are deterministic model calculations.
 
-**AI Boundary**: DeepSeek (`/api/ai`) is optional, server-side, and read-only advisory. It receives deterministic tool results to explain recommendations or propose transfers. DeepSeek **must never** compute quantitative values, invent facts, or directly mutate application state.
-
 ---
 
 ## Start Here & Developer Commands
@@ -51,7 +49,6 @@ Requires **Node 20.9+**.
 
 ```bash
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 
@@ -99,8 +96,7 @@ app/
     │   └── player/[id]/route.ts     # Fetches player profile & recent match history
     ├── optimizer/route.ts           # Exact full squad optimization and partial completion
     ├── best-xi/route.ts             # Computes highest-scoring legal XI ceiling within budget
-    ├── transfer-suggestions/route.ts# Computes Pareto-optimal single transfers
-    └── ai/route.ts                  # Optional DeepSeek analyst API route
+    └── transfer-suggestions/route.ts# Computes Pareto-optimal single transfers
 
 components/
 ├── terminal/
@@ -167,19 +163,13 @@ lib/
 │   ├── inSeasonForm.ts              # In-season team attack/defense xG blending
 │   ├── loadInSeasonForm.ts          # Loads live in-season player rates and appearance histories
 │   └── ingest.ts                    # Ingests Vaastav raw CSV files
-├── fpl/                             # Upstream FPL client, HTTP handling, and schema validation
+└── fpl/                             # Upstream FPL client, HTTP handling, and schema validation
 │   ├── client.ts                    # Server-side fetchers with caching and error resilience
 │   ├── normalize.ts                 # Converts FPL bootstrap/fixtures into domain models
 │   ├── normalizeLeagues.ts          # Normalizes FPL entry and league payloads
 │   ├── schemas.ts                   # Strict Zod schemas for all upstream endpoints
-│   ├── cache.ts                     # In-memory server caching with TTL
-│   └── http.ts                      # Standard JSON response helpers and freshness metadata
-└── ai/                              # DeepSeek analyst integration
-    ├── systemPrompt.ts              # Analyst system prompt enforcing factual grounding
-    ├── deepseek.ts                  # OpenAI-compatible DeepSeek API client
-    ├── agent.ts                     # Multi-turn tool-calling agent runner
-    ├── tools.ts                     # Tool definitions exposing deterministic domain functions
-    └── schemas.ts                   # Zod schemas for AI requests and tool parameters
+    ├── cache.ts                     # In-memory server caching with TTL
+    └── http.ts                      # Standard JSON response helpers and freshness metadata
 
 store/
 └── terminalStore.ts                 # Zustand client store: atomic squad mutations, local-storage persistence,
@@ -205,7 +195,6 @@ tests/                               # Test suite mirroring domain modules
 ├── data/                            # Upstream contract tests, RotoWire precedence, snapshot guards
 ├── store/                           # Zustand store mutations, validation atomicity, planning gameweek
 ├── ui/                              # Freshness indicators, player selection, responsive views
-├── ai/                              # AI analyst routes, agent loop, tool execution
 ├── fixtures/                        # Stable offline mock fixtures for browser and unit tests
 └── e2e/                             # Playwright browser acceptance tests
 ```

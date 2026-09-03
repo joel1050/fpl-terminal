@@ -83,22 +83,3 @@ export interface WeeklyLineupPlan {
   warnings: string[];
   projectionFingerprint: string;
 }
-
-export interface AnalystContext {
-  gameweek: number;
-  squad: {
-    playerIds: number[];
-    lockedPlayerIds: number[];
-    captainId?: number;
-    viceCaptainId?: number;
-  };
-  finances: {
-    costTenths: PriceTenths;
-    bankTenths: PriceTenths;
-  };
-  strategy: {
-    horizon: Horizon;
-    risk: "SAFE" | "BALANCED" | "AGGRESSIVE";
-    bench: "CHEAP" | "BALANCED" | "STRONG";
-  };
-}

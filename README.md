@@ -1,12 +1,11 @@
 # FPL Terminal
 
-FPL Terminal is a local-first quantitative Fantasy Premier League workstation. You build or paste a squad, then inspect legality, budget, expected points, minutes security, fixture context, weak links, replacements, and transfer simulations. The quantitative core works without an AI key; DeepSeek explains the numbers when configured.
+FPL Terminal is a local-first quantitative Fantasy Premier League workstation. You build or paste a squad, then inspect legality, budget, expected points, minutes security, fixture context, weak links, replacements, and transfer simulations.
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env.local
 npm run data:ingest
 npm run dev
 ```
@@ -14,10 +13,6 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000). Historical ingestion is a local preparation step; if its upstream source is unavailable, the live-data shell can still start and reports the missing snapshot instead of inventing player data.
 
 The stack is Next.js App Router, React, strict TypeScript, Tailwind CSS, Zustand, TanStack Query, Zod, Vitest, and Playwright. The MVP deliberately has no database or authentication dependency.
-
-## Environment
-
-`DEEPSEEK_API_KEY` is optional. Add it to `.env.local` to enable the analyst, and set `DEEPSEEK_MODEL` when using a different OpenAI-compatible DeepSeek model. Keep both values server-side; they must never be prefixed with `NEXT_PUBLIC_`. `NEXT_PUBLIC_DEBUG_AI=true` enables the local AI request/debug panel when investigating a setup.
 
 ## Commands
 
@@ -32,7 +27,7 @@ npm run lint         # ESLint
 npm run build        # production build
 ```
 
-The E2E suite intercepts the FPL and analyst data boundaries with clearly labelled test fixtures. It does not alter production data or require a live FPL/DeepSeek account.
+The E2E suite intercepts the FPL data boundaries with clearly labelled test fixtures. It does not alter production data or require a live FPL account.
 
 ## Architecture
 
@@ -42,8 +37,6 @@ The app keeps facts, estimates, and explanations separate:
 2. The normalization layer converts raw FPL payloads into the `Player`, `Fixture`, and team-strength contracts used by the rest of the app. Price stays in integer tenths (`105` means £10.5m) so budget checks do not depend on floating-point arithmetic.
 3. Historical inputs are downloaded from the Vaastav Fantasy Premier League repository and normalized into compact local files. Current-season live FPL data remains the source of truth for price, availability, ownership, fixtures, deadlines, and current statistics.
 4. Projection, validation, budget, optimizer, weakness, replacement, and simulation engines are deterministic application code. They enforce the 15-player squad rules, £100.0m budget, position limits, three-player club limit, locked players, and legal starting-XI constraints without asking the LLM to calculate.
-5. The optional DeepSeek client receives compact squad context and tool results, then explains or proposes actions. It cannot directly mutate squad state, and the quantitative workspace stays usable when the key is absent or the request fails.
-
 Squad preferences and working state are stored in browser local storage. There is no database, authentication, or cloud account integration in this MVP.
 
 ## Live and historical data
@@ -59,10 +52,6 @@ Live requests go through the Next.js server boundary rather than directly from t
 Projection Model v0.1 is an internally constructed, transparent expected-points estimate. The weekly selection model combines RotoWire's predicted XI and injury labels with historical starts and live FPL availability to produce `P(start)`, `P(cameo)`, confidence, and a 1–5 nailed rating. Expected points then weight separate 80-minute start, 20-minute cameo, and no-show scenarios before adding fixture context and the usual appearance, attacking, clean-sheet, save, bonus, and defensive-contribution components. Doubles sum both fixtures, while three- and five-week totals count distinct Gameweeks.
 
 This is not Opta, official FPL prediction, or a commercial bookmaker model. New signings, promoted players, role changes, injuries, and early-season minutes carry material uncertainty; confidence and risk are shown alongside the estimate. Fixture difficulty is an input, not the whole model.
-
-## DeepSeek analyst
-
-The analyst is optional and uses an OpenAI-compatible DeepSeek Chat Completions endpoint. Routine questions use normal mode; complex tool-backed requests may use thinking mode. The app passes deterministic tool output for prices, projections, replacements, simulations, and legality, so the model is asked to explain those results rather than invent facts. If `DEEPSEEK_API_KEY` is missing or the service is unavailable, the UI says `AI ANALYST OFFLINE` and the builder, optimizer, and analysis views remain available.
 
 ## Known limitations
 

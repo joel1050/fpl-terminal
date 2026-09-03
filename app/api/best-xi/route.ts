@@ -6,6 +6,7 @@ import { enrichBootstrapWithProjections, normalizeBootstrap } from "@/lib/fpl/no
 import { loadHistoricalBundle } from "@/lib/historical/load";
 import { exactBestPossibleXI } from "@/lib/optimizer/bestPossibleXI";
 import { DEFAULT_BUDGET_TENTHS } from "@/lib/analysis/context";
+import { enforceComputeRateLimit } from "@/lib/http/computeRateLimit";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,9 @@ const requestSchema = z.object({
 }).strict();
 
 export async function POST(request: Request) {
+  const rateLimited = enforceComputeRateLimit(request, "best-xi");
+  if (rateLimited) return rateLimited;
+
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid best possible XI request" }, { status: 400 });
 

@@ -6,6 +6,7 @@ import { legalSquad, playerMap } from "@/lib/analysis/context";
 import { getBootstrap, getFixtures } from "@/lib/fpl/client";
 import { enrichBootstrapWithProjections, normalizeBootstrap } from "@/lib/fpl/normalize";
 import { loadHistoricalBundle } from "@/lib/historical/load";
+import { enforceComputeRateLimit } from "@/lib/http/computeRateLimit";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,9 @@ const requestSchema = z.object({
 }).strict();
 
 export async function POST(request: Request) {
+  const rateLimited = enforceComputeRateLimit(request, "transfer-suggestions");
+  if (rateLimited) return rateLimited;
+
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid single-transfer request" }, { status: 400 });
 

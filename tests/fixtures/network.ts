@@ -71,12 +71,6 @@ export async function interceptFplData(page: Page) {
       return;
     }
 
-    if (/(?:ai|analyst|chat)/.test(pathname) && route.request().method() !== "GET") {
-      // The acceptance test models a missing key without making a production API call.
-      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "DEEPSEEK_API_KEY is not configured" }) });
-      return;
-    }
-
     if (pathname === "/api/best-xi" && route.request().method() === "POST") {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ gameweek: 1, budgetTenths: 1000, projectedXI: 81, captainBonus: 9, projectedTotal: 90, playerIds: [] }) });
       return;
@@ -358,11 +352,6 @@ export async function interceptLeaguesData(page: Page, options: LeaguesIntercept
 
     if (pathname === `/api/fpl/entry/${USER_ENTRY_ID}`) {
       await fulfill(profilePayload);
-      return;
-    }
-
-    if (pathname === "/api/ai") {
-      await fulfill({ enabled: false });
       return;
     }
 
