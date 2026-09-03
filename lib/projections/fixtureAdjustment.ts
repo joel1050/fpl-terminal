@@ -17,6 +17,23 @@ export interface FixtureAdjustmentResult {
 export const LEAGUE_AVERAGE_GOALS_AGAINST = 1.35;
 
 /**
+ * Long-run league clean-sheet rate, the target of the top-end compression
+ * below.
+ */
+export const CLEAN_SHEET_BASE_RATE = 0.25;
+
+/**
+ * Share of an above-average clean-sheet read that is retained, the rest
+ * relaxing toward CLEAN_SHEET_BASE_RATE. Walk-forward over 2023/24-2024/25,
+ * the table's top quintile over-projected defender clean-sheet-plus-conceded
+ * points by +0.20 per appearance while the bottom two quintiles calibrated,
+ * so the compression is one-sided. Weights 0.70-0.90 all beat the unshrunk
+ * table on team-level Brier in both seasons; 0.75 is the middle. Full-xP
+ * dRMSE -0.00163 with the paired gameweek-cluster interval excluding zero.
+ */
+export const CLEAN_SHEET_RETAINED_WEIGHT = 0.75;
+
+/**
  * Attacking home advantage, measured over all 380 fixtures of 2025/26 rather
  * than assumed: home sides averaged 1.551 xG and away sides 1.264, so against
  * the 1.408 league mean the multipliers are 1.102 and 0.898. Actual goals
@@ -163,6 +180,12 @@ export function calculateFixtureAdjustment(
   }
   attackMultiplier = clamp(attackMultiplier, MULTIPLIER_CLAMP[0], MULTIPLIER_CLAMP[1]);
   cleanSheetProbability ??= clamp(Math.exp(-expectedGoalsAgainst), 0.03, 0.65);
+  // The market table overstates the top end out of sample (the strongest
+  // defences keep fewer clean sheets than the top rows imply), so compress
+  // reads above the long-run rate toward it. One-sided by measurement, not by
+  // caution: shrinking the bottom end as well cost xP in both seasons tested.
+  cleanSheetProbability -= (1 - CLEAN_SHEET_RETAINED_WEIGHT)
+    * Math.max(0, cleanSheetProbability - CLEAN_SHEET_BASE_RATE);
   // One goals-against number per fixture. Inverting the clean-sheet probability
   // keeps the lookup table and the goals-conceded deduction from disagreeing:
   // both now come from the same Poisson.

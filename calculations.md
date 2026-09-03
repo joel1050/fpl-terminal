@@ -511,6 +511,8 @@ c = clamp((opponentAttack - 0.84) / 0.08, 0, 4)
 ```
 This produces smooth, continuous probability transitions as team form shifts throughout the season, eliminating artificial jump discontinuities while preserving exact values on integer tier coordinates. In walk-forward testing over 660 team-fixtures, continuous bilinear interpolation lowers clean sheet Brier score to 0.18469 and logloss to 0.55321 (vs 0.18527 and 0.55452 for discrete snapping). When combined with schedule-adjusted team form (§3.3), this lowered walk-forward xP RMSE to 2.69866 (-0.00162 vs discrete baseline, winning 19 of 33 gameweeks).
 
+Reads above the long-run clean-sheet rate (0.25) are compressed one-sided toward it, retaining 75% of the excess (`CLEAN_SHEET_RETAINED_WEIGHT`, `lib/projections/fixtureAdjustment.ts`). The table's top quintile over-projected defender clean-sheet-plus-conceded points by +0.20 per appearance over 2023/24-2024/25 while the bottom two quintiles calibrated, so the bottom is left alone; weights 0.70-0.90 all beat the unshrunk table on team-level Brier in both seasons. Full-xP dRMSE -0.00163 with the paired gameweek-cluster interval excluding zero.
+
 ### 7.5 What section 7 returns
 
 `attackMultiplier`, `cleanSheetProbability` and `expectedGoalsAgainst`, and

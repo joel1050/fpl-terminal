@@ -26,7 +26,18 @@ export interface Variant {
   leagueAverageGoals: number;
   /** Save volume scales with the derived lambda, or with the opponent's attack. */
   savesEnvironment: "LAMBDA" | "OPPONENT_ATTACK";
+  /**
+   * Compress clean-sheet probabilities above CS_SHRINK_BASE toward it before
+   * the goals-against number is derived from it. One-sided: only the top end
+   * showed over-confidence out of sample, so the bottom is left alone. 1.0 (or
+   * undefined) reproduces the unshrunk table read exactly; validate.ts gates
+   * the undefined path.
+   */
+  csShrinkWeight?: number;
 }
+
+/** Long-run league clean-sheet rate, the shrinkage target. */
+export const CS_SHRINK_BASE = 0.25;
 
 /** What lib/projections/fixtureAdjustment.ts does today. validate.ts gates this. */
 export const BASELINE: Variant = {
@@ -37,6 +48,9 @@ export const BASELINE: Variant = {
   cleanSheet: "BILINEAR",
   leagueAverageGoals: 1.35,
   savesEnvironment: "LAMBDA",
+  // Shipped top-end clean-sheet compression (lib CLEAN_SHEET_RETAINED_WEIGHT).
+  // Set to undefined to recover the unshrunk table read.
+  csShrinkWeight: 0.75,
 };
 
 /** Measured over all 380 fixtures of 2025/26; see sweep.ts. */
@@ -48,6 +62,7 @@ export const LEGACY: Variant = {
   venue: [1.03, 0.97],
   attackRatioClamp: [0.78, 1.22],
   multiplierClamp: [0.7, 1.3],
+  csShrinkWeight: undefined,
 };
 
 const difficultyMultiplier: Record<number, number> = { 1: 1.14, 2: 1.07, 3: 1, 4: 0.92, 5: 0.84 };
@@ -165,6 +180,10 @@ export function adjust(
 
   attackMultiplier = clamp(attackMultiplier, variant.multiplierClamp[0], variant.multiplierClamp[1]);
   cleanSheetProbability ??= clamp(Math.exp(-expectedGoalsAgainst), 0.03, 0.65);
+  if (variant.csShrinkWeight !== undefined) {
+    cleanSheetProbability -= (1 - variant.csShrinkWeight)
+      * Math.max(0, cleanSheetProbability - CS_SHRINK_BASE);
+  }
   expectedGoalsAgainst = -Math.log(clamp(cleanSheetProbability, 0.03, 0.9));
 
   const savesEnvironment = variant.savesEnvironment === "OPPONENT_ATTACK"
