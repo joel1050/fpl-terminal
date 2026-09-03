@@ -297,3 +297,58 @@ describe("import price provenance", () => {
     expect(result.baseline.purchasePricesTenths[16]).toBe(60);
   });
 });
+
+describe("a squad mid-edit", () => {
+  // Selling and buying are paired into transfers, but a squad being edited
+  // passes through states where they are not: 14 players after a removal, 15
+  // again after the replacement. The money has to move at each step.
+  const baseline = {
+    squadPlayerIds: [...SQUAD],
+    byPosition: { GK: [...BY_POSITION.GK], DEF: [...BY_POSITION.DEF], MID: [...BY_POSITION.MID], FWD: [...BY_POSITION.FWD] },
+    bankTenths: 10,
+    freeTransfers: 1,
+    purchasePricesTenths: Object.fromEntries(SQUAD.map((id) => [id, 50])),
+    financialConfidence: "EXACT" as const,
+    startGameweek: 1,
+    warnings: [] as string[],
+  };
+  const week = (playerIds: number[], overrides: Record<number, number> = {}) => replayTimeline({
+    baseline,
+    plans: { 1: { playerIds, chip: null } },
+    priceById: prices(overrides),
+    fromGameweek: 1,
+    toGameweek: 1,
+  })[1];
+
+  it("credits the bank when a player is removed and not yet replaced", () => {
+    // Player 15 was bought at 50 and is still 50, so it sells for 50.
+    expect(week(SQUAD.filter((id) => id !== 15)).bankTenths).toBe(60);
+  });
+
+  it("credits only the selling price, never the risen market price", () => {
+    // Bought at 50, now 60: the sale returns 50 + floor(10/2) = 55.
+    expect(week(SQUAD.filter((id) => id !== 15), { 15: 60 }).bankTenths).toBe(65);
+  });
+
+  it("debits the bank when a player is added into an empty slot", () => {
+    expect(week([...SQUAD, 16]).bankTenths).toBe(10 - 60);
+  });
+
+  it("charges no hit for a removal on its own", () => {
+    // A transfer is an out and an in. Half of one is not a transfer yet.
+    const removal = week(SQUAD.filter((id) => id !== 15));
+    expect(removal.hitCost).toBe(0);
+    expect(removal.transfers).toEqual([]);
+    expect(removal.freeTransfersAfter).toBe(2);
+  });
+
+  it("forgets the purchase price of a player who has gone", () => {
+    expect(week(SQUAD.filter((id) => id !== 15)).purchasePricesTenths[15]).toBeUndefined();
+  });
+
+  it("still costs a straight swap as one transfer", () => {
+    const swap = week([...SQUAD.filter((id) => id !== 15), 16]);
+    expect(swap.bankTenths).toBe(10 + 50 - 60);
+    expect(swap.transfers).toHaveLength(1);
+  });
+});

@@ -60,7 +60,22 @@ function positionOf(
   return "MID";
 }
 
-function diffSquads(before: readonly number[], after: readonly number[], positionById: ReplayTimelineInput["positionById"], byPosition?: Record<Position, number[]>): PlannedTransfer[] {
+interface SquadDiff {
+  /** Paired out-and-in moves. Only these are transfers for counting and hits. */
+  transfers: PlannedTransfer[];
+  /** Sold with nothing bought against them: money in, not yet a transfer. */
+  soldOnly: number[];
+  /** Bought into an empty slot: money out, not yet a transfer. */
+  boughtOnly: number[];
+}
+
+/**
+ * A squad being edited passes through states that are not legal FPL squads:
+ * fourteen players after a removal, sixteen before one. Pairing sales with
+ * purchases describes the finished transfer, so the leftovers are reported
+ * separately - their money moves, but half a transfer costs no points.
+ */
+function diffSquads(before: readonly number[], after: readonly number[], positionById: ReplayTimelineInput["positionById"], byPosition?: Record<Position, number[]>): SquadDiff {
   const beforeSet = new Set(before);
   const afterSet = new Set(after);
   const outs = before.filter((id) => !afterSet.has(id));
@@ -70,7 +85,7 @@ function diffSquads(before: readonly number[], after: readonly number[], positio
   for (let i = 0; i < count; i += 1) {
     transfers.push({ outId: outs[i], inId: ins[i], position: positionOf(positionById, byPosition, ins[i]) });
   }
-  return transfers;
+  return { transfers, soldOnly: outs.slice(count), boughtOnly: ins.slice(count) };
 }
 
 /**
@@ -95,7 +110,31 @@ export function replayTimeline(input: ReplayTimelineInput): Record<number, Timel
     const chip = plan?.chip ?? null;
     const target = plan ? [...plan.playerIds] : [...permanent];
     const isChipFree = chip === "wildcard" || chip === "freehit";
-    const transfers = diffSquads(permanent, target, input.positionById, plan?.byPosition);
+    const { transfers, soldOnly, boughtOnly } = diffSquads(permanent, target, input.positionById, plan?.byPosition);
+
+    /** Moves the money for a half-finished edit: a sale with no purchase, or the reverse. */
+    const applyUnpaired = (startingBank: number, priceLedger: Record<number, number>): number => {
+      let running = startingBank;
+      for (const id of soldOnly) {
+        const sellCurrent = priceOf(input.priceById, id);
+        if (sellCurrent === undefined) {
+          warnings.push(`GW${gw}: missing price for player ${id}; bank may be inaccurate.`);
+          continue;
+        }
+        running = applySale(running, priceLedger[id] ?? sellCurrent, sellCurrent);
+        delete priceLedger[id];
+      }
+      for (const id of boughtOnly) {
+        const buyPrice = priceOf(input.priceById, id);
+        if (buyPrice === undefined) {
+          warnings.push(`GW${gw}: missing price for player ${id}; bank may be inaccurate.`);
+          continue;
+        }
+        running -= Math.trunc(buyPrice);
+        priceLedger[id] = Math.trunc(buyPrice);
+      }
+      return running;
+    };
 
     if (transfers.length > SEASON_CHIP_POLICY.maxTransfersPerGameweek) {
       warnings.push(`GW${gw}: ${transfers.length} transfers exceed the ${SEASON_CHIP_POLICY.maxTransfersPerGameweek}-transfer cap; only the first ${SEASON_CHIP_POLICY.maxTransfersPerGameweek} are costed.`);
@@ -120,6 +159,7 @@ export function replayTimeline(input: ReplayTimelineInput): Record<number, Timel
         delete nextPrices[transfer.outId];
         nextPrices[transfer.inId] = Math.trunc(buyPrice);
       }
+      nextBank = applyUnpaired(nextBank, nextPrices);
       if (nextBank < 0) warnings.push(`GW${gw}: transfers exceed the available selling value plus bank.`);
       const freeAfter = freeTransfersAfterChipWeek(freeTransfers);
       const active = [...target];
@@ -174,6 +214,7 @@ export function replayTimeline(input: ReplayTimelineInput): Record<number, Timel
       delete nextPrices[transfer.outId];
       nextPrices[transfer.inId] = Math.trunc(buyPrice);
     }
+    nextBank = applyUnpaired(nextBank, nextPrices);
     if (nextBank < 0) warnings.push(`GW${gw}: transfers exceed the available selling value plus bank.`);
     if (accounting.hitCost > 0) warnings.push(`GW${gw}: ${accounting.paidTransfers} transfer(s) beyond the allowance cost ${accounting.hitCost} points.`);
     result[gw] = {
