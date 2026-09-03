@@ -40,6 +40,26 @@ const CASH_XP_PER_TENTH_PER_GAMEWEEK = 0.025;
 const BENCH_STRENGTH_BONUS = 0.04;
 const highsPromise = loadHighs();
 
+function explicitWindowValue(player: Player, gameweeks: number[]): number {
+  return gameweeks.reduce((sum, gameweek) => sum + gameweekValue(player, gameweek), 0);
+}
+
+/**
+ * Window utility over an explicit gameweek list. The risk/minutes/
+ * confidence scale is gameweek-independent, so it is recovered from the
+ * shared helpers at the first scoring gameweek: on the default path this
+ * is exactly windowUtility(player, planGameweek, horizon, risk).
+ */
+function explicitWindowUtility(player: Player, gameweeks: number[], risk: "SAFE" | "BALANCED" | "AGGRESSIVE"): number {
+  const total = explicitWindowValue(player, gameweeks);
+  if (total <= 0) return 0;
+  for (const gameweek of gameweeks) {
+    const single = windowValue(player, gameweek, 1);
+    if (single > 0) return total * (windowUtility(player, gameweek, 1, risk) / single);
+  }
+  return 0;
+}
+
 function idsFromInput(input: OptimizerInput): number[] {
   return idsFromSquad(input.currentSquad ?? input.squad);
 }
@@ -88,7 +108,13 @@ async function solveExact(input: OptimizerInput, fixedIds: readonly number[]): P
   const lastProjectedGameweek = projectedGameweeks.length ? Math.max(...projectedGameweeks) : 1;
   // The squad is built for the gameweek the user is planning, not the live one.
   const planGameweek = input.gameweek ?? firstProjectedGameweek;
-  const gameweeks = Array.from({ length: horizon }, (_, offset) => planGameweek + offset);
+  // Internal chip-planning use: an explicit list of gameweeks to solve over
+  // (Free Hit: one gameweek; Wildcard: remaining selected horizon).
+  const gameweeks = Array.isArray(input.gameweeks) && input.gameweeks.length
+    ? [...input.gameweeks].filter((gw) => Number.isSafeInteger(gw) && gw >= 1 && gw <= 38).sort((a, b) => a - b)
+    : Array.from({ length: horizon }, (_, offset) => planGameweek + offset);
+  const effectiveHorizon = gameweeks.length;
+  const benchBoost = input.benchBoost === true;
   const solverWarnings: string[] = [];
   if (planGameweek < firstProjectedGameweek || gameweeks[gameweeks.length - 1] > lastProjectedGameweek) {
     solverWarnings.push(`Projections cover Gameweeks ${firstProjectedGameweek}-${lastProjectedGameweek}; Gameweeks outside that range score zero.`);
@@ -102,7 +128,11 @@ async function solveExact(input: OptimizerInput, fixedIds: readonly number[]): P
   const goalkeeperBench = (id: number) => `g_${id}`;
   const benchRole = (slot: number, id: number) => `b${slot}_${id}`;
   const captain = (gameweek: number, id: number) => `c${gameweek}_${id}`;
-  const utilities = new Map(players.map((player) => [player.id, windowUtility(player, planGameweek, horizon, risk)]));
+  const utilities = new Map(players.map((player) => [player.id, explicitWindowUtility(player, gameweeks, risk)]));
+
+  // Bench Boost target: all 15 players carry full scoring weight.
+  const benchWeights = benchBoost ? [1, 1, 1] as const : BENCH_WEIGHTS;
+  const keeperWeight = benchBoost ? 1 : 0.05;
 
   for (const player of players) {
     const variables = [squad(player.id), starter(player.id), goalkeeperBench(player.id), benchRole(1, player.id), benchRole(2, player.id), benchRole(3, player.id)];
@@ -110,11 +140,11 @@ async function solveExact(input: OptimizerInput, fixedIds: readonly number[]): P
     const utility = utilities.get(player.id) ?? 0;
     objective.push([utility + (player.projection?.confidence === "HIGH" ? 0.01 : 0), starter(player.id)]);
     // The backup goalkeeper keeps its own, larger price penalty: the 4.0m tier
-    // bias holds whatever the bench strategy is.
-    const cheapPenalty = bench === "CHEAP" ? player.priceTenths * CASH_XP_PER_TENTH_PER_GAMEWEEK * horizon : 0;
+    // bias holds whatever the bench strategy is (lifted for Bench Boost solves).
+    const cheapPenalty = bench === "CHEAP" && !benchBoost ? player.priceTenths * CASH_XP_PER_TENTH_PER_GAMEWEEK * effectiveHorizon : 0;
     const strongBonus = bench === "STRONG" ? utility * BENCH_STRENGTH_BONUS : 0;
-    objective.push([utility * 0.05 - player.priceTenths / 20 - cheapPenalty + strongBonus, goalkeeperBench(player.id)]);
-    BENCH_WEIGHTS.forEach((weight, index) => objective.push([
+    objective.push([utility * keeperWeight - player.priceTenths / 20 - cheapPenalty + strongBonus, goalkeeperBench(player.id)]);
+    benchWeights.forEach((weight, index) => objective.push([
       utility * weight - cheapPenalty + strongBonus,
       benchRole(index + 1, player.id),
     ]));
@@ -124,7 +154,7 @@ async function solveExact(input: OptimizerInput, fixedIds: readonly number[]): P
     } else {
       bounds.push(`${goalkeeperBench(player.id)} = 0`);
     }
-    const rawWindow = windowValue(player, planGameweek, horizon);
+    const rawWindow = explicitWindowValue(player, gameweeks);
     const multiplier = rawWindow && rawWindow > 0 ? utility / rawWindow : 0;
     for (const gameweek of gameweeks) {
       const variable = captain(gameweek, player.id);

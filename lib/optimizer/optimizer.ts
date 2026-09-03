@@ -23,6 +23,13 @@ import {
 export interface OptimizerInput extends CommonOptions {
   /** Gameweek the squad is being planned for; defaults to the first projected one. */
   gameweek?: number;
+  /**
+   * Explicit gameweeks to optimize over. Internal chip-planning use only;
+   * when omitted the solver covers `horizon` consecutive gameweeks.
+   */
+  gameweeks?: number[];
+  /** Internal: give all 15 players full scoring weight (Bench Boost target). */
+  benchBoost?: boolean;
   players?: PlayerUniverse;
   playerPool?: PlayerUniverse;
   squad?: SquadReference;

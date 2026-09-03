@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getEntry: vi.fn(),
   getEntryPicks: vi.fn(),
+  getEntryHistory: vi.fn(),
+  getEntryTransfers: vi.fn(),
+  getBootstrap: vi.fn(),
 }));
 
 vi.mock("@/lib/fpl/client", () => mocks);
@@ -34,6 +37,9 @@ describe("FPL team import route", () => {
       data: { picks, entry_history: { bank: 10, value: 1003 } },
       freshness: null,
     });
+    mocks.getEntryHistory.mockResolvedValue({ data: { chips: [], current: [], past: [] }, freshness: null });
+    mocks.getEntryTransfers.mockResolvedValue({ data: [], freshness: null });
+    mocks.getBootstrap.mockResolvedValue({ data: { elements: [] }, freshness: null });
   });
 
   it("imports and groups all 15 Gameweek 1 picks", async () => {
@@ -64,6 +70,28 @@ describe("FPL team import route", () => {
     expect(response.status).toBe(200);
     expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 2);
     await expect(response.json()).resolves.toMatchObject({ data: { lineup: { gameweek: 2 } } });
+  });
+
+  it("imports the permanent squad when the current picks are a free hit", async () => {
+    const fhPicks = picks.map((pick) => pick.element === 15 ? { ...pick, element: 30 } : pick);
+    mocks.getEntryPicks.mockImplementation(async (entryId: number, gameweek: number) => {
+      if (gameweek === 1) return { data: { picks, entry_history: { bank: 10, value: 1003 } }, freshness: null };
+      return { data: { picks: fhPicks, active_chip: "freehit", entry_history: { bank: 5, value: 1005 } }, freshness: null };
+    });
+    mocks.getEntryHistory.mockResolvedValue({
+      data: { chips: [{ name: "freehit", event: 2 }], current: [{ event: 1, bank: 10, value: 1003 }], past: [] },
+      freshness: null,
+    });
+    const response = await GET(new Request("http://localhost/api/fpl/entry/4827193?gameweek=2"), { params: Promise.resolve({ id: "4827193" }) });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ data: {
+      freeHitImport: true,
+      usedChips: [{ kind: "freehit", gameweek: 2 }],
+      squad: { playerIds: expect.arrayContaining([15]) },
+    } });
+    const body = await (await GET(new Request("http://localhost/api/fpl/entry/4827193?gameweek=2"), { params: Promise.resolve({ id: "4827193" }) })).json();
+    expect(body.data.squad.playerIds).not.toContain(30);
+    expect(body.data.transferBaseline).toMatchObject({ financialConfidence: expect.any(String) });
   });
 
   it("rejects an invalid gameweek before fetching the entry", async () => {

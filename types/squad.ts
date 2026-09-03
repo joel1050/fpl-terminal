@@ -1,5 +1,6 @@
 import type { Player, Position, PriceTenths } from "./player";
 import type { Horizon } from "./projection";
+import type { ChipKind } from "./chips";
 
 export const SQUAD_SIZE = 15;
 export const INITIAL_BUDGET_TENTHS: PriceTenths = 1000;
@@ -62,6 +63,7 @@ export interface WeeklyLineupInput {
   squad: readonly Player[];
   gameweek: number;
   riskMode: LineupRiskMode;
+  chip?: ChipKind | null;
 }
 
 export type OutfieldBenchOrder = [number, number, number];
@@ -82,4 +84,5 @@ export interface WeeklyLineupPlan {
   explanations: string[];
   warnings: string[];
   projectionFingerprint: string;
+  chip?: ChipKind | null;
 }

@@ -11,6 +11,7 @@ export const FPL_CACHE_TTLS_MS = {
   entry: 5 * 60 * 1000,
   entryPicks: 10 * 60 * 1000,
   entryHistory: 15 * 60 * 1000,
+  entryTransfers: 15 * 60 * 1000,
   league: 5 * 60 * 1000,
 } as const;
 
