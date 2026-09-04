@@ -313,26 +313,33 @@ describe("setBankTenths", () => {
 
   it("writes the bank onto an imported baseline", () => {
     useTerminalStore.setState({ entryId: 4827193, transferBaseline: importedBaseline, playerIds: [1], budgetTenths: 1000 });
-    expect(useTerminalStore.getState().setBankTenths(7, 50)).toBe(true);
+    expect(useTerminalStore.getState().setBankTenths(7, 50, 3)).toBe(true);
     expect(useTerminalStore.getState().transferBaseline?.bankTenths).toBe(7);
     expect(useTerminalStore.getState().transferBaseline?.financialConfidence).toBe("ESTIMATED");
     expect(useTerminalStore.getState().budgetTenths).toBe(1000);
+  });
+
+  it("does not apply a planned transfer gain to an edited bank twice", () => {
+    useTerminalStore.setState({ entryId: 4827193, transferBaseline: importedBaseline, playerIds: [1], budgetTenths: 1000 });
+    // The replay is showing 0.5 after a transfer added 0.2 to the 0.3 baseline.
+    expect(useTerminalStore.getState().setBankTenths(7, 50, 5)).toBe(true);
+    expect(useTerminalStore.getState().transferBaseline?.bankTenths).toBe(5);
   });
 
   it("moves the budget for a hand-built squad so the figure keeps falling", () => {
     // Freezing a bank onto a fallback baseline would stop it decrementing as
     // players are added, because the replay pairs sales with purchases.
     useTerminalStore.setState({ entryId: undefined, transferBaseline: null, playerIds: [1], budgetTenths: 1000 });
-    expect(useTerminalStore.getState().setBankTenths(900, 50)).toBe(true);
+    expect(useTerminalStore.getState().setBankTenths(900, 50, 950)).toBe(true);
     expect(useTerminalStore.getState().budgetTenths).toBe(950);
     expect(useTerminalStore.getState().transferBaseline).toBeNull();
   });
 
   it("rejects a negative or non-integer bank and leaves state untouched", () => {
     useTerminalStore.setState({ entryId: undefined, transferBaseline: null, budgetTenths: 1000 });
-    expect(useTerminalStore.getState().setBankTenths(-1, 0)).toBe(false);
-    expect(useTerminalStore.getState().setBankTenths(1.5, 0)).toBe(false);
-    expect(useTerminalStore.getState().setBankTenths(7, -1)).toBe(false);
+    expect(useTerminalStore.getState().setBankTenths(-1, 0, 0)).toBe(false);
+    expect(useTerminalStore.getState().setBankTenths(1.5, 0, 0)).toBe(false);
+    expect(useTerminalStore.getState().setBankTenths(7, -1, 0)).toBe(false);
     expect(useTerminalStore.getState().transferBaseline).toBeNull();
     expect(useTerminalStore.getState().budgetTenths).toBe(1000);
   });

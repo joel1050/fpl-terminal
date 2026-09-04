@@ -790,8 +790,8 @@ export type TerminalState = {
   dismissedTransferKeys: string[];
   isHydrated: boolean;
   setMode: (mode: TerminalMode | null) => void;
-  /** `spentTenths` is what the squad costs at market; it is used only when no import backs the squad. */
-  setBankTenths: (tenths: number, spentTenths: number) => boolean;
+  /** Market spend and the displayed bank let the store update either a hand-built budget or an imported baseline. */
+  setBankTenths: (tenths: number, spentTenths: number, displayedTenths: number) => boolean;
   initializeGameweek: (currentGameweek: number) => number;
   setPlanningGameweek: (gameweek: number) => boolean;
   switchGameweek: (gameweek: number) => boolean;
@@ -878,17 +878,21 @@ const initial = {
 export const useTerminalStore = create<TerminalState>((set, get) => ({
   ...initial,
   setMode: (mode) => set({ mode }),
-  setBankTenths: (tenths, spentTenths) => {
-    if (!Number.isSafeInteger(tenths) || tenths < 0) return false;
+  setBankTenths: (tenths, spentTenths, displayedTenths) => {
+    if (!Number.isSafeInteger(tenths) || tenths < 0 || !Number.isSafeInteger(displayedTenths)) return false;
     const state = get();
     // An imported team has a real baseline, so the bank is a fact about it and
     // the replay debits it as transfers are planned.
     if (state.entryId !== undefined && state.transferBaseline) {
       const baseline = state.transferBaseline;
+      const adjustedBaselineBank = baseline.bankTenths + tenths - displayedTenths;
+      if (adjustedBaselineBank < 0) return false;
       set({
         transferBaseline: {
           ...baseline,
-          bankTenths: tenths,
+          // The field shows the replayed bank. Move the baseline by the edit's
+          // delta so planned transfers are not applied to the typed value twice.
+          bankTenths: adjustedBaselineBank,
           financialConfidence: "ESTIMATED",
           warnings: [
             ...baseline.warnings.filter((text) => !text.startsWith("Bank set by hand")),
