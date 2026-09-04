@@ -791,7 +791,7 @@ export type TerminalState = {
   isHydrated: boolean;
   setMode: (mode: TerminalMode | null) => void;
   /** Market spend and the displayed bank let the store update either a hand-built budget or an imported baseline. */
-  setBankTenths: (tenths: number, spentTenths: number, displayedTenths: number) => boolean;
+  setBankTenths: (tenths: number, context: { spentTenths: number; priceById?: ReadonlyMap<number, number> }) => boolean;
   initializeGameweek: (currentGameweek: number) => number;
   setPlanningGameweek: (gameweek: number) => boolean;
   switchGameweek: (gameweek: number) => boolean;
@@ -878,21 +878,33 @@ const initial = {
 export const useTerminalStore = create<TerminalState>((set, get) => ({
   ...initial,
   setMode: (mode) => set({ mode }),
-  setBankTenths: (tenths, spentTenths, displayedTenths) => {
-    if (!Number.isSafeInteger(tenths) || tenths < 0 || !Number.isSafeInteger(displayedTenths)) return false;
+  setBankTenths: (tenths, context) => {
+    if (!Number.isSafeInteger(tenths) || tenths < 0) return false;
     const state = get();
-    // An imported team has a real baseline, so the bank is a fact about it and
-    // the replay debits it as transfers are planned.
+    // An imported team keeps its bank on the baseline, at the gameweek it was
+    // imported, and the strip shows that figure after the replay has applied
+    // everything planned since. The figure typed here describes the bank NOW,
+    // so the baseline is re-anchored to the squad in hand: with nothing left
+    // pending, what the replay shows is what was asked for. Anchoring instead
+    // of subtracting the difference keeps the imported bank from going
+    // negative, which the chip planner would read as a smaller wildcard purse.
     if (state.entryId !== undefined && state.transferBaseline) {
       const baseline = state.transferBaseline;
-      const adjustedBaselineBank = baseline.bankTenths + tenths - displayedTenths;
-      if (adjustedBaselineBank < 0) return false;
+      const purchasePricesTenths: Record<number, number> = {};
+      for (const id of state.playerIds) {
+        // A player owned since the import keeps what it cost then; one brought
+        // in since is priced at today's market, which is what it cost.
+        const price = baseline.purchasePricesTenths[id] ?? context.priceById?.get(id);
+        if (price !== undefined) purchasePricesTenths[id] = Math.trunc(price);
+      }
       set({
         transferBaseline: {
           ...baseline,
-          // The field shows the replayed bank. Move the baseline by the edit's
-          // delta so planned transfers are not applied to the typed value twice.
-          bankTenths: adjustedBaselineBank,
+          squadPlayerIds: [...state.playerIds],
+          byPosition: cloneSlotMap(state.byPosition),
+          bankTenths: tenths,
+          purchasePricesTenths,
+          startGameweek: state.planningGameweek,
           financialConfidence: "ESTIMATED",
           warnings: [
             ...baseline.warnings.filter((text) => !text.startsWith("Bank set by hand")),
@@ -905,8 +917,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     // A squad built by hand has no bank of its own: what is left to spend is
     // the budget minus what the squad costs. Move the budget, so the figure
     // keeps falling as players are added rather than freezing.
-    if (!Number.isSafeInteger(spentTenths) || spentTenths < 0) return false;
-    set({ budgetTenths: spentTenths + tenths });
+    if (!Number.isSafeInteger(context.spentTenths) || context.spentTenths < 0) return false;
+    set({ budgetTenths: context.spentTenths + tenths });
     return true;
   },
   initializeGameweek: (currentGameweek) => {

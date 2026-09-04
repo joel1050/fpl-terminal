@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { replayTimeline } from "@/lib/chips/timeline";
 import {
   baselineWithMigrationFallback,
   estimatedBaselineFallback,
@@ -311,35 +312,74 @@ describe("setBankTenths", () => {
     warnings: [],
   };
 
+  /** What the strip shows: the baseline replayed up to the planning gameweek. */
+  const shownBank = (priceById: ReadonlyMap<number, number>) => {
+    const s = useTerminalStore.getState();
+    return replayTimeline({
+      baseline: s.transferBaseline!,
+      plans: { [s.planningGameweek]: { playerIds: [...s.playerIds], chip: s.chip } },
+      priceById,
+      fromGameweek: Math.min(s.transferBaseline!.startGameweek, s.planningGameweek),
+      toGameweek: s.planningGameweek,
+    })[s.planningGameweek].bankTenths;
+  };
+
   it("writes the bank onto an imported baseline", () => {
     useTerminalStore.setState({ entryId: 4827193, transferBaseline: importedBaseline, playerIds: [1], budgetTenths: 1000 });
-    expect(useTerminalStore.getState().setBankTenths(7, 50, 3)).toBe(true);
+    expect(useTerminalStore.getState().setBankTenths(7, { spentTenths: 50 })).toBe(true);
     expect(useTerminalStore.getState().transferBaseline?.bankTenths).toBe(7);
     expect(useTerminalStore.getState().transferBaseline?.financialConfidence).toBe("ESTIMATED");
     expect(useTerminalStore.getState().budgetTenths).toBe(1000);
   });
 
-  it("does not apply a planned transfer gain to an edited bank twice", () => {
+  it("shows the figure that was typed, whatever was pending", () => {
+    // Player 1 has been sold and not replaced, so the strip was showing the
+    // baseline plus that sale. The typed figure describes the bank now.
+    const priceById = new Map([[1, 50], [2, 60]]);
+    useTerminalStore.setState({
+      entryId: 4827193, transferBaseline: importedBaseline, playerIds: [2],
+      byPosition: { GK: [2], DEF: [], MID: [], FWD: [] }, budgetTenths: 1000, planningGameweek: 1,
+    });
+    expect(shownBank(priceById)).not.toBe(8);
+    expect(useTerminalStore.getState().setBankTenths(8, { spentTenths: 60, priceById })).toBe(true);
+    expect(shownBank(priceById)).toBe(8);
+  });
+
+  it("re-anchors to the squad in hand so nothing is applied on top", () => {
+    const priceById = new Map([[1, 50], [2, 60]]);
+    useTerminalStore.setState({
+      entryId: 4827193, transferBaseline: importedBaseline, playerIds: [2],
+      byPosition: { GK: [2], DEF: [], MID: [], FWD: [] }, budgetTenths: 1000, planningGameweek: 1,
+    });
+    useTerminalStore.getState().setBankTenths(8, { spentTenths: 60, priceById });
+    const baseline = useTerminalStore.getState().transferBaseline!;
+    expect(baseline.squadPlayerIds).toEqual([2]);
+    // A player brought in since the import is priced at what it costs today,
+    // so selling it later returns the right money.
+    expect(baseline.purchasePricesTenths).toEqual({ 2: 60 });
+  });
+
+  it("keeps a known purchase price rather than re-pricing at market", () => {
+    const priceById = new Map([[1, 90]]); // player 1 has risen from 50
     useTerminalStore.setState({ entryId: 4827193, transferBaseline: importedBaseline, playerIds: [1], budgetTenths: 1000 });
-    // The replay is showing 0.5 after a transfer added 0.2 to the 0.3 baseline.
-    expect(useTerminalStore.getState().setBankTenths(7, 50, 5)).toBe(true);
-    expect(useTerminalStore.getState().transferBaseline?.bankTenths).toBe(5);
+    useTerminalStore.getState().setBankTenths(8, { spentTenths: 90, priceById });
+    expect(useTerminalStore.getState().transferBaseline?.purchasePricesTenths).toEqual({ 1: 50 });
   });
 
   it("moves the budget for a hand-built squad so the figure keeps falling", () => {
     // Freezing a bank onto a fallback baseline would stop it decrementing as
     // players are added, because the replay pairs sales with purchases.
     useTerminalStore.setState({ entryId: undefined, transferBaseline: null, playerIds: [1], budgetTenths: 1000 });
-    expect(useTerminalStore.getState().setBankTenths(900, 50, 950)).toBe(true);
+    expect(useTerminalStore.getState().setBankTenths(900, { spentTenths: 50 })).toBe(true);
     expect(useTerminalStore.getState().budgetTenths).toBe(950);
     expect(useTerminalStore.getState().transferBaseline).toBeNull();
   });
 
   it("rejects a negative or non-integer bank and leaves state untouched", () => {
     useTerminalStore.setState({ entryId: undefined, transferBaseline: null, budgetTenths: 1000 });
-    expect(useTerminalStore.getState().setBankTenths(-1, 0, 0)).toBe(false);
-    expect(useTerminalStore.getState().setBankTenths(1.5, 0, 0)).toBe(false);
-    expect(useTerminalStore.getState().setBankTenths(7, -1, 0)).toBe(false);
+    expect(useTerminalStore.getState().setBankTenths(-1, { spentTenths: 0 })).toBe(false);
+    expect(useTerminalStore.getState().setBankTenths(1.5, { spentTenths: 0 })).toBe(false);
+    expect(useTerminalStore.getState().setBankTenths(7, { spentTenths: -1 })).toBe(false);
     expect(useTerminalStore.getState().transferBaseline).toBeNull();
     expect(useTerminalStore.getState().budgetTenths).toBe(1000);
   });
