@@ -356,7 +356,7 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("button", { name: /^GW TEAM$|^ANALYSIS$/i })).toHaveCount(0);
   });
 
-  test("moves optimizer strategy controls into Settings", async ({ page }) => {
+  test("shows the xP horizon and bench strategy in optimizer Settings", async ({ page }) => {
     await chooseMode(page, /build from scratch/i);
     await waitForMarket(page);
     const panel = page.getByRole("region", { name: /squad builder and analysis/i });
@@ -368,8 +368,11 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(popover.getByText(/^HORIZON$/i)).toBeVisible();
     const tenGameweek = popover.getByRole("button", { name: "10GW", exact: true });
     await expect(tenGameweek).toBeVisible();
-    await expect(popover.getByText(/^RISK$/i)).toBeVisible();
+    await expect(popover.getByText(/^RISK$/i)).toHaveCount(0);
     await expect(popover.getByText(/^BENCH$/i)).toBeVisible();
+    await expect(popover.getByRole("button", { name: "CHEAP", exact: true })).toBeVisible();
+    await expect(popover.getByRole("button", { name: "BALANCED", exact: true })).toBeVisible();
+    await expect(popover.getByRole("button", { name: "STRONG", exact: true })).toBeVisible();
   });
 
   test("minimizes and restores Player Universe, then resizes it by dragging", async ({ page }) => {

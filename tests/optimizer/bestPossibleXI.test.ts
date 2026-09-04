@@ -107,7 +107,7 @@ describe("best possible XI from the market", () => {
   });
 
   it("rates an exact blank-squad completion at 100% for the gameweek", async () => {
-    const completed = await exactCompletePartialSquad({ players: market, squad: [], gameweek: 1, horizon: 1, risk: "BALANCED", bench: "BALANCED", budgetTenths: 910 });
+    const completed = await exactCompletePartialSquad({ players: market, squad: [], gameweek: 1, horizon: 1, budgetTenths: 910 });
     const ceiling = await exactBestPossibleXI({ players: market, gameweek: 1, budgetTenths: 910 });
     const squad = market.filter((player) => completed.playerIds.includes(player.id));
     const lineup = pickWeeklyTeam({ squad, gameweek: 1, riskMode: "BALANCED" });

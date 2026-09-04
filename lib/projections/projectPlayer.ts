@@ -22,8 +22,59 @@ export type ProjectPlayerOptions = Partial<ProjectionOptions> & {
 
 const PRIOR_XG: Record<Position, number> = { GK: 0.01, DEF: 0.08, MID: 0.25, FWD: 0.45 };
 const PRIOR_XA: Record<Position, number> = { GK: 0.02, DEF: 0.08, MID: 0.2, FWD: 0.15 };
-const UNKNOWN_DEFENDER_XG_PRIOR = 0.02;
-const UNKNOWN_DEFENDER_XA_PRIOR = 0.02;
+export const UNKNOWN_DEFENDER_XG_PRIOR = 0.02;
+export const UNKNOWN_DEFENDER_XA_PRIOR = 0.02;
+
+export interface AttackingPrior {
+  xg: number;
+  xa: number;
+}
+
+/**
+ * Baseline xG and xA per 90 priors stratified by position and price tier
+ * (in tenths of a million, e.g. 45 = £4.5m). Grounded in empirical FPL data:
+ * - GK: Negligible attacking return across all prices (0.01 xG / 0.02 xA).
+ * - DEF:
+ *   - <= £4.5m: Budget CBs and low-threat fullbacks (0.02 xG / 0.02 xA)
+ *   - £5.0m - £5.5m: Mid-tier fullbacks and top-six CBs (0.05 xG / 0.06 xA)
+ *   - >= £6.0m: Elite attacking wingbacks (0.08 xG / 0.10 xA)
+ * - MID:
+ *   - <= £4.5m: Defensive / holding midfielders (0.05 xG / 0.06 xA)
+ *   - £5.0m: Box-to-box No. 8s / deep playmakers (0.09 xG / 0.08 xA)
+ *   - £5.5m - £6.5m: Regular mid-table wingers / No. 10s (0.16 xG / 0.14 xA)
+ *   - £7.0m - £8.5m: Secondary talismans / top-six attackers (0.25 xG / 0.20 xA)
+ *   - >= £9.0m: Elite premium talismans (0.38 xG / 0.26 xA)
+ * - FWD:
+ *   - <= £5.0m: Bench enablers / late cameos (0.20 xG / 0.06 xA)
+ *   - £5.5m - £6.5m: Budget starters / mid-table strikers (0.36 xG / 0.09 xA)
+ *   - £7.0m - £8.5m: Upper-tier starters (0.45 xG / 0.14 xA)
+ *   - >= £9.0m: Elite premiums (0.70 xG / 0.16 xA)
+ */
+export function priceTieredAttackingPrior(
+  position: Position,
+  priceTenths: number | undefined,
+): AttackingPrior {
+  const price = priceTenths ?? 50;
+  switch (position) {
+    case "GK":
+      return { xg: 0.01, xa: 0.02 };
+    case "DEF":
+      if (price <= 45) return { xg: 0.02, xa: 0.02 };
+      if (price <= 55) return { xg: 0.05, xa: 0.06 };
+      return { xg: 0.08, xa: 0.10 };
+    case "MID":
+      if (price <= 45) return { xg: 0.05, xa: 0.06 };
+      if (price <= 50) return { xg: 0.09, xa: 0.08 };
+      if (price <= 65) return { xg: 0.16, xa: 0.14 };
+      if (price <= 85) return { xg: 0.25, xa: 0.20 };
+      return { xg: 0.38, xa: 0.26 };
+    case "FWD":
+      if (price <= 50) return { xg: 0.20, xa: 0.06 };
+      if (price <= 65) return { xg: 0.36, xa: 0.09 };
+      if (price <= 85) return { xg: 0.45, xa: 0.14 };
+      return { xg: 0.70, xa: 0.16 };
+  }
+}
 const GOAL_POINTS: Record<Position, number> = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
 // Pool averages per 90 from 2025/26, used when a player has no usable sample.
 const PRIOR_DEFENSIVE_CONTRIBUTION: Record<Position, number> = { GK: 0, DEF: 7.7, MID: 8.6, FWD: 4.7 };
@@ -259,10 +310,11 @@ function attackingPrior(
 ): number {
   const override = primary === "expectedGoals" ? options.positionPrior?.[player.position] : undefined;
   if (override !== undefined) return override;
-  if (player.position !== "DEF" || hasUsableHistoricalRate(player, primary, fallback)) {
+  if (hasUsableHistoricalRate(player, primary, fallback)) {
     return primary === "expectedGoals" ? PRIOR_XG[player.position] : PRIOR_XA[player.position];
   }
-  return primary === "expectedGoals" ? UNKNOWN_DEFENDER_XG_PRIOR : UNKNOWN_DEFENDER_XA_PRIOR;
+  const tiered = priceTieredAttackingPrior(player.position, player.priceTenths);
+  return primary === "expectedGoals" ? tiered.xg : tiered.xa;
 }
 
 function fixtureFor(

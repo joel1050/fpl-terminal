@@ -388,7 +388,11 @@ Priors (`lib/projections/projectPlayer.ts:23`):
 | Saves | 2.8 | 0 | 0 | 0 |
 | Bonus | 0.22 | 0.22 | 0.32 | 0.59 |
 
-A defender with no usable goal/assist sample uses a special low prior (`0.02` each) rather than the position prior.
+Players with no usable historical goal/assist sample use price-tiered attacking priors (`priceTieredAttackingPrior` in `lib/projections/projectPlayer.ts`) rather than a single flat position prior, reflecting empirical FPL output by cost bracket:
+- **GK**: `0.01` xG, `0.02` xA across all prices.
+- **DEF**: `0.02` xG / `0.02` xA for budget CBs/fullbacks (≤ £4.5m); `0.05` xG / `0.06` xA for mid-tier (£5.0m–£5.5m); `0.08` xG / `0.10` xA for premium attacking wing-backs (≥ £6.0m).
+- **MID**: `0.05` xG / `0.06` xA for holding/defensive mids (≤ £4.5m); `0.09` xG / `0.08` xA for box-to-box (£5.0m); `0.16` xG / `0.14` xA for mid-tier wingers/creators (£5.5m–£6.5m); `0.25` xG / `0.20` xA for secondary talismans (£7.0m–£8.5m); `0.38` xG / `0.26` xA for premiums (≥ £9.0m).
+- **FWD**: `0.20` xG / `0.06` xA for bench enablers (≤ £5.0m); `0.36` xG / `0.09` xA for mid-table starters (£5.5m–£6.5m); `0.45` xG / `0.14` xA for upper-tier strikers (£7.0m–£8.5m); `0.70` xG / `0.16` xA for super-premiums (≥ £9.0m).
 
 Ceilings (`lib/projections/projectPlayer.ts:34`): goal involvement 3, saves 10, defensive contributions 30, bonus 3 (all per 90).
 
@@ -935,32 +939,29 @@ The backup goalkeeper is biased toward the £4.0m tier (the `price / 20` penalty
 
 ### 17.3 Exact optimizer (HiGHS MILP)
 
-`exactOptimizeFullSquad` and `exactCompletePartialSquad` (`lib/optimizer/exactOptimizer.ts:60`) formulate and solve an exact Mixed Integer Linear Program via HiGHS WebAssembly. The squad is planned for `planGameweek` across `horizon` (1, 3, 5, or 10 gameweeks), scoring players with `windowUtility(player, planGameweek, horizon, risk)` (§13):
+`exactOptimizeFullSquad` and `exactCompletePartialSquad` (`lib/optimizer/exactOptimizer.ts`) formulate and solve an exact Mixed Integer Linear Program via HiGHS WebAssembly. The squad is planned for `planGameweek` across `horizon` (1, 3, 5, or 10 gameweeks), maximizing raw projected points from `gameweekValue(player, gameweek)`:
 
 1. **Decision variables**:
    - Squad membership: $x_i \in \{0, 1\}$
-   - Starting XI: $s_i \in \{0, 1\}$
-   - Backup goalkeeper: $g_i \in \{0, 1\}$
-   - Ordered outfield bench slots: $b_{1, i}, b_{2, i}, b_{3, i} \in \{0, 1\}$
+   - Weekly starting XI: $s_{g, i} \in \{0, 1\}$ for each gameweek $g$
    - Weekly captaincy: $c_{g, i} \in \{0, 1\}$ for each gameweek $g \in [\text{planGameweek}, \dots, \text{planGameweek} + \text{horizon} - 1]$
 
 2. **Objective terms**:
-   - Starter utility: $s_i \times (u_i + 0.01 \times \mathbb{I}_{\text{HIGH}})$
-   - Backup GK: $g_i \times (u_i \times 0.05 - \text{priceTenths}_i / 20 - \text{cheapPenalty} + \text{strongBonus})$
-   - Bench slot $k \in \{1, 2, 3\}$: $b_{k, i} \times (u_i \times w_k - \text{cheapPenalty} + \text{strongBonus})$ with weights $w = [0.25, 0.15, 0.10]$
-   - Captaincy: $c_{g, i} \times (\text{gameweekValue}(i, g) \times (u_i / \text{windowValue}_i))$
-   - **Bench strategies**:
-     - `bench === "CHEAP"`: $\text{cheapPenalty} = \text{priceTenths}_i \times 0.025 \times \text{horizon}$ (`CASH_XP_PER_TENTH_PER_GAMEWEEK = 0.025`, i.e. £0.25m xP/tenth/GW). The penalty scales with the horizon so the bench penalty competes proportionally with multi-gameweek starter utility.
-     - `bench === "STRONG"`: $\text{strongBonus} = u_i \times 0.04$ (`BENCH_STRENGTH_BONUS = 0.04`).
+   - Normal solve: $\sum_{g,i} \text{xP}_{g,i}(s_{g,i} + c_{g,i})$ plus a fixed reserve weight
+   - Bench Boost solve: $\sum_{g,i} \text{xP}_{g,i}(x_i + c_{g,i})$
+
+For a normal solve, reserve coefficients come from the same $P(\mathrm{DNP})$ used by the weekly autosub model. For each gameweek, the optimizer forms a representative legal formation from the highest-xP players. If its ten outfield players have DNP probabilities $p_1,\ldots,p_{10}$, `BALANCED` weights each outfield reserve by $\min(1, \sum p_i / 3)$, the expected absences spread across the three reserve slots. `STRONG` uses $1 - \prod(1-p_i)$, the probability that at least one outfield starter misses the gameweek, so every reserve is valued as first cover. The backup goalkeeper uses the representative starting goalkeeper's DNP probability in every mode. A reserve's coefficient also includes its own appearance probability $1-P(\mathrm{DNP})$.
+
+`CHEAP` starts from the `BALANCED` coefficient and multiplies reserve value by the position's minimum price divided by the player's price. This keeps cheap reserves useful for their price; a negligible price tie-break selects the cheaper reserve only when projected values are otherwise equal. The coefficients are precomputed, so all three modes retain the same MILP variables and one solver pass. Bench Boost scores all 15 directly and ignores the bench strategy.
 
 3. **Constraints**:
-   - Assignment: $s_i + g_i + b_{1, i} + b_{2, i} + b_{3, i} = x_i$
-   - Squad counts: $\sum x_i = 15$, $\sum s_i = 11$, $\sum g_i = 1$, $\sum b_{k, i} = 1$ ($k \in \{1, 2, 3\}$)
+   - Weekly membership: $s_{g,i} \le x_i$
+   - Squad and XI counts: $\sum x_i = 15$ and $\sum_i s_{g,i} = 11$ for every gameweek
    - Budget: $\sum \text{priceTenths}_i x_i \le \text{budgetTenths}$
    - Position legality: 2 GK, 5 DEF, 5 MID, 3 FWD in squad; starting formation requires 1 GK, $\ge 3$ DEF, $\ge 2$ MID, $\ge 1$ FWD
    - Club limit: $\sum_{i \in \text{club}} x_i \le 3$ (or configured max)
    - Locked players: $x_i = 1$ for all fixed/locked player IDs
-   - Captaincy legality: $c_{g, i} \le s_i$ (captain must be in the starting XI), and $\sum_i c_{g, i} = 1$ for each gameweek
+   - Captaincy legality: $c_{g, i} \le s_{g,i}$ (captain must be in that week's starting XI), and $\sum_i c_{g, i} = 1$ for each gameweek
 
 ### 17.4 Best possible XI (market ceiling)
 

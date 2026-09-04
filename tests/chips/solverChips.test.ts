@@ -54,10 +54,10 @@ const players = [
 describe("chip-aware exact solves", () => {
   it("matches the legacy horizon solve when given the same explicit gameweeks", async () => {
     const legacy = await exactOptimizeFullSquad({
-      players, squad: [], budgetTenths: 1000, gameweek: 1, horizon: 3, risk: "BALANCED", bench: "BALANCED",
+      players, squad: [], budgetTenths: 1000, gameweek: 1, horizon: 3,
     });
     const explicit = await exactOptimizeFullSquad({
-      players, squad: [], budgetTenths: 1000, gameweek: 1, gameweeks: [1, 2, 3], horizon: 3, risk: "BALANCED", bench: "BALANCED",
+      players, squad: [], budgetTenths: 1000, gameweek: 1, gameweeks: [1, 2, 3], horizon: 3,
     });
     expect(legacy.legal).toBe(true);
     expect(explicit.playerIds.sort((a, b) => a - b)).toEqual(legacy.playerIds.sort((a, b) => a - b));
@@ -66,7 +66,7 @@ describe("chip-aware exact solves", () => {
 
   it("solves a one-gameweek Free Hit squad within selling value plus bank", async () => {
     const result = await exactOptimizeFullSquad({
-      players, squad: [], budgetTenths: 1000, gameweek: 2, gameweeks: [2], horizon: 1, risk: "BALANCED", bench: "BALANCED",
+      players, squad: [], budgetTenths: 1000, gameweek: 2, gameweeks: [2], horizon: 1,
     });
     expect(result.legal).toBe(true);
     expect(result.playerIds).toHaveLength(15);
@@ -76,7 +76,7 @@ describe("chip-aware exact solves", () => {
 
   it("solves a wildcard over an explicit remaining horizon", async () => {
     const result = await exactCompletePartialSquad({
-      players, squad: [], budgetTenths: 1000, gameweek: 1, gameweeks: [1, 2, 3], horizon: 3, risk: "BALANCED", bench: "BALANCED",
+      players, squad: [], budgetTenths: 1000, gameweek: 1, gameweeks: [1, 2, 3], horizon: 3,
     });
     expect(result.legal).toBe(true);
     expect(result.captainsByGameweek).toHaveLength(3);
@@ -85,7 +85,7 @@ describe("chip-aware exact solves", () => {
   it("keeps locks and exclusions as constraints in generated squads", async () => {
     const result = await exactOptimizeFullSquad({
       players, squad: [], lockedPlayerIds: [1], excludedPlayerIds: [30], budgetTenths: 1000,
-      gameweek: 1, gameweeks: [1], horizon: 1, risk: "BALANCED", bench: "BALANCED",
+      gameweek: 1, gameweeks: [1], horizon: 1,
     });
     expect(result.legal).toBe(true);
     expect(result.playerIds).toContain(1);
@@ -94,7 +94,7 @@ describe("chip-aware exact solves", () => {
 
   it("enforces the budget on chip solves", async () => {
     const result = await exactOptimizeFullSquad({
-      players, squad: [], budgetTenths: 100, gameweek: 1, gameweeks: [1], horizon: 1, risk: "BALANCED", bench: "BALANCED",
+      players, squad: [], budgetTenths: 100, gameweek: 1, gameweeks: [1], horizon: 1,
     });
     expect(result.legal).toBe(false);
   });
@@ -103,10 +103,10 @@ describe("chip-aware exact solves", () => {
     const expensiveBench = player(40, "MID", 130, 12);
     const pool = [...players, expensiveBench];
     const normal = await exactOptimizeFullSquad({
-      players: pool, squad: [], budgetTenths: 1100, gameweek: 1, gameweeks: [1], horizon: 1, risk: "BALANCED", bench: "CHEAP",
+      players: pool, squad: [], budgetTenths: 1100, gameweek: 1, gameweeks: [1], horizon: 1,
     });
     const boosted = await exactOptimizeFullSquad({
-      players: pool, squad: [], budgetTenths: 1100, gameweek: 1, gameweeks: [1], horizon: 1, risk: "BALANCED", bench: "CHEAP", benchBoost: true,
+      players: pool, squad: [], budgetTenths: 1100, gameweek: 1, gameweeks: [1], horizon: 1, benchBoost: true,
     });
     expect(normal.legal).toBe(true);
     expect(boosted.legal).toBe(true);

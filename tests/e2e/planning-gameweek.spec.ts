@@ -109,8 +109,8 @@ test.describe("persisted planning gameweeks", () => {
     expect(settings!.x).toBeGreaterThanOrEqual(0);
     expect(settings!.x + settings!.width).toBeLessThanOrEqual(390);
 
-    const riskLabels = await region.locator(".strategy-popover .segmented").nth(1).locator("button").allInnerTexts();
-    expect(riskLabels).toEqual(["SAFE", "BALANCED", "AGGRESSIVE"]);
+    const settingLabels = await region.locator(".strategy-popover .segmented").locator("button").allInnerTexts();
+    expect(settingLabels).toEqual(["GW", "3GW", "5GW", "10GW", "CHEAP", "BALANCED", "STRONG"]);
   });
 
   test("keeps the squad header on two lines and the market table inside its pane", async ({ page }) => {

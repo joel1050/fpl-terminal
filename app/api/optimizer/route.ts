@@ -18,7 +18,6 @@ const requestSchema = z.object({
   budgetTenths: z.number().int().nonnegative().optional(),
   gameweek: z.number().int().min(1).max(38).optional(),
   horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]),
-  risk: z.enum(["SAFE", "BALANCED", "AGGRESSIVE"]),
   bench: z.enum(["CHEAP", "BALANCED", "STRONG"]),
 }).strict();
 
@@ -51,7 +50,6 @@ export async function POST(request: Request) {
       budgetTenths: parsed.data.budgetTenths,
       gameweek,
       horizon: parsed.data.horizon,
-      risk: parsed.data.risk,
       bench: parsed.data.bench,
     };
     const result = parsed.data.mode === "COMPLETE"

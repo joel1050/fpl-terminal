@@ -51,18 +51,16 @@ const players = [
 ];
 
 describe("exact optimizer", () => {
-  it("returns an optimal legal squad with a cheap reserve goalkeeper", async () => {
-    const result = await exactOptimizeFullSquad({ players, horizon: 5, risk: "BALANCED", bench: "BALANCED" });
+  it("returns an optimal legal squad", async () => {
+    const result = await exactOptimizeFullSquad({ players, horizon: 5 });
     expect(result.legal).toBe(true);
     expect(result.optimal).toBe(true);
     expect(result.playerIds).toHaveLength(15);
-    const benchGoalkeeperId = result.analysis?.bench.find((id) => players.find((candidate) => candidate.id === id)?.position === "GK");
-    expect(players.find((candidate) => candidate.id === benchGoalkeeperId)?.priceTenths).toBe(40);
     expect(result.captainsByGameweek).toHaveLength(5);
   });
 
   it("accepts two expensive locked goalkeepers", async () => {
-    const result = await exactOptimizeFullSquad({ players, lockedPlayerIds: [1, 2], horizon: 5, risk: "BALANCED", bench: "BALANCED" });
+    const result = await exactOptimizeFullSquad({ players, lockedPlayerIds: [1, 2], horizon: 5 });
     expect(result.legal).toBe(true);
     expect(result.playerIds).toEqual(expect.arrayContaining([1, 2]));
   });
@@ -110,6 +108,22 @@ function scheduledPlayer(id: number, position: Position, priceTenths: number, po
   };
 }
 
+function withDnp(candidate: Player, probability: number): Player {
+  return {
+    ...candidate,
+    selection: {
+      startProbability: 1 - probability,
+      cameoProbability: 0,
+      noAppearanceProbability: probability,
+      expectedMinutes: 90 * (1 - probability),
+      nailedRating: 5,
+      confidence: "HIGH",
+      updatedAt: "2026-09-03T00:00:00.000Z",
+      evidence: [],
+    },
+  };
+}
+
 const flat = (points: number) => ({ 1: points, 2: points, 3: points, 4: points, 5: points });
 
 // Two rival midfielders: id 20 owns Gameweek 1, id 21 owns Gameweek 2.
@@ -126,15 +140,13 @@ const rivalPool = [
 
 describe("planning gameweek", () => {
   it("optimizes the gameweek being planned, not the live one", async () => {
-    const forGameweekOne = await exactOptimizeFullSquad({ players: rivalPool, gameweek: 1, horizon: 1, risk: "BALANCED", bench: "BALANCED" });
-    const forGameweekTwo = await exactOptimizeFullSquad({ players: rivalPool, gameweek: 2, horizon: 1, risk: "BALANCED", bench: "BALANCED" });
+    const forGameweekOne = await exactOptimizeFullSquad({ players: rivalPool, gameweek: 1, horizon: 1 });
+    const forGameweekTwo = await exactOptimizeFullSquad({ players: rivalPool, gameweek: 2, horizon: 1 });
 
     expect(forGameweekOne.legal).toBe(true);
     expect(forGameweekTwo.legal).toBe(true);
     expect(forGameweekOne.playerIds).toContain(20);
-    expect(forGameweekOne.playerIds).not.toContain(21);
     expect(forGameweekTwo.playerIds).toContain(21);
-    expect(forGameweekTwo.playerIds).not.toContain(20);
     expect(forGameweekOne.captainsByGameweek).toEqual([{ gameweek: 1, playerId: 20 }]);
     expect(forGameweekTwo.captainsByGameweek).toEqual([{ gameweek: 2, playerId: 21 }]);
   });
@@ -144,47 +156,65 @@ describe("planning gameweek", () => {
     const blankPool = rivalPool.map((candidate) => candidate.id === 20
       ? scheduledPlayer(20, "MID", 60, { 1: 12 })
       : candidate);
-    const result = await exactOptimizeFullSquad({ players: blankPool, gameweek: 2, horizon: 1, risk: "BALANCED", bench: "BALANCED" });
+    const result = await exactOptimizeFullSquad({ players: blankPool, gameweek: 2, horizon: 1 });
 
     expect(result.legal).toBe(true);
-    expect(result.playerIds).not.toContain(20);
     expect(result.captainsByGameweek).toEqual([{ gameweek: 2, playerId: 21 }]);
   });
 
   it("warns when the planned window runs past the projected fixtures", async () => {
-    const result = await exactOptimizeFullSquad({ players: rivalPool, gameweek: 4, horizon: 5, risk: "BALANCED", bench: "BALANCED" });
+    const result = await exactOptimizeFullSquad({ players: rivalPool, gameweek: 4, horizon: 5 });
 
     expect(result.legal).toBe(true);
     expect(result.warnings.some((warning) => /Projections cover Gameweeks 1-5/.test(warning))).toBe(true);
   });
 });
 
-describe("bench strategy", () => {
-  // The same pool with a cheap and an expensive option for every outfield slot.
-  const benchPool = [
-    scheduledPlayer(1, "GK", 50, flat(5)), scheduledPlayer(2, "GK", 40, flat(1)),
-    ...Array.from({ length: 5 }, (_, index) => scheduledPlayer(10 + index, "DEF", 60, flat(5))),
-    ...Array.from({ length: 3 }, (_, index) => scheduledPlayer(15 + index, "DEF", 40, flat(1.2))),
-    ...Array.from({ length: 5 }, (_, index) => scheduledPlayer(20 + index, "MID", 70, flat(6))),
-    ...Array.from({ length: 3 }, (_, index) => scheduledPlayer(25 + index, "MID", 45, flat(1.5))),
-    ...Array.from({ length: 3 }, (_, index) => scheduledPlayer(30 + index, "FWD", 75, flat(6))),
-    ...Array.from({ length: 3 }, (_, index) => scheduledPlayer(33 + index, "FWD", 45, flat(1.5))),
-  ];
-  const cost = (ids: readonly number[]) => ids.reduce((sum, id) => sum + (benchPool.find((candidate) => candidate.id === id)?.priceTenths ?? 0), 0);
-  const solve = (bench: "CHEAP" | "BALANCED" | "STRONG", horizon: 1 | 3 | 5 | 10) =>
-    exactOptimizeFullSquad({ players: benchPool, gameweek: 1, horizon, risk: "BALANCED", bench });
+describe("optimizer objective", () => {
+  it("makes CHEAP value-aware instead of selecting the lowest price", async () => {
+    const pool = [
+      scheduledPlayer(1, "GK", 50, { 1: 10 }), scheduledPlayer(2, "GK", 50, { 1: 0 }),
+      ...Array.from({ length: 5 }, (_, index) => scheduledPlayer(10 + index, "DEF", 50, { 1: index < 3 ? 10 : 0 })),
+      ...Array.from({ length: 4 }, (_, index) => scheduledPlayer(20 + index, "MID", 50, { 1: 10 })),
+      scheduledPlayer(24, "MID", 40, { 1: 0.2 }),
+      scheduledPlayer(25, "MID", 45, { 1: 2 }),
+      scheduledPlayer(26, "MID", 65, { 1: 2.8 }),
+      ...Array.from({ length: 3 }, (_, index) => scheduledPlayer(30 + index, "FWD", 50, { 1: 10 })),
+    ].map((candidate) => withDnp(candidate, 0.1));
 
-  it("buys a cheaper squad under CHEAP than under BALANCED or STRONG", async () => {
-    const [cheap, balanced, strong] = await Promise.all([solve("CHEAP", 1), solve("BALANCED", 1), solve("STRONG", 1)]);
+    const [cheap, balanced, strong] = await Promise.all([
+      exactOptimizeFullSquad({ players: pool, gameweek: 1, horizon: 1, bench: "CHEAP" }),
+      exactOptimizeFullSquad({ players: pool, gameweek: 1, horizon: 1, bench: "BALANCED" }),
+      exactOptimizeFullSquad({ players: pool, gameweek: 1, horizon: 1, bench: "STRONG" }),
+    ]);
 
     expect([cheap.legal, balanced.legal, strong.legal]).toEqual([true, true, true]);
-    expect(cost(cheap.playerIds)).toBeLessThan(cost(balanced.playerIds));
-    expect(cost(balanced.playerIds)).toBeLessThanOrEqual(cost(strong.playerIds));
+    expect(cheap.playerIds).toContain(25);
+    expect(cheap.playerIds).not.toContain(24);
+    expect(cheap.playerIds).not.toContain(26);
+    expect(balanced.playerIds).toContain(26);
+    expect(strong.objective).toBeGreaterThan(balanced.objective!);
   });
 
-  it("keeps CHEAP effective on a ten-gameweek horizon", async () => {
-    const [cheap, balanced] = await Promise.all([solve("CHEAP", 10), solve("BALANCED", 10)]);
+  it("selects players that can rotate through a different legal XI each gameweek", async () => {
+    const pool = [
+      scheduledPlayer(1, "GK", 50, { 1: 20, 2: 20, 3: 20 }),
+      scheduledPlayer(2, "GK", 50, { 1: 0, 2: 0, 3: 0 }),
+      ...Array.from({ length: 5 }, (_, index) => scheduledPlayer(10 + index, "DEF", 50, index < 3 ? { 1: 20, 2: 20, 3: 20 } : { 1: 0, 2: 0, 3: 0 })),
+      scheduledPlayer(20, "MID", 50, { 1: 20, 2: 20, 3: 20 }),
+      scheduledPlayer(21, "MID", 50, { 1: 20, 2: 20, 3: 20 }),
+      scheduledPlayer(22, "MID", 50, { 1: 20, 2: 20, 3: 20 }),
+      scheduledPlayer(23, "MID", 50, { 1: 10, 2: 0, 3: 0 }),
+      scheduledPlayer(24, "MID", 50, { 1: 0, 2: 10, 3: 0 }),
+      scheduledPlayer(25, "MID", 50, { 1: 6, 2: 6, 3: 0 }),
+      ...Array.from({ length: 3 }, (_, index) => scheduledPlayer(30 + index, "FWD", 50, { 1: 20, 2: 20, 3: 20 })),
+    ];
 
-    expect(cost(cheap.playerIds)).toBeLessThan(cost(balanced.playerIds));
+    const result = await exactOptimizeFullSquad({ players: pool, gameweek: 1, horizon: 3 });
+
+    expect(result.legal).toBe(true);
+    expect(result.playerIds).toEqual(expect.arrayContaining([23, 24]));
+    expect(result.playerIds).not.toContain(25);
+    expect(result.objective).toBe(680);
   });
 });

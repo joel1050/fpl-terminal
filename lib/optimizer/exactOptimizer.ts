@@ -3,6 +3,7 @@ import loadHighs from "highs";
 import type { Player, Position } from "@/types/player";
 import type { OptimizerInput, OptimizerResult } from "./optimizer";
 import { analyzeSquad } from "@/lib/analysis/analyzeSquad";
+import { probabilityDidNotPlay } from "@/lib/squad/weeklyLineup";
 import {
   asPlayers,
   DEFAULT_BUDGET_TENTHS,
@@ -14,9 +15,9 @@ import {
   POSITIONS,
   POSITION_MINIMUMS,
   gameweekValue,
-  windowUtility,
-  windowValue,
 } from "@/lib/analysis/context";
+
+export type ExactOptimizerInput = Omit<OptimizerInput, "risk" | "strategy">;
 
 export interface ExactOptimizerResult extends OptimizerResult {
   optimal?: true;
@@ -26,41 +27,55 @@ export interface ExactOptimizerResult extends OptimizerResult {
 }
 
 const STARTER_MINIMUMS: Record<Position, number> = { GK: 1, DEF: 3, MID: 2, FWD: 1 };
-const BENCH_WEIGHTS = [0.25, 0.15, 0.1] as const;
-/**
- * What a tenth of a million released from the bench is worth per gameweek once
- * it is spent on the starting XI. Mirrors CASH_XP_PER_MILLION in
- * lib/analysis/singleTransfers.ts, which uses 0.25 points per million.
- *
- * The penalty is multiplied by the horizon because the bench terms it competes
- * with grow with the horizon too: a flat penalty would make CHEAP roughly ten
- * times stronger on a one-gameweek plan than on a ten-gameweek one.
- */
-const CASH_XP_PER_TENTH_PER_GAMEWEEK = 0.025;
-const BENCH_STRENGTH_BONUS = 0.04;
 const highsPromise = loadHighs();
 
-function explicitWindowValue(player: Player, gameweeks: number[]): number {
-  return gameweeks.reduce((sum, gameweek) => sum + gameweekValue(player, gameweek), 0);
-}
-
-/**
- * Window utility over an explicit gameweek list. The risk/minutes/
- * confidence scale is gameweek-independent, so it is recovered from the
- * shared helpers at the first scoring gameweek: on the default path this
- * is exactly windowUtility(player, planGameweek, horizon, risk).
- */
-function explicitWindowUtility(player: Player, gameweeks: number[], risk: "SAFE" | "BALANCED" | "AGGRESSIVE"): number {
-  const total = explicitWindowValue(player, gameweeks);
-  if (total <= 0) return 0;
-  for (const gameweek of gameweeks) {
-    const single = windowValue(player, gameweek, 1);
-    if (single > 0) return total * (windowUtility(player, gameweek, 1, risk) / single);
+function likelyStartingXi(players: readonly Player[], gameweek: number): Player[] {
+  const ranked = [...players].sort((a, b) =>
+    gameweekValue(b, gameweek) - gameweekValue(a, gameweek)
+    || probabilityDidNotPlay(a, gameweek) - probabilityDidNotPlay(b, gameweek)
+    || a.id - b.id);
+  const selected = POSITIONS.flatMap((position) => ranked
+    .filter((player) => player.position === position)
+    .slice(0, STARTER_MINIMUMS[position]));
+  const selectedIds = new Set(selected.map((player) => player.id));
+  for (const player of ranked) {
+    if (selected.length === 11) break;
+    if (player.position !== "GK" && !selectedIds.has(player.id)
+      && selected.filter((candidate) => candidate.position === player.position).length < POSITION_MINIMUMS[player.position]) {
+      selected.push(player);
+      selectedIds.add(player.id);
+    }
   }
-  return 0;
+  return selected;
 }
 
-function idsFromInput(input: OptimizerInput): number[] {
+function reserveDemand(players: readonly Player[], gameweek: number) {
+  const starters = likelyStartingXi(players, gameweek);
+  const goalkeeper = starters.find((player) => player.position === "GK");
+  const outfield = starters.filter((player) => player.position !== "GK");
+  const probabilities = outfield.map((player) => probabilityDidNotPlay(player, gameweek));
+  return {
+    goalkeeper: goalkeeper ? probabilityDidNotPlay(goalkeeper, gameweek) : 0,
+    balanced: Math.min(1, probabilities.reduce((sum, probability) => sum + probability, 0) / 3),
+    strong: 1 - probabilities.reduce((allPlay, probability) => allPlay * (1 - probability), 1),
+  };
+}
+
+function reserveValue(
+  player: Player,
+  points: number,
+  gameweek: number,
+  bench: NonNullable<ExactOptimizerInput["bench"]>,
+  demand: ReturnType<typeof reserveDemand>,
+  minimumPrice: number,
+): number {
+  const use = player.position === "GK" ? demand.goalkeeper : bench === "STRONG" ? demand.strong : demand.balanced;
+  const value = points * use * (1 - probabilityDidNotPlay(player, gameweek));
+  if (bench !== "CHEAP") return value;
+  return value * minimumPrice / Math.max(minimumPrice, player.priceTenths) - player.priceTenths * 0.000001;
+}
+
+function idsFromInput(input: ExactOptimizerInput): number[] {
   return idsFromSquad(input.currentSquad ?? input.squad);
 }
 
@@ -77,7 +92,7 @@ function exactFailure(ids: readonly number[], players: Map<number, Player>, erro
   return { legal: false, playerIds: [...ids], squad: normalizeSquad(ids, players), errors, warnings: [] };
 }
 
-async function solveExact(input: OptimizerInput, fixedIds: readonly number[]): Promise<ExactOptimizerResult> {
+async function solveExact(input: ExactOptimizerInput, fixedIds: readonly number[]): Promise<ExactOptimizerResult> {
   const allPlayers = asPlayers(input.players ?? input.playerPool ?? []).sort((a, b) => a.id - b.id);
   const map = playerMap(allPlayers);
   const fixed = [...new Set(fixedIds)];
@@ -98,9 +113,8 @@ async function solveExact(input: OptimizerInput, fixedIds: readonly number[]): P
   if (errors.length) return exactFailure(fixed, map, errors);
 
   const players = allPlayers.filter((player) => !excluded.has(player.id));
-  const horizon = input.horizon ?? input.strategy?.horizon ?? 5;
-  const risk = input.risk ?? input.strategy?.risk ?? "BALANCED";
-  const bench = input.bench ?? input.strategy?.bench ?? "BALANCED";
+  const horizon = input.horizon ?? 5;
+  const bench = input.bench ?? "BALANCED";
   const budget = input.budgetTenths ?? DEFAULT_BUDGET_TENTHS;
   const maxPerClub = input.maxPlayersPerClub ?? DEFAULT_MAX_PLAYERS_PER_CLUB;
   const projectedGameweeks = players.flatMap((player) => player.projection?.fixtures.map((fixture) => fixture.gameweek) ?? []);
@@ -113,83 +127,72 @@ async function solveExact(input: OptimizerInput, fixedIds: readonly number[]): P
   const gameweeks = Array.isArray(input.gameweeks) && input.gameweeks.length
     ? [...input.gameweeks].filter((gw) => Number.isSafeInteger(gw) && gw >= 1 && gw <= 38).sort((a, b) => a - b)
     : Array.from({ length: horizon }, (_, offset) => planGameweek + offset);
-  const effectiveHorizon = gameweeks.length;
   const benchBoost = input.benchBoost === true;
+  const reserveDemands = gameweeks.map((gameweek) => reserveDemand(players, gameweek));
+  const minimumPrices = Object.fromEntries(POSITIONS.map((position) => [
+    position,
+    Math.min(...players.filter((player) => player.position === position).map((player) => player.priceTenths)),
+  ])) as Record<Position, number>;
   const solverWarnings: string[] = [];
   if (planGameweek < firstProjectedGameweek || gameweeks[gameweeks.length - 1] > lastProjectedGameweek) {
     solverWarnings.push(`Projections cover Gameweeks ${firstProjectedGameweek}-${lastProjectedGameweek}; Gameweeks outside that range score zero.`);
   }
   const objective: Array<[number, string]> = [];
   const binaries: string[] = [];
-  const bounds: string[] = [];
   const constraints: string[] = [];
   const squad = (id: number) => `x_${id}`;
-  const starter = (id: number) => `s_${id}`;
-  const goalkeeperBench = (id: number) => `g_${id}`;
-  const benchRole = (slot: number, id: number) => `b${slot}_${id}`;
+  const starter = (gameweek: number, id: number) => `s${gameweek}_${id}`;
   const captain = (gameweek: number, id: number) => `c${gameweek}_${id}`;
-  const utilities = new Map(players.map((player) => [player.id, explicitWindowUtility(player, gameweeks, risk)]));
-
-  // Bench Boost target: all 15 players carry full scoring weight.
-  const benchWeights = benchBoost ? [1, 1, 1] as const : BENCH_WEIGHTS;
-  const keeperWeight = benchBoost ? 1 : 0.05;
 
   for (const player of players) {
-    const variables = [squad(player.id), starter(player.id), goalkeeperBench(player.id), benchRole(1, player.id), benchRole(2, player.id), benchRole(3, player.id)];
-    binaries.push(...variables);
-    const utility = utilities.get(player.id) ?? 0;
-    objective.push([utility + (player.projection?.confidence === "HIGH" ? 0.01 : 0), starter(player.id)]);
-    // The backup goalkeeper keeps its own, larger price penalty: the 4.0m tier
-    // bias holds whatever the bench strategy is (lifted for Bench Boost solves).
-    const cheapPenalty = bench === "CHEAP" && !benchBoost ? player.priceTenths * CASH_XP_PER_TENTH_PER_GAMEWEEK * effectiveHorizon : 0;
-    const strongBonus = bench === "STRONG" ? utility * BENCH_STRENGTH_BONUS : 0;
-    objective.push([utility * keeperWeight - player.priceTenths / 20 - cheapPenalty + strongBonus, goalkeeperBench(player.id)]);
-    benchWeights.forEach((weight, index) => objective.push([
-      utility * weight - cheapPenalty + strongBonus,
-      benchRole(index + 1, player.id),
-    ]));
-    constraints.push(`assign_${player.id}: ${expression([[-1, squad(player.id)], [1, starter(player.id)], [1, goalkeeperBench(player.id)], [1, benchRole(1, player.id)], [1, benchRole(2, player.id)], [1, benchRole(3, player.id)]])} = 0`);
-    if (player.position === "GK") {
-      for (let slot = 1; slot <= 3; slot += 1) bounds.push(`${benchRole(slot, player.id)} = 0`);
-    } else {
-      bounds.push(`${goalkeeperBench(player.id)} = 0`);
-    }
-    const rawWindow = explicitWindowValue(player, gameweeks);
-    const multiplier = rawWindow && rawWindow > 0 ? utility / rawWindow : 0;
-    for (const gameweek of gameweeks) {
-      const variable = captain(gameweek, player.id);
-      binaries.push(variable);
-      const points = gameweekValue(player, gameweek);
-      objective.push([points * multiplier, variable]);
-      constraints.push(`captain_starter_${gameweek}_${player.id}: ${expression([[1, variable], [-1, starter(player.id)]])} <= 0`);
+    binaries.push(squad(player.id));
+    const weeklyPoints = gameweeks.map((gameweek) => gameweekValue(player, gameweek));
+    const reservePoints = weeklyPoints.map((points, index) => reserveValue(
+      player,
+      points,
+      gameweeks[index],
+      bench,
+      reserveDemands[index],
+      minimumPrices[player.position],
+    ));
+    objective.push([benchBoost ? weeklyPoints.reduce((sum, points) => sum + points, 0) : reservePoints.reduce((sum, points) => sum + points, 0), squad(player.id)]);
+    for (const [weekIndex, gameweek] of gameweeks.entries()) {
+      const starterVariable = starter(gameweek, player.id);
+      const captainVariable = captain(gameweek, player.id);
+      binaries.push(starterVariable, captainVariable);
+      const points = weeklyPoints[weekIndex];
+      if (!benchBoost) objective.push([points - reservePoints[weekIndex], starterVariable]);
+      objective.push([points, captainVariable]);
+      constraints.push(`starter_squad_${gameweek}_${player.id}: ${expression([[1, starterVariable], [-1, squad(player.id)]])} <= 0`);
+      constraints.push(`captain_starter_${gameweek}_${player.id}: ${expression([[1, captainVariable], [-1, starterVariable]])} <= 0`);
     }
   }
 
   constraints.push(`squad_size: ${expression(players.map((player) => [1, squad(player.id)]))} = 15`);
-  constraints.push(`starter_size: ${expression(players.map((player) => [1, starter(player.id)]))} = 11`);
-  constraints.push(`goalkeeper_bench_size: ${expression(players.map((player) => [1, goalkeeperBench(player.id)]))} = 1`);
-  for (let slot = 1; slot <= 3; slot += 1) constraints.push(`bench_${slot}_size: ${expression(players.map((player) => [1, benchRole(slot, player.id)]))} = 1`);
   constraints.push(`budget: ${expression(players.map((player) => [player.priceTenths, squad(player.id)]))} <= ${budget}`);
   for (const position of POSITIONS) {
     const members = players.filter((player) => player.position === position);
     constraints.push(`squad_${position}: ${expression(members.map((player) => [1, squad(player.id)]))} = ${POSITION_MINIMUMS[position]}`);
-    constraints.push(`starters_${position}: ${expression(members.map((player) => [1, starter(player.id)]))} >= ${STARTER_MINIMUMS[position]}`);
-    if (position === "GK") constraints.push(`starter_gk_max: ${expression(members.map((player) => [1, starter(player.id)]))} <= 1`);
+    for (const gameweek of gameweeks) {
+      constraints.push(`starters_${gameweek}_${position}: ${expression(members.map((player) => [1, starter(gameweek, player.id)]))} >= ${STARTER_MINIMUMS[position]}`);
+      if (position === "GK") constraints.push(`starter_${gameweek}_gk_max: ${expression(members.map((player) => [1, starter(gameweek, player.id)]))} <= 1`);
+    }
   }
   for (const teamId of new Set(players.map((player) => player.teamId))) {
     const members = players.filter((player) => player.teamId === teamId);
     constraints.push(`club_${teamId}: ${expression(members.map((player) => [1, squad(player.id)]))} <= ${maxPerClub}`);
   }
   for (const id of fixed) constraints.push(`fixed_${id}: ${squad(id)} = 1`);
-  for (const gameweek of gameweeks) constraints.push(`captain_${gameweek}: ${expression(players.map((player) => [1, captain(gameweek, player.id)]))} = 1`);
+  for (const gameweek of gameweeks) {
+    constraints.push(`starter_size_${gameweek}: ${expression(players.map((player) => [1, starter(gameweek, player.id)]))} = 11`);
+    constraints.push(`captain_${gameweek}: ${expression(players.map((player) => [1, captain(gameweek, player.id)]))} = 1`);
+  }
 
   const lp = [
     "Maximize",
     ` objective: ${expression(objective)}`,
     "Subject To",
     ...constraints.map((constraint) => ` ${constraint}`),
-    "Bounds",
-    ...bounds.map((bound) => ` ${bound}`),
     "Binary",
     ...binaries.map((variable) => ` ${variable}`),
     "End",
@@ -201,7 +204,7 @@ async function solveExact(input: OptimizerInput, fixedIds: readonly number[]): P
   const validation = legalSquad(selectedIds, map, { budgetTenths: budget, maxPlayersPerClub: maxPerClub, excludedPlayerIds: input.excludedPlayerIds });
   if (!validation.legal) return exactFailure(fixed, map, validation.errors);
   const normalized = normalizeSquad(selectedIds, map);
-  const analysis = analyzeSquad({ squad: normalized, players: allPlayers, horizon, risk, bench, budgetTenths: budget, maxPlayersPerClub: maxPerClub });
+  const analysis = analyzeSquad({ squad: normalized, players: allPlayers, horizon, bench, budgetTenths: budget, maxPlayersPerClub: maxPerClub });
   return {
     legal: true,
     squad: normalized,
@@ -220,12 +223,12 @@ async function solveExact(input: OptimizerInput, fixedIds: readonly number[]): P
   };
 }
 
-export function exactOptimizeFullSquad(input: OptimizerInput): Promise<ExactOptimizerResult> {
+export function exactOptimizeFullSquad(input: ExactOptimizerInput): Promise<ExactOptimizerResult> {
   const ids = idsFromInput(input);
   const locked = input.lockedPlayerIds ?? [];
   return solveExact(input, locked.length ? locked : ids.length < 15 ? ids : []);
 }
 
-export function exactCompletePartialSquad(input: OptimizerInput): Promise<ExactOptimizerResult> {
+export function exactCompletePartialSquad(input: ExactOptimizerInput): Promise<ExactOptimizerResult> {
   return solveExact(input, idsFromInput(input));
 }

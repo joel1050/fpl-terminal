@@ -48,7 +48,6 @@ const requestSchema = z.object({
    * current chip window (GW19 in the first half, GW38 after). */
   horizon: z.number().int().min(1).max(38),
   risk: z.enum(["SAFE", "BALANCED", "AGGRESSIVE"]),
-  bench: z.enum(["CHEAP", "BALANCED", "STRONG"]).optional(),
   timeline: z.record(z.string(), timelineWeekSchema),
   usedChips: z.array(z.object({ kind: chipSchema, gameweek: z.number().int().min(1).max(38) })).max(16),
   lockedPlayerIds: z.array(z.number().int().positive()).max(15),
@@ -83,7 +82,7 @@ export async function POST(request: Request) {
     const priceById = new Map(players.map((player) => [player.id, player.priceTenths]));
     const positionById = new Map(players.map((player) => [player.id, player.position as Position]));
 
-    const { gameweek, horizon, risk, bench = "BALANCED" } = parsed.data;
+    const { gameweek, horizon, risk } = parsed.data;
     const endGameweek = Math.min(38, gameweek + horizon - 1);
     const lockedPlayerIds = [...new Set(parsed.data.lockedPlayerIds)];
     const excludedPlayerIds = [...new Set(parsed.data.excludedPlayerIds ?? [])];
@@ -231,7 +230,7 @@ export async function POST(request: Request) {
         if (!priced) continue;
         const solved = await exactOptimizeFullSquad({
           players, squad: permanentIds, lockedPlayerIds, excludedPlayerIds,
-          budgetTenths: sellingValue, gameweek: gw, gameweeks: [gw], horizon: 1, risk, bench,
+          budgetTenths: sellingValue, gameweek: gw, gameweeks: [gw], horizon: 1,
         });
         if (!solved.legal || !solved.squad) continue;
         const solvedPlayers = solved.playerIds

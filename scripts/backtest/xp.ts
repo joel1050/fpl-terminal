@@ -9,12 +9,11 @@ import type { PlayerMatchRate, ProjectionComponents, TeamStrength } from "@/type
 import { expectedFloorDivision, thresholdProbability } from "@/lib/projections/distributions";
 import { regressPer90 } from "@/lib/projections/regression";
 import { blendPlayerRate, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES } from "@/lib/projections/playerForm";
+import { priceTieredAttackingPrior } from "@/lib/projections/projectPlayer";
 import { adjust, type Variant } from "./variants";
 
 const PRIOR_XG: Record<Position, number> = { GK: 0.01, DEF: 0.08, MID: 0.25, FWD: 0.45 };
 const PRIOR_XA: Record<Position, number> = { GK: 0.02, DEF: 0.08, MID: 0.2, FWD: 0.15 };
-const UNKNOWN_DEFENDER_XG_PRIOR = 0.02;
-const UNKNOWN_DEFENDER_XA_PRIOR = 0.02;
 const GOAL_POINTS: Record<Position, number> = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
 const PRIOR_DEFENSIVE_CONTRIBUTION: Record<Position, number> = { GK: 0, DEF: 7.7, MID: 8.6, FWD: 4.7 };
 const PRIOR_SAVES: Record<Position, number> = { GK: 2.8, DEF: 0, MID: 0, FWD: 0 };
@@ -110,10 +109,11 @@ function regressedFormRate(
 }
 
 function attackingPrior(player: Player, primary: "expectedGoals" | "expectedAssists", fallback: "goals" | "assists") {
-  if (player.position !== "DEF" || hasUsableHistoricalRate(player, primary, fallback)) {
+  if (hasUsableHistoricalRate(player, primary, fallback)) {
     return primary === "expectedGoals" ? PRIOR_XG[player.position] : PRIOR_XA[player.position];
   }
-  return primary === "expectedGoals" ? UNKNOWN_DEFENDER_XG_PRIOR : UNKNOWN_DEFENDER_XA_PRIOR;
+  const tiered = priceTieredAttackingPrior(player.position, player.priceTenths);
+  return primary === "expectedGoals" ? tiered.xg : tiered.xa;
 }
 
 export interface RateOverrides {

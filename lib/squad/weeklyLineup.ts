@@ -83,15 +83,16 @@ function minutes(player: Player, gameweek: number): number {
 /** Probability that a player records zero minutes in the selected gameweek. */
 export function probabilityDidNotPlay(player: Player, gameweek: number): number {
   const status = player.status.trim().toLowerCase();
-  let availabilityRisk = 0;
   const fixtures = fixtureProjections(player, gameweek);
   const fixtureMinutes = fixtures.reduce((sum, fixture) => sum + Math.max(0, fixture.expectedMinutes), 0);
   if (hasFixtureSchedule(player) && fixtures.length === 0) return 1;
   if (fixtures.length > 0 && fixtureMinutes === 0) return 1;
-  if (["i", "u", "n", "s"].includes(status) || /injur|suspend|unavail|out|not.?squad/.test(status)) availabilityRisk = 1;
-  else if (status === "d" || /doubt|knock|ill/.test(status)) availabilityRisk = 0.5;
+  if (["i", "u", "n", "s"].includes(status) || /injur|suspend|unavail|out|not.?squad/.test(status)) return 1;
+  if (Number.isFinite(player.selection?.noAppearanceProbability)) {
+    return round(clamp(player.selection!.noAppearanceProbability, 0, 1));
+  }
+  let availabilityRisk = status === "d" || /doubt|knock|ill/.test(status) ? 0.5 : 0;
   if (typeof player.chanceOfPlaying === "number") availabilityRisk = Math.max(availabilityRisk, 1 - clamp(player.chanceOfPlaying, 0, 100) / 100);
-  if (availabilityRisk >= 1) return 1;
   const minutesRisk = clamp((45 - minutes(player, gameweek)) / 45, 0, 1);
   return round(clamp(availabilityRisk * 0.75 + minutesRisk * 0.25, 0, 1));
 }

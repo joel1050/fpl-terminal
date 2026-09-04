@@ -62,7 +62,6 @@ const body = (extra: Record<string, unknown>) => JSON.stringify({
   squad: players.map((item) => item.id),
   lockedPlayerIds: [],
   horizon: 1,
-  risk: "BALANCED",
   bench: "CHEAP",
   ...extra,
 });
@@ -86,6 +85,7 @@ describe("optimizer route", () => {
     const response = await post(body({ gameweek: 7 }));
     expect(response.status).toBe(200);
     expect(mocks.optimize).toHaveBeenCalledWith(expect.objectContaining({ gameweek: 7, horizon: 1, bench: "CHEAP" }));
+    expect(mocks.optimize.mock.calls[0][0]).not.toHaveProperty("risk");
   });
 
   it("falls back to the current gameweek when none is requested", async () => {
@@ -103,6 +103,12 @@ describe("optimizer route", () => {
 
   it("rejects a gameweek outside the season", async () => {
     const response = await post(body({ gameweek: 39 }));
+    expect(response.status).toBe(400);
+    expect(mocks.optimize).not.toHaveBeenCalled();
+  });
+
+  it("rejects the retired risk option", async () => {
+    const response = await post(body({ risk: "SAFE" }));
     expect(response.status).toBe(400);
     expect(mocks.optimize).not.toHaveBeenCalled();
   });
