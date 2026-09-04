@@ -45,6 +45,8 @@ describe("chip season policy", () => {
     const official = validateChipSelection("freehit", 9, [{ kind: "wildcard", gameweek: 9 }], {}, 1);
     expect(official.legal).toBe(false);
     expect(official.reason).toMatch(/one chip/i);
+    expect(validateChipSelection("wildcard", 9, [{ kind: "wildcard", gameweek: 9 }], {}, 1).legal).toBe(true);
+    expect(validateChipSelection("wildcard", 10, [{ kind: "wildcard", gameweek: 9 }], {}, 1).legal).toBe(false);
   });
 
   it("rejects free hits in consecutive gameweeks", () => {

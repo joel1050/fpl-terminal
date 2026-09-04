@@ -189,12 +189,11 @@ function WorkspaceBody({
   const expectedPointsByElement = useMemo(() => {
     const map = new Map<number, number>();
     if (gameweek === null) return map;
-    for (const pick of picks?.picks ?? []) {
-      const player = playersById.get(pick.element);
-      if (player) map.set(pick.element, weeklyPlayerMetrics(player, gameweek).points);
+    for (const [id, player] of playersById) {
+      map.set(id, weeklyPlayerMetrics(player, gameweek).points);
     }
     return map;
-  }, [gameweek, picks, playersById]);
+  }, [gameweek, playersById]);
 
   const myLive = useMemo(() => {
     if (!picks) return null;

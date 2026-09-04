@@ -187,6 +187,7 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
       players?: Player[];
       teams?: RawTeam[];
       events?: RawEvent[];
+      liveGameweek?: number;
     }>("/api/fpl/bootstrap", controller.signal).then((envelope) => {
       if (controller.signal.aborted) return;
       const payload = envelope.data;
@@ -194,7 +195,7 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
       const teams = Array.isArray(payload.teams) ? payload.teams : [];
       const events = Array.isArray(payload.events) ? payload.events : [];
       const currentEvent = events.find((event) => event.isCurrent) ?? events.find((event) => event.isNext);
-      const gameweek = currentEvent?.id ?? events[0]?.id ?? 1;
+      const gameweek = payload.liveGameweek ?? currentEvent?.id ?? events[0]?.id ?? 1;
       setBootstrap({
         status: players.length ? "READY" : "ERROR",
         data: {

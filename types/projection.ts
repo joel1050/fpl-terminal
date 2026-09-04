@@ -56,9 +56,10 @@ export interface ProjectionComponents {
 export interface ProjectionOptions {
   horizon: Horizon;
   currentGameweek: number;
+  startGameweek?: number;
   teamStrength?: TeamStrength;
   teamStrengths?: Record<number, TeamStrength>;
-  positionPrior?: Partial<Record<Position, number>>;
+  positionPrior?: Partial<Record<Position, number>> | undefined;
   /** Optional explicit minutes are useful for tests and in-progress seasons. */
   expectedMinutes?: number;
   /** Each player's chronological in-season xG/xA match history, keyed by player id. */

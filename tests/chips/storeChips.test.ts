@@ -216,7 +216,21 @@ describe("chip store", () => {
     expect(firstClearedGameweek).toBe(2);
   });
 
-  it("allows free replacement in imported squads with timeline accounting", () => {
+  it("imports squads with the active chip set for that week", () => {
+    useTerminalStore.getState().setMode("ANALYZE");
+    useTerminalStore.getState().replaceSquad(
+      squad, { gameweek: 3, lineupProjectionFingerprint: "x", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 },
+      4827193, 1000,
+      {
+        usedChips: [{ kind: "3xc", gameweek: 3 }],
+        chip: "3xc",
+      },
+    );
+    expect(useTerminalStore.getState().chip).toBe("3xc");
+    expect(useTerminalStore.getState().gameweekPlans[3]?.chip).toBe("3xc");
+  });
+
+    it("allows free replacement in imported squads with timeline accounting", () => {
     useTerminalStore.getState().setMode("ANALYZE");
     useTerminalStore.getState().replaceSquad(
       squad, { gameweek: 1, lineupProjectionFingerprint: "x", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 },

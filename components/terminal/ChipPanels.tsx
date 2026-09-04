@@ -311,7 +311,6 @@ export function ChipStrategyPanel({
               <strong>{chipLabel(suggestion.chip)} · GW{suggestion.gameweek}</strong>
               <small>
                 {suggestion.incrementalXp > 0 ? `+${suggestion.incrementalXp.toFixed(1)} xP vs saved plan` : "no projected edge"}
-                {suggestion.financialConfidence === "ESTIMATED" ? " · EST finances" : ""}
               </small>
             </div>
             <div className="transfer-effects">

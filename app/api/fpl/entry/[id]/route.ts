@@ -90,6 +90,7 @@ export async function GET(
   let transferBaseline = null;
   let financialConfidence: "EXACT" | "ESTIMATED" = "ESTIMATED";
   let freeHitImport = false;
+  let activeChip: ReturnType<typeof normalizeChipName> = null;
   let activeSquad = { playerIds, byPosition };
   let activeLineup = {
     gameweek: picksGameweek,
@@ -129,7 +130,12 @@ export async function GET(
 
     // If the current official squad is a Free Hit, import the previous
     // permanent squad instead of the temporary picks.
-    const activeChip = normalizeChipName(event.data.active_chip ?? null);
+    activeChip = normalizeChipName(event.data.active_chip ?? null)
+      ?? usedChips.find((c) => c.gameweek === picksGameweek)?.kind
+      ?? null;
+    if (activeChip && !usedChips.some((c) => c.gameweek === picksGameweek && c.kind === activeChip)) {
+      usedChips.push({ kind: activeChip, gameweek: picksGameweek });
+    }
     if (activeChip === "freehit" && picksGameweek > 1) {
       try {
         const previous = await getEntryPicks(entryId, picksGameweek - 1);
@@ -250,5 +256,6 @@ export async function GET(
     financialConfidence,
     freeHitImport,
     importWarnings,
+    chip: activeChip,
   }, { entry: entry.freshness, picks: event.freshness }, errors);
 }

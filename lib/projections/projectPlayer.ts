@@ -534,6 +534,7 @@ export function projectPlayer(
   options: ProjectPlayerOptions = {},
 ): PlayerProjection {
   const currentGameweek = options.currentGameweek ?? 1;
+  const startGameweek = options.startGameweek ?? currentGameweek;
   const horizon = options.horizon ?? 5;
   const expectedMinutes = options.expectedMinutes ?? estimateExpectedMinutes(player, {
     ...options.expectedMinutesOptions,
@@ -556,7 +557,7 @@ export function projectPlayer(
   const upcoming = player.fixtures
     .filter(
       (fixture) =>
-        fixture.gameweek >= currentGameweek &&
+        fixture.gameweek >= startGameweek &&
         fixture.gameweek < currentGameweek + projectionHorizon,
     )
     .sort((a, b) => a.gameweek - b.gameweek || a.opponentTeamId - b.opponentTeamId);

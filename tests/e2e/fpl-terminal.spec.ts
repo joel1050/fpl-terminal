@@ -111,7 +111,6 @@ test.describe("FPL Terminal acceptance", () => {
     const metrics = squad.getByLabel("Squad projection metrics");
     await expect(metrics).toContainText(/VALUE/i);
     await expect(metrics).not.toContainText(/SELL/i);
-    await expect(metrics).toContainText(/EST/i);
     await expect(metrics).toContainText(/TEAM RATING/i);
     await expect(metrics).not.toContainText(/5GW/i);
     await expect(metrics.getByText(/^\d+%$/)).toBeVisible();

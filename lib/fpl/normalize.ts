@@ -88,6 +88,7 @@ export interface NormalizedBootstrap {
   players: Player[];
   fixtures: NormalizedFixture[];
   currentGameweek?: number;
+  liveGameweek?: number;
   deadlineTime?: string;
   totalPlayers?: number;
 }
@@ -339,6 +340,7 @@ export function normalizeBootstrap(
     players: payload.elements.map((player) => normalizePlayer(player, teams, fixtures, seasonStarted)),
     fixtures,
     currentGameweek: currentEvent?.id,
+    liveGameweek: markedCurrent?.id,
     deadlineTime: currentEvent?.deadlineTime,
     totalPlayers: payload.total_players,
   };
@@ -455,6 +457,7 @@ export async function enrichBootstrapWithProjections(
     inSeasonForm,
     playerForm,
     startHistory,
+    bootstrap.liveGameweek,
   );
   const result: EnrichedBootstrap = {
     bootstrap: { ...bootstrap, players: withoutFixtureComponents(enriched.players) },

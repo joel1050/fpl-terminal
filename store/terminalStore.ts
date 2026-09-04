@@ -831,7 +831,7 @@ export type TerminalState = {
   addPlayer: (id: number, position: Position) => boolean;
   removePlayer: (id: number) => boolean;
   replacePlayer: (outgoingId: number, incomingId: number, position: Position) => boolean;
-  replaceSquad: (squad: SquadState, lineup: ApplyLineupInput, entryId: number, budgetTenths?: number, options?: { transferBaseline?: TransferBaseline | null; usedChips?: Array<{ kind: ChipKind; gameweek: number }> }) => boolean;
+  replaceSquad: (squad: SquadState, lineup: ApplyLineupInput, entryId: number, budgetTenths?: number, options?: { transferBaseline?: TransferBaseline | null; usedChips?: Array<{ kind: ChipKind; gameweek: number }>; chip?: ChipKind | null; permanentSquad?: PermanentSquadSnapshot }) => boolean;
   setChip: (gameweek: number, chip: ChipKind | null) => boolean;
   applyChipSuggestion: (input: ChipApplyInput) => boolean;
   applyOptimizerResult: (input: ApplyOptimizerInput) => boolean;
@@ -985,7 +985,10 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       };
     }
     const restored = clonePlan(source, gameweek);
-    if (!exact && source.lineupGameweek !== undefined) restored.lineupGameweek = gameweek;
+    if (!exact) {
+      restored.chip = null;
+      if (source.lineupGameweek !== undefined) restored.lineupGameweek = gameweek;
+    }
     set({
       planningGameweek: gameweek,
       playerIds: [...restored.playerIds],
@@ -1076,6 +1079,19 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     if (!checked.valid || checked.benchGoalkeeperId === undefined) return false;
     const baseline = options?.transferBaseline !== undefined ? sanitizeBaseline(options.transferBaseline) : get().transferBaseline;
     const usedChips = options?.usedChips !== undefined ? sanitizeUsedChips(options.usedChips) : get().usedChips;
+    const chip = options?.chip !== undefined ? (options.chip && validChip(options.chip) ? options.chip : null) : null;
+    let permanentSquad = options?.permanentSquad;
+    if (chip === "freehit" && !permanentSquad) {
+      permanentSquad = {
+        playerIds: [...squad.playerIds],
+        byPosition: cloneSlotMap(byPosition),
+        benchGoalkeeperId: checked.benchGoalkeeperId,
+        benchOrder: [...checked.benchOrder],
+        lockedPlayerIds: [...squad.playerIds],
+        captainId: checked.captainId,
+        viceCaptainId: checked.viceCaptainId,
+      };
+    }
     const next = {
       playerIds: [...squad.playerIds],
       byPosition,
@@ -1089,9 +1105,9 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       selectedPlayerId: undefined,
       entryId,
       budgetTenths,
-      chip: null as ChipKind | null,
+      chip,
       plannedTransfers: [] as PlannedTransfer[],
-      permanentSquad: undefined as PermanentSquadSnapshot | undefined,
+      permanentSquad,
       transferBaseline: baseline,
       usedChips,
       planNotice: null as string | null,

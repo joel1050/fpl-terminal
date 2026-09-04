@@ -89,7 +89,7 @@ describe("timeline projections", () => {
     expect(sumTimelineNet({ 1: tc }, 1, 1)).toBe(tc.netTotal);
   });
 
-  it("deducts transfer hits from the net total", () => {
+  it("does not deduct transfer hits from the net total", () => {
     const priceById = new Map([...SQUAD.map((id) => [id, 50] as [number, number]), [16, 50]]);
     const withTransfer = [...SQUAD.slice(0, 14), 16];
     const timeline = replayTimeline({
@@ -99,10 +99,10 @@ describe("timeline projections", () => {
       fromGameweek: 1,
       toGameweek: 1,
     });
-    expect(timeline[1].hitCost).toBe(4);
+    expect(timeline[1].hitCost).toBe(0);
     const playersById = players();
     playersById.set(16, player(16, "MID", 5));
     const projections = projectTimeline({ timeline, playersById, riskMode: "BALANCED" });
-    expect(projections[1].netTotal).toBe(projections[1].lineupTotal - 4);
+    expect(projections[1].netTotal).toBe(projections[1].lineupTotal);
   });
 });

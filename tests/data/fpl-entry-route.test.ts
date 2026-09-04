@@ -78,7 +78,23 @@ describe("FPL team import route", () => {
     await expect(response.json()).resolves.toMatchObject({ data: { lineup: { gameweek: 2 } } });
   });
 
-  it("imports the permanent squad when the current picks are a free hit", async () => {
+  it("imports the active chip used that week", async () => {
+    mocks.getEntryPicks.mockResolvedValue({
+      data: { picks, active_chip: "3xc", entry_history: { bank: 10, value: 1000 } },
+      freshness: null,
+    });
+    mocks.getEntryHistory.mockResolvedValue({
+      data: { chips: [], current: [{ event: 1, bank: 10, value: 1000 }], past: [] },
+      freshness: null,
+    });
+    const response = await GET(new Request("http://localhost/api/fpl/entry/4827193?gameweek=1"), { params: Promise.resolve({ id: "4827193" }) });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.data.chip).toBe("3xc");
+    expect(body.data.usedChips).toEqual([{ kind: "3xc", gameweek: 1 }]);
+  });
+
+    it("imports the permanent squad when the current picks are a free hit", async () => {
     const fhPicks = picks.map((pick) => pick.element === 15 ? { ...pick, element: 30 } : pick);
     mocks.getEntryPicks.mockImplementation(async (entryId: number, gameweek: number) => {
       if (gameweek === 1) return { data: { picks, entry_history: { bank: 10, value: 1003 } }, freshness: null };

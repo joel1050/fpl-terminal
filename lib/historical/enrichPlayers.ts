@@ -162,6 +162,7 @@ export function enrichPlayersWithHistory(
   inSeasonForm?: Record<number, readonly TeamMatchXG[]>,
   playerForm?: Record<number, readonly PlayerMatchRate[]>,
   startHistory?: Record<number, readonly StartObservation[]>,
+  liveGameweek?: number,
 ): EnrichedPlayers {
   const historicalById = new Map(
     (historical?.players ?? []).map((player) => [player.historicalPlayerId, player]),
@@ -185,6 +186,8 @@ export function enrichPlayersWithHistory(
   const { strengths: priorStrengths, fallbackCount } = deriveTeamStrengths(teams);
   const strengths = inSeasonForm ? applyInSeasonForm(priorStrengths, inSeasonForm) : priorStrengths;
   const gw = currentGameweek(events);
+  const earliestUnfinished = events.find((event) => !event.finished)?.id;
+  const startGw = Math.min(gw, liveGameweek ?? earliestUnfinished ?? gw);
   const selections = buildPlayerSelections(enrichedPlayers, {
     rotowire: loadRotowireSelectionData(),
     historical,
@@ -196,8 +199,9 @@ export function enrichPlayersWithHistory(
   }));
   const projections = projectPlayers(selectedPlayers, {
     horizon: 5,
-    fixtureHorizon: 39 - gw,
+    fixtureHorizon: 39 - startGw,
     currentGameweek: gw,
+    startGameweek: startGw,
     teamStrengths: strengths,
     playerForm,
   });

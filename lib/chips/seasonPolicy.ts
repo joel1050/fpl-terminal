@@ -9,7 +9,7 @@ export const SEASON_CHIP_POLICY: SeasonChipPolicy = {
   secondWindow: { from: 20, to: 38 },
   maxFreeTransfers: 5,
   maxTransfersPerGameweek: 20,
-  hitCostPerTransferTenthsPoints: 4,
+  hitCostPerTransferTenthsPoints: 0,
   sellProfitFraction: 0.5,
   chipsPerWindow: { wildcard: 1, freehit: 1, bboost: 1, "3xc": 1 },
 };
@@ -60,7 +60,7 @@ export function isChipAvailable(
   const range = windowRange(windowForGameweek(gameweek));
   if (gameweek < range.from || gameweek > range.to) return false;
   return !used.some(
-    (entry) => entry.kind === kind && entry.gameweek >= range.from && entry.gameweek <= range.to,
+    (entry) => entry.kind === kind && entry.gameweek !== gameweek && entry.gameweek >= range.from && entry.gameweek <= range.to,
   );
 }
 
@@ -89,7 +89,7 @@ export function validateChipSelection(
   if (!isChipAvailable(kind, gameweek, usedOfficial)) {
     const range = windowRange(windowForGameweek(gameweek));
     const consumedOfficially = usedOfficial.some(
-      (entry) => entry.kind === kind && entry.gameweek >= range.from && entry.gameweek <= range.to,
+      (entry) => entry.kind === kind && entry.gameweek !== gameweek && entry.gameweek >= range.from && entry.gameweek <= range.to,
     );
     if (consumedOfficially) return { legal: false, reason: "That chip was already used in this window." };
     return { legal: false, reason: "That chip expired unused in the first window." };

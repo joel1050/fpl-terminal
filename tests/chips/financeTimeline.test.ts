@@ -25,10 +25,10 @@ describe("transfer finance", () => {
     expect(Number.isInteger(sellingPriceTenths(53, 68))).toBe(true);
   });
 
-  it("banks one free transfer when idle and charges four points per extra transfer", () => {
+  it("banks one free transfer when idle and charges zero hit cost per extra transfer", () => {
     expect(accountNormalTransfers(0, 1)).toMatchObject({ paidTransfers: 0, hitCost: 0, freeTransfersAfter: 2 });
     expect(accountNormalTransfers(1, 1)).toMatchObject({ paidTransfers: 0, hitCost: 0, freeTransfersAfter: 1 });
-    expect(accountNormalTransfers(2, 1)).toMatchObject({ paidTransfers: 1, hitCost: 4, freeTransfersAfter: 1 });
+    expect(accountNormalTransfers(2, 1)).toMatchObject({ paidTransfers: 1, hitCost: 0, freeTransfersAfter: 1 });
     expect(accountNormalTransfers(0, 5)).toMatchObject({ freeTransfersAfter: 5 });
   });
 
@@ -37,7 +37,7 @@ describe("transfer finance", () => {
     const capped = accountNormalTransfers(25, 5);
     expect(capped.normalTransfers).toBe(20);
     expect(capped.paidTransfers).toBe(15);
-    expect(capped.hitCost).toBe(60);
+    expect(capped.hitCost).toBe(0);
   });
 
   it("preserves saved transfers across wildcard and free hit weeks", () => {

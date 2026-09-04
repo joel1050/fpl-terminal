@@ -7,6 +7,7 @@ import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateCh
 import { effectiveBudgetTenths, explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
 import { expectedAutosubValue, pickWeeklyTeam, projectWeeklyLineupHorizons, scoreLineupWithChip, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import { ChipSelector, ChipStrategyPanel, usePlanningWeekFinance } from "@/components/terminal/ChipPanels";
+import { chipLabel } from "@/lib/chips/seasonPolicy";
 import type { ChipKind } from "@/types/chips";
 import type { OptimizerResult } from "@/lib/optimizer/optimizer";
 import { projectPlayer, projectedPointsForGameweeks } from "@/lib/projections/projectPlayer";
@@ -691,8 +692,8 @@ export default function TerminalApp() {
       ? { starterIds: deriveStartingXI(store.playerIds, store.benchGoalkeeperId, store.benchOrder), benchGoalkeeperId: store.benchGoalkeeperId, benchOrder: store.benchOrder, captainId: store.captainId, viceCaptainId: store.viceCaptainId }
       : undefined;
     const plan = scoreLineupWithChip(selected, planningGameweek, store.riskMode, store.chip, saved);
-    return plan.projectedTotal - (weekFinance?.hitCost ?? 0);
-  }, [selected, planningGameweek, store.riskMode, store.chip, lineupApplied, store.playerIds, store.benchGoalkeeperId, store.benchOrder, store.captainId, store.viceCaptainId, weekFinance]);
+    return plan.projectedTotal;
+  }, [selected, planningGameweek, store.riskMode, store.chip, lineupApplied, store.playerIds, store.benchGoalkeeperId, store.benchOrder, store.captainId, store.viceCaptainId]);
   const projected = useMemo<{ nextGW?: number; next3?: number; next5?: number; next10?: number }>(() => {
     if (!selected.length) return {};
     if (weeklyEnginePlan.starterIds.length !== 11) return aggregateWeeklyProjection(selected, planningGameweek);
@@ -1111,7 +1112,7 @@ export default function TerminalApp() {
       if (body.data.squad.playerIds.some((playerId) => !known.has(playerId))) throw new Error("The official squad contains players missing from the current FPL player data. Refresh and try again.");
       const importedPlayers = data.players.filter((player) => body.data!.squad.playerIds.includes(player.id));
       const fingerprint = pickWeeklyTeam({ squad: importedPlayers, gameweek: liveCurrentGW, riskMode: store.riskMode }).projectionFingerprint;
-      if (!fingerprint || !store.replaceSquad(body.data.squad, { ...body.data.lineup, lineupProjectionFingerprint: fingerprint }, entryId, body.data.budgetTenths, { transferBaseline: body.data.transferBaseline ?? null, usedChips: body.data.usedChips ?? [] })) throw new Error("FPL returned an invalid 15-player squad.");
+      if (!fingerprint || !store.replaceSquad(body.data.squad, { ...body.data.lineup, lineupProjectionFingerprint: fingerprint }, entryId, body.data.budgetTenths, { transferBaseline: body.data.transferBaseline ?? null, usedChips: body.data.usedChips ?? [], chip: body.data.chip ?? null })) throw new Error("FPL returned an invalid 15-player squad.");
       store.switchGameweek(liveCurrentGW);
       setGWSwapSelection({});
       setSimulation(null);
@@ -1144,9 +1145,9 @@ export default function TerminalApp() {
       onImport={(result) => {
         const importedPlayers = data.players.filter((player) => result.squad.playerIds.includes(player.id));
         const fingerprint = pickWeeklyTeam({ squad: importedPlayers, gameweek: result.lineup.gameweek, riskMode: store.riskMode }).projectionFingerprint;
-        if (!store.replaceSquad(result.squad, { ...result.lineup, lineupProjectionFingerprint: fingerprint }, result.entryId, result.budgetTenths, { transferBaseline: result.transferBaseline ?? null, usedChips: result.usedChips ?? [] })) return false;
+        if (!store.replaceSquad(result.squad, { ...result.lineup, lineupProjectionFingerprint: fingerprint }, result.entryId, result.budgetTenths, { transferBaseline: result.transferBaseline ?? null, usedChips: result.usedChips ?? [], chip: result.chip ?? null })) return false;
         if (result.importWarnings?.length) setNotice(result.importWarnings[0]);
-        else setNotice(`Imported ${result.teamName || result.managerName || `FPL team ${result.entryId}`}.`);
+        else setNotice(`Imported ${result.teamName || result.managerName || `FPL team ${result.entryId}`}${result.chip ? ` (${chipLabel(result.chip)} active)` : ""}.`);
         return true;
       }}
     />;
@@ -1279,7 +1280,7 @@ function ModeChooser({ status, message, gameweek, onChoose }: { status: DataStat
   return <main className="mode-screen"><div className="mode-brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></div><p className="mode-tagline">QUANTITATIVE FPL SQUAD INTELLIGENCE</p><div className="mode-grid"><button className="mode-card" onClick={() => onChoose("BUILD")}><span className="mode-index">MODE A</span><strong>BUILD FROM SCRATCH</strong><span>Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.</span></button><button className="mode-card" onClick={() => onChoose("ANALYZE")}><span className="mode-index">MODE B</span><strong>IMPORT A TEAM <small>(RECOMMENDED)</small></strong><span>Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities.</span></button></div><div className="mode-footer"><span className={`status-pip ${status.toLowerCase()}`} />{status === "LIVE" ? `LIVE DATA · GAMEWEEK ${gameweek ?? "—"} · MODEL ESTIMATES · SQUAD RULES ENFORCED LOCALLY` : status === "SNAPSHOT" ? `SNAPSHOT DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "STALE" ? `STALE DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "SYNCING" ? "SYNCING FPL MARKET…" : message ?? "FPL data is unavailable."}</div><p className="mode-disclaimer">Not affiliated with, endorsed by, or connected to the Premier League or Fantasy Premier League. Player data comes from public FPL endpoints; projections are estimates, not advice.</p></main>;
 }
 
-type ImportedTeam = { entryId: number; budgetTenths: number; teamName?: string; managerName?: string; squad: SquadState; lineup: Omit<ApplyLineupInput, "lineupProjectionFingerprint">; transferBaseline?: TransferBaseline | null; usedChips?: Array<{ kind: ChipKind; gameweek: number }>; financialConfidence?: "EXACT" | "ESTIMATED"; importWarnings?: string[] };
+type ImportedTeam = { entryId: number; budgetTenths: number; teamName?: string; managerName?: string; squad: SquadState; lineup: Omit<ApplyLineupInput, "lineupProjectionFingerprint">; transferBaseline?: TransferBaseline | null; usedChips?: Array<{ kind: ChipKind; gameweek: number }>; financialConfidence?: "EXACT" | "ESTIMATED"; importWarnings?: string[]; chip?: ChipKind | null };
 
 function TeamImportScreen({ players, gameweek, onImport, onBack }: { players: TerminalPlayer[]; gameweek: number; onImport: (result: ImportedTeam) => boolean; onBack: () => void }) {
   const [entryId, setEntryId] = useState("");
@@ -1591,7 +1592,7 @@ function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankT
     onClick={() => step(deltaTenths)}
   >{glyph}</button>;
   return <div className={editing ? "metric-editable editing" : "metric-editable"}>
-    <span>{confidence === "ESTIMATED" ? "ITB · EST" : "ITB"}</span>
+    <span>ITB</span>
     <span className="metric-money">
       <span aria-hidden="true">£</span>
       <input
@@ -1623,7 +1624,7 @@ function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankT
   </div>;
 }
 
-function MetricStrip({ spent, bankTenths, sellingValue, costLabel, confidence, handBuilt, onBankChange, projected, risk, teamRating }: { spent: number; bankTenths: number; sellingValue?: number; costLabel: "COST" | "VALUE"; confidence: "EXACT" | "ESTIMATED"; handBuilt: boolean; onBankChange: (tenths: number) => boolean; projected: { nextGW?: number }; risk?: number; teamRating?: number }) { return <div className="metric-strip" aria-label="Squad projection metrics"><Metric label={costLabel} value={`${sellingValue !== undefined ? money(sellingValue) : money(spent)}${sellingValue !== undefined && confidence === "ESTIMATED" ? " · EST" : ""}`} /><BankMetric bankTenths={bankTenths} confidence={confidence} handBuilt={handBuilt} onBankChange={onBankChange} /><Metric label="TEAM RATING" value={teamRating === undefined ? "—" : `${teamRating}%`} title={teamRating === undefined ? "Team rating needs a picked squad and live market data." : "Starting XI plus captain xP as a share of the best legal XI the market can field for the same budget."} tone={teamRating === undefined ? undefined : teamRating >= 90 ? "green" : teamRating >= 80 ? "bright-green" : teamRating >= 70 ? "yellow" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" title="Chip-adjusted xP minus transfer hit costs." /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} tone={risk === undefined ? undefined : risk < 30 ? "green" : risk < 60 ? "yellow" : "red"} /></div>; }
+function MetricStrip({ spent, bankTenths, sellingValue, costLabel, confidence, handBuilt, onBankChange, projected, risk, teamRating }: { spent: number; bankTenths: number; sellingValue?: number; costLabel: "COST" | "VALUE"; confidence: "EXACT" | "ESTIMATED"; handBuilt: boolean; onBankChange: (tenths: number) => boolean; projected: { nextGW?: number }; risk?: number; teamRating?: number }) { return <div className="metric-strip" aria-label="Squad projection metrics"><Metric label={costLabel} value={sellingValue !== undefined ? money(sellingValue) : money(spent)} /><BankMetric bankTenths={bankTenths} confidence={confidence} handBuilt={handBuilt} onBankChange={onBankChange} /><Metric label="TEAM RATING" value={teamRating === undefined ? "—" : `${teamRating}%`} title={teamRating === undefined ? "Team rating needs a picked squad and live market data." : "Starting XI plus captain xP as a share of the best legal XI the market can field for the same budget."} tone={teamRating === undefined ? undefined : teamRating >= 90 ? "green" : teamRating >= 80 ? "bright-green" : teamRating >= 70 ? "yellow" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" title="Projected starting XI plus captain xP." /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} tone={risk === undefined ? undefined : risk < 30 ? "green" : risk < 60 ? "yellow" : "red"} /></div>; }
 
 function StrategyControls({ horizon, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value}</button>)}</div></div></div>; }
 
