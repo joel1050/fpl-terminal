@@ -227,6 +227,57 @@ describe("persisted weekly lineup state", () => {
     expect(state.gameweekPlans[2]).toMatchObject({ playerIds: optimized.playerIds });
   });
 
+  it("applies an optimizer result atomically with planned transfers for the current gameweek", () => {
+    const store = useTerminalStore.getState();
+    store.initializeGameweek(1);
+    store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "fp-1", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 });
+
+    const optimized = {
+      playerIds: squad.playerIds.map((id) => id === 8 ? 21 : id),
+      byPosition: {
+        GK: [1, 2],
+        DEF: [3, 4, 5, 6, 7],
+        MID: [9, 10, 11, 12, 21],
+        FWD: [13, 14, 15],
+      } as typeof squad.byPosition,
+    };
+    expect(store.applyOptimizerResult({ gameweek: 1, squad: optimized })).toBe(true);
+    const state = useTerminalStore.getState();
+    expect(state.playerIds).toEqual(optimized.playerIds);
+    // The swap is recorded as a planned transfer for GW1.
+    expect(state.gameweekPlans[1]?.plannedTransfers).toEqual([{ outId: 8, inId: 21, position: "MID" }]);
+    // The outgoing player was a starter; the existing bench is preserved.
+    expect(state.benchOrder).toEqual([7, 12, 15]);
+  });
+
+  it("remaps later plans through multiple optimizer swaps and preserves unaffected plans", () => {
+    const store = useTerminalStore.getState();
+    store.initializeGameweek(1);
+    store.setPlanningGameweek(2);
+    // GW2 holds both outbound players, so both are forward-remapped.
+    store.applyLineup({ gameweek: 2, lineupProjectionFingerprint: "fp-2", benchGoalkeeperId: 2, benchOrder: [7, 11, 15], captainId: 1, viceCaptainId: 3 });
+    store.setPlanningGameweek(1);
+
+    const optimized = {
+      playerIds: squad.playerIds.map((id) => id === 3 ? 16 : id === 8 ? 21 : id),
+      byPosition: {
+        GK: [1, 2],
+        DEF: [4, 5, 6, 7, 16],
+        MID: [9, 10, 11, 12, 21],
+        FWD: [13, 14, 15],
+      } as typeof squad.byPosition,
+    };
+    expect(store.applyOptimizerResult({ gameweek: 1, squad: optimized })).toBe(true);
+    const state = useTerminalStore.getState();
+    expect(state.gameweekPlans[1]?.plannedTransfers).toEqual([
+      { outId: 3, inId: 16, position: "DEF" },
+      { outId: 8, inId: 21, position: "MID" },
+    ]);
+    expect(state.gameweekPlans[2]?.playerIds).toEqual(expect.arrayContaining([16, 21]));
+    expect(state.gameweekPlans[2]?.playerIds).not.toContain(3);
+    expect(state.gameweekPlans[2]?.playerIds).not.toContain(8);
+  });
+
   it("clears future plans when an official squad replaces the current state", () => {
     const store = useTerminalStore.getState();
     store.initializeGameweek(1);

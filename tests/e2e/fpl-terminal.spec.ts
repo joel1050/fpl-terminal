@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { interceptFplData } from "../fixtures/network";
+import { fixturePlayers } from "../fixtures/fpl";
 
 /**
  * The import mode card, matched by its index rather than its wording. The
@@ -98,10 +99,19 @@ test.describe("FPL Terminal acceptance", () => {
     const squad = page.getByRole("region", { name: /squad builder and analysis/i });
     await expect(squad).toContainText(/15\/15 selected/i);
     await expect(squad.getByTestId("squad-roster")).toContainText(/Haaland/i);
-    await expect(squad.getByRole("article").filter({ hasText: "Haaland" }).getByRole("button", { name: /make haaland captain/i })).toHaveAttribute("aria-pressed", "true");
+    const haalandCard = squad.getByRole("article").filter({ hasText: "Haaland" });
+    await expect(haalandCard).toContainText(/£14\.0m/i);
+    await expect(haalandCard).not.toContainText(/SELL/i);
+    await expect(haalandCard.getByRole("button", { name: /make haaland captain/i })).toHaveAttribute("aria-pressed", "true");
+    const haalandMarketRow = page.getByRole("row").filter({ hasText: "Haaland" }).first();
+    await expect(haalandMarketRow).toContainText(/£14\.0m/i);
+    await expect(haalandMarketRow).not.toContainText(/SELL/i);
     await expect(squad.getByRole("article").filter({ hasText: "Watkins" }).getByRole("button", { name: /make watkins vice-captain/i })).toHaveAttribute("aria-pressed", "true");
     const bench = squad.getByRole("region", { name: /^bench$/i });
     const metrics = squad.getByLabel("Squad projection metrics");
+    await expect(metrics).toContainText(/VALUE/i);
+    await expect(metrics).not.toContainText(/SELL/i);
+    await expect(metrics).toContainText(/EST/i);
     await expect(metrics).toContainText(/TEAM RATING/i);
     await expect(metrics).not.toContainText(/5GW/i);
     await expect(metrics.getByText(/^\d+%$/)).toBeVisible();
@@ -115,6 +125,55 @@ test.describe("FPL Terminal acceptance", () => {
     await waitForMarket(page);
     expect(importRequests).toBe(1);
     await expect(page.getByLabel(/enter fpl id/i)).toHaveCount(0);
+  });
+
+  test("uses imported selling prices when optimization updates ITB", async ({ page }) => {
+    const squad = {
+      playerIds: [4, 7, 9, 10, 21, 22, 11, 12, 13, 1, 14, 16, 17, 18, 15],
+      byPosition: { GK: [4, 16], DEF: [7, 9, 10, 17, 18], MID: [21, 22, 11, 12, 13], FWD: [1, 14, 15] },
+    };
+    const currentPrices = Object.fromEntries(fixturePlayers.map((player) => [player.id, player.now_cost]));
+    const purchasePricesTenths = Object.fromEntries(squad.playerIds.map((id) => [id, id === 1 ? 130 : id === 21 ? 40 : currentPrices[id]]));
+    await page.route("**/api/fpl/entry/4827193*", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: {
+        entryId: 4827193,
+        budgetTenths: 981,
+        teamName: "Test XI",
+        managerName: "Test Manager",
+        squad,
+        lineup: { gameweek: 1, benchGoalkeeperId: 16, benchOrder: [17, 18, 15], captainId: 1, viceCaptainId: 14 },
+        transferBaseline: { squadPlayerIds: squad.playerIds, byPosition: squad.byPosition, bankTenths: 90, freeTransfers: 1, purchasePricesTenths, financialConfidence: "EXACT", startGameweek: 1, warnings: [] },
+      } }),
+    }));
+    let optimizerBody: Record<string, unknown> = {};
+    await page.route("**/api/optimizer", async (route) => {
+      optimizerBody = JSON.parse(route.request().postData() ?? "{}");
+      const optimized = {
+        playerIds: squad.playerIds.map((id) => id === 21 ? 2 : id),
+        byPosition: { ...squad.byPosition, MID: squad.byPosition.MID.map((id) => id === 21 ? 2 : id) },
+      };
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ legal: true, squad: optimized, playerIds: optimized.playerIds, errors: [], warnings: [] }) });
+    });
+
+    await chooseMode(page, IMPORT_MODE);
+    await waitForMarket(page);
+    const squadPanel = page.getByRole("region", { name: /squad builder and analysis/i });
+    await expect(squadPanel.getByRole("article").filter({ hasText: "Haaland" })).toContainText(/£13\.5m/i);
+    await expect(page.getByRole("row").filter({ hasText: "Haaland" }).first()).toContainText(/£14\.0m/i);
+    await expect(squadPanel.getByLabel("Cash in the bank in millions")).toHaveValue("9.0");
+    await expect(squadPanel.getByLabel("Squad projection metrics")).toContainText(/VALUE£89\.1/i);
+
+    const rice = squadPanel.getByRole("article").filter({ hasText: "Rice" });
+    await rice.hover();
+    await rice.getByRole("button", { name: /unlock rice/i }).click();
+    await clickButton(page, /^OPTIMIZE$/i);
+
+    await expect(squadPanel.getByTestId("squad-roster")).toContainText(/Saka/i);
+    await expect(squadPanel.getByTestId("squad-roster")).not.toContainText(/Rice/i);
+    await expect(squadPanel.getByLabel("Cash in the bank in millions")).toHaveValue("3.5");
+    expect(optimizerBody).toMatchObject({ bankTenths: 90, purchasePricesTenths: { 1: 130, 21: 40 } });
   });
 
   test("blocks optimization while every player is locked and explains why", async ({ page }) => {

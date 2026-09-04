@@ -22,6 +22,38 @@ export function sellingPriceTenths(
   return purchase + profit;
 }
 
+export interface SquadFinanceSnapshot {
+  purchasePricesTenths: Record<number, number>;
+  sellingPricesTenths: Record<number, number>;
+  squadSellingValueTenths: number;
+  spendableBudgetTenths: number;
+}
+
+/** Prices the active squad without changing the players' live market prices. */
+export function squadFinanceSnapshot(
+  playerIds: readonly number[],
+  bankTenths: number,
+  purchasePricesTenths: Readonly<Record<number, number>>,
+  currentPricesTenths: ReadonlyMap<number, number>,
+): SquadFinanceSnapshot {
+  const purchases: Record<number, number> = {};
+  const selling: Record<number, number> = {};
+  for (const id of playerIds) {
+    const current = currentPricesTenths.get(id);
+    if (current === undefined) continue;
+    const purchase = purchasePricesTenths[id] ?? current;
+    purchases[id] = purchase;
+    selling[id] = sellingPriceTenths(purchase, current);
+  }
+  const squadSellingValueTenths = Object.values(selling).reduce((sum, price) => sum + price, 0);
+  return {
+    purchasePricesTenths: purchases,
+    sellingPricesTenths: selling,
+    squadSellingValueTenths,
+    spendableBudgetTenths: Math.trunc(bankTenths) + squadSellingValueTenths,
+  };
+}
+
 export interface TransferCountResult {
   /** Normal transfers that consume free transfers / cost hits. */
   normalTransfers: number;

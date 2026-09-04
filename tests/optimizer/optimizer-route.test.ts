@@ -113,6 +113,29 @@ describe("optimizer route", () => {
     expect(mocks.optimize).not.toHaveBeenCalled();
   });
 
+  it("accepts planning-week bank and purchase ledger in the transfer-suggestion style", async () => {
+    await post(body({ bankTenths: 12, purchasePricesTenths: { 1: 50 } }));
+    expect(mocks.optimize).toHaveBeenCalledWith(expect.objectContaining({
+      bankTenths: 12,
+      purchasePricesTenths: { 1: 50 },
+    }));
+  });
+
+  it("rejects a purchase price for a player outside the submitted squad", async () => {
+    const response = await post(body({ purchasePricesTenths: { 999: 50 } }));
+    expect(response.status).toBe(400);
+    expect(mocks.optimize).not.toHaveBeenCalled();
+  });
+
+  it("rejects more than fifteen purchase prices or negative values", async () => {
+    const tooMany = Object.fromEntries(Array.from({ length: 16 }, (_, index) => [index + 1, 50]));
+    const negative = await post(body({ purchasePricesTenths: { 1: -5 } }));
+    const oversized = await post(body({ purchasePricesTenths: tooMany }));
+    expect(negative.status).toBe(400);
+    expect(oversized.status).toBe(400);
+    expect(mocks.optimize).not.toHaveBeenCalled();
+  });
+
   it("passes the planning gameweek through the COMPLETE mode too", async () => {
     await post(body({ mode: "COMPLETE", squad: players.slice(0, 9).map((item) => item.id), gameweek: 12 }));
     expect(mocks.complete).toHaveBeenCalledWith(expect.objectContaining({ gameweek: 12 }));

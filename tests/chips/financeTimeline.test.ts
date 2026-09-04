@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountNormalTransfers, freeTransfersAfterChipWeek, sellingPriceTenths } from "@/lib/chips/finance";
+import { accountNormalTransfers, freeTransfersAfterChipWeek, sellingPriceTenths, squadFinanceSnapshot } from "@/lib/chips/finance";
 import { replayTimeline } from "@/lib/chips/timeline";
 import { reconstructImportBaseline } from "@/lib/chips/importTeam";
 import type { Position } from "@/types/player";
@@ -43,6 +43,80 @@ describe("transfer finance", () => {
   it("preserves saved transfers across wildcard and free hit weeks", () => {
     expect(freeTransfersAfterChipWeek(3)).toBe(3);
     expect(freeTransfersAfterChipWeek(5)).toBe(5);
+  });
+});
+
+describe("planning week finance", () => {
+  it("exposes the current ledger, per-owned selling prices, sell value, and spendable budget", () => {
+    const baseline = {
+      squadPlayerIds: [...SQUAD],
+      byPosition: BY_POSITION,
+      bankTenths: 20,
+      freeTransfers: 1,
+      purchasePricesTenths: Object.fromEntries(SQUAD.map((id) => [id, id === 15 ? 45 : 50])),
+      financialConfidence: "EXACT" as const,
+      startGameweek: 1,
+      warnings: [] as string[],
+    };
+    const week = replayTimeline({
+      baseline,
+      plans: { 1: { playerIds: [...SQUAD], chip: null } },
+      priceById: prices({ 15: 60 }),
+      fromGameweek: 1,
+      toGameweek: 1,
+    })[1];
+    const finance = squadFinanceSnapshot(SQUAD, week.bankTenths, week.purchasePricesTenths, prices({ 15: 60 }));
+    // 15 bought at 45 now 60 sells for 45 + floor(15/2) = 52; others flat at 50.
+    expect(finance.sellingPricesTenths[15]).toBe(52);
+    expect(finance.sellingPricesTenths[1]).toBe(50);
+    expect(finance.squadSellingValueTenths).toBe(14 * 50 + 52);
+    expect(finance.spendableBudgetTenths).toBe(20 + 14 * 50 + 52);
+    expect(finance.purchasePricesTenths[15]).toBe(45);
+  });
+
+  it("falls back to current prices when the purchase ledger is incomplete", () => {
+    const baseline = {
+      squadPlayerIds: [...SQUAD],
+      byPosition: BY_POSITION,
+      bankTenths: 0,
+      freeTransfers: 1,
+      purchasePricesTenths: Object.fromEntries(SQUAD.map((id) => [id, 50])),
+      financialConfidence: "ESTIMATED" as const,
+      startGameweek: 1,
+      warnings: [] as string[],
+    };
+    const week = replayTimeline({
+      baseline,
+      plans: { 1: { playerIds: [...SQUAD], chip: null } },
+      priceById: prices(),
+      fromGameweek: 1,
+      toGameweek: 1,
+    })[1];
+    expect(squadFinanceSnapshot(SQUAD, week.bankTenths, week.purchasePricesTenths, prices()).squadSellingValueTenths).toBe(750);
+  });
+
+  it("filters the replayed ledger to the active squad on a Free Hit week", () => {
+    const permanent = [...SQUAD];
+    const active = [...SQUAD.filter((id) => id !== 15), 16];
+    const week = replayTimeline({
+      baseline: {
+        squadPlayerIds: permanent,
+        byPosition: BY_POSITION,
+        bankTenths: 10,
+        freeTransfers: 1,
+        purchasePricesTenths: Object.fromEntries(permanent.map((id) => [id, 50])),
+        financialConfidence: "EXACT",
+        startGameweek: 1,
+        warnings: [],
+      },
+      plans: { 1: { playerIds: active, chip: "freehit" } },
+      priceById: prices(),
+      fromGameweek: 1,
+      toGameweek: 1,
+    });
+    const finance = squadFinanceSnapshot(active, week[1].bankTenths, week[1].purchasePricesTenths, prices());
+    expect(finance.purchasePricesTenths[15]).toBeUndefined();
+    expect(finance.purchasePricesTenths[16]).toBe(60);
   });
 });
 
@@ -119,6 +193,21 @@ describe("timeline replay", () => {
     expect(timeline[5].freeTransfersAfter).toBe(2);
     expect(timeline[6].permanentSquadIds).toEqual(SQUAD);
     expect(timeline[6].activeSquadIds).toEqual(SQUAD);
+  });
+
+  it("records market price when a sold player is bought back", () => {
+    const timeline = replayTimeline({
+      baseline: baselineOf(2),
+      plans: {
+        1: { playerIds: [...SQUAD.filter((id) => id !== 15), 16], chip: null },
+        2: { playerIds: [...SQUAD], chip: null },
+      },
+      priceById: prices({ 15: 60 }),
+      fromGameweek: 1,
+      toGameweek: 2,
+    });
+    expect(timeline[1].purchasePricesTenths[15]).toBeUndefined();
+    expect(timeline[2].purchasePricesTenths[15]).toBe(60);
   });
 });
 

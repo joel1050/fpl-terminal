@@ -447,14 +447,37 @@ function diffTransfers(before: readonly number[], after: readonly number[], byPo
 }
 
 /** Squad entering a gameweek: the latest earlier plan, else the imported baseline. */
-function enteringSquadFor(state: TerminalState, gameweek: number): number[] {
+function enteringSquadStateFor(state: TerminalState, gameweek: number): Pick<SquadState, "playerIds" | "byPosition"> {
   const prior = Object.keys(state.gameweekPlans)
     .map(Number)
     .filter((gw) => Number.isSafeInteger(gw) && gw < gameweek && state.gameweekPlans[gw])
     .sort((left, right) => right - left)[0];
-  if (prior !== undefined) return [...state.gameweekPlans[prior].playerIds];
-  if (state.transferBaseline) return [...state.transferBaseline.squadPlayerIds];
-  return [...state.playerIds];
+  if (prior !== undefined) return {
+    playerIds: [...state.gameweekPlans[prior].playerIds],
+    byPosition: cloneSlotMap(state.gameweekPlans[prior].byPosition),
+  };
+  if (state.transferBaseline) return {
+    playerIds: [...state.transferBaseline.squadPlayerIds],
+    byPosition: cloneSlotMap(state.transferBaseline.byPosition),
+  };
+  return { playerIds: [...state.playerIds], byPosition: cloneSlotMap(state.byPosition) };
+}
+
+function enteringSquadFor(state: TerminalState, gameweek: number): number[] {
+  return enteringSquadStateFor(state, gameweek).playerIds;
+}
+
+function positionMatchedTransfers(
+  before: Pick<SquadState, "playerIds" | "byPosition">,
+  after: Pick<SquadState, "playerIds" | "byPosition">,
+): PlannedTransfer[] {
+  const beforeSet = new Set(before.playerIds);
+  const afterSet = new Set(after.playerIds);
+  return POSITIONS.flatMap((position) => {
+    const outgoing = before.byPosition[position].filter((id) => !afterSet.has(id));
+    const incoming = after.byPosition[position].filter((id) => !beforeSet.has(id));
+    return outgoing.slice(0, incoming.length).map((outId, index) => ({ outId, inId: incoming[index], position }));
+  });
 }
 
 /**
@@ -733,6 +756,12 @@ export type ChipApplyInput = {
   permanentSquad?: PermanentSquadSnapshot;
 };
 
+/** Atomic replacement of the planning squad with an optimized squad. */
+export type ApplyOptimizerInput = {
+  gameweek: number;
+  squad: SquadState;
+};
+
 export type PreApplySnapshot = {
   gameweekPlans: Record<number, GameweekPlanSnapshot>;
   playerIds: number[];
@@ -805,6 +834,7 @@ export type TerminalState = {
   replaceSquad: (squad: SquadState, lineup: ApplyLineupInput, entryId: number, budgetTenths?: number, options?: { transferBaseline?: TransferBaseline | null; usedChips?: Array<{ kind: ChipKind; gameweek: number }> }) => boolean;
   setChip: (gameweek: number, chip: ChipKind | null) => boolean;
   applyChipSuggestion: (input: ChipApplyInput) => boolean;
+  applyOptimizerResult: (input: ApplyOptimizerInput) => boolean;
   undoChipApply: () => boolean;
   clearPlanNotice: () => void;
   setTransferBaseline: (baseline: TransferBaseline | null) => void;
@@ -1324,6 +1354,58 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       if (!clean) return false;
       set({ preApplySnapshot: snapshot, gameweekPlans: { ...state.gameweekPlans, [input.gameweek]: clean } });
     }
+    return true;
+  },
+  applyOptimizerResult: (input) => {
+    const state = get();
+    if (!validGameweek(input.gameweek) || state.planningGameweek !== input.gameweek) return false;
+    const incoming = sanitizeSquad(input.squad);
+    if (!incoming) return false;
+    const incomingSet = new Set(incoming.playerIds);
+    const listed = POSITIONS.flatMap((position) => incoming.byPosition[position]);
+    const expectedCounts: Record<Position, number> = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
+    if (incoming.playerIds.length !== 15
+      || incomingSet.size !== 15
+      || listed.length !== 15
+      || new Set(listed).size !== 15
+      || listed.some((id) => !incomingSet.has(id))
+      || POSITIONS.some((position) => incoming.byPosition[position].length !== expectedCounts[position])) return false;
+    // On a Free Hit week the incoming squad is temporary: permanent owners
+    // stay on the baseline ledger and later permanent plans are untouched.
+    const onFreeHit = state.chip === "freehit" && state.permanentSquad !== undefined;
+    const entering = enteringSquadStateFor(state, input.gameweek);
+    const transfers = positionMatchedTransfers(entering, incoming);
+    const lineup = conformLineupToSquad(incoming.playerIds, state.benchGoalkeeperId, state.benchOrder, state.captainId, state.viceCaptainId);
+    const patch: Partial<TerminalState> = {
+      playerIds: [...incoming.playerIds],
+      byPosition: cloneSlotMap(incoming.byPosition),
+      benchGoalkeeperId: lineup.benchGoalkeeperId,
+      benchOrder: lineup.benchOrder,
+      lockedPlayerIds: state.lockedPlayerIds.filter((id) => incomingSet.has(id)),
+      captainId: lineup.captainId,
+      viceCaptainId: lineup.viceCaptainId,
+      plannedTransfers: transfers,
+      chip: state.chip,
+      permanentSquad: state.permanentSquad ? clonePermanentSnapshot(state.permanentSquad) : undefined,
+      selectedPlayerId: undefined,
+    };
+    // Build the updated plan and propagate every swap downstream in memory
+    // before committing one atomic set.
+    const plan = planFromState({ ...state, ...patch, planningGameweek: input.gameweek }, input.gameweek);
+    let gameweekPlans = savePlan(state.gameweekPlans, plan);
+    let firstCleared: number | null = null;
+    if (!onFreeHit) {
+      for (const transfer of transfers) {
+        const invalidated = invalidateDownstreamPlans(gameweekPlans, input.gameweek, transfer.outId, transfer.inId);
+        gameweekPlans = invalidated.plans;
+        firstCleared = firstCleared ?? invalidated.firstClearedGameweek;
+      }
+    }
+    set({
+      ...patch,
+      gameweekPlans,
+      planNotice: firstCleared !== null ? `GW${firstCleared} onward cleared after the squad change.` : state.planNotice,
+    });
     return true;
   },
   undoChipApply: () => {

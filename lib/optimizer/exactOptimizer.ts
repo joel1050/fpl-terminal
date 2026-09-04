@@ -3,6 +3,7 @@ import loadHighs from "highs";
 import type { Player, Position } from "@/types/player";
 import type { OptimizerInput, OptimizerResult } from "./optimizer";
 import { analyzeSquad } from "@/lib/analysis/analyzeSquad";
+import { sellingPriceTenths } from "@/lib/chips/finance";
 import { probabilityDidNotPlay } from "@/lib/squad/weeklyLineup";
 import {
   asPlayers,
@@ -92,19 +93,48 @@ function exactFailure(ids: readonly number[], players: Map<number, Player>, erro
   return { legal: false, playerIds: [...ids], squad: normalizeSquad(ids, players), errors, warnings: [] };
 }
 
+/**
+ * Effective squad cost under a real finance ledger: currently owned players
+ * count their official selling price (what a sale would return), incoming
+ * market players count their price, and the budget is ITB plus selling value.
+ * Without both finance inputs the market price rule is unchanged.
+ */
+export function financeContext(input: ExactOptimizerInput, ownedIds: readonly number[]): { costOf: (player: Player) => number; budgetTenths: number } | null {
+  if (input.bankTenths === undefined || input.purchasePricesTenths === undefined) return null;
+  const purchasePrices = input.purchasePricesTenths;
+  const owned = new Set(ownedIds);
+  const priceById = new Map(asPlayers(input.players ?? input.playerPool ?? []).map((player) => [player.id, player.priceTenths]));
+  const sellingOf = (id: number): number => {
+    const purchase = purchasePrices[id];
+    const current = priceById.get(id);
+    return purchase !== undefined && current !== undefined ? sellingPriceTenths(purchase, current) : current ?? purchase ?? 0;
+  };
+  const budgetTenths = Math.trunc(input.bankTenths) + ownedIds.reduce((sum, id) => sum + sellingOf(id), 0);
+  return {
+    costOf: (player) => owned.has(player.id) ? sellingOf(player.id) : player.priceTenths,
+    budgetTenths,
+  };
+}
+
 async function solveExact(input: ExactOptimizerInput, fixedIds: readonly number[]): Promise<ExactOptimizerResult> {
   const allPlayers = asPlayers(input.players ?? input.playerPool ?? []).sort((a, b) => a.id - b.id);
   const map = playerMap(allPlayers);
   const fixed = [...new Set(fixedIds)];
   const excluded = new Set(input.excludedPlayerIds ?? []);
+  const budget = input.budgetTenths ?? DEFAULT_BUDGET_TENTHS;
+  const maxPerClub = input.maxPlayersPerClub ?? DEFAULT_MAX_PLAYERS_PER_CLUB;
+  const ownedIds = idsFromInput(input);
+  const finance = financeContext(input, ownedIds);
+  const costOf = (player: Player) => finance?.costOf(player) ?? player.priceTenths;
+  const budgetToUse = finance?.budgetTenths ?? budget;
   const errors: string[] = [];
   for (const id of fixed) {
     if (!map.has(id)) errors.push(`Player ${id} is not in the player universe.`);
     if (excluded.has(id)) errors.push(`Player ${id} is excluded.`);
   }
   const fixedValidation = legalSquad(fixed, map, {
-    budgetTenths: input.budgetTenths ?? DEFAULT_BUDGET_TENTHS,
-    maxPlayersPerClub: input.maxPlayersPerClub ?? DEFAULT_MAX_PLAYERS_PER_CLUB,
+    budgetTenths: finance ? Number.POSITIVE_INFINITY : budget,
+    maxPlayersPerClub: maxPerClub,
   });
   for (const error of fixedValidation.errors) {
     if (error.startsWith("Squad must contain 15") || /requires \d+ players \(received/.test(error)) continue;
@@ -115,8 +145,6 @@ async function solveExact(input: ExactOptimizerInput, fixedIds: readonly number[
   const players = allPlayers.filter((player) => !excluded.has(player.id));
   const horizon = input.horizon ?? 5;
   const bench = input.bench ?? "BALANCED";
-  const budget = input.budgetTenths ?? DEFAULT_BUDGET_TENTHS;
-  const maxPerClub = input.maxPlayersPerClub ?? DEFAULT_MAX_PLAYERS_PER_CLUB;
   const projectedGameweeks = players.flatMap((player) => player.projection?.fixtures.map((fixture) => fixture.gameweek) ?? []);
   const firstProjectedGameweek = projectedGameweeks.length ? Math.min(...projectedGameweeks) : 1;
   const lastProjectedGameweek = projectedGameweeks.length ? Math.max(...projectedGameweeks) : 1;
@@ -169,7 +197,7 @@ async function solveExact(input: ExactOptimizerInput, fixedIds: readonly number[
   }
 
   constraints.push(`squad_size: ${expression(players.map((player) => [1, squad(player.id)]))} = 15`);
-  constraints.push(`budget: ${expression(players.map((player) => [player.priceTenths, squad(player.id)]))} <= ${budget}`);
+  constraints.push(`budget: ${expression(players.map((player) => [costOf(player), squad(player.id)]))} <= ${budgetToUse}`);
   for (const position of POSITIONS) {
     const members = players.filter((player) => player.position === position);
     constraints.push(`squad_${position}: ${expression(members.map((player) => [1, squad(player.id)]))} = ${POSITION_MINIMUMS[position]}`);
@@ -201,10 +229,23 @@ async function solveExact(input: ExactOptimizerInput, fixedIds: readonly number[
   const result = highs.solve(lp, { output_flag: false, log_to_console: false, mip_rel_gap: 0, presolve: "on", random_seed: 0 });
   if (result.Status !== "Optimal") return exactFailure(fixed, map, [`Exact optimizer returned ${result.Status}.`]);
   const selectedIds = players.filter((player) => result.Columns[squad(player.id)]?.Primal > 0.5).map((player) => player.id);
-  const validation = legalSquad(selectedIds, map, { budgetTenths: budget, maxPlayersPerClub: maxPerClub, excludedPlayerIds: input.excludedPlayerIds });
+  const validation = legalSquad(selectedIds, map, {
+    budgetTenths: finance ? Number.POSITIVE_INFINITY : budget,
+    maxPlayersPerClub: maxPerClub,
+    excludedPlayerIds: input.excludedPlayerIds,
+  });
+  const effectiveCost = selectedIds.reduce((sum, id) => sum + costOf(map.get(id)!), 0);
+  if (effectiveCost > budgetToUse) {
+    return exactFailure(fixed, map, [`Squad effective cost ${effectiveCost} tenths exceeds the ${budgetToUse}-tenths spendable budget.`]);
+  }
   if (!validation.legal) return exactFailure(fixed, map, validation.errors);
   const normalized = normalizeSquad(selectedIds, map);
-  const analysis = analyzeSquad({ squad: normalized, players: allPlayers, horizon, bench, budgetTenths: budget, maxPlayersPerClub: maxPerClub });
+  const analysis = analyzeSquad({ squad: normalized, players: allPlayers, horizon, bench, budgetTenths: budgetToUse, maxPlayersPerClub: maxPerClub });
+  if (finance) {
+    analysis.totalCostTenths = effectiveCost;
+    analysis.bankTenths = budgetToUse - effectiveCost;
+    analysis.structuralWarnings = analysis.structuralWarnings.filter((warning) => !warning.startsWith("The squad is over budget by"));
+  }
   return {
     legal: true,
     squad: normalized,

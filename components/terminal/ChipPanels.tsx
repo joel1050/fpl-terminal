@@ -6,6 +6,7 @@ import type { ChipKind } from "@/types/chips";
 import { baselineWithMigrationFallback, useTerminalStore } from "@/store/terminalStore";
 import { chipLabel, validateChipSelection } from "@/lib/chips/seasonPolicy";
 import { replayTimeline } from "@/lib/chips/timeline";
+import { squadFinanceSnapshot } from "@/lib/chips/finance";
 import { pickWeeklyTeam } from "@/lib/squad/weeklyLineup";
 
 export type ChipSuggestion = {
@@ -89,6 +90,14 @@ export type WeekFinance = {
   freeTransfersAfter: number;
   hitCost: number;
   bankTenths: number;
+  /** Current replayed purchase ledger for every owned player. */
+  purchasePricesTenths: Record<number, number>;
+  /** Official selling price per currently owned player. */
+  sellingPricesTenths: Record<number, number>;
+  /** Sum of official selling values for the current squad. */
+  squadSellingValueTenths: number;
+  /** ITB plus total selling value: the budget the optimizer can spend. */
+  spendableBudgetTenths: number;
   confidence: "EXACT" | "ESTIMATED";
   warnings: string[];
 };
@@ -122,6 +131,7 @@ export function usePlanningWeekFinance(
     const timeline = replayTimeline({ baseline, plans, priceById, positionById, fromGameweek: from, toGameweek: planningGameweek });
     const week = timeline[planningGameweek];
     if (!week) return null;
+    const finance = squadFinanceSnapshot(playerIds, week.bankTenths, week.purchasePricesTenths, priceById);
     return {
       chip: week.chip,
       isChipFree: week.isChipFree,
@@ -129,6 +139,7 @@ export function usePlanningWeekFinance(
       freeTransfersAfter: week.freeTransfersAfter,
       hitCost: week.hitCost,
       bankTenths: week.bankTenths,
+      ...finance,
       confidence: baseline.financialConfidence,
       warnings: [...baseline.warnings, ...week.warnings],
     };

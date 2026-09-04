@@ -16,6 +16,10 @@ const requestSchema = z.object({
   squad: z.array(z.number().int().positive()).max(15),
   lockedPlayerIds: z.array(z.number().int().positive()).max(15),
   budgetTenths: z.number().int().nonnegative().optional(),
+  bankTenths: z.number().int().nonnegative().optional(),
+  purchasePricesTenths: z.object({}).catchall(z.number().int().nonnegative()).refine((prices) => Object.keys(prices).length <= 15, {
+    message: "No more than 15 purchase prices",
+  }).optional(),
   gameweek: z.number().int().min(1).max(38).optional(),
   horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]),
   bench: z.enum(["CHEAP", "BALANCED", "STRONG"]),
@@ -27,6 +31,11 @@ export async function POST(request: Request) {
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid optimizer request" }, { status: 400 });
+  const owned = new Set(parsed.data.squad);
+  const ownedPricing = Object.keys(parsed.data.purchasePricesTenths ?? {});
+  if (ownedPricing.some((id) => !owned.has(Number(id)))) {
+    return NextResponse.json({ error: "Purchase prices may only be supplied for players in the submitted squad" }, { status: 400 });
+  }
 
   try {
     const [bootstrap, fixtures] = await Promise.all([getBootstrap(), getFixtures()]);
@@ -48,6 +57,10 @@ export async function POST(request: Request) {
       squad: parsed.data.squad,
       lockedPlayerIds: parsed.data.lockedPlayerIds,
       budgetTenths: parsed.data.budgetTenths,
+      bankTenths: parsed.data.bankTenths,
+      purchasePricesTenths: parsed.data.purchasePricesTenths
+        ? Object.fromEntries(Object.entries(parsed.data.purchasePricesTenths).map(([key, value]) => [Number(key), value]))
+        : undefined,
       gameweek,
       horizon: parsed.data.horizon,
       bench: parsed.data.bench,
