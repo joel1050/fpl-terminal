@@ -1,3 +1,4 @@
+import { sellingPriceTenths } from "../chips/finance";
 import type { ProposedMove, SimulationResult } from "../../types/analysis";
 import type { SquadState } from "../../types/squad";
 import type { Player } from "../../types/player";
@@ -17,6 +18,7 @@ export interface SimulateChangeInput extends AnalyzeSquadOptions {
   incomingPlayerId?: number;
   addId?: number;
   lockPlayerId?: number;
+  moves?: Array<{ outId?: number; inId?: number }>;
 }
 
 function idsOf(squad: SquadReference): number[] {
@@ -52,24 +54,56 @@ export function simulateChange(input: SimulateChangeInput): SimulationResult {
   const universe = asPlayers(input.players ?? input.playerPool ?? fallbackPlayers);
   const map = playerMap(universe);
   const beforeIds = idsOf(input.squad);
-  const outId = input.outId ?? input.outgoingPlayerId;
-  const inId = input.inId ?? input.incomingPlayerId ?? input.addId;
   const afterIds = [...beforeIds];
   const explanationFactors: string[] = [];
-  if (outId !== undefined) {
-    const index = afterIds.indexOf(outId);
-    if (index >= 0 && inId !== undefined) afterIds[index] = inId;
-    else if (index < 0) explanationFactors.push("The outgoing player is not in the squad.");
-  } else if (inId !== undefined) {
-    if (afterIds.includes(inId)) explanationFactors.push("The incoming player is already selected.");
-    else afterIds.push(inId);
-  } else {
+
+  const moves = input.moves && input.moves.length > 0
+    ? input.moves
+    : [{ outId: input.outId ?? input.outgoingPlayerId, inId: input.inId ?? input.incomingPlayerId ?? input.addId }];
+
+  for (const move of moves) {
+    const outId = move.outId;
+    const inId = move.inId;
+    if (outId !== undefined) {
+      const index = afterIds.indexOf(outId);
+      if (index >= 0 && inId !== undefined) afterIds[index] = inId;
+      else if (index < 0) explanationFactors.push(`The outgoing player (${outId}) is not in the squad.`);
+    } else if (inId !== undefined) {
+      if (afterIds.includes(inId)) explanationFactors.push(`The incoming player (${inId}) is already selected.`);
+      else afterIds.push(inId);
+    }
+  }
+
+  if (moves.length === 0 || (moves.length === 1 && moves[0].outId === undefined && moves[0].inId === undefined)) {
     explanationFactors.push("No player change was provided.");
   }
+
+  const sellingOf = (player: Player): number => {
+    const purchase = input.purchasePricesTenths?.[player.id];
+    return purchase !== undefined
+      ? sellingPriceTenths(purchase, player.priceTenths)
+      : player.priceTenths;
+  };
+
+  const spentBefore = costOf(beforeIds, map);
+  const outPlayers = beforeIds.filter((id) => !afterIds.includes(id)).map((id) => map.get(id)).filter((p): p is Player => Boolean(p));
+  const inPlayers = afterIds.filter((id) => !beforeIds.includes(id)).map((id) => map.get(id)).filter((p): p is Player => Boolean(p));
+  const cashReleased = outPlayers.reduce((sum, p) => sum + sellingOf(p), 0);
+  const cashSpent = inPlayers.reduce((sum, p) => sum + p.priceTenths, 0);
+  const cashReleasedTenths = cashReleased - cashSpent;
+
+  const affordableBudget = input.bankTenths !== undefined
+    ? spentBefore - outPlayers.reduce((sum, p) => sum + p.priceTenths, 0) + input.bankTenths + cashReleased
+    : input.budgetTenths;
+
+  const baselineBudget = input.bankTenths !== undefined
+    ? spentBefore + input.bankTenths
+    : input.budgetTenths;
+
   const before = analyzeSquad({ ...input, squad: beforeIds });
   const after = analyzeSquad({ ...input, squad: afterIds });
   const legality = legalSquad(afterIds, map, {
-    budgetTenths: input.budgetTenths,
+    budgetTenths: affordableBudget,
     maxPlayersPerClub: input.maxPlayersPerClub,
     excludedPlayerIds: input.excludedPlayerIds,
   });
@@ -78,7 +112,7 @@ export function simulateChange(input: SimulateChangeInput): SimulationResult {
   const legal = partialErrors.length === 0 && (afterIds.length === 15 ? legality.legal : feasibility.feasible);
   const priceDeltaTenths = costOf(afterIds, map) - costOf(beforeIds, map);
   const baselineLegal = legalSquad(beforeIds, map, {
-    budgetTenths: input.budgetTenths,
+    budgetTenths: baselineBudget,
     maxPlayersPerClub: input.maxPlayersPerClub,
     excludedPlayerIds: input.excludedPlayerIds,
   }).legal;
@@ -100,8 +134,14 @@ export function simulateChange(input: SimulateChangeInput): SimulationResult {
   const optimizedBeforeXp = horizon === 1 ? beforeProjection.nextGW : horizon === 3 ? beforeProjection.next3 : horizon === 5 ? beforeProjection.next5 : beforeProjection.next10;
   const optimizedAfterXp = horizon === 1 ? afterProjection.nextGW : horizon === 3 ? afterProjection.next3 : horizon === 5 ? afterProjection.next5 : afterProjection.next10;
   const projectedDelta = optimizedAfterXp - optimizedBeforeXp;
-  if (priceDeltaTenths > 0) explanationFactors.push(`Costs ${(priceDeltaTenths / 10).toFixed(1)}m more.`);
-  if (priceDeltaTenths < 0) explanationFactors.push(`Releases ${(-priceDeltaTenths / 10).toFixed(1)}m.`);
+  if (cashReleasedTenths !== 0) {
+    if (cashReleasedTenths > 0) explanationFactors.push(`Releases ${(cashReleasedTenths / 10).toFixed(1)}m ITB.`);
+    else explanationFactors.push(`Costs ${(-cashReleasedTenths / 10).toFixed(1)}m.`);
+  } else if (priceDeltaTenths > 0) {
+    explanationFactors.push(`Costs ${(priceDeltaTenths / 10).toFixed(1)}m more.`);
+  } else if (priceDeltaTenths < 0) {
+    explanationFactors.push(`Releases ${(-priceDeltaTenths / 10).toFixed(1)}m.`);
+  }
   if (projectedDelta > 0) explanationFactors.push(`Adds ${projectedDelta.toFixed(1)} optimized projected points over ${horizon} gameweek${horizon === 1 ? "" : "s"}.`);
   if (projectedDelta < 0) explanationFactors.push(`Loses ${(-projectedDelta).toFixed(1)} optimized projected points over ${horizon} gameweek${horizon === 1 ? "" : "s"}.`);
   explanationFactors.push(...legality.errors);
@@ -115,6 +155,7 @@ export function simulateChange(input: SimulateChangeInput): SimulationResult {
     optimizedAfterXp,
     projectedDelta,
     priceDeltaTenths,
+    cashReleasedTenths,
     projectedDeltaGW,
     projectedDelta3,
     projectedDelta5,
@@ -124,5 +165,3 @@ export function simulateChange(input: SimulateChangeInput): SimulationResult {
     explanationFactors,
   };
 }
-
-export default simulateChange;

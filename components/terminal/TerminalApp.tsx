@@ -554,7 +554,8 @@ export default function TerminalApp() {
   const [reverseBusy, setReverseBusy] = useState(false);
   const [transferSearch, setTransferSearch] = useState<{ key: string; suggestions: SingleTransferSuggestion[]; state: "READY" | "ERROR"; message: string | null }>({ key: "", suggestions: [], state: "READY", message: null });
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
-  const [simulationMove, setSimulationMove] = useState<{ outId: number; inId: number } | null>(null);
+  const [simulationMoves, setSimulationMoves] = useState<Array<{ outId: number; inId: number; cashReleasedTenths?: number }> | null>(null);
+  const simulationMove = simulationMoves?.[0] ?? null;
   const [gwSwapSelection, setGWSwapSelection] = useState<{ starterId?: number; benchId?: number }>({});
   const [mobilePickedId, setMobilePickedId] = useState<number | null>(null);
   const isMobileLineup = useMatchMedia("(max-width: 900px)");
@@ -732,9 +733,18 @@ export default function TerminalApp() {
     const lineupXp = currentGWPlan.projectedXI + currentGWPlan.captainBonus;
     return clamp(Math.round(lineupXp / bestPossibleXI.projectedTotal * 100), 0, 100);
   }, [bestPossibleXI, bestXIKey, currentGWPlan]);
-  const purchasePricesTenths = store.transferBaseline?.purchasePricesTenths;
+  const purchasePricesTenths = weekFinance?.purchasePricesTenths ?? store.transferBaseline?.purchasePricesTenths;
+  const [bankedTransfersChoice, setBankedTransfersChoice] = useState<number | null>(null);
+  const defaultBankedTransfers = clamp(weekFinance?.freeTransfersBefore ?? 1, 1, 5);
+  const bankedTransfers = bankedTransfersChoice ?? defaultBankedTransfers;
+
+  const purchaseLedgerKey = useMemo(() => {
+    if (!purchasePricesTenths) return "";
+    return Object.entries(purchasePricesTenths).sort(([a], [b]) => Number(a) - Number(b)).map(([k, v]) => `${k}:${v}`).join(",");
+  }, [purchasePricesTenths]);
+
   const transferRequestKey = selected.length === 15
-    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.budgetTenths}|${bankTenths}|${store.transferHorizon}|${store.riskMode}|${planningGameweek}`
+    ? `${store.playerIds.join(",")}|${store.lockedPlayerIds.join(",")}|${store.budgetTenths}|${bankTenths}|${purchaseLedgerKey}|${store.transferHorizon}|${store.riskMode}|${planningGameweek}|${bankedTransfers}`
     : "";
   useEffect(() => {
     if (!transferRequestKey) return;
@@ -752,6 +762,7 @@ export default function TerminalApp() {
         horizon: store.transferHorizon,
         risk: store.riskMode,
         gameweek: planningGameweek,
+        maxTransfers: bankedTransfers,
       }),
     }).then(async (response) => {
       const body = await response.json() as { suggestions?: SingleTransferSuggestion[]; error?: string };
@@ -762,10 +773,18 @@ export default function TerminalApp() {
       setTransferSearch({ key: transferRequestKey, suggestions: [], state: "ERROR", message: error instanceof Error ? error.message : "Exact transfer search failed" });
     });
     return () => controller.abort();
-  }, [planningGameweek, store.budgetTenths, bankTenths, purchasePricesTenths, store.transferHorizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey]);
+  }, [planningGameweek, store.budgetTenths, bankTenths, purchasePricesTenths, store.transferHorizon, store.lockedPlayerIds, store.playerIds, store.riskMode, transferRequestKey, bankedTransfers]);
   const dismissedTransferKeys = new Set(store.dismissedTransferKeys);
   const transferSuggestions = transferRequestKey && transferSearch.key === transferRequestKey
-    ? transferSearch.suggestions.filter((move) => !dismissedTransferKeys.has(`${move.outgoingPlayerId}:${move.incomingPlayerId}`))
+    ? transferSearch.suggestions
+        .filter((move) => {
+          if (move.projectedDelta <= 0) return false;
+          if (move.moves && move.moves.length > 0) {
+            return !move.moves.some((m) => dismissedTransferKeys.has(`${m.outgoingPlayerId}:${m.incomingPlayerId}`));
+          }
+          return !dismissedTransferKeys.has(`${move.outgoingPlayerId}:${move.incomingPlayerId}`);
+        })
+        .sort((a, b) => b.projectedDelta - a.projectedDelta)
     : [];
   const transferSuggestionState: "INCOMPLETE" | "LOADING" | "READY" | "ERROR" = !transferRequestKey ? "INCOMPLETE" : transferSearch.key === transferRequestKey ? transferSearch.state : "LOADING";
   const transferSuggestionMessage = transferSearch.key === transferRequestKey ? transferSearch.message : null;
@@ -979,49 +998,92 @@ export default function TerminalApp() {
     applyCaptaincy(captainId, id);
   };
 
-  const simulateMove = (outId: number, inId: number) => {
+  const simulateSuggestion = (suggestion: SingleTransferSuggestion) => {
+    const moves = suggestion.moves && suggestion.moves.length > 0
+      ? suggestion.moves.map((m) => ({
+          outId: m.outgoingPlayerId,
+          inId: m.incomingPlayerId,
+          cashReleasedTenths: m.cashReleasedTenths,
+        }))
+      : [{
+          outId: suggestion.outgoingPlayerId,
+          inId: suggestion.incomingPlayerId,
+          cashReleasedTenths: suggestion.cashReleasedTenths,
+        }];
     const result = simulateSquadChange({
       squad: store.playerIds,
       players: data.players,
-      outId,
-      inId,
+      moves,
       gameweek: planningGameweek,
       horizon: store.transferHorizon,
       risk: store.riskMode,
       bench: store.benchStrategy,
       budgetTenths: store.budgetTenths,
+      bankTenths,
+      purchasePricesTenths,
     });
-    setSimulationMove({ outId, inId });
+    setSimulationMoves(moves);
     setSimulation(result);
   };
 
-  const applySimulation = () => {
-    if (!simulationMove) return;
-    const outgoing = playerById.get(simulationMove.outId);
-    const incoming = playerById.get(simulationMove.inId);
-    if (!outgoing || !incoming || store.lockedPlayerIds.includes(outgoing.id)) {
-      setNotice("That move cannot be applied while the outgoing player is locked.");
-      return;
-    }
-    const checked = simulateSquadChange({
+  const simulateMove = (outId: number, inId: number) => {
+    const moves = [{ outId, inId }];
+    const result = simulateSquadChange({
       squad: store.playerIds,
       players: data.players,
-      outId: outgoing.id,
-      inId: incoming.id,
+      moves,
       gameweek: planningGameweek,
       horizon: store.transferHorizon,
       risk: store.riskMode,
       bench: store.benchStrategy,
       budgetTenths: store.budgetTenths,
+      bankTenths,
+      purchasePricesTenths,
     });
-    if (!checked.legal || !store.replacePlayer(outgoing.id, incoming.id, incoming.position)) {
+    setSimulationMoves(moves);
+    setSimulation(result);
+  };
+
+  const dismissSuggestion = (suggestion: SingleTransferSuggestion) => {
+    if (suggestion.moves && suggestion.moves.length > 0) {
+      for (const m of suggestion.moves) {
+        store.dismissTransferSuggestion(m.outgoingPlayerId, m.incomingPlayerId);
+      }
+    } else {
+      store.dismissTransferSuggestion(suggestion.outgoingPlayerId, suggestion.incomingPlayerId);
+    }
+  };
+
+  const applySimulation = () => {
+    if (!simulationMoves || simulationMoves.length === 0) return;
+    for (const move of simulationMoves) {
+      if (store.lockedPlayerIds.includes(move.outId)) {
+        setNotice("That move cannot be applied while an outgoing player is locked.");
+        return;
+      }
+    }
+    // Always execute cash-releasing transfers first so intermediate bank balance never blocks a transfer
+    const sortedMoves = [...simulationMoves].sort((a, b) => (b.cashReleasedTenths ?? 0) - (a.cashReleasedTenths ?? 0));
+    let appliedCount = 0;
+    const descriptions: string[] = [];
+    for (const move of sortedMoves) {
+      const outgoing = playerById.get(move.outId);
+      const incoming = playerById.get(move.inId);
+      if (!incoming || !outgoing) continue;
+      const ok = store.replacePlayer(move.outId, move.inId, incoming.position);
+      if (ok) {
+        appliedCount++;
+        descriptions.push(`${outgoing.displayName} → ${incoming.displayName}`);
+      }
+    }
+    if (appliedCount === 0) {
       setNotice("That transfer is no longer legal for the current squad.");
       return;
     }
     store.setSelectedPlayer(undefined);
     setSimulation(null);
-    setSimulationMove(null);
-    setNotice(`${outgoing.displayName} → ${incoming.displayName} applied.`);
+    setSimulationMoves(null);
+    setNotice(`${descriptions.join(", ")} applied.`);
   };
 
   const changePlanningGameweek = (target: number) => {
@@ -1030,7 +1092,7 @@ export default function TerminalApp() {
     if (store.switchGameweek(bounded) === false) return;
     setGWSwapSelection({});
     setSimulation(null);
-    setSimulationMove(null);
+    setSimulationMoves(null);
   };
 
   const reverseAllChanges = async () => {
@@ -1053,7 +1115,7 @@ export default function TerminalApp() {
       store.switchGameweek(liveCurrentGW);
       setGWSwapSelection({});
       setSimulation(null);
-      setSimulationMove(null);
+      setSimulationMoves(null);
       setNotice(`Official Gameweek ${liveCurrentGW} squad restored. Future plans cleared.`);
     } catch (reason) {
       setNotice(reason instanceof Error ? reason.message : "Official FPL squad restore failed.");
@@ -1198,10 +1260,10 @@ export default function TerminalApp() {
             <section className="bench-section" aria-label="Bench"><div className="lineup-roster-heading"><span>BENCH</span><span>BGK · B1 · B2 · B3</span></div><div className="slot-grid bench-slot-grid">{benchSlots.map((slot) => { const player = slot.id ? playerById.get(slot.id) : undefined; return player ? renderSquadPlayer(player, false, slot.label) : <EmptySlot key={slot.label} position={slot.position} maxPriceTenths={slotMaxPrices[slot.position]} onChoose={() => choosePlayer(slot.position)} />; })}</div></section>
           </div>
           <MetricStrip spent={spent} bankTenths={bankTenths} sellingValue={store.entryId === undefined ? undefined : weekFinance?.squadSellingValueTenths} costLabel={store.entryId === undefined ? "COST" : "VALUE"} confidence={weekFinance?.confidence ?? "ESTIMATED"} handBuilt={store.entryId === undefined} onBankChange={(tenths) => store.setBankTenths(tenths, { spentTenths: spent, priceById: marketPriceById })} projected={{ ...projected, nextGW: chipNetXp ?? projected.nextGW }} risk={risk} teamRating={teamRating} />
-          <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} playerById={playerById} onSimulate={simulateMove} onDismiss={store.dismissTransferSuggestion} />
+          <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />
           <ChipStrategyPanel players={data.players} planningGameweek={planningGameweek} onNotice={setNotice} />
           {isMobileLineup && mobilePickedPlayer && <MobileLineupBar player={mobilePickedPlayer} starter={mobilePickedStarter} benchLabel={mobilePickedBenchSlot?.label} benchIndex={mobilePickedBenchIndex} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === mobilePickedPlayer.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === mobilePickedPlayer.id} locked={store.lockedPlayerIds.includes(mobilePickedPlayer.id)} lineupActive={Boolean(currentGWPlan)} onClose={() => setMobilePickedId(null)} onInfo={() => openPlayer(mobilePickedPlayer.id)} onCaptain={() => makeGWCaptain(mobilePickedPlayer.id)} onViceCaptain={() => makeGWViceCaptain(mobilePickedPlayer.id)} onSwap={() => selectGWSwapPlayer(mobilePickedStarter ? "starter" : "bench", mobilePickedPlayer.id)} onMoveBench={(direction) => moveGWBench(mobilePickedPlayer.id, direction)} onToggleLock={() => store.toggleLock(mobilePickedPlayer.id)} onRemove={() => { if (removeSquadPlayer(mobilePickedPlayer)) setMobilePickedId(null); }} />}
-          {simulation && simulationMove && <div className="squad-overlay"><SimulationPanel result={simulation} move={simulationMove} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMove(null); }} /></div>}
+          {simulation && simulationMoves && simulationMoves.length > 0 && <div className="squad-overlay"><SimulationPanel result={simulation} moves={simulationMoves} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMoves(null); }} /></div>}
           <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
         </section>
 
@@ -1565,18 +1627,249 @@ function MetricStrip({ spent, bankTenths, sellingValue, costLabel, confidence, h
 
 function StrategyControls({ horizon, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value}</button>)}</div></div></div>; }
 
-function TransferSuggestionsPanel({ suggestions, state, message, horizon, onHorizon, playerById, onSimulate, onDismiss }: { suggestions: SingleTransferSuggestion[]; state: "INCOMPLETE" | "LOADING" | "READY" | "ERROR"; message: string | null; horizon: 1 | 3 | 5 | 10; onHorizon: (horizon: 1 | 3 | 5 | 10) => void; playerById: Map<number, TerminalPlayer>; onSimulate: (outId: number, inId: number) => void; onDismiss: (outId: number, inId: number) => void }) {
-  return <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions"><div className="subsection-head"><div><span className="section-kicker">TRANSFER SUGGESTIONS</span><span className="panel-count">EXACT</span></div><div className="segmented transfer-horizon" role="group" aria-label="Transfer suggestion horizon">{([1, 3, 5, 10] as const).map((value) => <button key={value} type="button" className={horizon === value ? "active" : ""} aria-pressed={horizon === value} onClick={() => onHorizon(value)}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div className="replacement-scroll">{suggestions.length ? suggestions.map((suggestion) => {
-    const outgoing = playerById.get(suggestion.outgoingPlayerId);
-    const incoming = playerById.get(suggestion.incomingPlayerId);
-    const outgoingName = outgoing?.displayName ?? `Player ${suggestion.outgoingPlayerId}`;
-    const incomingName = incoming?.displayName ?? `Player ${suggestion.incomingPlayerId}`;
-    const kind = suggestion.kind === "BOTH" ? "xP + CASH" : "xP UPGRADE";
-    return <div className="replacement-row" key={`${suggestion.outgoingPlayerId}-${suggestion.incomingPlayerId}`}><div><strong>{outgoingName} → {incomingName}</strong><small>{kind} · {incoming?.teamShortName ?? "—"} · {incoming ? money(incoming.priceTenths) : "—"}</small></div><div className="transfer-effects"><span className="green">+{suggestion.projectedDelta.toFixed(1)} xP</span><span>{suggestion.cashReleasedTenths >= 0 ? "+" : "−"}{money(Math.abs(suggestion.cashReleasedTenths))} ITB</span></div><div className="transfer-actions"><button className="compact-action" onClick={() => onSimulate(suggestion.outgoingPlayerId, suggestion.incomingPlayerId)}>SIMULATE</button><button className="transfer-dismiss" aria-label={`Dismiss ${outgoingName} to ${incomingName} suggestion`} title="Dismiss suggestion" onClick={() => onDismiss(suggestion.outgoingPlayerId, suggestion.incomingPlayerId)}>×</button></div></div>;
-  }) : <div className="empty-copy">{state === "LOADING" ? "CALCULATING LEGAL xP-INCREASING TRANSFERS…" : state === "INCOMPLETE" ? "Complete a legal 15-player squad to calculate exact transfers." : state === "ERROR" ? message ?? "Exact transfer search is unavailable." : "No legal single transfer increases optimized lineup xP."}</div>}</div></section>;
+function TransferSuggestionsPanel({
+  suggestions,
+  state,
+  message,
+  horizon,
+  onHorizon,
+  bankedTransfers,
+  onBankedTransfers,
+  playerById,
+  onSimulate,
+  onDismiss,
+}: {
+  suggestions: SingleTransferSuggestion[];
+  state: "INCOMPLETE" | "LOADING" | "READY" | "ERROR";
+  message: string | null;
+  horizon: 1 | 3 | 5 | 10;
+  onHorizon: (horizon: 1 | 3 | 5 | 10) => void;
+  bankedTransfers: number;
+  onBankedTransfers: (banked: number) => void;
+  playerById: Map<number, TerminalPlayer>;
+  onSimulate: (suggestion: SingleTransferSuggestion) => void;
+  onDismiss: (suggestion: SingleTransferSuggestion) => void;
+}) {
+  return (
+    <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions">
+      <div className="subsection-head">
+        <div>
+          <span className="section-kicker">TRANSFER SUGGESTIONS</span>
+          <span className="panel-count">{suggestions.length ? `${suggestions.length} FOUND` : "EXACT"}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <label style={{ fontSize: "11px", color: "var(--muted)", display: "flex", alignItems: "center", gap: "4px" }}>
+            <span>BANKED:</span>
+            <select
+              value={bankedTransfers}
+              onChange={(e) => onBankedTransfers(Number(e.target.value))}
+              aria-label="Banked transfers"
+              className="banked-transfers-select"
+              style={{
+                background: "rgba(0, 0, 0, 0.4)",
+                border: "1px solid var(--border)",
+                color: "var(--text)",
+                padding: "2px 6px",
+                borderRadius: "3px",
+                fontSize: "11px",
+                cursor: "pointer",
+              }}
+            >
+              <option value={1}>1 Transfer</option>
+              <option value={2}>2 Transfers</option>
+              <option value={3}>3 Transfers</option>
+              <option value={4}>4 Transfers</option>
+              <option value={5}>5 Transfers</option>
+            </select>
+          </label>
+          <div className="segmented transfer-horizon" role="group" aria-label="Transfer suggestion horizon">
+            {([1, 3, 5, 10] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={horizon === value ? "active" : ""}
+                aria-pressed={horizon === value}
+                onClick={() => onHorizon(value)}
+              >
+                {value === 1 ? "GW" : `${value}GW`}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="replacement-scroll">
+        {suggestions.length ? (
+          suggestions.map((suggestion, sIdx) => {
+            const isMulti = suggestion.moves && suggestion.moves.length > 1;
+            const kind = suggestion.kind === "BOTH" ? "xP + CASH" : "xP UPGRADE";
+            const rowKey = isMulti
+              ? suggestion.moves!.map((m) => `${m.outgoingPlayerId}-${m.incomingPlayerId}`).join("_")
+              : `${suggestion.outgoingPlayerId}-${suggestion.incomingPlayerId}`;
+
+            return (
+              <div className="replacement-row" key={`${rowKey}-${sIdx}`}>
+                <div>
+                  {isMulti ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                      {suggestion.moves!.map((m, mIdx) => {
+                        const outP = playerById.get(m.outgoingPlayerId);
+                        const inP = playerById.get(m.incomingPlayerId);
+                        const stepCash = m.cashReleasedTenths;
+                        return (
+                          <div key={mIdx} style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
+                            <span style={{ color: "var(--muted)", fontSize: "11px", minWidth: "14px" }}>{mIdx + 1}.</span>
+                            <strong>
+                              {outP?.displayName ?? `Player ${m.outgoingPlayerId}`} → {inP?.displayName ?? `Player ${m.incomingPlayerId}`}
+                            </strong>
+                            <small style={{ color: "var(--muted)" }}>
+                              ({inP?.position} · {inP ? money(inP.priceTenths) : "—"}
+                              {stepCash !== undefined && ` · ${stepCash >= 0 ? `+${money(stepCash)}` : `−${money(Math.abs(stepCash))}`}`})
+                            </small>
+                          </div>
+                        );
+                      })}
+                      <small style={{ color: "var(--accent-glow)", marginTop: "2px" }}>
+                        {suggestion.transfersCount ?? suggestion.moves!.length} TRANSFERS · {kind}
+                      </small>
+                    </div>
+                  ) : (
+                    <>
+                      {(() => {
+                        const outgoing = playerById.get(suggestion.outgoingPlayerId);
+                        const incoming = playerById.get(suggestion.incomingPlayerId);
+                        const outgoingName = outgoing?.displayName ?? `Player ${suggestion.outgoingPlayerId}`;
+                        const incomingName = incoming?.displayName ?? `Player ${suggestion.incomingPlayerId}`;
+                        return (
+                          <>
+                            <strong>
+                              {outgoingName} → {incomingName}
+                            </strong>
+                            <small>
+                              {kind} · {incoming?.teamShortName ?? "—"} · {incoming ? money(incoming.priceTenths) : "—"}
+                            </small>
+                          </>
+                        );
+                      })()}
+                    </>
+                  )}
+                </div>
+                <div className="transfer-effects">
+                  <span className="green">+{suggestion.projectedDelta.toFixed(1)} xP</span>
+                  <span>
+                    {suggestion.cashReleasedTenths >= 0 ? "+" : "−"}
+                    {money(Math.abs(suggestion.cashReleasedTenths))} ITB
+                  </span>
+                </div>
+                <div className="transfer-actions">
+                  <button className="compact-action" onClick={() => onSimulate(suggestion)}>
+                    SIMULATE
+                  </button>
+                  <button
+                    className="transfer-dismiss"
+                    aria-label="Dismiss suggestion"
+                    title="Dismiss suggestion"
+                    onClick={() => onDismiss(suggestion)}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="empty-copy">
+            {state === "LOADING"
+              ? "CALCULATING LEGAL xP-INCREASING TRANSFERS…"
+              : state === "INCOMPLETE"
+              ? "Complete a legal 15-player squad to calculate exact transfers."
+              : state === "ERROR"
+              ? message ?? "Exact transfer search is unavailable."
+              : `No legal ${bankedTransfers > 1 ? `${bankedTransfers}-transfer chain` : "single transfer"} increases optimized lineup xP.`}
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
-function SimulationPanel({ result, move, playerById, onApply, onDiscard }: { result: SimulationResult; move: { outId: number; inId: number }; playerById: Map<number, TerminalPlayer>; onApply: () => void; onDiscard: () => void }) { return <section className="panel simulation-panel"><div className="panel-header"><div><span className="section-kicker">SIMULATION</span><span className="panel-count">{result.legal ? "LEGAL" : "CHECK REQUIRED"}</span></div><button className="icon-button" onClick={onDiscard} aria-label="Close simulation">×</button></div><div className="simulation-move">{playerById.get(move.outId)?.displayName ?? "Outgoing"} <span>→</span> {playerById.get(move.inId)?.displayName ?? "Incoming"}</div><div className="simulation-grid"><div><span>CURRENT {result.horizon}GW xP</span><strong>{points(result.optimizedBeforeXp)}</strong></div><div><span>SIMULATED {result.horizon}GW xP</span><strong>{points(result.optimizedAfterXp)}</strong></div><div><span>PRICE EFFECT</span><strong>{money(result.priceDeltaTenths)}</strong></div><div><span>xP EFFECT</span><strong className={result.projectedDelta >= 0 ? "green" : "red"}>{result.projectedDelta >= 0 ? "+" : ""}{result.projectedDelta.toFixed(1)}</strong></div></div><p className="simulation-note">{result.explanationFactors[0] ?? "Model comparison complete."}{!result.legal && " The current selection still has a squad-rules issue."}</p><div className="simulation-actions"><button className="primary-button" onClick={onApply}>APPLY CHANGES</button><button className="secondary-button" onClick={onDiscard}>DISCARD</button></div></section>; }
+function SimulationPanel({
+  result,
+  moves,
+  playerById,
+  onApply,
+  onDiscard,
+}: {
+  result: SimulationResult;
+  moves: Array<{ outId: number; inId: number; cashReleasedTenths?: number }>;
+  playerById: Map<number, TerminalPlayer>;
+  onApply: () => void;
+  onDiscard: () => void;
+}) {
+  return (
+    <section className="panel simulation-panel">
+      <div className="panel-header">
+        <div>
+          <span className="section-kicker">SIMULATION</span>
+          <span className="panel-count">{result.legal ? "LEGAL" : "CHECK REQUIRED"}</span>
+        </div>
+        <button className="icon-button" onClick={onDiscard} aria-label="Close simulation">
+          ×
+        </button>
+      </div>
+      <div className="simulation-move" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        {moves.map((m, idx) => (
+          <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ color: "var(--muted)", fontSize: "11px", minWidth: "14px" }}>{idx + 1}.</span>
+            <span>{playerById.get(m.outId)?.displayName ?? "Outgoing"}</span>
+            <span>→</span>
+            <span>{playerById.get(m.inId)?.displayName ?? "Incoming"}</span>
+            {m.cashReleasedTenths !== undefined && (
+              <small style={{ color: "var(--muted)", fontSize: "11px" }}>
+                ({m.cashReleasedTenths >= 0 ? `+${money(m.cashReleasedTenths)}` : `−${money(Math.abs(m.cashReleasedTenths))}`})
+              </small>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="simulation-grid">
+        <div>
+          <span>CURRENT {result.horizon}GW xP</span>
+          <strong>{points(result.optimizedBeforeXp)}</strong>
+        </div>
+        <div>
+          <span>SIMULATED {result.horizon}GW xP</span>
+          <strong>{points(result.optimizedAfterXp)}</strong>
+        </div>
+        <div>
+          <span>BANK EFFECT</span>
+          <strong className={(result.cashReleasedTenths ?? -result.priceDeltaTenths) >= 0 ? "green" : ""}>
+            {(result.cashReleasedTenths ?? -result.priceDeltaTenths) >= 0 ? "+" : "−"}
+            {money(Math.abs(result.cashReleasedTenths ?? -result.priceDeltaTenths))} ITB
+          </strong>
+        </div>
+        <div>
+          <span>xP EFFECT</span>
+          <strong className={result.projectedDelta >= 0 ? "green" : "red"}>
+            {result.projectedDelta >= 0 ? "+" : ""}
+            {result.projectedDelta.toFixed(1)} xP
+          </strong>
+        </div>
+      </div>
+      <p className="simulation-note">
+        {result.explanationFactors[0] ?? "Model comparison complete."}
+        {!result.legal && " The current selection still has a squad-rules issue."}
+      </p>
+      <div className="simulation-actions">
+        <button className="primary-button" onClick={onApply}>
+          APPLY CHANGES
+        </button>
+        <button className="secondary-button" onClick={onDiscard}>
+          DISCARD
+        </button>
+      </div>
+    </section>
+  );
+}
 
 function probability(value: number): string { return `${Math.round(clamp(value, 0, 1) * 100)}%`; }
 function formatProfileStat(value: number | undefined, digits = 0): string { return value === undefined || !Number.isFinite(value) ? "—" : value.toFixed(digits); }

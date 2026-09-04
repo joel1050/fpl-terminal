@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
-import { findBestSingleTransfers } from "@/lib/analysis/singleTransfers";
-import { legalSquad, playerMap } from "@/lib/analysis/context";
-import { getBootstrap, getFixtures } from "@/lib/fpl/client";
-import { enrichBootstrapWithProjections, normalizeBootstrap, projectionCacheKey } from "@/lib/fpl/normalize";
-import { loadHistoricalBundle } from "@/lib/historical/load";
 import { enforceComputeRateLimit } from "@/lib/http/computeRateLimit";
+import { getBootstrap, getFixtures } from "@/lib/fpl/client";
+import { loadHistoricalBundle } from "@/lib/historical/load";
+import { enrichBootstrapWithProjections, normalizeBootstrap, projectionCacheKey } from "@/lib/fpl/normalize";
+import { findBestSingleTransfers } from "@/lib/analysis/singleTransfers";
+import { findMilpTransferSuggestions } from "@/lib/optimizer/milpTransfers";
+import { legalSquad, playerMap } from "@/lib/analysis/context";
+import type { SingleTransferSuggestion } from "@/types/analysis";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,7 @@ const requestSchema = z.object({
   gameweek: z.number().int().min(1).max(38).optional(),
   horizon: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10)]),
   risk: z.enum(["SAFE", "BALANCED", "AGGRESSIVE"]),
+  maxTransfers: z.number().int().min(1).max(5).optional(),
 }).strict();
 
 export async function POST(request: Request) {
@@ -47,20 +49,42 @@ export async function POST(request: Request) {
       ?? projected.events.find((event) => event.isCurrent)?.id
       ?? projected.events.find((event) => event.isNext)?.id
       ?? 1;
-    const suggestions = findBestSingleTransfers({
-      squad: parsed.data.squad,
-      players: projected.players,
-      gameweek,
-      horizon: parsed.data.horizon,
-      risk: parsed.data.risk,
-      lockedPlayerIds: parsed.data.lockedPlayerIds,
-      budgetTenths: parsed.data.budgetTenths,
-      purchasePricesTenths: parsed.data.purchasePricesTenths
-        ? Object.fromEntries(Object.entries(parsed.data.purchasePricesTenths).map(([key, value]) => [Number(key), value]))
-        : undefined,
-      bankTenths: parsed.data.bankTenths,
-      excludedPlayerIds: parsed.data.excludedPlayerIds,
-    }).slice(0, 5);
+
+    const purchasePrices = parsed.data.purchasePricesTenths
+      ? Object.fromEntries(Object.entries(parsed.data.purchasePricesTenths).map(([key, value]) => [Number(key), value]))
+      : undefined;
+
+    let suggestions: SingleTransferSuggestion[] = [];
+
+    if (parsed.data.maxTransfers !== undefined) {
+      suggestions = await findMilpTransferSuggestions({
+        squad: parsed.data.squad,
+        players: projected.players,
+        gameweek,
+        horizon: parsed.data.horizon,
+        risk: parsed.data.risk,
+        lockedPlayerIds: parsed.data.lockedPlayerIds,
+        budgetTenths: parsed.data.budgetTenths,
+        purchasePricesTenths: purchasePrices,
+        bankTenths: parsed.data.bankTenths ?? 0,
+        excludedPlayerIds: parsed.data.excludedPlayerIds,
+        maxTransfers: parsed.data.maxTransfers,
+      });
+    } else {
+      suggestions = findBestSingleTransfers({
+        squad: parsed.data.squad,
+        players: projected.players,
+        gameweek,
+        horizon: parsed.data.horizon,
+        risk: parsed.data.risk,
+        lockedPlayerIds: parsed.data.lockedPlayerIds,
+        budgetTenths: parsed.data.budgetTenths,
+        purchasePricesTenths: purchasePrices,
+        bankTenths: parsed.data.bankTenths,
+        excludedPlayerIds: parsed.data.excludedPlayerIds,
+      }).slice(0, 5);
+    }
+
     return NextResponse.json({ gameweek, horizon: parsed.data.horizon, suggestions });
   } catch (error) {
     console.error("Exact single-transfer search failed", error);

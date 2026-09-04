@@ -49,7 +49,7 @@ export interface ReplacementCandidate {
   reason: string;
 }
 
-export type SingleTransferKind = "XP_UPGRADE" | "BOTH";
+export type SingleTransferKind = "XP_UPGRADE" | "BOTH" | "CASH_RELEASE";
 
 export interface SingleTransferSuggestion {
   outgoingPlayerId: number;
@@ -65,6 +65,12 @@ export interface SingleTransferSuggestion {
   incomingRisk: number;
   confidence: ProjectionConfidence;
   reason: string;
+  transfersCount?: number;
+  moves?: Array<{
+    outgoingPlayerId: number;
+    incomingPlayerId: number;
+    cashReleasedTenths?: PriceTenths;
+  }>;
 }
 
 export interface ProposedMove {
@@ -82,6 +88,7 @@ export interface SimulationResult {
   optimizedAfterXp: number;
   projectedDelta: number;
   priceDeltaTenths: PriceTenths;
+  cashReleasedTenths?: PriceTenths;
   projectedDeltaGW: number;
   projectedDelta3: number;
   projectedDelta5: number;

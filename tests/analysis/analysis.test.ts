@@ -52,6 +52,21 @@ describe("squad analysis", () => {
     expect(squad).toContain(15);
     expect(squad).not.toContain(16);
   });
+
+  it("evaluates legality and projected points using bank and selling values", () => {
+    // A squad where market cost after transfer (891) exceeds raw budgetTenths (890), but bankTenths (20) covers it
+    const result = simulateChange({
+      squad,
+      players: universe,
+      outId: 15, // MID price 60
+      inId: 16,  // MID price 55 (releases 5 tenths)
+      budgetTenths: 890, // lower than after squad cost (891)
+      bankTenths: 20, // 2.0m in bank
+    });
+    expect(result.legal).toBe(true);
+    expect(result.cashReleasedTenths).toBe(5);
+  });
+
 });
 
 describe("optimizer", () => {
