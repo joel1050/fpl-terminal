@@ -12,6 +12,7 @@ import type { ChipKind } from "@/types/chips";
 import type { OptimizerResult } from "@/lib/optimizer/optimizer";
 import { projectPlayer, projectedPointsForGameweeks } from "@/lib/projections/projectPlayer";
 import { valuePerMillion } from "@/lib/projections/metrics";
+import { cacheBootstrapData, peekBootstrapData, readBootstrapData } from "@/lib/fpl/browserBootstrapCache";
 import {
   exportTerminalState,
   parseSavedState,
@@ -427,9 +428,23 @@ export function classifyFreshness({ stale, source, errors = [] }: { stale?: unkn
 
 function useBootstrap() {
   const [refreshCount, setRefreshCount] = useState(0);
-  const [state, setState] = useState<{ data: Bootstrap; status: DataState; message?: string; ageAnchor: DataAgeAnchor | null; refresh: () => void }>({ data: { players: [], gameweek: null, deadline: null, source: null, freshness: "LIVE", fetchedAt: null }, status: "SYNCING", ageAnchor: null, refresh: () => setRefreshCount((value) => value + 1) });
+  const [state, setState] = useState<{ data: Bootstrap; status: DataState; message?: string; ageAnchor: DataAgeAnchor | null; refresh: () => void }>(() => {
+    const cached = normalizeBootstrap(peekBootstrapData());
+    return {
+      data: cached.players.length ? { ...cached, freshness: "STALE" } : cached,
+      status: cached.players.length ? "STALE" : "SYNCING",
+      ageAnchor: null,
+      refresh: () => setRefreshCount((value) => value + 1),
+    };
+  });
   useEffect(() => {
     const controller = new AbortController();
+    let networkSettled = false;
+    void readBootstrapData().then((cached) => {
+      if (controller.signal.aborted || networkSettled) return;
+      const data = normalizeBootstrap(cached);
+      if (data.players.length) setState((current) => ({ ...current, data: { ...data, freshness: "STALE" }, status: "STALE" }));
+    });
     fetch(`/api/fpl/bootstrap${refreshCount ? "?refresh=1" : ""}`, { signal: controller.signal, headers: { accept: "application/json" } })
       .then(async (response) => {
         if (!response.ok) throw new Error(`FPL sync returned ${response.status}`);
@@ -441,6 +456,7 @@ function useBootstrap() {
         const ageSeconds = numberOf(readField(freshness, "ageSeconds", "age_seconds"));
         const ageAnchor: DataAgeAnchor | null = ageSeconds !== undefined && ageSeconds >= 0 ? { ageMs: ageSeconds * 1000, receivedAt: Date.now() } : null;
         const normalized = normalizeBootstrap(payload);
+        cacheBootstrapData(firstObject(payload).data ?? payload);
         const errors = arrayOf(root.errors).filter((error): error is string => typeof error === "string");
         const freshnessLabel = classifyFreshness({
           stale: readField(freshness, "stale", "isStale"),
@@ -449,10 +465,14 @@ function useBootstrap() {
         });
         return { data: { ...normalized, freshness: freshnessLabel, fetchedAt }, errors, ageAnchor };
       })
-      .then(({ data, errors, ageAnchor }) => setState((current) => ({ ...current, data, status: data.players.length ? data.freshness : "EMPTY", message: errors[0] ?? (data.players.length ? undefined : "The FPL response contained no player records."), ageAnchor })))
+      .then(({ data, errors, ageAnchor }) => {
+        networkSettled = true;
+        setState((current) => ({ ...current, data, status: data.players.length ? data.freshness : "EMPTY", message: errors[0] ?? (data.players.length ? undefined : "The FPL response contained no player records."), ageAnchor }));
+      })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        setState((current) => ({ ...current, data: { players: [], gameweek: null, deadline: null, source: null, freshness: "LIVE", fetchedAt: null }, status: "ERROR", message: error instanceof Error ? error.message : "FPL data is unavailable.", ageAnchor: null }));
+        networkSettled = true;
+        setState((current) => ({ ...current, status: current.data.players.length ? "STALE" : "ERROR", message: error instanceof Error ? error.message : "FPL data is unavailable.", ageAnchor: null }));
       });
     return () => controller.abort();
   }, [refreshCount]);

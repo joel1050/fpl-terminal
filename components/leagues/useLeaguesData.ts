@@ -16,6 +16,7 @@ import type {
   ManagerProfile,
 } from "@/types/leagues";
 import type { Player } from "@/types/player";
+import { cacheBootstrapData, peekBootstrapData, readBootstrapData } from "@/lib/fpl/browserBootstrapCache";
 
 export interface Resource<T> {
   status: "IDLE" | "LOADING" | "READY" | "ERROR";
@@ -155,6 +156,27 @@ function buildFixtureViews(raw: readonly RawFixture[], shortNames: ReadonlyMap<n
 
 const MEMBER_PICK_CONCURRENCY = 6;
 
+function normalizeLeaguesBootstrap(payload: unknown): LeaguesBootstrap | null {
+  if (!payload || typeof payload !== "object") return null;
+  const value = payload as { players?: Player[]; teams?: RawTeam[]; events?: RawEvent[]; liveGameweek?: number };
+  const players = Array.isArray(value.players) ? value.players : [];
+  if (!players.length) return null;
+  const teams = Array.isArray(value.teams) ? value.teams : [];
+  const events = Array.isArray(value.events) ? value.events : [];
+  const currentEvent = events.find((event) => event.isCurrent) ?? events.find((event) => event.isNext);
+  return {
+    players,
+    playersById: new Map(players.map((player) => [player.id, player])),
+    teamNameById: new Map(teams.map((team) => [team.id, team.name ?? `Team ${team.id}`])),
+    teamShortNameById: new Map(teams.map((team) => [
+      team.id,
+      team.shortName ?? (team as RawTeam & { short_name?: string }).short_name ?? team.name ?? String(team.id),
+    ])),
+    gameweek: value.liveGameweek ?? currentEvent?.id ?? events[0]?.id ?? 1,
+    deadline: currentEvent?.deadlineTime ?? null,
+  };
+}
+
 /**
  * Owns every network boundary used by the Leagues workspace. Components stay
  * presentational; polling, caching decisions, and pagination live here.
@@ -163,7 +185,10 @@ const MEMBER_PICK_CONCURRENCY = 6;
  * synchronously inside effects or read back from refs while rendering.
  */
 export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: string) {
-  const [bootstrap, setBootstrap] = useState<Resource<LeaguesBootstrap>>({ status: "LOADING", data: null });
+  const [bootstrap, setBootstrap] = useState<Resource<LeaguesBootstrap>>(() => {
+    const data = normalizeLeaguesBootstrap(peekBootstrapData());
+    return data ? { status: "READY", data, stale: true } : { status: "LOADING", data: null };
+  });
   const [profile, setProfile] = useState<Resource<ManagerProfile>>({ status: "IDLE", data: null });
   const [history, setHistory] = useState<Resource<ManagerHistory>>({ status: "IDLE", data: null });
   const [picks, setPicks] = useState<Resource<EntryPicks>>({ status: "IDLE", data: null });
@@ -183,39 +208,33 @@ export function useLeaguesData(entryId: number | undefined, savedLeagueKey?: str
 
   useEffect(() => {
     const controller = new AbortController();
+    let networkSettled = false;
+    void readBootstrapData().then((cached) => {
+      if (controller.signal.aborted || networkSettled) return;
+      const data = normalizeLeaguesBootstrap(cached);
+      if (data) setBootstrap({ status: "READY", data, stale: true });
+    });
     getJson<{
       players?: Player[];
       teams?: RawTeam[];
       events?: RawEvent[];
       liveGameweek?: number;
     }>("/api/fpl/bootstrap", controller.signal).then((envelope) => {
+      networkSettled = true;
       if (controller.signal.aborted) return;
-      const payload = envelope.data;
-      const players = Array.isArray(payload.players) ? payload.players : [];
-      const teams = Array.isArray(payload.teams) ? payload.teams : [];
-      const events = Array.isArray(payload.events) ? payload.events : [];
-      const currentEvent = events.find((event) => event.isCurrent) ?? events.find((event) => event.isNext);
-      const gameweek = payload.liveGameweek ?? currentEvent?.id ?? events[0]?.id ?? 1;
+      cacheBootstrapData(envelope.data);
+      const data = normalizeLeaguesBootstrap(envelope.data);
       setBootstrap({
-        status: players.length ? "READY" : "ERROR",
-        data: {
-          players,
-          playersById: new Map(players.map((player) => [player.id, player])),
-          teamNameById: new Map(teams.map((team) => [team.id, team.name ?? `Team ${team.id}`])),
-          teamShortNameById: new Map(teams.map((team) => [
-            team.id,
-            team.shortName ?? (team as RawTeam & { short_name?: string }).short_name ?? team.name ?? String(team.id),
-          ])),
-          gameweek,
-          deadline: currentEvent?.deadlineTime ?? null,
-        },
-        error: players.length ? undefined : "The FPL response contained no player records.",
+        status: data ? "READY" : "ERROR",
+        data,
+        error: data ? undefined : "The FPL response contained no player records.",
         warning: envelope.errors[0],
         stale: envelope.stale,
         fetchedAt: envelope.fetchedAt,
       });
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return;
+      networkSettled = true;
       setBootstrap((current) => ({ ...current, status: current.data ? current.status : "ERROR", error: errorMessage(error) }));
     });
     return () => controller.abort();

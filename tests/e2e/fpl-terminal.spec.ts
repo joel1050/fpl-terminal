@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { interceptFplData } from "../fixtures/network";
-import { fixturePlayers } from "../fixtures/fpl";
+import { bootstrapStaticFixture, fixturePlayers } from "../fixtures/fpl";
 
 /**
  * The import mode card, matched by its index rather than its wording. The
@@ -86,6 +86,26 @@ test.describe("FPL Terminal acceptance", () => {
       await clickButton(page, /import team/i);
     }
   }
+
+  test("keeps the last player universe visible while bootstrap refreshes", async ({ page }) => {
+    await chooseMode(page, /build from scratch/i);
+    await waitForMarket(page);
+
+    let releaseBootstrap = () => {};
+    const bootstrapGate = new Promise<void>((resolve) => { releaseBootstrap = resolve; });
+    await page.route("**/api/fpl/bootstrap*", async (route) => {
+      await bootstrapGate;
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(bootstrapStaticFixture) });
+    });
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    try {
+      await expect(page.getByRole("button", { name: /add haaland/i })).toBeVisible();
+      await expect(page.getByText(/records/i).first()).not.toContainText("—");
+    } finally {
+      releaseBootstrap();
+    }
+  });
 
   test("imports an official FPL team by ID", async ({ page }) => {
     let importRequests = 0;
