@@ -170,7 +170,7 @@ describe("buildMatchDetail", () => {
       [21, 37, 2],
       [12, 30, 1],
     ]);
-    expect(detail.bonusSettled).toBe(false);
+    expect(detail.bonusConfirmed).toBe(false);
   });
 
   it("prefers the bonus FPL has confirmed over a provisional reading", () => {
@@ -181,7 +181,7 @@ describe("buildMatchDetail", () => {
       ],
       { fixtureOverrides: { state: "FINISHED", bonusSettled: true } },
     );
-    expect(detail.bonusSettled).toBe(true);
+    expect(detail.bonusConfirmed).toBe(true);
     expect(detail.bonus.map((row) => [row.elementId, row.bonus])).toEqual([[11, 3], [21, 2], [12, 1]]);
   });
 
@@ -193,7 +193,7 @@ describe("buildMatchDetail", () => {
       ],
       { fixtureOverrides: { state: "FINISHED", bonusSettled: true } },
     );
-    expect(detail.bonusSettled).toBe(false);
+    expect(detail.bonusConfirmed).toBe(false);
     expect(detail.bonus.map((row) => [row.elementId, row.bonus])).toEqual([[11, 3], [21, 2], [12, 1]]);
   });
 

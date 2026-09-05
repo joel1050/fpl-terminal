@@ -53,7 +53,7 @@ function MatchBody({ fixture, detail }: { fixture: FixtureView; detail: MatchDet
   if (fixture.state === "UPCOMING") {
     return <div className="match-detail"><p className="match-section-empty">MATCH NOT STARTED</p></div>;
   }
-  const bonusTitle = detail.bonusSettled ? "BONUS POINTS" : "BONUS POINTS · PROVISIONAL";
+  const bonusTitle = detail.bonusConfirmed ? "BONUS POINTS" : "BONUS POINTS · PROVISIONAL";
   return (
     <div className="match-detail">
       <MatchSection title="GOALS" rows={detail.scorers} empty="NO GOALS" />

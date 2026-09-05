@@ -28,8 +28,11 @@ export interface MatchDetail {
   scorers: readonly MatchContributor[];
   assists: readonly MatchContributor[];
   bonus: readonly MatchBonusRow[];
-  /** False while the bonus shown is our own reading of the BPS table. */
-  bonusSettled: boolean;
+  /**
+   * True once FPL has published the bonus for this match. False means the
+   * figures shown are our own reading of the BPS table, which can still move.
+   */
+  bonusConfirmed: boolean;
 }
 
 export interface MatchDetailContext {
@@ -138,6 +141,6 @@ export function buildMatchDetail(fixture: FixtureView, context: MatchDetailConte
     scorers: contributors("goals_scored"),
     assists: contributors("assists"),
     bonus,
-    bonusSettled: Boolean(settled),
+    bonusConfirmed: Boolean(settled),
   };
 }

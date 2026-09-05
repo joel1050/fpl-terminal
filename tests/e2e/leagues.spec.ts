@@ -265,21 +265,28 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
     // Every match starts collapsed, so the detail sections are out of the way
     // until the row is opened.
-    await expect(matchCentre.getByText("GOALS", { exact: true })).toHaveCount(0);
+    await expect(liveRow.getByText("GOALS", { exact: true })).toHaveCount(0);
     await expect(liveRow).toContainText("YOU");
 
     await liveRow.locator("summary").click();
-    await expect(matchCentre.getByText("GOALS", { exact: true })).toBeVisible();
-    await expect(matchCentre.getByText("ASSISTS", { exact: true })).toBeVisible();
-    await expect(matchCentre.getByText("BONUS POINTS · PROVISIONAL")).toBeVisible();
+    await expect(liveRow.getByText("GOALS", { exact: true })).toBeVisible();
+    await expect(liveRow.getByText("ASSISTS", { exact: true })).toBeVisible();
+    await expect(liveRow.getByText("BONUS POINTS · PROVISIONAL")).toBeVisible();
     await expect(liveRow).toContainText("Haaland");
 
     await liveRow.locator("summary").click();
-    await expect(matchCentre.getByText("GOALS", { exact: true })).toHaveCount(0);
+    await expect(liveRow.getByText("GOALS", { exact: true })).toHaveCount(0);
 
     await matchCentre.getByRole("button", { name: "FINISHED", exact: true }).click();
-    await expect(matchCentre.getByTestId("match-row")).toHaveCount(1);
-    await expect(matchCentre.getByTestId("match-row")).toContainText("TRV");
+    const finishedRow = matchCentre.getByTestId("match-row");
+    await expect(finishedRow).toHaveCount(1);
+    await expect(finishedRow).toContainText("TRV");
+
+    // A match FPL has settled shows its confirmed bonus, not a provisional read.
+    await finishedRow.locator("summary").click();
+    await expect(finishedRow.getByText("BONUS POINTS", { exact: true })).toBeVisible();
+    await expect(finishedRow).toContainText("Mbeumo");
+    await expect(finishedRow.locator(".match-bps li").first()).toContainText("+3");
 
     await matchCentre.getByRole("button", { name: "UPCOMING", exact: true }).click();
     await expect(matchCentre.getByTestId("match-row")).toHaveCount(1);

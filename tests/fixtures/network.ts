@@ -132,6 +132,14 @@ export async function interceptLeaguesData(page: Page, options: LeaguesIntercept
     // Mbeumo's finished match already holds a goal before the first poll, so the
     // feed has a Gameweek to read back rather than only changes it watched.
     if (player.id === 11) stats.goals_scored = 1;
+    // FPL confirms bonus once a match is over, so the finished fixture carries
+    // real figures rather than a table of zeroes.
+    const settledBonus: Record<number, [number, number]> = { 11: [32, 3], 12: [28, 2], 15: [24, 1] };
+    const awarded = settledBonus[player.id];
+    if (awarded) {
+      stats.bps = awarded[0];
+      stats.bonus = awarded[1];
+    }
     const explain = player.id === 11
       ? [{
         fixtureId: 102,
