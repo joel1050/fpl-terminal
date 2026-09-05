@@ -185,6 +185,18 @@ describe("buildMatchDetail", () => {
     expect(detail.bonus.map((row) => [row.elementId, row.bonus])).toEqual([[11, 3], [21, 2], [12, 1]]);
   });
 
+  it("keeps reading the BPS table while a finished match awaits its bonus", () => {
+    const detail = detailOf(
+      [
+        statLine("bps", [[11, 41], [12, 30]], [[21, 37]]),
+        statLine("bonus", [], []),
+      ],
+      { fixtureOverrides: { state: "FINISHED", bonusSettled: true } },
+    );
+    expect(detail.bonusSettled).toBe(false);
+    expect(detail.bonus.map((row) => [row.elementId, row.bonus])).toEqual([[11, 3], [21, 2], [12, 1]]);
+  });
+
   it("totals only what your players banked towards your score", () => {
     const detail = detailOf([], {
       ownedPlayers: [owned(11, 8, 2), owned(12, 3, 1), owned(13, 6, 0), owned(21, 5, 1)],

@@ -113,9 +113,11 @@ export function buildMatchDetail(fixture: FixtureView, context: MatchDetailConte
     side,
     bps: entry.value,
   }));
-  const settledLine = fixture.bonusSettled ? lineOf(fixture.stats, "bonus") : undefined;
-  const settled = settledLine
-    ? new Map(bySide(settledLine).map(({ entry }) => [entry.element, entry.value]))
+  // FPL marks a match finished a little before it publishes the bonus, so an
+  // empty bonus line means "not awarded yet", not "nobody scored any".
+  const settledLine = fixture.bonusSettled ? bySide(lineOf(fixture.stats, "bonus")) : [];
+  const settled = settledLine.length
+    ? new Map(settledLine.map(({ entry }) => [entry.element, entry.value]))
     : null;
   const provisional = settled ? null : allocateBonus(bpsEntries);
 
