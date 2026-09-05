@@ -391,6 +391,7 @@ function WorkspaceBody({
             entryLabel={selectedEntryLabel}
             overallRank={selectedOverallRank}
             gameweekRank={selectedGameweekRank}
+            onReturnToOwnTeam={selectedIsOwn ? undefined : () => selectEntry(entryId)}
             live={data.anyFixtureLive}
           />
           <section className="leagues-panel" aria-label="Live squad">

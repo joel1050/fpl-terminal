@@ -12,6 +12,7 @@ export default function LiveGameweekPanel({
   entryLabel,
   overallRank,
   gameweekRank,
+  onReturnToOwnTeam,
   live,
 }: {
   gameweek: number | null;
@@ -19,6 +20,7 @@ export default function LiveGameweekPanel({
   entryLabel: string;
   overallRank?: number;
   gameweekRank?: number;
+  onReturnToOwnTeam?: () => void;
   live: boolean;
 }) {
   const done = calculation?.done ?? 0;
@@ -31,7 +33,14 @@ export default function LiveGameweekPanel({
           <span className="section-kicker">LIVE GAMEWEEK</span>
           <span className="panel-count">{entryLabel}</span>
         </div>
-        <span className={`data-badge ${live ? "live" : ""}`}>GW {gameweek ?? "—"}</span>
+        <div className="header-actions">
+          {onReturnToOwnTeam && (
+            <button type="button" className="icon-button" onClick={onReturnToOwnTeam} aria-label="Return to my team" title="Return to my team">
+              ↩
+            </button>
+          )}
+          <span className={`data-badge ${live ? "live" : ""}`}>GW {gameweek ?? "—"}</span>
+        </div>
       </div>
       <div className="live-metrics">
         <div><span>LIVE POINTS</span><strong className="cyan-text">{calculation ? calculation.netPoints : "—"}</strong></div>

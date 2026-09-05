@@ -98,10 +98,13 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(roster.locator('[data-player="Saka"]')).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Live squad" })).toContainText("2/15");
 
+    const returnToMyTeam = summary.getByRole("button", { name: "Return to my team" });
+    await expect(returnToMyTeam).toBeVisible();
+    await returnToMyTeam.click();
     const myTeam = standings.getByRole("button", { name: /Expected Toulouse/i });
-    await myTeam.click();
     await expect(myTeam).toHaveAttribute("aria-pressed", "true");
     await expect(rivalTeam).toHaveAttribute("aria-pressed", "false");
+    await expect(returnToMyTeam).toHaveCount(0);
     await expect(summary).toContainText("Expected Toulouse");
     await expect(summary).toContainText("Joel Tester");
     await expect(roster.locator('[data-player="Saka"]')).toHaveCount(1);
