@@ -1,3 +1,4 @@
+import type { FixtureStatLine } from "@/types/leagues";
 import type {
   CurrentStats,
   Player,
@@ -80,6 +81,8 @@ export interface NormalizedFixture {
   minutes?: number;
   homeDifficulty?: number;
   awayDifficulty?: number;
+  /** Goals, assists, bonus and BPS as FPL scored them for this match alone. */
+  stats?: FixtureStatLine[];
 }
 
 export interface NormalizedBootstrap {
@@ -188,6 +191,24 @@ function teamMap(teams: FplBootstrapPayload["teams"]): Map<number, NormalizedTea
   );
 }
 
+/**
+ * FPL names the two sides `h` and `a`. Spelling them out here keeps every
+ * consumer from having to remember which single letter means which team.
+ */
+function normalizeFixtureStats(
+  stats: FplFixturePayload[number]["stats"],
+): FixtureStatLine[] | undefined {
+  if (!stats?.length) return undefined;
+  const lines = stats
+    .map((line) => ({
+      identifier: line.identifier,
+      home: line.h ?? [],
+      away: line.a ?? [],
+    }))
+    .filter((line) => line.home.length > 0 || line.away.length > 0);
+  return lines.length ? lines : undefined;
+}
+
 export function normalizeFixtures(
   fixtures: FplFixturePayload,
   teams: FplBootstrapPayload["teams"] = [],
@@ -209,6 +230,7 @@ export function normalizeFixtures(
     minutes: fixture.minutes,
     homeDifficulty: fixture.team_h_difficulty,
     awayDifficulty: fixture.team_a_difficulty,
+    stats: normalizeFixtureStats(fixture.stats),
   }));
 }
 

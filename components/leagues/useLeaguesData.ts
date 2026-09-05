@@ -11,6 +11,7 @@ import type {
   ClassicLeagueStandings,
   ClassicStandingRow,
   EntryPicks,
+  FixtureStatLine,
   FixtureView,
   ManagerHistory,
   ManagerProfile,
@@ -83,6 +84,7 @@ interface RawFixture {
   finishedProvisional?: boolean;
   started?: boolean;
   minutes?: number;
+  stats?: FixtureStatLine[];
 }
 
 const EMPTY_TEAM_NAMES = new Map<number, string>();
@@ -151,6 +153,7 @@ function buildFixtureViews(raw: readonly RawFixture[], shortNames: ReadonlyMap<n
     // `finished` is FPL's own confirmation, published once bonus is final.
     bonusSettled: Boolean(fixture.finished),
     minutes: fixture.minutes,
+    stats: fixture.stats,
   }));
 }
 

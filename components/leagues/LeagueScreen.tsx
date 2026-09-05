@@ -358,7 +358,6 @@ function WorkspaceBody({
             ownedPlayers={myLive?.playerPoints ?? []}
             playersById={playersById}
             teamIdByElementAll={teamIdByElementAll}
-            liveStatsByElement={data.liveStatsByElement}
             status={data.fixturesStatus}
           />
         </section>

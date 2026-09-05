@@ -149,6 +149,23 @@ export type PlayerGameweekStatus = "DONE" | "LIVE" | "TO_PLAY";
 
 export type FixtureState = "UPCOMING" | "LIVE" | "FINISHED";
 
+/** One player's reading of a fixture statistic, as FPL records it. */
+export interface FixtureStatEntry {
+  element: number;
+  value: number;
+}
+
+/**
+ * FPL attributes every match statistic to a fixture and a side, which is what
+ * makes a Double Gameweek readable: the same player appears under each of their
+ * fixtures with only that match's numbers.
+ */
+export interface FixtureStatLine {
+  identifier: string;
+  home: readonly FixtureStatEntry[];
+  away: readonly FixtureStatEntry[];
+}
+
 export interface FixtureView {
   id: number;
   kickoffTime?: string | null;
@@ -165,6 +182,8 @@ export interface FixtureView {
    */
   bonusSettled: boolean;
   minutes?: number;
+  /** Goals, assists, bonus and BPS as FPL scored them for this match alone. */
+  stats?: readonly FixtureStatLine[];
 }
 
 export interface PlayerFixtureStatus {

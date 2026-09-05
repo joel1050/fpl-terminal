@@ -253,16 +253,29 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(page.getByTestId("live-feed-scroll")).toHaveJSProperty("scrollTop", 0);
   });
 
-  test("groups fixtures and shows provisional BPS in the Match Centre", async ({ page }) => {
+  test("groups fixtures and opens a match for its scorers and BPS", async ({ page }) => {
     await importTeam(page);
     const matchCentre = page.getByRole("region", { name: "Match centre" });
 
     await matchCentre.getByRole("button", { name: "LIVE", exact: true }).click();
-    await expect(matchCentre.getByTestId("match-row")).toHaveCount(1);
-    await expect(matchCentre.getByTestId("match-row")).toContainText("TST");
-    await expect(matchCentre.getByTestId("match-row")).toContainText("74'");
-    await expect(matchCentre.getByText("PROVISIONAL BPS")).toBeVisible();
-    await expect(matchCentre.getByTestId("match-row")).toContainText("Haaland");
+    const liveRow = matchCentre.getByTestId("match-row");
+    await expect(liveRow).toHaveCount(1);
+    await expect(liveRow).toContainText("TST");
+    await expect(liveRow).toContainText("74'");
+
+    // Every match starts collapsed, so the detail sections are out of the way
+    // until the row is opened.
+    await expect(matchCentre.getByText("GOALS", { exact: true })).toHaveCount(0);
+    await expect(liveRow).toContainText("YOU");
+
+    await liveRow.locator("summary").click();
+    await expect(matchCentre.getByText("GOALS", { exact: true })).toBeVisible();
+    await expect(matchCentre.getByText("ASSISTS", { exact: true })).toBeVisible();
+    await expect(matchCentre.getByText("BONUS POINTS · PROVISIONAL")).toBeVisible();
+    await expect(liveRow).toContainText("Haaland");
+
+    await liveRow.locator("summary").click();
+    await expect(matchCentre.getByText("GOALS", { exact: true })).toHaveCount(0);
 
     await matchCentre.getByRole("button", { name: "FINISHED", exact: true }).click();
     await expect(matchCentre.getByTestId("match-row")).toHaveCount(1);

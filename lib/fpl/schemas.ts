@@ -103,6 +103,19 @@ export const FplBootstrapSchema = z
   })
   .passthrough();
 
+const FplFixtureStatEntrySchema = z
+  .object({ element: z.number().int(), value: z.number() })
+  .passthrough();
+
+/** FPL reports each match statistic once, split into the home and away sides. */
+export const FplFixtureStatSchema = z
+  .object({
+    identifier: z.string(),
+    h: z.array(FplFixtureStatEntrySchema).optional(),
+    a: z.array(FplFixtureStatEntrySchema).optional(),
+  })
+  .passthrough();
+
 export const FplFixtureSchema = z
   .object({
     id: z.number().int(),
@@ -118,7 +131,7 @@ export const FplFixtureSchema = z
     team_a_score: z.number().nullable().optional(),
     team_h: z.number().int(),
     team_h_score: z.number().nullable().optional(),
-    stats: z.array(z.unknown()).optional(),
+    stats: z.array(FplFixtureStatSchema).optional(),
     team_h_difficulty: z.number().optional(),
     team_a_difficulty: z.number().optional(),
   })

@@ -569,21 +569,33 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 
 /* Match centre */
 .match-list { display: grid; gap: 5px; min-height: 0; }
-.match-row { display: grid; gap: 4px; padding: 6px 7px; border: 1px solid var(--border-soft); background: var(--panel-alt); }
+.match-row { border: 1px solid var(--border-soft); background: var(--panel-alt); }
 .match-row.live { border-color: color-mix(in srgb, var(--green) 38%, var(--border)); }
+.match-row > summary { display: grid; gap: 4px; padding: 6px 7px; cursor: pointer; list-style: none; transition-property: background-color; transition-duration: 120ms; }
+.match-row > summary::-webkit-details-marker { display: none; }
+.match-row > summary:hover { background: color-mix(in srgb, var(--panel) 60%, transparent); }
+.match-row > summary:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
 .match-line { display: flex; align-items: center; gap: 7px; }
+.match-line::after { content: "+"; color: var(--dim); font-size: 13px; line-height: 1; }
+.match-row[open] .match-line::after { content: "\2212"; color: var(--amber); }
 .match-team { min-width: 44px; color: var(--text); font-size: 10px; font-weight: 600; }
 .match-team.away { text-align: right; }
 .match-score { color: var(--cyan); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .match-state { margin-left: auto; color: var(--muted); font-size: 9px; }
+.match-detail { display: grid; gap: 5px; padding: 0 7px 6px; }
+.match-section { display: grid; gap: 2px; padding-top: 4px; border-top: 1px solid var(--border-soft); }
+.match-section .section-kicker { font-size: 8px; }
+.match-section ul { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }
+.match-section li { display: flex; align-items: baseline; gap: 6px; color: var(--muted); font-size: 9px; }
+.match-section li.owned { color: var(--text); }
+.match-section li.owned .match-side { color: var(--amber); }
+.match-section-empty { margin: 0; color: var(--dim); font-size: 9px; }
+.match-side { min-width: 9px; color: var(--dim); }
+.match-section li strong { color: var(--text); font-weight: 600; }
 .match-state.live { color: var(--green); font-weight: 700; }
 .match-owned { margin: 0; overflow: hidden; color: var(--muted); font-size: 8px; letter-spacing: .03em; text-overflow: ellipsis; white-space: nowrap; }
-.match-bps { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; align-items: start; margin-top: 2px; padding-top: 4px; border-top: 1px solid var(--border-soft); }
-.match-bps .section-kicker { font-size: 8px; }
-.match-bps ol { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }
-.match-bps li { display: flex; gap: 6px; color: var(--muted); font-size: 9px; }
-.match-bps li span { min-width: 8px; color: var(--dim); }
-.match-bps li strong { margin-left: auto; color: var(--text); font-weight: 500; }
+.match-bps li em { margin-left: auto; color: var(--green); font-size: 9px; font-style: normal; font-weight: 600; }
+.match-bps li strong { min-width: 20px; font-weight: 500; text-align: right; }
 
 /* Live feed fills the whole right rail with its own scroll region. */
 /* Three tracks, not four: the announcement is taken out of flow, so giving it a
@@ -618,7 +630,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .leagues-grid { height: calc(100dvh - 36px); padding: 4px; gap: 4px; }
   .leagues-column { padding: 6px; }
   .live-metrics strong { font-size: 11px; }
-  .match-bps li, .match-owned { font-size: 8px; }
+  .match-section li, .match-section-empty, .match-owned { font-size: 8px; }
 }
 
 @media (max-width: 900px) {

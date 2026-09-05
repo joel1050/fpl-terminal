@@ -1,13 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { statNumber, type LiveStats } from "@/lib/leagues/calculateLiveEntry";
 import { playerValueLabel } from "@/lib/leagues/display";
+import { buildMatchDetail, type MatchContributor, type MatchDetail } from "@/lib/leagues/matchDetail";
 import type { FixtureView, LiveEntryPlayer } from "@/types/leagues";
 import type { Player } from "@/types/player";
 
 type MatchFilter = "ALL" | "LIVE" | "FINISHED" | "UPCOMING";
 const FILTERS: MatchFilter[] = ["ALL", "LIVE", "FINISHED", "UPCOMING"];
+
+/** Long BPS tables bury the players who can still take a bonus point. */
+const BPS_ROWS = 6;
 
 function stateLabel(fixture: FixtureView): string {
   if (fixture.state === "FINISHED") return "FT";
@@ -17,10 +20,63 @@ function stateLabel(fixture: FixtureView): string {
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-interface BpsLeader {
-  playerId: number;
-  name: string;
-  bps: number;
+function MatchSection({
+  title,
+  rows,
+  empty,
+}: {
+  title: string;
+  rows: readonly MatchContributor[];
+  empty: string;
+}) {
+  return (
+    <div className="match-section">
+      <span className="section-kicker small">{title}</span>
+      {rows.length ? (
+        <ul>
+          {rows.map((row) => (
+            <li key={`${row.elementId}-${row.side}`} className={row.owned ? "owned" : ""}>
+              <span className="match-side">{row.side === "HOME" ? "H" : "A"}</span>
+              {row.name}
+              {row.count > 1 && <strong>×{row.count}</strong>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="match-section-empty">{empty}</p>
+      )}
+    </div>
+  );
+}
+
+function MatchBody({ fixture, detail }: { fixture: FixtureView; detail: MatchDetail }) {
+  if (fixture.state === "UPCOMING") {
+    return <div className="match-detail"><p className="match-section-empty">MATCH NOT STARTED</p></div>;
+  }
+  const bonusTitle = detail.bonusSettled ? "BONUS POINTS" : "BONUS POINTS · PROVISIONAL";
+  return (
+    <div className="match-detail">
+      <MatchSection title="GOALS" rows={detail.scorers} empty="NO GOALS" />
+      <MatchSection title="ASSISTS" rows={detail.assists} empty="NO ASSISTS" />
+      <div className="match-section">
+        <span className="section-kicker small">{bonusTitle}</span>
+        {detail.bonus.length ? (
+          <ul className="match-bps">
+            {detail.bonus.slice(0, BPS_ROWS).map((row) => (
+              <li key={row.elementId} className={row.owned ? "owned" : ""}>
+                <span className="match-side">{row.side === "HOME" ? "H" : "A"}</span>
+                {row.name}
+                <em>{row.bonus > 0 ? `+${row.bonus}` : ""}</em>
+                <strong>{row.bps}</strong>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="match-section-empty">NO BPS RECORDED</p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function MatchCentre({
@@ -28,17 +84,17 @@ export default function MatchCentre({
   ownedPlayers,
   playersById,
   teamIdByElementAll,
-  liveStatsByElement,
   status,
 }: {
   fixtures: readonly FixtureView[];
   ownedPlayers: readonly LiveEntryPlayer[];
   playersById: ReadonlyMap<number, Player>;
   teamIdByElementAll: ReadonlyMap<number, number>;
-  liveStatsByElement: ReadonlyMap<number, LiveStats>;
   status: "IDLE" | "LOADING" | "READY" | "ERROR";
 }) {
   const [filter, setFilter] = useState<MatchFilter>("ALL");
+  const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => new Set<number>());
+
   const groups = useMemo(() => ({
     LIVE: fixtures.filter((fixture) => fixture.state === "LIVE"),
     FINISHED: fixtures.filter((fixture) => fixture.state === "FINISHED"),
@@ -49,31 +105,31 @@ export default function MatchCentre({
     ? [...groups.LIVE, ...groups.FINISHED, ...groups.UPCOMING]
     : groups[filter];
 
-  const bpsLeadersByFixture = useMemo(() => {
-    const map = new Map<number, BpsLeader[]>();
+  const nameByElement = useMemo(
+    () => new Map([...playersById.values()].map((player) => [player.id, player.displayName])),
+    [playersById],
+  );
+
+  const detailByFixture = useMemo(() => {
+    const map = new Map<number, MatchDetail>();
     for (const fixture of fixtures) {
-      if (fixture.state !== "LIVE") continue;
-      const leaders: BpsLeader[] = [];
-      for (const [playerId, stats] of liveStatsByElement) {
-        const teamId = teamIdByElementAll.get(playerId);
-        if (teamId !== fixture.homeTeamId && teamId !== fixture.awayTeamId) continue;
-        leaders.push({
-          playerId,
-          name: playersById.get(playerId)?.displayName ?? `Player ${playerId}`,
-          bps: statNumber(stats, "bps"),
-        });
-      }
-      leaders.sort((left, right) => right.bps - left.bps || left.playerId - right.playerId);
-      map.set(fixture.id, leaders.slice(0, 3));
+      map.set(fixture.id, buildMatchDetail(fixture, {
+        ownedPlayers,
+        teamIdByElement: teamIdByElementAll,
+        nameByElement,
+      }));
     }
     return map;
-  }, [fixtures, liveStatsByElement, playersById, teamIdByElementAll]);
+  }, [fixtures, nameByElement, ownedPlayers, teamIdByElementAll]);
 
-  const ownedInFixture = (fixture: FixtureView): LiveEntryPlayer[] =>
-    ownedPlayers.filter((player) => {
-      const teamId = playersById.get(player.elementId)?.teamId;
-      return teamId === fixture.homeTeamId || teamId === fixture.awayTeamId;
+  const toggle = (fixtureId: number, open: boolean): void => {
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (open) next.add(fixtureId);
+      else next.delete(fixtureId);
+      return next;
     });
+  };
 
   return (
     <section className="leagues-panel" aria-label="Gameweek fixtures">
@@ -93,37 +149,38 @@ export default function MatchCentre({
         <div className="match-list">
           {!visible.length && <div className="empty-state">NO MATCHES IN THIS VIEW</div>}
           {visible.map((fixture) => {
-            const owned = ownedInFixture(fixture);
-            const leaders = bpsLeadersByFixture.get(fixture.id) ?? [];
+            const open = expanded.has(fixture.id);
+            const detail = detailByFixture.get(fixture.id);
+            if (!detail) return null;
             return (
-              <article key={fixture.id} className={`match-row ${fixture.state.toLowerCase()}`} data-testid="match-row">
-                <div className="match-line">
-                  <span className="match-team home">{fixture.homeShortName}</span>
-                  <span className="match-score">{fixture.homeScore ?? ""}{fixture.state === "UPCOMING" ? " v " : " — "}{fixture.awayScore ?? ""}</span>
-                  <span className="match-team away">{fixture.awayShortName}</span>
-                  <span className={`match-state ${fixture.state.toLowerCase()}`}>{stateLabel(fixture)}</span>
-                </div>
-                {owned.length > 0 && (
-                  <p className="match-owned">
-                    YOU OWN ·{" "}
-                    {owned.slice(0, 6).map((player) => {
-                      const value = playerValueLabel(player);
-                      return `${playersById.get(player.elementId)?.displayName ?? `#${player.elementId}`} ${value.value}${value.started ? " P" : " xP"}`;
-                    }).join(" · ")}
-                    {owned.length > 6 ? ` · +${owned.length - 6} more` : ""}
-                  </p>
-                )}
-                {fixture.state === "LIVE" && leaders.length > 0 && (
-                  <div className="match-bps" aria-label="Provisional BPS">
-                    <span className="section-kicker small">PROVISIONAL BPS</span>
-                    <ol>
-                      {leaders.map((leader, index) => (
-                        <li key={leader.playerId}><span>{index + 1}</span>{leader.name}<strong>{leader.bps}</strong></li>
-                      ))}
-                    </ol>
+              <details
+                key={fixture.id}
+                className={`match-row ${fixture.state.toLowerCase()}`}
+                data-testid="match-row"
+                open={open}
+                onToggle={(event) => toggle(fixture.id, event.currentTarget.open)}
+              >
+                <summary>
+                  <div className="match-line">
+                    <span className="match-team home">{fixture.homeShortName}</span>
+                    <span className="match-score">{fixture.homeScore ?? ""}{fixture.state === "UPCOMING" ? " v " : " — "}{fixture.awayScore ?? ""}</span>
+                    <span className="match-team away">{fixture.awayShortName}</span>
+                    <span className={`match-state ${fixture.state.toLowerCase()}`}>{stateLabel(fixture)}</span>
                   </div>
-                )}
-              </article>
+                  {detail.owned.length > 0 && (
+                    <p className="match-owned">
+                      YOU {detail.ownedPoints} PTS ·{" "}
+                      {detail.owned.slice(0, 6).map((player) => {
+                        const value = playerValueLabel(player);
+                        const name = nameByElement.get(player.elementId) ?? `#${player.elementId}`;
+                        return `${name} ${value.value}${value.started ? " P" : " xP"}${player.multiplier === 0 ? " (B)" : ""}`;
+                      }).join(" · ")}
+                      {detail.owned.length > 6 ? ` · +${detail.owned.length - 6} more` : ""}
+                    </p>
+                  )}
+                </summary>
+                {open && <MatchBody fixture={fixture} detail={detail} />}
+              </details>
             );
           })}
         </div>

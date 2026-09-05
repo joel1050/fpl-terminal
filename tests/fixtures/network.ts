@@ -144,6 +144,26 @@ export async function interceptLeaguesData(page: Page, options: LeaguesIntercept
     return { playerId: player.id, stats, explain };
   });
 
+  // FPL attributes every match statistic to a fixture and a side. Deriving the
+  // fixture lines from the same element stats the live route serves keeps the
+  // two payloads telling one story.
+  const buildFixtureStats = (withGoal: boolean) => {
+    const elements = new Map(buildElements(withGoal).map((element) => [element.playerId, element.stats]));
+    const teamOf = new Map(fixturePlayers.map((player) => [player.id, player.team]));
+    const line = (identifier: string, fixture: { teamHomeId: number; teamAwayId: number }, include: (stats: Record<string, number | null>) => boolean) => {
+      const side = (teamId: number) => [...elements]
+        .filter(([playerId, stats]) => teamOf.get(playerId) === teamId && include(stats))
+        .map(([playerId, stats]) => ({ element: playerId, value: Number(stats[identifier] ?? 0) }));
+      return { identifier, home: side(fixture.teamHomeId), away: side(fixture.teamAwayId) };
+    };
+    return (fixture: { teamHomeId: number; teamAwayId: number }) => [
+      line("goals_scored", fixture, (stats) => Number(stats.goals_scored ?? 0) > 0),
+      line("assists", fixture, (stats) => Number(stats.assists ?? 0) > 0),
+      line("bps", fixture, (stats) => Number(stats.minutes ?? 0) > 0),
+      line("bonus", fixture, (stats) => Number(stats.bonus ?? 0) > 0),
+    ];
+  };
+
   const pickRow = (element: number, position: number, elementType: number, multiplier: number, flags: { captain?: boolean; vice?: boolean } = {}) => ({
     element,
     position,
@@ -296,7 +316,9 @@ export async function interceptLeaguesData(page: Page, options: LeaguesIntercept
     }
 
     if (pathname === "/api/fpl/fixtures") {
-      await fulfill({ data: options.emptyCurrentGameweek && new URL(url).searchParams.get("gameweek") === "2" ? [] : leaguesFixtures, freshness: null });
+      const statsFor = buildFixtureStats(liveCalls > 1);
+      const withStats = leaguesFixtures.map((fixture) => ({ ...fixture, stats: statsFor(fixture) }));
+      await fulfill({ data: options.emptyCurrentGameweek && new URL(url).searchParams.get("gameweek") === "2" ? [] : withStats, freshness: null });
       return;
     }
 
