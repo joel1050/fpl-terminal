@@ -743,7 +743,12 @@ function validLineup(state: Pick<TerminalState, "playerIds" | "byPosition" | "be
 export function isLineupStale(lineupGameweek: number | undefined, lineupProjectionFingerprint: string | undefined, gameweek: number, projectionFingerprint: string, lineupChip?: ChipKind | null, chip?: ChipKind | null): boolean {
   if (lineupGameweek === undefined) return false;
   if (lineupGameweek !== gameweek || lineupProjectionFingerprint !== projectionFingerprint) return true;
-  if (lineupChip !== undefined || chip !== undefined) return (lineupChip ?? null) !== (chip ?? null);
+  // Only Bench Boost and Triple Captain alter lineup scoring (mirrors the
+  // projection fingerprint in lib/squad/weeklyLineup.ts). Wildcard and Free
+  // Hit are transfer chips, so swapping them must not flag a saved lineup as
+  // outdated on its own.
+  const normalizeLineupChip = (value?: ChipKind | null) => (value === "bboost" || value === "3xc" ? value : null);
+  if (lineupChip !== undefined || chip !== undefined) return normalizeLineupChip(lineupChip) !== normalizeLineupChip(chip);
   return false;
 }
 

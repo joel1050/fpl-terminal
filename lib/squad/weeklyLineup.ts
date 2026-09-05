@@ -286,8 +286,10 @@ function fingerprint(players: readonly Player[], gameweek: number, chip: ChipKin
   // The chip is part of the fingerprint so changing chips makes an applied
   // lineup stale, but the no-chip format is byte-identical to the legacy
   // one so pre-chip saved lineups do not flag as outdated on upgrade.
+  // Wildcard and Free Hit are transfer chips and do not alter lineup scoring.
+  const lineupChip = chip === "bboost" || chip === "3xc" ? chip : null;
   const playersSegment = orderedPlayers(players).map((player) => `${player.id}:${basePoints(player, gameweek).toFixed(3)}:${probabilityDidNotPlay(player, gameweek).toFixed(3)}`).join("|");
-  const source = chip ? `${gameweek}|${chip}|${playersSegment}` : `${gameweek}|${playersSegment}`;
+  const source = lineupChip ? `${gameweek}|${lineupChip}|${playersSegment}` : `${gameweek}|${playersSegment}`;
   let hash = 2166136261;
   for (let index = 0; index < source.length; index += 1) {
     hash ^= source.charCodeAt(index);
@@ -456,6 +458,7 @@ export function scoreLineupWithChip(
     return {
       ...optimal,
       starterIds,
+      formation: formationString(starterIds, byId),
       benchGoalkeeperId: saved.benchGoalkeeperId,
       benchOrder: [...saved.benchOrder] as [number, number, number],
       captainId: saved.captainId,
@@ -474,6 +477,7 @@ export function scoreLineupWithChip(
   return {
     ...optimal,
     starterIds,
+    formation: formationString(starterIds, byId),
     benchGoalkeeperId: saved.benchGoalkeeperId,
     benchOrder: [...saved.benchOrder] as [number, number, number],
     captainId: saved.captainId,

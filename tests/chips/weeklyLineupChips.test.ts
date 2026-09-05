@@ -144,4 +144,36 @@ describe("chip-aware weekly scoring", () => {
       pickWeeklyTeam({ squad: players, gameweek: 1, riskMode: "BALANCED", chip: "bboost" }).projectionFingerprint,
     );
   });
+
+  it("treats transfer chips (wildcard and freehit) as neutral to lineup fingerprint", () => {
+    const players = squad();
+    const normalFp = pickWeeklyTeam({ squad: players, gameweek: 1, riskMode: "BALANCED", chip: null }).projectionFingerprint;
+    const wildcardFp = pickWeeklyTeam({ squad: players, gameweek: 1, riskMode: "BALANCED", chip: "wildcard" }).projectionFingerprint;
+    const freehitFp = pickWeeklyTeam({ squad: players, gameweek: 1, riskMode: "BALANCED", chip: "freehit" }).projectionFingerprint;
+    const bboostFp = pickWeeklyTeam({ squad: players, gameweek: 1, riskMode: "BALANCED", chip: "bboost" }).projectionFingerprint;
+    const tripleFp = pickWeeklyTeam({ squad: players, gameweek: 1, riskMode: "BALANCED", chip: "3xc" }).projectionFingerprint;
+
+    expect(wildcardFp).toBe(normalFp);
+    expect(freehitFp).toBe(normalFp);
+    expect(bboostFp).not.toBe(normalFp);
+    expect(tripleFp).not.toBe(normalFp);
+    expect(bboostFp).not.toBe(tripleFp);
+  });
+
+  it("produces matching fingerprint and clears outdated status when team is picked with chip active", () => {
+    const players = squad();
+    for (const chip of ["bboost", "3xc", "wildcard", "freehit"] as const) {
+      const plan = pickWeeklyTeam({ squad: players, gameweek: 1, riskMode: "BALANCED", chip });
+      const saved = {
+        starterIds: plan.starterIds,
+        benchGoalkeeperId: plan.benchGoalkeeperId,
+        benchOrder: [...plan.benchOrder] as [number, number, number],
+        captainId: plan.captainId,
+        viceCaptainId: plan.viceCaptainId,
+      };
+      const scored = scoreLineupWithChip(players, 1, "BALANCED", chip, saved);
+      expect(scored.projectionFingerprint).toBe(plan.projectionFingerprint);
+      expect(scored.formation).toBe(plan.formation);
+    }
+  });
 });

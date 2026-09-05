@@ -5,7 +5,7 @@ import WorkspaceSwitcher from "@/components/terminal/WorkspaceSwitcher";
 import type { NailedRating, Player, PlayerFixture, PlayerMatchPerformance, PlayerProfileData, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, TransferBaseline, WeeklyLineupPlan } from "@/types";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
 import { effectiveBudgetTenths, explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
-import { expectedAutosubValue, pickWeeklyTeam, projectWeeklyLineupHorizons, scoreLineupWithChip, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
+import { pickWeeklyTeam, projectWeeklyLineupHorizons, scoreLineupWithChip, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import { ChipSelector, ChipStrategyPanel, usePlanningWeekFinance } from "@/components/terminal/ChipPanels";
 import { chipLabel } from "@/lib/chips/seasonPolicy";
 import type { ChipKind } from "@/types/chips";
@@ -413,49 +413,6 @@ function formationLabel(plan: WeeklyLineupPlan): string {
   return plan.formation || "—";
 }
 
-function persistedLineupPlan(
-  base: WeeklyLineupPlan,
-  starters: readonly number[],
-  benchGoalkeeperId: number | undefined,
-  benchOrder: readonly number[],
-  captainId: number | undefined,
-  viceCaptainId: number | undefined,
-  playerById: Map<number, TerminalPlayer>,
-): WeeklyLineupPlan {
-  const formation = starters.reduce((result, id) => {
-    const position = playerById.get(id)?.position;
-    if (position) result[position] += 1;
-    return result;
-  }, { GK: 0, DEF: 0, MID: 0, FWD: 0 });
-  const projectedXI = starters.reduce((sum, id) => {
-    const player = playerById.get(id);
-    return sum + (player ? weeklyPlayerMetrics(player, base.gameweek).points : 0);
-  }, 0);
-  const captain = captainId === undefined ? undefined : playerById.get(captainId);
-  const captainBonus = captain ? weeklyPlayerMetrics(captain, base.gameweek).points : 0;
-  const squadIds = new Set([...starters, benchGoalkeeperId, ...benchOrder]);
-  const squad = [...playerById.values()].filter((player) => squadIds.has(player.id));
-  const autosubValue = benchGoalkeeperId !== undefined && benchOrder.length === 3
-    ? expectedAutosubValue(starters, benchGoalkeeperId, benchOrder, squad, base.gameweek)
-    : 0;
-  return {
-    gameweek: base.gameweek,
-    starterIds: [...starters],
-    formation: `${formation.DEF}-${formation.MID}-${formation.FWD}`,
-    benchGoalkeeperId: benchGoalkeeperId ?? 0,
-    benchOrder: [...benchOrder] as [number, number, number],
-    captainId: captainId ?? 0,
-    viceCaptainId: viceCaptainId ?? 0,
-    projectedXI,
-    captainBonus,
-    projectedTotal: projectedXI + captainBonus + autosubValue,
-    autosubValue,
-    explanations: base.explanations,
-    warnings: base.warnings,
-    projectionFingerprint: base.projectionFingerprint,
-  };
-}
-
 function normalizeName(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -668,32 +625,25 @@ export default function TerminalApp() {
     squad: selected,
     gameweek: planningGameweek,
     riskMode: store.riskMode,
-  }), [planningGameweek, selected, store.riskMode]);
+    chip: store.chip,
+  }), [planningGameweek, selected, store.riskMode, store.chip]);
   const lineupApplied = store.lineupGameweek === planningGameweek && store.lineupProjectionFingerprint !== undefined;
   const currentGWPlan = useMemo<WeeklyLineupPlan | null>(() => {
-    if (!lineupApplied || store.benchGoalkeeperId === undefined || store.benchOrder.length !== 3) {
-      return weeklyEnginePlan.starterIds.length === 11 ? weeklyEnginePlan : null;
-    }
-    const startingXI = deriveStartingXI(store.playerIds, store.benchGoalkeeperId, store.benchOrder);
-    return persistedLineupPlan(weeklyEnginePlan, startingXI, store.benchGoalkeeperId, store.benchOrder, store.captainId, store.viceCaptainId, playerById);
-  }, [lineupApplied, playerById, store.benchGoalkeeperId, store.benchOrder, store.captainId, store.playerIds, store.viceCaptainId, weeklyEnginePlan]);
-  // The chip is part of the projection fingerprint: changing chips makes an
-  // applied lineup stale.
-  const chipAwareFingerprint = useMemo(() => pickWeeklyTeam({
-    squad: selected,
-    gameweek: planningGameweek,
-    riskMode: store.riskMode,
-    chip: store.chip,
-  }).projectionFingerprint, [planningGameweek, selected, store.riskMode, store.chip]);
-  const lineupStale = lineupApplied && (store.lineupGameweek !== weeklyEnginePlan.gameweek || store.lineupProjectionFingerprint !== chipAwareFingerprint);
-  const chipNetXp = useMemo(() => {
-    if (selected.length !== 15) return undefined;
+    if (selected.length !== 15) return weeklyEnginePlan.starterIds.length === 11 ? weeklyEnginePlan : null;
     const saved = lineupApplied && store.benchGoalkeeperId !== undefined && store.benchOrder.length === 3 && store.captainId !== undefined && store.viceCaptainId !== undefined
       ? { starterIds: deriveStartingXI(store.playerIds, store.benchGoalkeeperId, store.benchOrder), benchGoalkeeperId: store.benchGoalkeeperId, benchOrder: store.benchOrder, captainId: store.captainId, viceCaptainId: store.viceCaptainId }
       : undefined;
+    if (!saved) {
+      return weeklyEnginePlan.starterIds.length === 11 ? weeklyEnginePlan : null;
+    }
     const plan = scoreLineupWithChip(selected, planningGameweek, store.riskMode, store.chip, saved);
-    return plan.projectedTotal;
-  }, [selected, planningGameweek, store.riskMode, store.chip, lineupApplied, store.playerIds, store.benchGoalkeeperId, store.benchOrder, store.captainId, store.viceCaptainId]);
+    return plan.starterIds.length === 11 ? plan : null;
+  }, [selected, planningGameweek, store.riskMode, store.chip, lineupApplied, store.benchGoalkeeperId, store.benchOrder, store.captainId, store.playerIds, store.viceCaptainId, weeklyEnginePlan]);
+  const lineupStale = lineupApplied && (store.lineupGameweek !== weeklyEnginePlan.gameweek || store.lineupProjectionFingerprint !== weeklyEnginePlan.projectionFingerprint);
+  const chipNetXp = useMemo(() => {
+    if (!currentGWPlan) return undefined;
+    return currentGWPlan.projectedTotal;
+  }, [currentGWPlan]);
   const projected = useMemo<{ nextGW?: number; next3?: number; next5?: number; next10?: number }>(() => {
     if (!selected.length) return {};
     if (weeklyEnginePlan.starterIds.length !== 11) return aggregateWeeklyProjection(selected, planningGameweek);
@@ -1111,7 +1061,7 @@ export default function TerminalApp() {
       const known = new Set(data.players.map((player) => player.id));
       if (body.data.squad.playerIds.some((playerId) => !known.has(playerId))) throw new Error("The official squad contains players missing from the current FPL player data. Refresh and try again.");
       const importedPlayers = data.players.filter((player) => body.data!.squad.playerIds.includes(player.id));
-      const fingerprint = pickWeeklyTeam({ squad: importedPlayers, gameweek: liveCurrentGW, riskMode: store.riskMode }).projectionFingerprint;
+      const fingerprint = pickWeeklyTeam({ squad: importedPlayers, gameweek: liveCurrentGW, riskMode: store.riskMode, chip: body.data.chip ?? null }).projectionFingerprint;
       if (!fingerprint || !store.replaceSquad(body.data.squad, { ...body.data.lineup, lineupProjectionFingerprint: fingerprint }, entryId, body.data.budgetTenths, { transferBaseline: body.data.transferBaseline ?? null, usedChips: body.data.usedChips ?? [], chip: body.data.chip ?? null })) throw new Error("FPL returned an invalid 15-player squad.");
       store.switchGameweek(liveCurrentGW);
       setGWSwapSelection({});
@@ -1144,7 +1094,7 @@ export default function TerminalApp() {
       onBack={() => store.setMode(null)}
       onImport={(result) => {
         const importedPlayers = data.players.filter((player) => result.squad.playerIds.includes(player.id));
-        const fingerprint = pickWeeklyTeam({ squad: importedPlayers, gameweek: result.lineup.gameweek, riskMode: store.riskMode }).projectionFingerprint;
+        const fingerprint = pickWeeklyTeam({ squad: importedPlayers, gameweek: result.lineup.gameweek, riskMode: store.riskMode, chip: result.chip ?? null }).projectionFingerprint;
         if (!store.replaceSquad(result.squad, { ...result.lineup, lineupProjectionFingerprint: fingerprint }, result.entryId, result.budgetTenths, { transferBaseline: result.transferBaseline ?? null, usedChips: result.usedChips ?? [], chip: result.chip ?? null })) return false;
         if (result.importWarnings?.length) setNotice(result.importWarnings[0]);
         else setNotice(`Imported ${result.teamName || result.managerName || `FPL team ${result.entryId}`}${result.chip ? ` (${chipLabel(result.chip)} active)` : ""}.`);

@@ -86,6 +86,15 @@ describe("persisted weekly lineup state", () => {
     expect(isLineupStale(1, "fp-1", 1, "fp-1")).toBe(false);
     expect(isLineupStale(1, "fp-1", 2, "fp-1")).toBe(true);
     expect(isLineupStale(1, "fp-1", 1, "fp-2")).toBe(true);
+    // Only Bench Boost / Triple Captain alter lineup scoring; transfer chips
+    // (wildcard, freehit) must not flag a saved lineup as outdated on their own.
+    expect(isLineupStale(1, "fp-1", 1, "fp-1", null, "wildcard")).toBe(false);
+    expect(isLineupStale(1, "fp-1", 1, "fp-1", null, "freehit")).toBe(false);
+    expect(isLineupStale(1, "fp-1", 1, "fp-1", "wildcard", null)).toBe(false);
+    expect(isLineupStale(1, "fp-1", 1, "fp-1", null, "bboost")).toBe(true);
+    expect(isLineupStale(1, "fp-1", 1, "fp-1", null, "3xc")).toBe(true);
+    expect(isLineupStale(1, "fp-1", 1, "fp-1", "bboost", "bboost")).toBe(false);
+    expect(isLineupStale(1, "fp-1", 1, "fp-1", "bboost", "3xc")).toBe(true);
     const store = useTerminalStore.getState();
     expect(store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "fp-1", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 })).toBe(true);
     expect(exportTerminalState(useTerminalStore.getState()).lineupProjectionFingerprint).toBe("fp-1");
