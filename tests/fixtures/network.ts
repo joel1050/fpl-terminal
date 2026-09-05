@@ -92,6 +92,8 @@ export interface LeaguesInterceptOptions {
   failLiveAfterFirstPoll?: boolean;
   /** Marks GW2 current while its live endpoint is still empty. */
   emptyCurrentGameweek?: boolean;
+  /** Makes one rival's picks request fail so the UI can exercise its unavailable state. */
+  missingMemberPicksEntryId?: number;
 }
 
 export async function interceptLeaguesData(page: Page, options: LeaguesInterceptOptions = {}) {
@@ -347,6 +349,10 @@ export async function interceptLeaguesData(page: Page, options: LeaguesIntercept
     const picksMatch = /^\/api\/fpl\/entry\/(\d+)\/event\/\d+\/picks$/.exec(pathname);
     if (picksMatch) {
       const entryId = Number(picksMatch[1]);
+      if (entryId === options.missingMemberPicksEntryId) {
+        await fulfill({ data: null, errors: ["Picks unavailable for this manager"] }, 404);
+        return;
+      }
       const payload = entryId === USER_ENTRY_ID ? userPicks : memberPicks[entryId];
       if (!payload) {
         await fulfill({ data: null, errors: ["Picks unavailable for this manager"] }, 404);

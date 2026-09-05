@@ -39,6 +39,8 @@ export default function LeagueStandings({
   loading,
   error,
   completePopulation,
+  selectedEntryId,
+  onSelectEntry,
 }: {
   mode: StandingsMode;
   leagueName?: string;
@@ -47,6 +49,8 @@ export default function LeagueStandings({
   loading: boolean;
   error?: string;
   completePopulation: boolean;
+  selectedEntryId: number;
+  onSelectEntry: (entryId: number) => void;
 }) {
   const { sortKey, sortDirection, onSort } = useSortState<StandingsSortKey>();
   const sortedRows = useMemo(() => {
@@ -111,10 +115,30 @@ export default function LeagueStandings({
                 {sortedRows.map((row) => {
                   const movement = movementCell(row.movement);
                   const live = isLiveRow(mode, row);
+                  const selected = row.entryId === selectedEntryId;
+                  const teamName = row.entryName ?? `Team ${row.entryId}`;
+                  const managerName = row.playerName?.trim();
+                  const accessibleLabel = managerName
+                    ? `View live squad for ${teamName}, managed by ${managerName}`
+                    : `View live squad for ${teamName}`;
                   return (
-                    <tr key={row.entryId} className={row.isUser ? "you" : ""} data-testid={row.isUser ? "standings-you-row" : undefined}>
+                    <tr
+                      key={row.entryId}
+                      className={[row.isUser ? "you" : "", selected ? "selected" : ""].filter(Boolean).join(" ")}
+                      data-testid={row.isUser ? "standings-you-row" : undefined}
+                    >
                       <td>{live ? row.localRank : row.officialRank ?? "—"}</td>
-                      <td>{row.entryName ?? `Team ${row.entryId}`}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="league-name-button"
+                          onClick={() => onSelectEntry(row.entryId)}
+                          aria-label={accessibleLabel}
+                          aria-pressed={selected}
+                        >
+                          {teamName}
+                        </button>
+                      </td>
                       <td className="dim-text">{row.playerName ?? "—"}</td>
                       <td>{live ? row.gameweekPoints : row.officialGameweekPoints ?? "—"}</td>
                       <td>{live ? row.liveTotal.toLocaleString() : row.officialTotal?.toLocaleString() ?? "—"}</td>

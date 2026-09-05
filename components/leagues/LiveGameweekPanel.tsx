@@ -1,7 +1,6 @@
 "use client";
 
 import type { LiveEntryCalculation } from "@/types/leagues";
-import type { ManagerProfile } from "@/types/leagues";
 
 function rankLabel(value: number | undefined): string {
   return value === undefined ? "—" : value.toLocaleString();
@@ -10,12 +9,16 @@ function rankLabel(value: number | undefined): string {
 export default function LiveGameweekPanel({
   gameweek,
   calculation,
-  profile,
+  entryLabel,
+  overallRank,
+  gameweekRank,
   live,
 }: {
   gameweek: number | null;
   calculation: LiveEntryCalculation | null;
-  profile: ManagerProfile | null;
+  entryLabel: string;
+  overallRank?: number;
+  gameweekRank?: number;
   live: boolean;
 }) {
   const done = calculation?.done ?? 0;
@@ -24,13 +27,16 @@ export default function LiveGameweekPanel({
   return (
     <section className="leagues-panel" aria-label="Live Gameweek summary">
       <div className="panel-header">
-        <div><span className="section-kicker">LIVE GAMEWEEK</span></div>
+        <div>
+          <span className="section-kicker">LIVE GAMEWEEK</span>
+          <span className="panel-count">{entryLabel}</span>
+        </div>
         <span className={`data-badge ${live ? "live" : ""}`}>GW {gameweek ?? "—"}</span>
       </div>
       <div className="live-metrics">
         <div><span>LIVE POINTS</span><strong className="cyan-text">{calculation ? calculation.netPoints : "—"}</strong></div>
-        <div><span>OFFICIAL RANK</span><strong>{rankLabel(profile?.summaryOverallRank)}</strong></div>
-        <div><span>GW RANK</span><strong>{rankLabel(profile?.summaryEventRank)}</strong></div>
+        <div><span>OFFICIAL RANK</span><strong>{rankLabel(overallRank)}</strong></div>
+        <div><span>GW RANK</span><strong>{rankLabel(gameweekRank)}</strong></div>
         <div><span>DONE</span><strong className="green">{done || "—"}</strong></div>
         <div><span>LIVE</span><strong className="amber">{liveCount || "—"}</strong></div>
         <div><span>TO PLAY</span><strong>{toPlay || "—"}</strong></div>

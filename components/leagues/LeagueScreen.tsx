@@ -171,6 +171,7 @@ function WorkspaceBody({
 
   const [feedEvents, setFeedEvents] = useState<LiveFeedEvent[]>([]);
   const [mobileTab, setMobileTab] = useState<MobileTab>("LEAGUE");
+  const [selectedEntryId, setSelectedEntryId] = useState(entryId);
   const previousLiveRef = useRef<Map<number, LiveStats> | null>(null);
   const feedGameweekRef = useRef<number | null>(null);
   const feedContextRef = useRef<{
@@ -219,6 +220,56 @@ function WorkspaceBody({
       completePopulation: loadedStandings.completePopulation,
     });
   }, [data.fixturesData, data.liveStatsByElement, data.memberPicks.data, entryId, loadedStandings, teamIdByElementAll]);
+
+  const selectedIsOwn = selectedEntryId === entryId;
+  const selectedPicks = selectedIsOwn
+    ? picks
+    : data.memberPicks.data?.get(selectedEntryId) ?? null;
+  const selectedCalculation = useMemo(() => {
+    if (selectedIsOwn) return myLive;
+    if (!selectedPicks) return null;
+    return calculateLiveEntry({
+      picks: selectedPicks,
+      liveElementsByElement: data.liveStatsByElement,
+      fixtures: data.fixturesData,
+      teamIdByElement: teamIdByElementAll,
+      expectedPointsByElement,
+    });
+  }, [data.fixturesData, data.liveStatsByElement, expectedPointsByElement, myLive, selectedIsOwn, selectedPicks, teamIdByElementAll]);
+
+  const selectedStanding = useMemo(
+    () => standingsResult?.rows.find((row) => row.entryId === selectedEntryId) ?? null,
+    [selectedEntryId, standingsResult],
+  );
+  const profile = data.profile.status === "READY" ? data.profile.data : null;
+  const profileManagerName = [profile?.playerFirstName, profile?.playerLastName]
+    .filter((name): name is string => Boolean(name))
+    .join(" ")
+    .trim() || undefined;
+  const selectedTeamName = selectedStanding?.entryName
+    || (selectedIsOwn ? profile?.name : undefined)
+    || `Team ${selectedEntryId}`;
+  const selectedManagerName = selectedStanding?.playerName
+    || (selectedIsOwn ? profileManagerName : undefined);
+  const selectedEntryLabel = selectedManagerName
+    ? `${selectedTeamName} · ${selectedManagerName}`
+    : selectedTeamName;
+  const selectedOverallRank = selectedPicks?.entryHistory?.overallRank
+    ?? (selectedIsOwn ? profile?.summaryOverallRank : undefined);
+  const selectedGameweekRank = selectedPicks?.entryHistory?.rank
+    ?? (selectedIsOwn ? profile?.summaryEventRank : undefined);
+  const selectedSquadLoading = data.bootstrap.status === "LOADING"
+    || (selectedIsOwn ? data.picks.status === "LOADING" : data.memberPicks.status === "LOADING");
+
+  const selectEntry = useCallback((nextEntryId: number) => {
+    setSelectedEntryId(nextEntryId);
+    setMobileTab("TEAM");
+  }, []);
+
+  const selectLeague = useCallback((key: string) => {
+    setSelectedEntryId(entryId);
+    onSelectLeague(key);
+  }, [entryId, onSelectLeague]);
 
   const selectedType = parseLeagueKey(data.selectedLeagueKey)?.type;
   const standingsMode: StandingsMode =
@@ -317,7 +368,7 @@ function WorkspaceBody({
             profile={data.profile.status === "READY" ? data.profile.data : null}
             history={data.history.status === "READY" ? data.history.data : null}
             selectedLeagueKey={data.selectedLeagueKey}
-            onSelect={onSelectLeague}
+            onSelect={selectLeague}
             status={data.profile.status}
           />
           <LeagueStandings
@@ -328,26 +379,30 @@ function WorkspaceBody({
             loading={data.standings.status === "LOADING" || standingsCalculating}
             error={data.standings.error}
             completePopulation={standingsResult?.completePopulation ?? false}
+            selectedEntryId={selectedEntryId}
+            onSelectEntry={selectEntry}
           />
         </aside>
 
         <section className={`leagues-column leagues-center-top ${mobileTab === "TEAM" ? "mobile-visible" : ""}`} aria-label="Live Gameweek and squad" data-mobile-tab="TEAM">
           <LiveGameweekPanel
             gameweek={gameweek}
-            calculation={myLive}
-            profile={data.profile.status === "READY" ? data.profile.data : null}
+            calculation={selectedCalculation}
+            entryLabel={selectedEntryLabel}
+            overallRank={selectedOverallRank}
+            gameweekRank={selectedGameweekRank}
             live={data.anyFixtureLive}
           />
           <section className="leagues-panel" aria-label="Live squad">
             <div className="panel-header">
               <span className="section-kicker">LIVE SQUAD</span>
-              <span className="panel-count">{data.picks.status === "READY" ? `${myLive?.playerPoints.length ?? 0}/15` : "—"}</span>
+              <span className="panel-count">{selectedCalculation ? `${selectedCalculation.playerPoints.length}/15` : "—"}</span>
             </div>
             <LiveSquad
-              calculation={myLive}
+              calculation={selectedCalculation}
               playersById={playersById}
               shortNames={shortNames}
-              loading={data.picks.status === "LOADING" || data.bootstrap.status === "LOADING"}
+              loading={selectedSquadLoading}
             />
           </section>
         </section>

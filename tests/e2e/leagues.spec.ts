@@ -69,6 +69,68 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(page.locator('[data-league-key="classic-9003"]')).toHaveClass(/selected/);
   });
 
+  test("opens a rival's live squad from standings and restores my squad", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await importTeam(page);
+
+    const standings = page.getByRole("region", { name: "League standings" });
+    const rivalTeam = standings.getByRole("button", { name: /Green Azure FC/i });
+    const rivalRow = rivalTeam.locator("xpath=ancestor::tr");
+    await expect(rivalTeam).toBeVisible();
+    await expect(rivalTeam).toHaveAttribute("aria-pressed", "false");
+
+    await rivalTeam.click();
+
+    await expect(rivalTeam).toHaveAttribute("aria-pressed", "true");
+    await expect(rivalRow).toHaveClass(/selected/);
+
+    const summary = page.getByRole("region", { name: "Live Gameweek summary" });
+    await expect(summary).toContainText("Green Azure FC");
+    await expect(summary).toContainText("Mike Li");
+    const livePoints = summary.locator(".live-metrics > div").filter({ hasText: "LIVE POINTS" });
+    await expect(livePoints.locator("strong")).toHaveText("4");
+    await expect(summary.locator(".live-metrics > div").filter({ hasText: "DONE" }).locator("strong")).toHaveText("1");
+    await expect(summary.locator(".live-metrics > div").nth(4).locator("strong")).toHaveText("1");
+
+    const roster = page.getByTestId("live-roster");
+    await expect(roster.locator('[data-player="Andersen"]')).toHaveCount(1);
+    await expect(roster.locator('[data-player="Watkins"]')).toHaveCount(1);
+    await expect(roster.locator('[data-player="Saka"]')).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Live squad" })).toContainText("2/15");
+
+    const myTeam = standings.getByRole("button", { name: /Expected Toulouse/i });
+    await myTeam.click();
+    await expect(myTeam).toHaveAttribute("aria-pressed", "true");
+    await expect(rivalTeam).toHaveAttribute("aria-pressed", "false");
+    await expect(summary).toContainText("Expected Toulouse");
+    await expect(summary).toContainText("Joel Tester");
+    await expect(roster.locator('[data-player="Saka"]')).toHaveCount(1);
+    await expect(roster.locator('[data-player="Andersen"]')).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Live squad" })).toContainText("15/15");
+  });
+
+  test("keeps a rival identity visible when that manager's picks are unavailable", async ({ page }) => {
+    await interceptLeaguesData(page, { missingMemberPicksEntryId: 333 });
+    await importTeam(page);
+
+    const standings = page.getByRole("region", { name: "League standings" });
+    const unavailableTeam = standings.getByRole("button", { name: /Ctrl Alt De Laet/i });
+    await expect(unavailableTeam).toBeVisible();
+    await unavailableTeam.click();
+
+    await expect(unavailableTeam).toHaveAttribute("aria-pressed", "true");
+    const summary = page.getByRole("region", { name: "Live Gameweek summary" });
+    await expect(summary).toContainText("Ctrl Alt De Laet");
+    await expect(summary).toContainText("Sarah Kim");
+    await expect(summary.locator(".live-metrics strong")).toHaveText(["—", "—", "—", "—", "—", "—", "—"]);
+
+    const squadPanel = page.getByRole("region", { name: "Live squad" });
+    await expect(squadPanel).toContainText("LIVE SQUAD UNAVAILABLE");
+    await expect(squadPanel.getByTestId("live-roster")).toHaveCount(0);
+    await expect(squadPanel).not.toContainText("Saka");
+    await expect(squadPanel).not.toContainText("Andersen");
+  });
+
   test("shows ten league rows and starts standings straight after them", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await importTeam(page);
@@ -316,6 +378,26 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
     await tabs.getByRole("button", { name: "LEAGUE" }).click();
     await expect(page.getByText("MY LEAGUES").first()).toBeVisible();
+  });
+
+  test("opens a selected rival squad in the TEAM tab on mobile", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const tabs = page.locator(".leagues-mobile-tabs");
+    await expect(tabs.getByRole("button", { name: "LEAGUE" })).toHaveClass(/active/);
+    const standings = page.getByRole("region", { name: "League standings" });
+    const rivalTeam = standings.getByRole("button", { name: /Green Azure FC/i });
+    await rivalTeam.click();
+
+    await expect(tabs.getByRole("button", { name: "TEAM" })).toHaveClass(/active/);
+    await expect(page.getByRole("region", { name: "Live Gameweek summary" })).toContainText("Green Azure FC");
+    await expect(page.getByRole("region", { name: "Live Gameweek summary" })).toContainText("Mike Li");
+    const roster = page.getByTestId("live-roster");
+    await expect(roster).toBeVisible();
+    await expect(roster.locator('[data-player="Andersen"]')).toHaveCount(1);
+    await expect(roster.locator('[data-player="Watkins"]')).toHaveCount(1);
+    await expect(page.getByRole("region", { name: "Leagues and standings" })).not.toBeVisible();
   });
 
   test("navigates between Planner and Leagues workspaces", async ({ page }) => {
