@@ -1,7 +1,7 @@
 import { getBootstrap, getEntry, getEntryHistory, getEntryPicks, getEntryTransfers, getPlayerSummary } from "@/lib/fpl/client";
 import { openingPricesFromSummaries } from "@/lib/chips/openingPrices";
 import { applyBaselineCheck, verifyBaselineValue } from "@/lib/chips/verifyBaseline";
-import { errorList, fplJson } from "@/lib/fpl/http";
+import { FPL_HTTP_CACHE, errorList, fplJson, refreshRequested } from "@/lib/fpl/http";
 import { normalizeEntryTransfers, normalizeManagerHistory, normalizeManagerProfile } from "@/lib/fpl/normalizeLeagues";
 import { normalizeChipName } from "@/lib/chips/seasonPolicy";
 import { officialChipsFromHistory, reconstructImportBaseline } from "@/lib/chips/importTeam";
@@ -42,13 +42,15 @@ export async function GET(
     return fplJson(null, null, ["Gameweek must be an integer from 1 to 38"], 400);
   }
 
-  const entry = await getEntry(entryId);
+  const forceRefresh = refreshRequested(request);
+  const requestOptions = { forceRefresh };
+  const entry = await getEntry(entryId, requestOptions);
   const profile = entry.data ? normalizeManagerProfile(entry.data) : null;
   const currentEvent = profile?.currentEvent;
   const picksGameweek = currentEvent && Number.isSafeInteger(currentEvent) && currentEvent >= 1 && currentEvent <= 38
     ? Math.min(gameweek, currentEvent)
     : gameweek;
-  const event = await getEntryPicks(entryId, picksGameweek);
+  const event = await getEntryPicks(entryId, picksGameweek, requestOptions);
   const errors = errorList(entry.error, event.error);
   if (!entry.data || !event.data) {
     return fplJson(null, { entry: entry.freshness, picks: event.freshness }, errors, errors.some((error) => /HTTP 404/.test(error)) ? 404 : 503);
@@ -86,6 +88,7 @@ export async function GET(
   // Every enrichment is best-effort: failures mark finances ESTIMATED with a
   // warning instead of blocking planning.
   const importWarnings: string[] = [];
+  let nestedCacheUnsafe = false;
   let usedChips: Array<{ kind: NonNullable<ReturnType<typeof normalizeChipName>>; gameweek: number }> = [];
   let transferBaseline = null;
   let financialConfidence: "EXACT" | "ESTIMATED" = "ESTIMATED";
@@ -102,22 +105,25 @@ export async function GET(
 
   try {
     const [historyResult, transfersResult, bootstrapResult] = await Promise.all([
-      getEntryHistory(entryId).catch(() => null),
-      getEntryTransfers(entryId).catch(() => null),
-      getBootstrap().catch(() => null),
+      getEntryHistory(entryId, requestOptions).catch(() => null),
+      getEntryTransfers(entryId, requestOptions).catch(() => null),
+      getBootstrap(requestOptions).catch(() => null),
     ]);
     const historyPayload = historyResult?.data ?? null;
+    if (!historyResult?.data || historyResult.error) nestedCacheUnsafe = true;
     if (historyResult?.error) importWarnings.push(`Chip history is unavailable (${historyResult.error}); chip inventory may be incomplete.`);
     const history = historyPayload ? normalizeManagerHistory(entryId, historyPayload) : null;
     usedChips = history ? officialChipsFromHistory(history.chips) : [];
 
     const transfersPayload = transfersResult?.data ?? null;
+    if (!transfersResult?.data || transfersResult.error) nestedCacheUnsafe = true;
     if (transfersResult?.error || !transfersPayload) {
       importWarnings.push("Transfer history is unavailable; purchase prices use current prices and finances are ESTIMATED.");
     }
     const transfers = transfersPayload ? normalizeEntryTransfers(transfersPayload) : [];
 
     const priceById: Record<number, number> = {};
+    if (!bootstrapResult?.data || bootstrapResult.error) nestedCacheUnsafe = true;
     const elements = (bootstrapResult?.data as { elements?: Array<{ id: number; now_cost: number | string }> } | null)?.elements;
     if (Array.isArray(elements)) {
       for (const element of elements) {
@@ -138,7 +144,8 @@ export async function GET(
     }
     if (activeChip === "freehit" && picksGameweek > 1) {
       try {
-        const previous = await getEntryPicks(entryId, picksGameweek - 1);
+        const previous = await getEntryPicks(entryId, picksGameweek - 1, requestOptions);
+        if (!previous.data || previous.error) nestedCacheUnsafe = true;
         if (previous.data && Array.isArray(previous.data.picks) && previous.data.picks.length === 15) {
           const prevPicks = [...previous.data.picks].sort((left, right) => left.position - right.position);
           const prevLineup = lineupOf(prevPicks, picksGameweek);
@@ -158,6 +165,7 @@ export async function GET(
           }
         }
       } catch {
+        nestedCacheUnsafe = true;
         importWarnings.push("Could not load the pre-Free-Hit squad; imported the current picks.");
       }
     }
@@ -167,13 +175,15 @@ export async function GET(
     let initialIds = [...activeSquad.playerIds];
     if (startedEvent < picksGameweek) {
       try {
-        const initial = await getEntryPicks(entryId, startedEvent);
+        const initial = await getEntryPicks(entryId, startedEvent, requestOptions);
+        if (!initial.data || initial.error) nestedCacheUnsafe = true;
         if (initial.data && Array.isArray(initial.data.picks) && initial.data.picks.length === 15) {
           initialIds = [...initial.data.picks].sort((left, right) => left.position - right.position).map((pick) => pick.element);
         } else {
           importWarnings.push(`GW${startedEvent} starting picks are unavailable; purchase prices use current prices.`);
         }
       } catch {
+        nestedCacheUnsafe = true;
         importWarnings.push(`GW${startedEvent} starting picks are unavailable; purchase prices use current prices.`);
       }
     }
@@ -183,7 +193,8 @@ export async function GET(
     const needOpening = initialIds.filter((id) => !boughtIds.has(id));
     const summaries = new Map(
       await Promise.all(needOpening.map(async (id) => {
-        const summary = await getPlayerSummary(id).catch(() => null);
+        const summary = await getPlayerSummary(id, requestOptions).catch(() => null);
+        if (!summary?.data || summary.error) nestedCacheUnsafe = true;
         return [id, summary?.data ?? null] as const;
       })),
     );
@@ -257,5 +268,8 @@ export async function GET(
     freeHitImport,
     importWarnings,
     chip: activeChip,
-  }, { entry: entry.freshness, picks: event.freshness }, errors);
+  }, { entry: entry.freshness, picks: event.freshness }, errors, undefined, undefined, {
+    cacheControl: FPL_HTTP_CACHE.entry,
+    noStore: forceRefresh || nestedCacheUnsafe || importWarnings.length > 0,
+  });
 }

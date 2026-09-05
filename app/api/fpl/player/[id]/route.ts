@@ -1,5 +1,5 @@
 import { getBootstrap, getPlayerSummary } from "@/lib/fpl/client";
-import { fplJson, errorList, refreshRequested } from "@/lib/fpl/http";
+import { FPL_HTTP_CACHE, fplJson, errorList, refreshRequested } from "@/lib/fpl/http";
 import { normalizePlayer, normalizePlayerDetail } from "@/lib/fpl/normalize";
 
 export const dynamic = "force-dynamic";
@@ -43,5 +43,8 @@ export async function GET(
     normalizePlayerDetail(base, summary.data, teams),
     { bootstrap: bootstrap.freshness, player: summary.freshness },
     errors,
+    undefined,
+    undefined,
+    { cacheControl: FPL_HTTP_CACHE.player, noStore: refreshRequested(request) },
   );
 }

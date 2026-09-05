@@ -1,6 +1,6 @@
 import { getBootstrap, getFixtures } from "@/lib/fpl/client";
 import { FPL_CACHE_TTLS_MS } from "@/lib/fpl/cache";
-import { errorList, fplJson, refreshRequested } from "@/lib/fpl/http";
+import { FPL_HTTP_CACHE, errorList, fplJson, refreshRequested } from "@/lib/fpl/http";
 import { normalizeFixtures } from "@/lib/fpl/normalize";
 
 export const dynamic = "force-dynamic";
@@ -26,5 +26,11 @@ export async function GET(request: Request): Promise<Response> {
     normalized && gameweek !== undefined ? normalized.filter((fixture) => fixture.gameweek === gameweek) : normalized,
     { fixtures: fixtures.freshness, bootstrap: bootstrap.freshness },
     errorList(fixtures.error, bootstrap.error),
+    undefined,
+    undefined,
+    {
+      cacheControl: gameweek !== undefined ? FPL_HTTP_CACHE.live : FPL_HTTP_CACHE.fixtures,
+      noStore: refresh,
+    },
   );
 }

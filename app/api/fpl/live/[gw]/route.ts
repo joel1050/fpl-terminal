@@ -1,5 +1,5 @@
 import { getLiveGameweek } from "@/lib/fpl/client";
-import { fplJson, refreshRequested } from "@/lib/fpl/http";
+import { FPL_HTTP_CACHE, fplJson, refreshRequested } from "@/lib/fpl/http";
 import { normalizeLiveGameweek } from "@/lib/fpl/normalize";
 
 export const dynamic = "force-dynamic";
@@ -19,5 +19,8 @@ export async function GET(
     result.data ? normalizeLiveGameweek(gameweek, result.data) : null,
     result.freshness,
     result.error ? [result.error] : [],
+    undefined,
+    undefined,
+    { cacheControl: FPL_HTTP_CACHE.live, noStore: refreshRequested(request) },
   );
 }

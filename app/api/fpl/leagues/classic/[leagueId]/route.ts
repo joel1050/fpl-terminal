@@ -1,5 +1,5 @@
 import { getClassicLeagueStandings } from "@/lib/fpl/client";
-import { errorList, fplJson, refreshRequested } from "@/lib/fpl/http";
+import { FPL_HTTP_CACHE, errorList, fplJson, refreshRequested } from "@/lib/fpl/http";
 import { normalizeClassicLeagueStandings } from "@/lib/fpl/normalizeLeagues";
 
 export const dynamic = "force-dynamic";
@@ -28,5 +28,7 @@ export async function GET(
     result.freshness,
     errorList(result.error),
     result.error && /HTTP 404/.test(result.error) ? 404 : undefined,
+    undefined,
+    { cacheControl: FPL_HTTP_CACHE.league, noStore: refreshRequested(request) },
   );
 }

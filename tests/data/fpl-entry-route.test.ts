@@ -51,8 +51,8 @@ describe("FPL team import route", () => {
   it("imports and groups all 15 Gameweek 1 picks", async () => {
     const response = await GET(new Request("http://localhost/api/fpl/entry/4827193"), { params: Promise.resolve({ id: "4827193" }) });
     expect(response.status).toBe(200);
-    expect(mocks.getEntry).toHaveBeenCalledWith(4827193);
-    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 1);
+    expect(mocks.getEntry).toHaveBeenCalledWith(4827193, { forceRefresh: false });
+    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 1, { forceRefresh: false });
     await expect(response.json()).resolves.toMatchObject({ data: {
       teamName: "Test XI",
       managerName: "Test Manager",
@@ -63,10 +63,50 @@ describe("FPL team import route", () => {
     } });
   });
 
+  it("forces every import read and disables HTTP caching on refresh", async () => {
+    for (const mock of Object.values(mocks)) mock.mockClear();
+
+    const response = await GET(
+      new Request("http://localhost/api/fpl/entry/4827193?gameweek=1&refresh=1"),
+      { params: Promise.resolve({ id: "4827193" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(mocks.getEntry).toHaveBeenCalledWith(4827193, { forceRefresh: true });
+    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 1, { forceRefresh: true });
+    expect(mocks.getEntryHistory).toHaveBeenCalledWith(4827193, { forceRefresh: true });
+    expect(mocks.getEntryTransfers).toHaveBeenCalledWith(4827193, { forceRefresh: true });
+    expect(mocks.getBootstrap).toHaveBeenCalledWith({ forceRefresh: true });
+    expect(mocks.getPlayerSummary.mock.calls.length).toBeGreaterThan(0);
+    expect(mocks.getPlayerSummary.mock.calls.every(([, options]) => options?.forceRefresh === true)).toBe(true);
+  });
+
+  it("does not cache when a nested enrichment result is an error-backed fallback", async () => {
+    mocks.getEntryPicks.mockResolvedValue({ data: { picks, entry_history: { bank: 10, value: 758 } }, freshness: null });
+    mocks.getBootstrap.mockResolvedValue({
+      data: { elements: marketPrices },
+      freshness: { source: "snapshot", stale: true },
+      error: "FPL returned HTTP 503",
+    });
+    mocks.getPlayerSummary.mockResolvedValue({
+      data: { history: [{ round: 1, value: 50 }], history_past: [] },
+      freshness: null,
+    });
+
+    const response = await GET(
+      new Request("http://localhost/api/fpl/entry/4827193"),
+      { params: Promise.resolve({ id: "4827193" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+  });
+
   it("imports picks for the requested gameweek", async () => {
     const response = await GET(new Request("http://localhost/api/fpl/entry/4827193?gameweek=7"), { params: Promise.resolve({ id: "4827193" }) });
     expect(response.status).toBe(200);
-    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 7);
+    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 7, { forceRefresh: false });
     await expect(response.json()).resolves.toMatchObject({ data: { lineup: { gameweek: 7 } } });
   });
 
@@ -74,7 +114,7 @@ describe("FPL team import route", () => {
     mocks.getEntry.mockResolvedValue({ data: { id: 4827193, current_event: 2 }, freshness: null });
     const response = await GET(new Request("http://localhost/api/fpl/entry/4827193?gameweek=3"), { params: Promise.resolve({ id: "4827193" }) });
     expect(response.status).toBe(200);
-    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 2);
+    expect(mocks.getEntryPicks).toHaveBeenCalledWith(4827193, 2, { forceRefresh: false });
     await expect(response.json()).resolves.toMatchObject({ data: { lineup: { gameweek: 2 } } });
   });
 
