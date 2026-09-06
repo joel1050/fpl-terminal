@@ -391,12 +391,18 @@ function WorkspaceBody({
             entryLabel={selectedEntryLabel}
             overallRank={selectedOverallRank}
             gameweekRank={selectedGameweekRank}
-            onReturnToOwnTeam={selectedIsOwn ? undefined : () => selectEntry(entryId)}
             live={data.anyFixtureLive}
           />
           <section className="leagues-panel" aria-label="Live squad">
             <div className="panel-header">
-              <span className="section-kicker">LIVE SQUAD</span>
+              <div className="header-actions">
+                <span className="section-kicker">LIVE SQUAD</span>
+                {!selectedIsOwn && (
+                  <button type="button" className="icon-button" onClick={() => selectEntry(entryId)} aria-label="Return to my team" title="Return to my team">
+                    ↩
+                  </button>
+                )}
+              </div>
               <span className="panel-count">{selectedCalculation ? `${selectedCalculation.playerPoints.length}/15` : "—"}</span>
             </div>
             <LiveSquad
