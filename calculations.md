@@ -110,15 +110,21 @@ overall    = (overallHome + overallAway) / 2, each normalized the same way
 
 A value above 1.0 means above average in that dimension. Attack and defence are not split by venue at the consensus layer - `attackHome` and `attackAway` share the same consensus value; venue only enters later as the flat home/away multiplier in §7.1.
 
-### 3.3 In-season form (schedule-adjusted, recency-weighted xG)
+### 3.3 In-season form (Joint Poisson & schedule-adjusted recency-weighted xG)
 
-Once matches are played, `applyInSeasonForm` (`lib/historical/inSeasonForm.ts:102`) blends the §3.1-3.2 prior with each team's own recent process, using **expected goals (xG)**, not goals scored and not win/draw/loss. A backtest across the 2023/24 and 2024/25 seasons found goals and win/draw/loss both perform *worse* than never updating the prior at all (goals are dominated by finishing variance; win/draw/loss collapses attack and defence into one undifferentiated signal); xG clearly improved clean-sheet prediction (AUC) and goals-scored correlation in both seasons individually.
+Once matches are played, `applyInSeasonForm` (`lib/historical/inSeasonForm.ts`) updates the §3.1-3.2 prior with each team's own recent process using **expected goals (xG)**, not goals scored and not win/draw/loss. A backtest across 2023/24–2025/26 confirmed that goals and win/draw/loss both perform *worse* than never updating the prior at all (goals are dominated by finishing variance; win/draw/loss collapses attack and defence into one undifferentiated signal); xG clearly improves clean-sheet prediction (AUC) and actual points correlation.
 
-To prevent soft or brutal fixture runs from biasing a team's emerging ratings, each past match's xG is **schedule-adjusted** by the opponent's prior strength when known:
+When completed fixtures with opponent and venue context are present, `applyInSeasonForm` fits a **Joint Poisson log-linear attack and defence model** (`fitJointTeamStrengths`):
+$\log \lambda_{\text{home}} = \log(\bar{xG} \times 1.102) + a_{\text{home}} - d_{\text{away}}$
+$\log \lambda_{\text{away}} = \log(\bar{xG} \times 0.898) + a_{\text{away}} - d_{\text{home}}$
+
+The parameters $a_i$ and $d_i$ are regularised with an $L_2$ shrinkage penalty toward the zero-centred logarithm of the preseason prior (weight $\lambda_{\text{prior}} = 12$). Per-fixture observations decay geometrically by recency ($\text{decay} = 0.90$), scaled so that each team's effective sample matches its total appearances. Backtested over 3 seasons (2023/24–2025/26), this joint model reduced player xP RMSE against the heuristic static arm by $-0.00258$ (95% bootstrap CI $[-0.00445, -0.00063]$, winning 99.4% of gameweek clusters).
+
+When fixture opponent data is absent (e.g. synthetic test fixtures), `applyInSeasonForm` falls back gracefully to heuristic schedule-adjusted blending (`blendInSeasonForm`, `lib/historical/inSeasonForm.ts`):
 - $\text{adjXgFor}_i = \text{xgFor}_i \times \text{oppPrior.defence}$: creating 1.5 xG against a stout 1.25 defence is valued higher ($1.875$) than against an anemic 0.80 defence ($1.20$).
 - $\text{adjXgAgainst}_i = \text{xgAgainst}_i / \text{oppPrior.attack}$: conceding 1.0 xG to a potent 1.25 attack is forgiven down to $0.80$, while conceding 1.0 xG to a weak 0.80 attack is penalized up to $1.25$.
 
-Each finished match contributes a weight that decays with recency, so recent matches dominate without a hard cutoff (`blendInSeasonForm`, `lib/historical/inSeasonForm.ts:43`):
+Each finished match contributes a weight that decays with recency:
 
 ```
 weight(i matches before the most recent)  = decay^i
@@ -354,11 +360,12 @@ xG and xA use a different current-season blend, `regressedFormRate` (`lib/projec
 weight(i matches before the most recently played) = decay^i
 observedRate     = Σ(weight_i * matchRate_i) / Σ(weight_i)
 effectiveMatches = Σ(weight_i)
-blended          = (basePrior * priorWeightMatches + observedRate * effectiveMatches)
+cappedRate       = clamp(observedRate, basePrior / 2.5, basePrior * 2.5)
+blended          = (basePrior * priorWeightMatches + cappedRate * effectiveMatches)
                    / (priorWeightMatches + effectiveMatches)
 ```
 
-`decay = 0.95`, `priorWeightMatches = 10` (`PLAYER_FORM_DECAY`/`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`, `lib/projections/playerForm.ts`) come from the 2025/26 walk-forward sweep in `scripts/backtest/evidence-weights.ts`. Decays 0.93-0.95 were effectively tied on actual-points RMSE and 0.95 won the main split. After 38 appearances the current season contributes 17.15 effective matches, or 63.2% of the blend against the ten-match historical anchor; after two appearances it contributes 1.95 effective matches, or 16.3%.
+`decay = 0.95`, `priorWeightMatches = 10`, and winsor ratio `PLAYER_FORM_WINSOR_RATIO = 2.5` (`lib/projections/playerForm.ts`) come from multi-season backtests. Capping the form/anchor ratio at 2.5x takes rest-of-season rate RMSE from 0.1908 to 0.1546 (movers: 0.2196 to 0.1644); extreme single-match divergences dominate the sum of squares and revert hardest, so winsorising protects projections against outlier rate spikes (e.g. fluke hat-tricks). (`PLAYER_FORM_DECAY`/`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`, `lib/projections/playerForm.ts`) come from the 2025/26 walk-forward sweep in `scripts/backtest/evidence-weights.ts`. Decays 0.93-0.95 were effectively tied on actual-points RMSE and 0.95 won the main split. After 38 appearances the current season contributes 17.15 effective matches, or 63.2% of the blend against the ten-match historical anchor; after two appearances it contributes 1.95 effective matches, or 16.3%.
 
 This only applies once a player has an in-season match history (`options.playerForm`, populated by `loadInSeasonPlayerRates` in `lib/historical/loadInSeasonForm.ts` from FPL's live per-gameweek stats, one entry per finished gameweek the player actually featured in). Before any gameweek has finished, or for a caller that hasn't wired up the loader, xG/xA fall back to the §6.3 mechanism (cumulative `Player.current.expectedGoals`/`expectedAssists`, blended by calendar gameweek and regressed toward the prior at a 900-minute weight).
 
@@ -1042,6 +1049,7 @@ Player form constants (`lib/projections/playerForm.ts`):
 |---|---|
 | xG/xA in-season form decay (per match) | 0.95 |
 | xG/xA in-season form prior weight | 10 "matches worth" |
+| Player form winsor ratio (`PLAYER_FORM_WINSOR_RATIO`) | 2.5 |
 
 Start rate and availability constants (`lib/availability/startRate.ts`, `lib/availability/selection.ts`):
 

@@ -13,7 +13,12 @@ import { expectedFloorDivision, thresholdProbability } from "./distributions";
 import { estimateExpectedMinutes, type ExpectedMinutesOptions } from "./expectedMinutes";
 import { projectionConfidence, calculateRiskScore, valuePerMillion } from "./metrics";
 import { regressPer90 } from "./regression";
-import { blendPlayerRate, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES } from "./playerForm";
+import {
+  blendPlayerRateByMinutes,
+  PLAYER_FORM_DECAY,
+  PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
+  PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS,
+} from "./playerForm";
 
 export type ProjectPlayerOptions = Partial<ProjectionOptions> & {
   expectedMinutesOptions?: ExpectedMinutesOptions;
@@ -159,6 +164,29 @@ function currentRate(
   return { rate: (value / player.current.minutes) * 90, minutes: player.current.minutes };
 }
 
+/**
+ * How much of this rate comes from the current season.
+ *
+ * The old rule was `min(currentGameweek / 10, 0.6)`: the calendar, capped at
+ * 60% from GW6 and flat thereafter, which handed a player with one appearance
+ * the same weight as one with ten. Counting the player's own appearances
+ * instead - the same `matches / (matches + W)` shape blendPlayerRate uses -
+ * is worth 2.2-10.9% rest-of-season rate RMSE on yellow cards and 0.9-3.3% on
+ * bonus across three held-out seasons. Nearly all of it lands before GW15,
+ * where the ramp was most wrong.
+ *
+ * Without a match history the calendar ramp still applies, so a caller that has
+ * not wired up the form loader keeps the previous behaviour.
+ */
+function currentSeasonWeight(
+  form: readonly PlayerMatchRate[] | undefined,
+  currentGameweek: number,
+  priorWeightMatches: number,
+): number {
+  if (!form || form.length === 0) return clamp(currentGameweek / 10, 0, 0.6);
+  return form.length / (form.length + priorWeightMatches);
+}
+
 function regressedPlayerRate(
   player: Player,
   primary: RateField,
@@ -166,13 +194,15 @@ function regressedPlayerRate(
   prior: number,
   currentGameweek: number,
   ceiling: number = RATE_CEILING.goalInvolvement,
+  form?: readonly PlayerMatchRate[],
+  priorWeightMatches: number = PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
 ): number {
   const historical = historicalRate(player, primary) ?? (fallback ? historicalRate(player, fallback) : undefined);
   const current = currentRate(player, primary) ?? (fallback ? currentRate(player, fallback) : undefined);
   let rate = historical?.rate ?? prior;
   let sample = historical?.minutes ?? 0;
   if (current) {
-    const currentWeight = clamp(currentGameweek / 10, 0, 0.6);
+    const currentWeight = currentSeasonWeight(form, currentGameweek, priorWeightMatches);
     rate = rate * (1 - currentWeight) + current.rate * currentWeight;
     sample += current.minutes * currentWeight;
   }
@@ -248,7 +278,9 @@ function regressedFormRate(
 
   if (form && form.length > 0) {
     const field = primary === "expectedGoals" ? "xg" : "xa";
-    const matchRates = form.map((match) => (match.minutes > 0 ? (match[field] / match.minutes) * 90 : 0));
+    // Raw value and minutes per match, not a per-90 rate each: see
+    // blendPlayerRateByMinutes for why a cameo must not count as a full match.
+    const samples = form.map((match) => ({ value: match[field], minutes: match.minutes }));
     // Schedule adjustment: a match played against a weak defence produced a
     // higher rate for that reason, and the upcoming fixture's multiplier is
     // about to be applied on top. Dividing each match out by the fixture it
@@ -262,8 +294,12 @@ function regressedFormRate(
     if (multipliers.length === form.length && multipliers.every((value) => value !== undefined && value > 0)) {
       if (ownAttack > 0) {
         return clamp(
-          blendPlayerRate(
-            matchRates.map((rate, index) => rate / (multipliers[index] as number)),
+          blendPlayerRateByMinutes(
+            // Dividing the value leaves the rate divided, same as before.
+            samples.map((sample, index) => ({
+              value: sample.value / (multipliers[index] as number),
+              minutes: sample.minutes,
+            })),
             basePrior,
             PLAYER_FORM_DECAY,
             PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
@@ -277,7 +313,7 @@ function regressedFormRate(
       // Without enough fixture context the form rates are still raw, so their
       // anchor must stay raw too. Using the source-team-normalized anchor here
       // would mix two different scales in the same blend.
-      blendPlayerRate(matchRates, historicalAnchor, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES),
+      blendPlayerRateByMinutes(samples, historicalAnchor, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES),
       0,
       ceiling,
     );
@@ -545,11 +581,13 @@ export function projectPlayer(
   const rates = {
     xg: regressedFormRate(player, "expectedGoals", "goals", attackingPrior(player, options, "expectedGoals"), form, currentGameweek, ownTeam, options.teamStrengths, historicalTeam),
     xa: regressedFormRate(player, "expectedAssists", "assists", attackingPrior(player, options, "expectedAssists"), form, currentGameweek, ownTeam, options.teamStrengths, historicalTeam),
-    saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves),
-    defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution),
-    bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus),
-    yellowCards: regressedPlayerRate(player, "yellowCards", undefined, PRIOR_YELLOW_CARDS[player.position], currentGameweek, RATE_CEILING.yellowCards),
-    redCards: regressedPlayerRate(player, "redCards", undefined, PRIOR_RED_CARDS[player.position], currentGameweek, RATE_CEILING.redCards),
+    saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves, form),
+    defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution, form),
+    bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus, form),
+    // Cards are rare enough that the previous season stays worth four times a
+    // dense rate like xG - see PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS.
+    yellowCards: regressedPlayerRate(player, "yellowCards", undefined, PRIOR_YELLOW_CARDS[player.position], currentGameweek, RATE_CEILING.yellowCards, form, PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS),
+    redCards: regressedPlayerRate(player, "redCards", undefined, PRIOR_RED_CARDS[player.position], currentGameweek, RATE_CEILING.redCards, form, PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS),
   };
   const projectionHorizon = Math.max(10, options.fixtureHorizon ?? horizon);
   const upcoming = player.fixtures

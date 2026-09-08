@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyInSeasonForm, blendInSeasonForm } from "@/lib/historical/inSeasonForm";
+import {
+  applyInSeasonForm,
+  blendInSeasonForm,
+  fitJointTeamStrengths,
+  type JointFixture,
+} from "@/lib/historical/inSeasonForm";
 import type { TeamStrength } from "@/types/projection";
 
 describe("in-season form blending", () => {
@@ -94,5 +99,58 @@ describe("in-season form blending", () => {
 
     // Creating 1.5 xG against a 1.25 defence produces a higher attack rating than against a 0.8 defence
     expect(toughBlend[1].attack).toBeGreaterThan(weakBlend[1].attack);
+  });
+
+  describe("Joint Poisson Team Strengths", () => {
+    const basePriors: Record<number, TeamStrength> = {
+      1: { teamId: 1, attackHome: 1.0, attackAway: 1.0, defenceHome: 1.0, defenceAway: 1.0, overall: 1.0 },
+      2: { teamId: 2, attackHome: 1.0, attackAway: 1.0, defenceHome: 1.0, defenceAway: 1.0, overall: 1.0 },
+      3: { teamId: 3, attackHome: 1.0, attackAway: 1.0, defenceHome: 1.0, defenceAway: 1.0, overall: 1.0 },
+    };
+
+    it("returns copies of prior strengths when no fixtures have been played", () => {
+      const fitted = fitJointTeamStrengths(basePriors, []);
+      expect(fitted[1].attackHome).toBe(1.0);
+      expect(fitted[2].defenceHome).toBe(1.0);
+    });
+
+    it("jointly fits attack and defence strengths when fixtures are provided", () => {
+      // Team 1 dominates Team 2 and Team 3:
+      const fixtures: JointFixture[] = [
+        { homeTeamId: 1, awayTeamId: 2, homeXg: 3.0, awayXg: 0.2, gameweek: 1 },
+        { homeTeamId: 3, awayTeamId: 1, homeXg: 0.4, awayXg: 2.8, gameweek: 2 },
+        { homeTeamId: 2, awayTeamId: 3, homeXg: 1.2, awayXg: 1.1, gameweek: 3 },
+      ];
+      const fitted = fitJointTeamStrengths(basePriors, fixtures, 0.9, 6);
+
+      // Team 1 scored heavily and conceded almost nothing -> attack > 1.0, defence > 1.0
+      expect(fitted[1].attackHome).toBeGreaterThan(1.1);
+      expect(fitted[1].defenceHome).toBeGreaterThan(1.1);
+      // Team 2 suffered high goals against -> defence should drop
+      expect(fitted[2].defenceHome).toBeLessThan(1.0);
+    });
+
+    it("applyInSeasonForm uses joint Poisson when opponent and venue tracking are present", () => {
+      const history = {
+        1: [
+          { xgFor: 3.0, xgAgainst: 0.2, opponentTeamId: 2, wasHome: true, gameweek: 1 },
+          { xgFor: 2.8, xgAgainst: 0.4, opponentTeamId: 3, wasHome: false, gameweek: 2 },
+        ],
+        2: [
+          { xgFor: 0.2, xgAgainst: 3.0, opponentTeamId: 1, wasHome: false, gameweek: 1 },
+          { xgFor: 1.2, xgAgainst: 1.1, opponentTeamId: 3, wasHome: true, gameweek: 3 },
+        ],
+        3: [
+          { xgFor: 0.4, xgAgainst: 2.8, opponentTeamId: 1, wasHome: true, gameweek: 2 },
+          { xgFor: 1.1, xgAgainst: 1.2, opponentTeamId: 2, wasHome: false, gameweek: 3 },
+        ],
+      };
+
+      const result = applyInSeasonForm(basePriors, history, 0.9, 6);
+      expect(result[1].attackHome).toBeGreaterThan(1.1);
+      expect(result[1].defenceHome).toBeGreaterThan(1.1);
+      expect(result[1].attackHome).toBe(result[1].attackAway);
+      expect(result[1].defenceHome).toBe(result[1].defenceAway);
+    });
   });
 });
