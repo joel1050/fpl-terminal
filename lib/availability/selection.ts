@@ -8,7 +8,7 @@ import type {
 } from "@/types/player";
 import type { HistoricalBundle, HistoricalMatchStat } from "@/lib/historical/types";
 import type { RotowireMappedRecord } from "./rotowireMapping";
-import { blendCameoRate, blendStartRate, MINUTES_FOR_START, type StartObservation } from "./startRate";
+import { blendCameoRate, blendStartRate, MINUTES_FOR_START, START_RATE_ALPHA, type StartObservation } from "./startRate";
 
 export interface RotowireSelectionSource {
   snapshot?: { fetchedAt?: string } | null;
@@ -22,6 +22,8 @@ export interface PlayerSelectionOptions {
   historicalStats?: ReadonlyMap<number, HistoricalStats> | Readonly<Record<number, HistoricalStats>>;
   /** Current-season start/appearance history per player, oldest first. */
   startHistory?: Readonly<Record<number, readonly StartObservation[]>>;
+  /** Gameweek whose fixture should receive the lineup evidence. */
+  targetGameweek?: number;
   updatedAt?: string;
 }
 
@@ -102,6 +104,18 @@ function historicalSignal(
   };
 }
 
+function currentStartMinutes(
+  previous: number | undefined,
+  observations: readonly StartObservation[],
+): number | undefined {
+  return observations.reduce<number | undefined>((duration, observation) => {
+    if (!observation.started || !finite(observation.minutes) || observation.minutes < MINUTES_FOR_START) return duration;
+    return duration === undefined
+      ? observation.minutes
+      : duration * (1 - START_RATE_ALPHA) + observation.minutes * START_RATE_ALPHA;
+  }, previous);
+}
+
 function fallbackStartRate(player: Player): number {
   if (player.current.minutes <= 0) return 0.15;
   return clamp(0.1 + player.current.minutes / 1800, 0.15, 0.8);
@@ -126,9 +140,61 @@ function fallbackCameoRate(player: Player): number {
 const UNKNOWN_START_SEED = 0.15;
 const UNKNOWN_CAMEO_SEED = 0.08;
 
-function rotowireSignals(source: RotowireSelectionSource | null | undefined): Map<number, RotowireSignal> {
+function normalizedClub(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * A lineup snapshot can span the tail of one gameweek and the start of the
+ * next. Keep only the fixture whose team pair matches the player's target GW;
+ * after a previous kickoff, official FPL minutes carry that role evidence in
+ * start history and the old team sheet must not predict this fixture.
+ */
+function targetRotowireMappings(
+  source: RotowireSelectionSource | null | undefined,
+  players: readonly Player[],
+  targetGameweek: number | undefined,
+): readonly RotowireMappedRecord[] {
+  const mappings = source?.mappings ?? [];
+  if (targetGameweek === undefined) return mappings;
+  const playerById = new Map(players.map((player) => [player.id, player]));
+  const teamByClub = new Map<string, number>();
+  players.forEach((player) => {
+    teamByClub.set(normalizedClub(player.teamName), player.teamId);
+    teamByClub.set(normalizedClub(player.teamShortName), player.teamId);
+  });
+  const fixtureTeams = new Map<number, Set<number>>();
+  for (const mapping of mappings) {
+    const teamId = playerById.get(mapping.playerId)?.teamId
+      ?? teamByClub.get(normalizedClub(mapping.teamName))
+      ?? teamByClub.get(normalizedClub(mapping.teamAbbreviation));
+    if (teamId === undefined) continue;
+    const teams = fixtureTeams.get(mapping.fixtureIndex) ?? new Set<number>();
+    teams.add(teamId);
+    fixtureTeams.set(mapping.fixtureIndex, teams);
+  }
+  return mappings.filter((mapping) => {
+    const player = playerById.get(mapping.playerId);
+    if (!player) return false;
+    const teamId = player.teamId;
+    const group = fixtureTeams.get(mapping.fixtureIndex);
+    const targetFixtures = player.fixtures.filter((fixture) => fixture.gameweek === targetGameweek);
+    if (!targetFixtures.length) return false;
+    return targetFixtures.some((fixture) => {
+      if (group?.has(teamId) && group.has(fixture.opponentTeamId)) return true;
+      return mapping.opponentAbbreviation !== undefined
+        && normalizedClub(mapping.opponentAbbreviation) === normalizedClub(fixture.opponentShortName);
+    });
+  });
+}
+
+function rotowireSignals(
+  source: RotowireSelectionSource | null | undefined,
+  players: readonly Player[],
+  targetGameweek?: number,
+): Map<number, RotowireSignal> {
   const signals = new Map<number, RotowireSignal>();
-  for (const record of source?.mappings ?? []) {
+  for (const record of targetRotowireMappings(source, players, targetGameweek)) {
     const signal = signals.get(record.playerId) ?? { starter: false, confirmed: false };
     if (record.source === "STARTER") {
       signal.starter = true;
@@ -149,10 +215,11 @@ function rotowireSignals(source: RotowireSelectionSource | null | undefined): Ma
 function rotowireCoveredTeams(
   source: RotowireSelectionSource | null | undefined,
   players: readonly Player[],
+  targetGameweek?: number,
 ): Set<number> {
   const playerTeams = new Map(players.map((player) => [player.id, player.teamId]));
   return new Set(
-    (source?.mappings ?? [])
+    targetRotowireMappings(source, players, targetGameweek)
       .map((record) => playerTeams.get(record.playerId))
       .filter((teamId): teamId is number => teamId !== undefined),
   );
@@ -285,8 +352,8 @@ export function buildPlayerSelections(
   options: PlayerSelectionOptions = {},
 ): Map<number, PlayerSelection> {
   const mappings = new Map((options.historical?.playerMappings ?? []).map((mapping) => [mapping.currentPlayerId, mapping.historicalPlayerId]));
-  const rwSignals = rotowireSignals(options.rotowire);
-  const coveredTeams = rotowireCoveredTeams(options.rotowire, players);
+  const rwSignals = rotowireSignals(options.rotowire, players, options.targetGameweek);
+  const coveredTeams = rotowireCoveredTeams(options.rotowire, players, options.targetGameweek);
   const updatedAt = options.updatedAt ?? options.rotowire?.snapshot?.fetchedAt ?? options.historical?.generatedAt ?? "";
   return new Map(players.map((player) => {
     const history = historicalSignal(player, options, mappings.get(player.id));
@@ -351,7 +418,11 @@ export function buildPlayerSelections(
       }
     }
     const scenarios = adjustRounding(normalizeScenarios(start, cameo));
-    const expectedStartMinutes = rounded(clamp(history.startMinutes ?? START_MINUTES[player.position], 60, 90));
+    const expectedStartMinutes = rounded(clamp(
+      currentStartMinutes(history.startMinutes, observations) ?? START_MINUTES[player.position],
+      60,
+      90,
+    ));
     const expectedCameoMinutes = rounded(clamp(history.cameoMinutes ?? CAMEO_MINUTES[player.position], 1, 45));
     const expectedMinutes = rounded(clamp(
       scenarios.startProbability * expectedStartMinutes + scenarios.cameoProbability * expectedCameoMinutes,

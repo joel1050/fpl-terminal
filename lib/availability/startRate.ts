@@ -36,6 +36,8 @@ export const MINUTES_FOR_START = 60;
 export interface StartObservation {
   started: boolean;
   appeared: boolean;
+  /** Minutes played in the fixture, when the live feed provides them. */
+  minutes?: number;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

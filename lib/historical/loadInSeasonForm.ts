@@ -288,7 +288,7 @@ function opponentsForGameweek(
 }
 
 const GameweekStartsSchema = z.array(
-  z.object({ playerId: z.number(), started: z.boolean(), appeared: z.boolean() }),
+  z.object({ playerId: z.number(), started: z.boolean(), appeared: z.boolean(), minutes: z.number() }),
 );
 type GameweekStarts = z.infer<typeof GameweekStartsSchema>;
 
@@ -341,6 +341,7 @@ async function loadGameweekStarts(
       playerId: element.id,
       started: minutes >= MINUTES_FOR_START,
       appeared: minutes > 0,
+      minutes,
     };
   });
 
@@ -371,7 +372,7 @@ export async function loadInSeasonStarts(
   const history: Record<number, StartObservation[]> = {};
   for (const rows of perGameweek) {
     for (const row of rows) {
-      (history[row.playerId] ??= []).push({ started: row.started, appeared: row.appeared });
+      (history[row.playerId] ??= []).push({ started: row.started, appeared: row.appeared, minutes: row.minutes });
     }
   }
   return history;

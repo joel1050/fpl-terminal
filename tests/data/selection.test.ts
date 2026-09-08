@@ -60,6 +60,34 @@ describe("player selection model", () => {
     }
   });
 
+  it("uses lineup evidence only for the player's target fixture", () => {
+    const subject = player(1, 1);
+    subject.fixtures = [
+      { gameweek: 1, opponentTeamId: 3, opponentShortName: "GAM", isHome: true },
+      { gameweek: 2, opponentTeamId: 2, opponentShortName: "BET", isHome: true },
+    ];
+    const targetOpponent = player(2, 2);
+    targetOpponent.fixtures = [{ gameweek: 2, opponentTeamId: 1, opponentShortName: "ALP", isHome: false }];
+    const previousOpponent = player(3, 3);
+    previousOpponent.teamName = "Gamma";
+    previousOpponent.teamShortName = "GAM";
+    previousOpponent.fixtures = [{ gameweek: 1, opponentTeamId: 1, opponentShortName: "ALP", isHome: false }];
+    const records = [
+      { ...mapping(1, "STARTER"), fixtureIndex: 0, lineupStatus: "CONFIRMED" as const },
+      { ...mapping(2, "STARTER"), fixtureIndex: 0, teamSide: "AWAY" as const, teamName: "Beta", teamAbbreviation: "BET" },
+      { ...mapping(1, "STARTER"), fixtureIndex: 1, lineupStatus: "CONFIRMED" as const },
+      { ...mapping(3, "STARTER"), fixtureIndex: 1, teamSide: "AWAY" as const, teamName: "Gamma", teamAbbreviation: "GAM" },
+    ];
+    const target = buildPlayerSelections([subject, targetOpponent, previousOpponent], {
+      rotowire: { mappings: records },
+      targetGameweek: 2,
+    }).get(1)!;
+    const withoutLineup = buildPlayerSelections([subject, targetOpponent, previousOpponent]).get(1)!;
+
+    expect(target.startProbability).toBeGreaterThan(withoutLineup.startProbability);
+    expect(target.evidence.some((item) => item.source === "PREDICTED_XI")).toBe(true);
+  });
+
   it("uses player-specific historical start duration for predicted starters", () => {
     const rows = (playerId: number, minutes: number[]) => minutes.map((value, index) => ({
       historicalPlayerId: playerId,
@@ -95,6 +123,32 @@ describe("player selection model", () => {
     expect(selections.get(1)?.expectedMinutes).toBeLessThan(selections.get(2)?.expectedMinutes ?? 0);
     expect(selections.get(1)?.expectedMinutes).not.toBe(73);
     expect(selections.get(2)?.expectedMinutes).not.toBe(73);
+  });
+
+  it("updates a stale historical start duration from current-season minutes", () => {
+    const rows = [65, 60, 20].map((minutes, index) => ({
+      historicalPlayerId: 101,
+      gameweek: index + 1,
+      minutes,
+      totalPoints: 0,
+      goals: 0,
+      assists: 0,
+      bonus: 0,
+      bps: 0,
+    }));
+    const selection = buildPlayerSelections([player(1, 1, 243)], {
+      historical: {
+        players: [{ historicalPlayerId: 101, displayName: "Player 1", stats: { season: "2025/26", minutes: 145, starts: 2 } }],
+        matchStats: rows,
+        playerMappings: [{ currentPlayerId: 1, historicalPlayerId: 101, confidence: "EXACT" }],
+      },
+      startHistory: {
+        1: [81, 81, 81].map((minutes) => ({ started: true, appeared: true, minutes })),
+      },
+    }).get(1)!;
+
+    expect(selection.expectedStartMinutes).toBeGreaterThan(62.5);
+    expect(selection.expectedStartMinutes).toBeCloseTo(77.004, 2);
   });
 
   it("caps RotoWire OUT/SUS and lowers QUES", () => {

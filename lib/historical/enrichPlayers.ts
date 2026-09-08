@@ -154,6 +154,57 @@ function currentGameweek(events: readonly EnrichmentEvent[]): number {
   );
 }
 
+function normalizedTeamName(value: string): string {
+  return value.normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * Historical xG belongs to the club that produced it, which may differ from
+ * the player's current club after a transfer. Keep that source attack ratio
+ * keyed by current player id for the projection pass without adding internal
+ * provenance to the browser-facing Player shape.
+ */
+function historicalSourceStrengths(
+  historical: HistoricalBundle | null,
+  mappings: ReadonlyMap<number, { historicalPlayerId?: number }>,
+): Record<number, TeamStrength> {
+  if (!historical?.teamStrength.length) return {};
+  const { strengths } = deriveTeamStrengths(historical.teamStrength.map((team) => ({
+    id: team.teamId,
+    name: team.name,
+    shortName: team.shortName,
+    strength: {
+      overallHome: team.overallHome,
+      overallAway: team.overallAway,
+      attackHome: team.attackHome,
+      attackAway: team.attackAway,
+      defenceHome: team.defenceHome,
+      defenceAway: team.defenceAway,
+    },
+  })));
+  const byName = new Map<string, TeamStrength>();
+  historical.teamStrength.forEach((team) => {
+    const strength = strengths[team.teamId];
+    if (!strength) return;
+    byName.set(normalizedTeamName(team.name), strength);
+    byName.set(normalizedTeamName(team.shortName), strength);
+  });
+  const historicalById = new Map(historical.players.map((player) => [player.historicalPlayerId, player]));
+  const result: Record<number, TeamStrength> = {};
+  mappings.forEach((mapping, currentPlayerId) => {
+    if (mapping.historicalPlayerId === undefined) return;
+    const historicalPlayer = historicalById.get(mapping.historicalPlayerId);
+    const team = historicalPlayer?.teamName;
+    if (!team) return;
+    const strength = byName.get(normalizedTeamName(team));
+    if (strength) result[currentPlayerId] = strength;
+  });
+  return result;
+}
+
 export function enrichPlayersWithHistory(
   players: readonly Player[],
   teams: readonly EnrichmentTeam[],
@@ -192,6 +243,10 @@ export function enrichPlayersWithHistory(
     rotowire: loadRotowireSelectionData(),
     historical,
     startHistory,
+    // FPL can keep a completed event marked `isCurrent` until the next
+    // deadline. The first unfinished event is the fixture this selection
+    // forecast belongs to; during a live round it is still the live event.
+    targetGameweek: earliestUnfinished ?? gw,
   });
   const selectedPlayers = enrichedPlayers.map((player) => ({
     ...player,
@@ -203,6 +258,7 @@ export function enrichPlayersWithHistory(
     currentGameweek: gw,
     startGameweek: startGw,
     teamStrengths: strengths,
+    historicalTeamStrengths: historicalSourceStrengths(historical, mappingByCurrentId),
     playerForm,
   });
   return {

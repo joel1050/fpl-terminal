@@ -20,8 +20,6 @@ export type ProjectPlayerOptions = Partial<ProjectionOptions> & {
   fixtureHorizon?: number;
 };
 
-const PRIOR_XG: Record<Position, number> = { GK: 0.01, DEF: 0.08, MID: 0.25, FWD: 0.45 };
-const PRIOR_XA: Record<Position, number> = { GK: 0.02, DEF: 0.08, MID: 0.2, FWD: 0.15 };
 export const UNKNOWN_DEFENDER_XG_PRIOR = 0.02;
 export const UNKNOWN_DEFENDER_XA_PRIOR = 0.02;
 
@@ -161,15 +159,6 @@ function currentRate(
   return { rate: (value / player.current.minutes) * 90, minutes: player.current.minutes };
 }
 
-function hasUsableHistoricalRate(
-  player: Player,
-  primary: "expectedGoals" | "expectedAssists",
-  fallback: "goals" | "assists",
-): boolean {
-  return historicalRate(player, primary) !== undefined
-    || historicalRate(player, fallback) !== undefined;
-}
-
 function regressedPlayerRate(
   player: Player,
   primary: RateField,
@@ -239,10 +228,23 @@ function regressedFormRate(
   currentGameweek: number,
   ownTeam: TeamStrength | undefined,
   strengths: Record<number, TeamStrength> | undefined,
+  historicalTeam: TeamStrength | undefined,
   ceiling: number = RATE_CEILING.goalInvolvement,
 ): number {
   const historical = historicalRate(player, primary) ?? historicalRate(player, fallback);
-  const basePrior = historical?.rate ?? prior;
+  const normalizedOwnTeam = ownTeam && strengths?.[ownTeam.teamId] ? ownTeam : undefined;
+  const ownAttack = normalizedOwnTeam ? (normalizedOwnTeam.attackHome + normalizedOwnTeam.attackAway) / 2 : 1;
+  const sourceTeam = historicalTeam ?? normalizedOwnTeam;
+  const sourceAttack = sourceTeam ? (sourceTeam.attackHome + sourceTeam.attackAway) / 2 : 1;
+  // Historical rates are player-plus-team evidence. Regress that anchor
+  // toward the neutral price-tier prior before the recency blend, then remove
+  // the source team's attack only when there is a source sample to normalize.
+  // A generic price prior stays neutral so the upcoming fixture multiplier can
+  // still lower a player attached to a weak current attack.
+  const historicalAnchor = historical
+    ? regressPer90(historical.rate, historical.minutes, prior, 900)
+    : prior;
+  const basePrior = historical && sourceAttack > 0 ? historicalAnchor / sourceAttack : historicalAnchor;
 
   if (form && form.length > 0) {
     const field = primary === "expectedGoals" ? "xg" : "xa";
@@ -250,22 +252,19 @@ function regressedFormRate(
     // Schedule adjustment: a match played against a weak defence produced a
     // higher rate for that reason, and the upcoming fixture's multiplier is
     // about to be applied on top. Dividing each match out by the fixture it
-    // was played in, and the anchor out by the team's own attacking strength,
-    // stops the same fixture quality being counted twice. Both halves must be
-    // normalized together - normalizing the form alone leaves an inflated
-    // anchor against a deflated form estimate and scores worse in every season
-    // tested. Falls back to the raw blend whenever the fixture context or the
-    // strengths are missing.
+    // was played in. Historical anchors are normalized by their source team's
+    // attack above; generic price priors intentionally stay neutral. Falls
+    // back to the raw blend whenever the fixture context or strengths are
+    // missing.
     const multipliers = ownTeam && strengths
       ? form.map((match) => pastFixtureMultiplier(match, ownTeam, strengths))
       : [];
     if (multipliers.length === form.length && multipliers.every((value) => value !== undefined && value > 0)) {
-      const ownAttack = (ownTeam!.attackHome + ownTeam!.attackAway) / 2;
       if (ownAttack > 0) {
         return clamp(
           blendPlayerRate(
             matchRates.map((rate, index) => rate / (multipliers[index] as number)),
-            basePrior / ownAttack,
+            basePrior,
             PLAYER_FORM_DECAY,
             PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
           ),
@@ -275,24 +274,26 @@ function regressedFormRate(
       }
     }
     return clamp(
-      blendPlayerRate(matchRates, basePrior, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES),
+      // Without enough fixture context the form rates are still raw, so their
+      // anchor must stay raw too. Using the source-team-normalized anchor here
+      // would mix two different scales in the same blend.
+      blendPlayerRate(matchRates, historicalAnchor, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES),
       0,
       ceiling,
     );
   }
 
   const current = currentRate(player, primary) ?? currentRate(player, fallback);
-  let rate = basePrior;
+  let rate = historical && sourceAttack > 0 ? historical.rate / sourceAttack : prior;
   let sample = historical?.minutes ?? 0;
   if (current) {
     const currentWeight = clamp(currentGameweek / 10, 0, 0.6);
-    rate = rate * (1 - currentWeight) + current.rate * currentWeight;
+    const normalizedCurrent = ownAttack > 0 ? current.rate / ownAttack : current.rate;
+    rate = rate * (1 - currentWeight) + normalizedCurrent * currentWeight;
     sample += current.minutes * currentWeight;
   }
   const regressed = regressPer90(rate, sample, prior, 900);
-  const ownAttack = ownTeam && strengths ? (ownTeam.attackHome + ownTeam.attackAway) / 2 : 1;
-  const normalized = ownAttack > 0 ? regressed / ownAttack : regressed;
-  return clamp(normalized, 0, ceiling);
+  return clamp(regressed, 0, ceiling);
 }
 
 function teamFor(
@@ -306,13 +307,9 @@ function attackingPrior(
   player: Player,
   options: ProjectPlayerOptions,
   primary: "expectedGoals" | "expectedAssists",
-  fallback: "goals" | "assists",
 ): number {
   const override = primary === "expectedGoals" ? options.positionPrior?.[player.position] : undefined;
   if (override !== undefined) return override;
-  if (hasUsableHistoricalRate(player, primary, fallback)) {
-    return primary === "expectedGoals" ? PRIOR_XG[player.position] : PRIOR_XA[player.position];
-  }
   const tiered = priceTieredAttackingPrior(player.position, player.priceTenths);
   return primary === "expectedGoals" ? tiered.xg : tiered.xa;
 }
@@ -544,9 +541,10 @@ export function projectPlayer(
   const confidence = projectionConfidence(player);
   const form = options.playerForm?.[player.id];
   const ownTeam = teamFor(player, options);
+  const historicalTeam = options.historicalTeamStrengths?.[player.id];
   const rates = {
-    xg: regressedFormRate(player, "expectedGoals", "goals", attackingPrior(player, options, "expectedGoals", "goals"), form, currentGameweek, ownTeam, options.teamStrengths),
-    xa: regressedFormRate(player, "expectedAssists", "assists", attackingPrior(player, options, "expectedAssists", "assists"), form, currentGameweek, ownTeam, options.teamStrengths),
+    xg: regressedFormRate(player, "expectedGoals", "goals", attackingPrior(player, options, "expectedGoals"), form, currentGameweek, ownTeam, options.teamStrengths, historicalTeam),
+    xa: regressedFormRate(player, "expectedAssists", "assists", attackingPrior(player, options, "expectedAssists"), form, currentGameweek, ownTeam, options.teamStrengths, historicalTeam),
     saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves),
     defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution),
     bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus),

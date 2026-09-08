@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Player } from "@/types/player";
+import type { TeamStrength } from "@/types/projection";
 import { projectPlayer, regressPer90 } from "@/lib/projections";
 import { HOME_ATTACK_MULTIPLIER } from "@/lib/projections/fixtureAdjustment";
 
@@ -80,12 +81,42 @@ describe("defender attacking priors", () => {
       },
     }), { currentGameweek: 1, horizon: 1, expectedMinutes: 90 });
     const attackMultiplier = HOME_ATTACK_MULTIPLIER;
-    const historicalRate = regressPer90(1.8, 900, 0.08, 900);
+    const historicalRate = regressPer90(1.8, 900, 0.02, 900);
 
     expect(projection.components?.goals).toBeCloseTo(historicalRate * attackMultiplier * DEF_GOAL_POINTS, 8);
     expect(projection.components?.assists).toBeCloseTo(historicalRate * attackMultiplier * DEF_ASSIST_POINTS, 8);
     expect(projection.components?.goals).toBeGreaterThan(0.02 * attackMultiplier * DEF_GOAL_POINTS);
     expect(projection.components?.assists).toBeGreaterThan(0.02 * attackMultiplier * DEF_ASSIST_POINTS);
+  });
+
+  it("normalizes transferred historical production with the source team's attack", () => {
+    const currentStrength: Record<number, TeamStrength> = {
+      1: { teamId: 1, attackHome: 1.2, attackAway: 1.2, defenceHome: 1, defenceAway: 1, overall: 1 },
+      2: { teamId: 2, attackHome: 1, attackAway: 1, defenceHome: 1, defenceAway: 1, overall: 1 },
+    };
+    const transferred = forward({
+      historical: { season: "2025/26", minutes: 900, expectedGoals: 9, expectedAssists: 0 },
+    });
+    const sourceWeak = projectPlayer(transferred, {
+      currentGameweek: 1,
+      horizon: 1,
+      expectedMinutes: 90,
+      teamStrengths: currentStrength,
+      historicalTeamStrengths: {
+        [transferred.id]: { teamId: 99, attackHome: 0.8, attackAway: 0.8, defenceHome: 1, defenceAway: 1, overall: 1 },
+      },
+    });
+    const sourceStrong = projectPlayer(transferred, {
+      currentGameweek: 1,
+      horizon: 1,
+      expectedMinutes: 90,
+      teamStrengths: currentStrength,
+      historicalTeamStrengths: {
+        [transferred.id]: { teamId: 98, attackHome: 1.4, attackAway: 1.4, defenceHome: 1, defenceAway: 1, overall: 1 },
+      },
+    });
+
+    expect(sourceWeak.components?.goals).toBeGreaterThan(sourceStrong.components?.goals ?? 0);
   });
 
   it("uses the recency-weighted in-season match history when playerForm is supplied", () => {
@@ -203,5 +234,28 @@ describe("price-tiered attacking priors", () => {
     expect(midTier.components?.goals).toBeCloseTo(0.36 * attackMultiplier * FWD_GOAL_POINTS, 8);
     expect(premium.components?.goals).toBeCloseTo(0.70 * attackMultiplier * FWD_GOAL_POINTS, 8);
     expect(midTier.components?.assists).toBeCloseTo(0.09 * attackMultiplier * FWD_ASSIST_POINTS, 8);
+  });
+
+  it("leaves generic priors neutral so weak current attacks still lower them", () => {
+    const weak = projectPlayer(forward({ historical: undefined }), {
+      currentGameweek: 1,
+      horizon: 1,
+      expectedMinutes: 90,
+      teamStrengths: {
+        1: { teamId: 1, attackHome: 0.8, attackAway: 0.8, defenceHome: 1, defenceAway: 1, overall: 1 },
+        2: { teamId: 2, attackHome: 1, attackAway: 1, defenceHome: 1, defenceAway: 1, overall: 1 },
+      },
+    });
+    const strong = projectPlayer(forward({ historical: undefined }), {
+      currentGameweek: 1,
+      horizon: 1,
+      expectedMinutes: 90,
+      teamStrengths: {
+        1: { teamId: 1, attackHome: 1.2, attackAway: 1.2, defenceHome: 1, defenceAway: 1, overall: 1 },
+        2: { teamId: 2, attackHome: 1, attackAway: 1, defenceHome: 1, defenceAway: 1, overall: 1 },
+      },
+    });
+
+    expect(strong.components?.goals).toBeGreaterThan(weak.components?.goals ?? 0);
   });
 });

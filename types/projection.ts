@@ -64,4 +64,6 @@ export interface ProjectionOptions {
   expectedMinutes?: number;
   /** Each player's chronological in-season xG/xA match history, keyed by player id. */
   playerForm?: Record<number, readonly PlayerMatchRate[]>;
+  /** Previous-season team strengths keyed by current player id, for transferred players. */
+  historicalTeamStrengths?: Record<number, TeamStrength>;
 }

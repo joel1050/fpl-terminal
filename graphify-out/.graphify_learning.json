@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-07T17:51:11.484387+00:00",
+  "generated_at": "2026-09-07T18:21:13.534638+00:00",
   "nodes": {
     "lib_ai_tools": {
       "code_fingerprint": "",
@@ -12,7 +12,7 @@
           "q": "ok integraye into the app"
         }
       ],
-      "score": 0.668984447,
+      "score": 0.66866214,
       "source_file": "lib/ai/tools.ts",
       "status": "tentative",
       "uses": 1
@@ -28,7 +28,7 @@
           "q": "PLEASE IMPLEMENT THIS PLAN: Actual Selling Prices and ITB"
         }
       ],
-      "score": 0.92433301,
+      "score": 0.92388768,
       "source_file": "lib/analysis/analyzeSquad.ts",
       "status": "tentative",
       "uses": 1
@@ -44,7 +44,7 @@
           "q": "PLEASE IMPLEMENT THIS PLAN: Actual Selling Prices and ITB"
         }
       ],
-      "score": 0.92433301,
+      "score": 0.92388768,
       "source_file": "lib/analysis/context.ts",
       "status": "tentative",
       "uses": 1
@@ -70,7 +70,7 @@
           "q": "look at the pts/pound does it look more accurate"
         }
       ],
-      "score": 2.003425971,
+      "score": 2.002460752,
       "source_file": "lib/analysis/context.ts",
       "status": "preferred",
       "uses": 3
@@ -86,7 +86,7 @@
           "q": "@calculations.md do section 4 now\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 0.722975894,
+      "score": 0.722627575,
       "source_file": "lib/availability/rotowireMapping.ts",
       "status": "tentative",
       "uses": 1
@@ -117,7 +117,7 @@
           "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
         }
       ],
-      "score": 2.727678482,
+      "score": 2.726364329,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "preferred",
       "uses": 4
@@ -143,7 +143,7 @@
           "q": "@calculations.md lets go section by section and try to improve the metrics formulation in this app, start with section 3\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 2.303673973,
+      "score": 2.302564099,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "preferred",
       "uses": 3
@@ -159,7 +159,7 @@
           "q": "Fix the xG input first just do this,&#x20;\n\nafter this show me the team strength rankings"
         }
       ],
-      "score": 0.722463995,
+      "score": 0.722115923,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "tentative",
       "uses": 1
@@ -175,7 +175,7 @@
           "q": "1. this mostly fine 2. yeah how do we make this more realistic, it should be closer to zero, do we have access to last seasons stats 3. thats whatever its fine 4. look at betting odds for recent matches for clean sheets match it against our strength rating system and design appropriate clean sheet odds, it should be closer to 0 for ars - cov"
         }
       ],
-      "score": 0.679162893,
+      "score": 0.678835683,
       "source_file": "lib/historical/ingest.ts",
       "status": "tentative",
       "uses": 1
@@ -196,7 +196,7 @@
           "q": "i want to backtest for more than 1 season is there any way you can get data for more seasons"
         }
       ],
-      "score": 1.720321235,
+      "score": 1.719492411,
       "source_file": "lib/historical/ingest.ts",
       "status": "preferred",
       "uses": 2
@@ -204,8 +204,13 @@
     "lib_historical_types_historicalbundle": {
       "code_fingerprint": "8a4d2e3260f70dfbe4e69a4e980aaac40c9dbaf9cda8985fa6287d2da1f1a1ac",
       "label": "HistoricalBundle",
-      "last": "2026-09-01T05:30:48.748917+00:00",
+      "last": "2026-09-07T18:02:58.527349+00:00",
       "provenance": [
+        {
+          "date": "2026-09-07T18:02:58.527349+00:00",
+          "outcome": "useful",
+          "q": "ok im gonna send a list of the highest xp players in each position spot xp that is inconsistent with reality there defintely are a few, and how to fix those lets start with forwards"
+        },
         {
           "date": "2026-09-01T05:30:48.748917+00:00",
           "outcome": "useful",
@@ -225,17 +230,12 @@
           "date": "2026-08-22T04:42:12.345810+00:00",
           "outcome": "useful",
           "q": "normalize minutes played, and compare the xp bias, +.7 is a lot and may point at some issues"
-        },
-        {
-          "date": "2026-08-22T04:36:26.631134+00:00",
-          "outcome": "useful",
-          "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
         }
       ],
-      "score": 7.214133248,
+      "score": 8.21036481,
       "source_file": "lib/historical/types.ts",
       "status": "preferred",
-      "uses": 10
+      "uses": 11
     },
     "lib_optimizer_objective": {
       "code_fingerprint": "bd2bb830d7e878b6c4837bd4e42139665e5498b8e4a5a54213ff2bb989833a52",
@@ -263,7 +263,7 @@
           "q": "the optimizer takes way too long now, lets revert back to standardized bench options\\n\\nCHEAP, BALANCED AND STRONG\\n\\nBUT THE CHEAP OPTIONS SHOULD STILL BE GOOD FOR THE PRICE"
         }
       ],
-      "score": 3.68272946,
+      "score": 3.680955178,
       "source_file": "lib/optimizer/objective.ts",
       "status": "preferred",
       "uses": 4
@@ -300,7 +300,7 @@
           "q": "would you say its optimal to handle gks as one starting gk and one 4mill bench gk that will stay on the bench or handle gks how the solver handles it"
         }
       ],
-      "score": 8.428776373,
+      "score": 8.42471552,
       "source_file": "lib/optimizer/optimizer.ts",
       "status": "contested",
       "uses": 11,
@@ -309,8 +309,13 @@
     "lib_projections_expectedminutes": {
       "code_fingerprint": "b770bed063cf12c4c5dd09c29fc480164fca7113f39ae80607ffab12c8958df8",
       "label": "expectedMinutes.ts",
-      "last": "2026-08-22T04:42:12.345810+00:00",
+      "last": "2026-09-07T18:02:58.527349+00:00",
       "provenance": [
+        {
+          "date": "2026-09-07T18:02:58.527349+00:00",
+          "outcome": "useful",
+          "q": "ok im gonna send a list of the highest xp players in each position spot xp that is inconsistent with reality there defintely are a few, and how to fix those lets start with forwards"
+        },
         {
           "date": "2026-08-22T04:42:12.345810+00:00",
           "outcome": "useful",
@@ -330,17 +335,12 @@
           "date": "2026-08-22T03:59:07.265070+00:00",
           "outcome": "useful",
           "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
-        },
-        {
-          "date": "2026-08-22T03:53:22.686492+00:00",
-          "outcome": "useful",
-          "q": "can you recap how xmin is calculated"
         }
       ],
-      "score": 4.077629604,
+      "score": 5.075372284,
       "source_file": "lib/projections/expectedMinutes.ts",
       "status": "preferred",
-      "uses": 6
+      "uses": 7
     },
     "lib_projections_fixtureadjustment": {
       "code_fingerprint": "f16312a2c117582ef79ff749f6e35eb5efad7aea99d7c6c1846be854b8ac5052",
@@ -373,7 +373,7 @@
           "q": "normalize minutes played, and compare the xp bias, +.7 is a lot and may point at some issues"
         }
       ],
-      "score": 7.552028255,
+      "score": 7.548389805,
       "source_file": "lib/projections/fixtureAdjustment.ts",
       "status": "preferred",
       "uses": 10
@@ -409,7 +409,7 @@
           "q": "@calculations.md lets go section by section and try to improve the metrics formulation in this app, start with section 3\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 4.16155075,
+      "score": 4.159545779,
       "source_file": "lib/projections/fixtureAdjustment.ts",
       "status": "preferred",
       "uses": 5
@@ -430,7 +430,7 @@
           "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
         }
       ],
-      "score": 1.364465978,
+      "score": 1.3638086,
       "source_file": "lib/projections/metrics.ts",
       "status": "preferred",
       "uses": 2
@@ -438,8 +438,13 @@
     "lib_projections_projectplayer": {
       "code_fingerprint": "e2bb19b490f9f15b48d5388b1a0b56ab01af1ce08aea5d8cf675d59d53af401d",
       "label": "projectPlayer.ts",
-      "last": "2026-09-04T01:12:57.019168+00:00",
+      "last": "2026-09-07T18:02:58.527349+00:00",
       "provenance": [
+        {
+          "date": "2026-09-07T18:02:58.527349+00:00",
+          "outcome": "useful",
+          "q": "ok im gonna send a list of the highest xp players in each position spot xp that is inconsistent with reality there defintely are a few, and how to fix those lets start with forwards"
+        },
         {
           "date": "2026-09-04T01:12:57.019168+00:00",
           "outcome": "useful",
@@ -461,16 +466,21 @@
           "q": "Implement conservative unmapped-defender xG/xA priors and market-calibrated clean-sheet probabilities using Luna xhigh subagents"
         }
       ],
-      "score": 3.180581628,
+      "score": 4.178756492,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "preferred",
-      "uses": 4
+      "uses": 5
     },
     "lib_projections_projectplayer_projectplayer": {
       "code_fingerprint": "e2bb19b490f9f15b48d5388b1a0b56ab01af1ce08aea5d8cf675d59d53af401d",
       "label": "projectPlayer()",
-      "last": "2026-09-01T05:19:40.412482+00:00",
+      "last": "2026-09-07T18:02:58.527349+00:00",
       "provenance": [
+        {
+          "date": "2026-09-07T18:02:58.527349+00:00",
+          "outcome": "useful",
+          "q": "ok im gonna send a list of the highest xp players in each position spot xp that is inconsistent with reality there defintely are a few, and how to fix those lets start with forwards"
+        },
         {
           "date": "2026-09-01T05:19:40.412482+00:00",
           "outcome": "useful",
@@ -490,17 +500,12 @@
           "date": "2026-08-22T04:36:26.631134+00:00",
           "outcome": "useful",
           "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
-        },
-        {
-          "date": "2026-08-22T04:04:37.299189+00:00",
-          "outcome": "useful",
-          "q": "try shaw and calafiori"
         }
       ],
-      "score": 7.010231434,
+      "score": 8.006561232,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "preferred",
-      "uses": 10
+      "uses": 11
     },
     "lib_projections_projectplayer_regressedplayerrate": {
       "code_fingerprint": "e2bb19b490f9f15b48d5388b1a0b56ab01af1ce08aea5d8cf675d59d53af401d",
@@ -513,7 +518,7 @@
           "q": "cool ok, we need to run further model tuning because of this, can you break down every single calculation that could need tuning in xp calculations"
         }
       ],
-      "score": 0.860116361,
+      "score": 0.85970197,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "tentative",
       "uses": 1
@@ -549,7 +554,7 @@
           "q": "look at the pts/pound does it look more accurate"
         }
       ],
-      "score": 4.350408264,
+      "score": 4.348312305,
       "source_file": "lib/projections/value.ts",
       "status": "preferred",
       "uses": 5
@@ -565,7 +570,7 @@
           "q": "can you look online for fpl strategies that the solver should maybe incorporate"
         }
       ],
-      "score": 0.920939553,
+      "score": 0.920495859,
       "source_file": "lib/squad/captain.ts",
       "status": "tentative",
       "uses": 1
@@ -581,7 +586,7 @@
           "q": "PLEASE IMPLEMENT THIS PLAN: Actual Selling Prices and ITB"
         }
       ],
-      "score": 0.92433301,
+      "score": 0.92388768,
       "source_file": "lib/squad/validation.ts",
       "status": "tentative",
       "uses": 1
@@ -617,7 +622,7 @@
           "q": "ok the optimizer doesnt account for the bench if the horizon is set to gw\\n\\ncan you make the optimizer account for the fact the bench players come on at the rate of P(not start/cameo)"
         }
       ],
-      "score": 9.578928253,
+      "score": 9.574313275,
       "source_file": "lib/squad/weeklyLineup.ts",
       "status": "preferred",
       "uses": 11
@@ -633,7 +638,7 @@
           "q": "ok the optimizer doesnt account for the bench if the horizon is set to gw\\n\\ncan you make the optimizer account for the fact the bench players come on at the rate of P(not start/cameo)"
         }
       ],
-      "score": 0.918747278,
+      "score": 0.91830464,
       "source_file": "lib/squad/weeklyLineup.ts",
       "status": "tentative",
       "uses": 1
@@ -649,7 +654,7 @@
           "q": "ok the optimizer doesnt account for the bench if the horizon is set to gw\\n\\ncan you make the optimizer account for the fact the bench players come on at the rate of P(not start/cameo)"
         }
       ],
-      "score": 0.918747278,
+      "score": 0.91830464,
       "source_file": "lib/squad/weeklyLineup.ts",
       "status": "tentative",
       "uses": 1

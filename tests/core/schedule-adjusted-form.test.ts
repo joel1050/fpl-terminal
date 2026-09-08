@@ -32,7 +32,8 @@ function striker(form: PlayerMatchRate[]): { player: Player; form: PlayerMatchRa
     ownership: 0,
     status: "a",
     current: { totalPoints: 0, minutes: 0, goals: 0, assists: 0, cleanSheets: 0, bonus: 0 },
-    // Anchor rate: 9 xG in 900 minutes = 0.9 per 90.
+    // Anchor rate: 9 xG in 900 minutes = 0.9 per 90, regressed to the
+    // neutral £10m-forward prior of 0.70 before the form blend.
     historical: { season: "prev", minutes: 900, expectedGoals: 9, expectedAssists: 0 },
     fixtures: [{ gameweek: 1, opponentTeamId: 2, opponentShortName: "OPP", isHome: true, difficulty: 3 }],
   } as Player;
@@ -56,10 +57,10 @@ describe("schedule-adjusted form", () => {
     const { player, form } = striker(matches);
 
     // Every match was played at the same multiplier, so the normalized rate is
-    // 0.5 / HOME_ATTACK_MULTIPLIER; the 0.9 anchor is divided by ownAttack = 1.
+    // 0.5 / HOME_ATTACK_MULTIPLIER; the regressed 0.8 anchor stays neutral.
     const expectedRate = blendPlayerRate(
       matches.map(() => 0.5 / HOME_ATTACK_MULTIPLIER),
-      0.9,
+      0.8,
       PLAYER_FORM_DECAY,
       PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
     );
@@ -86,7 +87,7 @@ describe("schedule-adjusted form", () => {
     const bare: PlayerMatchRate[] = [{ xg: 0.5, xa: 0, minutes: 90 }];
     const { player, form } = striker(bare);
 
-    const expectedRate = blendPlayerRate([0.5], 0.9, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES);
+    const expectedRate = blendPlayerRate([0.5], 0.8, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES);
 
     expect(goalsFor(player, form)).toBeCloseTo(
       expectedRate * GOAL_CONVERSION_FWD * HOME_ATTACK_MULTIPLIER * GOAL_POINTS_FWD,
@@ -100,9 +101,36 @@ describe("schedule-adjusted form", () => {
     ];
     const { player, form } = striker(unknownOpponent);
 
-    const expectedRate = blendPlayerRate([0.5], 0.9, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES);
+    const expectedRate = blendPlayerRate([0.5], 0.8, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES);
 
     expect(goalsFor(player, form)).toBeCloseTo(
+      expectedRate * GOAL_CONVERSION_FWD * HOME_ATTACK_MULTIPLIER * GOAL_POINTS_FWD,
+      8,
+    );
+  });
+
+  it("keeps the raw historical anchor when source strength exists but match context does not", () => {
+    const bare: PlayerMatchRate[] = [{ xg: 0.5, xa: 0, minutes: 90 }];
+    const { player, form } = striker(bare);
+    const sourceTeam: TeamStrength = {
+      teamId: 20,
+      attackHome: 0.5,
+      attackAway: 0.5,
+      defenceHome: 1,
+      defenceAway: 1,
+      overall: 0.75,
+    };
+    const expectedRate = blendPlayerRate([0.5], 0.8, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES);
+    const goals = projectPlayer(player, {
+      currentGameweek: 1,
+      horizon: 1,
+      expectedMinutes: 90,
+      teamStrengths: strengths,
+      historicalTeamStrengths: { 7: sourceTeam },
+      playerForm: { 7: form },
+    }).components!.goals;
+
+    expect(goals).toBeCloseTo(
       expectedRate * GOAL_CONVERSION_FWD * HOME_ATTACK_MULTIPLIER * GOAL_POINTS_FWD,
       8,
     );

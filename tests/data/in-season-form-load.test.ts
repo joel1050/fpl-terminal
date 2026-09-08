@@ -375,11 +375,11 @@ describe("loadInSeasonStarts", () => {
       [{ gameweek: 1, teamHomeId: 1, teamAwayId: 2, finished: true }],
     );
 
-    expect(history[1]).toEqual([{ started: true, appeared: true }]);
-    expect(history[2]).toEqual([{ started: false, appeared: false }]);
-    expect(history[3]).toEqual([{ started: false, appeared: true }]);
+    expect(history[1]).toEqual([{ started: true, appeared: true, minutes: 90 }]);
+    expect(history[2]).toEqual([{ started: false, appeared: false, minutes: 0 }]);
+    expect(history[3]).toEqual([{ started: false, appeared: true, minutes: 20 }]);
     // 59 minutes is a cameo under the 60-minute rule, not a start.
-    expect(history[4]).toEqual([{ started: false, appeared: true }]);
+    expect(history[4]).toEqual([{ started: false, appeared: true, minutes: 59 }]);
   });
 
   it("counts exactly 60 minutes as a start", async () => {
@@ -392,7 +392,7 @@ describe("loadInSeasonStarts", () => {
       [{ id: 1, teamId: 1 }],
       [{ gameweek: 1, teamHomeId: 1, teamAwayId: 2, finished: true }],
     );
-    expect(history[1]).toEqual([{ started: true, appeared: true }]);
+    expect(history[1]).toEqual([{ started: true, appeared: true, minutes: 60 }]);
   });
 
   it("gives a blank gameweek no observation at all", async () => {

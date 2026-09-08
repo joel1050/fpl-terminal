@@ -56,6 +56,13 @@ Players are linked to history via `playerMappings` (EXACT by code, else LIKELY b
 
 Names are mapped to FPL player ids in `lib/availability/rotowireMapping.ts` (confirmed mapping, exact name, unique fallback; ambiguous/unmapped records are rejected).
 
+At selection time, records are grouped by their source fixture and retained
+only when both mapped teams match the player's target `PlayerFixture` in the
+projected gameweek. Once that fixture finishes, its official FPL minutes feed
+the current-season role history instead; the old team sheet cannot raise a
+future fixture's start probability. An omitted team is not treated as covered
+and is left on the historical/current-season estimate.
+
 ---
 
 ## 3. Team strength
@@ -155,6 +162,7 @@ Cameo is derived, not run independently: `cameo = clamp(pAppeared - pStart, 0, 1
 
 - A start is `minutes >= 60`, matching the seed's definition. FPL's per-match `starts` flag is more exact, but a seed and an update that disagree about what they measure are worse than a uniformly approximate pair.
 - Zero-minute players **are** recorded, as `{started: false, appeared: false}`. This is the one shape difference from `loadInSeasonPlayerRates`, which drops them, and it carries the whole feature: without the zero rows a player who loses his place simply stops being updated and stays nailed. Hence a parallel loader and its own `in-season-starts-gw-N` snapshot key rather than an extra field on the rates loader, which would silently rebase the xG/xA blend behind `PLAYER_FORM_DECAY`.
+- Each row also carries the observed minutes. Start duration begins at the historical start average when one exists; otherwise the first current-season start supplies the baseline, with the position default used only when neither source exists. It then follows the same `0.40` EWMA over current starts, so three current 90-minute starts move a stale short historical duration toward 90.
 - Eligibility is shared with the xG loaders, so **double gameweeks contribute nothing** and a **blank gameweek is no observation** rather than a benching.
 
 Zero minutes is ambiguous - benched, rotated, injured, suspended and unregistered all look identical - so a layoff reads as role loss and a returning player needs about five matches to recover. In practice RotoWire naming him in the XI gives `0.9 x 0.75 = 0.675` whatever the recursion says, and the §4.4 hard gate handles the absence itself.
@@ -182,7 +190,8 @@ cameo      = historicalCameo * (1 - seedWeight) + fallbackCameoRate * seedWeight
 
 The `0.25` fallback term applies only while the player has no current-season observations (`observations.length === 0`). It existed to temper an estimate whose sole evidence was last season; once this season's own matches are in the estimate that term only dilutes them, since `fallbackStartRate` is clamped to 0.15–0.80 and would drag a measured 0.99 down to 0.94 and push a measured 0.02 up to 0.05.
 
-If the player's team is covered by RotoWire, the RotoWire signal dominates:
+If the player's team is covered by RotoWire for the target fixture/gameweek,
+the RotoWire signal dominates:
 
 ```
 rotowireStart = starter ? (confirmed ? 0.96 : 0.90) : 0.10
@@ -221,11 +230,17 @@ None of this is backtested - there is no RotoWire archive for a past season, onl
 ### 4.6 Expected minutes (selection model)
 
 ```
-expectedStartMinutes = clamp(history.startMinutes ?? START_MINUTES[position], 60, 90)
+expectedStartMinutes = clamp(currentStartDuration(history.startMinutes, observations), 60, 90)
 expectedCameoMinutes = clamp(history.cameoMinutes ?? CAMEO_MINUTES[position], 1, 45)
 expectedMinutes      = startProbability * expectedStartMinutes
                        + cameoProbability * expectedCameoMinutes
 ```
+
+`currentStartDuration` starts from the previous-season average, or from the
+first current-season start when there is no historical average, and updates
+only observations classified as starts. Each update is
+`duration_n = duration_(n-1) * (1 - 0.40) + observedMinutes_n * 0.40`; the
+position default applies only when neither source exists.
 
 Position defaults (`lib/availability/selection.ts:45`):
 
@@ -312,7 +327,7 @@ The current season earns up to 60% weight as the season progresses.
 
 ### 6.3.1 xG and xA: recency-weighted match history
 
-xG and xA use a different current-season blend, `regressedFormRate` (`lib/projections/projectPlayer.ts:110`). A player's own historical (or position-prior) rate still anchors the blend - `basePrior = historicalRate ?? prior`, unchanged from §6.3 - but the current-season half comes from `blendPlayerRate` (`lib/projections/playerForm.ts:32`), a recency-weighted average of the player's own match-by-match xG/xA this season, rather than a flat season-to-date average:
+xG and xA use a different current-season blend, `regressedFormRate` (`lib/projections/projectPlayer.ts:110`). A player's regressed historical (or neutral price-tier prior) rate anchors the blend, while the current-season half comes from `blendPlayerRate` (`lib/projections/playerForm.ts:32`), a recency-weighted average of the player's own match-by-match xG/xA this season, rather than a flat season-to-date average:
 
 ```
 weight(i matches before the most recently played) = decay^i
@@ -324,7 +339,21 @@ blended          = (basePrior * priorWeightMatches + observedRate * effectiveMat
 
 `decay = 0.95`, `priorWeightMatches = 10` (`PLAYER_FORM_DECAY`/`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`, `lib/projections/playerForm.ts`) come from the 2025/26 walk-forward sweep in `scripts/backtest/evidence-weights.ts`. Decays 0.93-0.95 were effectively tied on actual-points RMSE and 0.95 won the main split. After 38 appearances the current season contributes 17.15 effective matches, or 63.2% of the blend against the ten-match historical anchor; after two appearances it contributes 1.95 effective matches, or 16.3%.
 
-This only applies once a player has an in-season match history (`options.playerForm`, populated by `loadInSeasonPlayerRates` in `lib/historical/loadInSeasonForm.ts` from FPL's live per-gameweek stats, one entry per finished gameweek the player actually featured in). Before any gameweek has finished, or for a caller that hasn't wired up the loader, xG/xA fall back to the §6.3 mechanism (cumulative `Player.current.expectedGoals`/`expectedAssists`, blended by calendar gameweek and regressed toward the prior at a 900-minute weight), normalized by `ownAttack` when team strengths are present so elite attacking teams are not double-counted before match form accumulates.
+This only applies once a player has an in-season match history (`options.playerForm`, populated by `loadInSeasonPlayerRates` in `lib/historical/loadInSeasonForm.ts` from FPL's live per-gameweek stats, one entry per finished gameweek the player actually featured in). Before any gameweek has finished, or for a caller that hasn't wired up the loader, xG/xA fall back to the §6.3 mechanism (cumulative `Player.current.expectedGoals`/`expectedAssists`, blended by calendar gameweek and regressed toward the prior at a 900-minute weight).
+
+The historical xG/xA anchor is regressed toward the neutral price-tier prior
+before it enters `blendPlayerRate`:
+
+```
+historicalAnchor = regressPer90(historicalRate, historicalMinutes, pricePrior, 900)
+```
+
+The generic `pricePrior` is deliberately league-neutral and is not divided by
+the current club's attack, so the upcoming fixture multiplier still lowers a
+player on a weak attack. A historical sample is normalized by the attack of
+the club that produced it, using the source team's strength from the historical
+bundle; a transfer therefore does not rescale old production with the new
+club's attack.
 
 ### 6.3.2 Schedule adjustment: counting the fixture once
 
@@ -334,10 +363,15 @@ alone, fixture quality is counted twice. `regressedFormRate`
 (`lib/projections/projectPlayer.ts:150`) divides it back out before blending:
 
 ```
-m_i        = attackMultiplier(opponent_i, venue_i)      // base = 1; see below
-ownAttack  = (own.attackHome + own.attackAway) / 2
-rate       = blendPlayerRate(matchRate_i / m_i, basePrior / ownAttack)
+m_i          = attackMultiplier(opponent_i, venue_i)    // base = 1; see below
+sourceAttack = historical source club attack, when available
+rate         = blendPlayerRate(matchRate_i / m_i, historicalAnchor / sourceAttack)
 ```
+
+When there is no historical sample, `pricePrior` is passed as the neutral
+anchor instead of being divided by current-team attack. The current team's
+attack remains in each upcoming fixture's multiplier, so generic priors retain
+the team-strength effect.
 
 Both halves are normalized together. Normalizing the form alone leaves an
 inflated anchor against a deflated form estimate, and scores worse than doing
@@ -367,23 +401,18 @@ head-to-tail gradient falls from +0.164, +0.078, +0.098 and +0.092 xGI/90 to
 **What it does not fix.** Splitting that gradient shows most of it is not the
 schedule. Bucketed by a player's recent run against *his own* baseline the tilt
 is mixed; bucketed by team level it is monotone in every season. A player's own
-xG rate already carries his team's attacking quality and §7 applies that quality
-again, so players on the strongest attacks are over-projected by roughly
-0.05-0.09 xGI/90. Dividing the anchor by `ownAttack` removes part of that as a
-side effect, which is why this arm beats the schedule-only one. The remainder
-wants a share decomposition - player rate = team rate x player share, with the
-multiplier scaling only the team half - which is not implemented.
+xG rate still carries some team quality, so the schedule arm remains an
+approximation rather than a full player-share decomposition.
 
 Re-run with `npx tsx scripts/backtest/schedule-adjust.ts`.
 
 ### 6.4 Priors and ceilings
 
-Priors (`lib/projections/projectPlayer.ts:23`):
+Non-attacking per-position priors (`lib/projections/projectPlayer.ts`):
 
 | Stat | GK | DEF | MID | FWD |
 |---|---|---|---|---|
-| xG prior | 0.01 | 0.08 | 0.25 | 0.45 |
-| xA prior | 0.02 | 0.08 | 0.20 | 0.15 |
+| xG/xA prior | price-tiered below | price-tiered below | price-tiered below | price-tiered below |
 | Defensive contributions | 0 | 7.7 | 8.6 | 4.7 |
 | Saves | 2.8 | 0 | 0 | 0 |
 | Bonus | 0.22 | 0.22 | 0.32 | 0.59 |

@@ -40,6 +40,8 @@ export type RotowireUnresolvedReason =
 
 interface RotowireSourceRecord {
   fixtureIndex: number;
+  kickoff?: string;
+  opponentAbbreviation?: string;
   teamSide: RotowireTeamLineup["side"];
   teamName: string;
   teamAbbreviation: string;
@@ -134,11 +136,13 @@ function sourceRecords(snapshot: RotowireLineupSnapshot): RotowireSourceRecord[]
   const addTeam = (fixture: RotowireFixtureLineup, fixtureIndex: number, team: RotowireTeamLineup) => {
     const base = {
       fixtureIndex,
+      kickoff: fixture.kickoff,
+      opponentAbbreviation: team.side === "HOME" ? fixture.away.abbreviation : fixture.home.abbreviation,
       teamSide: team.side,
       teamName: team.name,
       teamAbbreviation: team.abbreviation,
       lineupStatus: team.status,
-    } satisfies Pick<RotowireSourceRecord, "fixtureIndex" | "teamSide" | "teamName" | "teamAbbreviation" | "lineupStatus">;
+    } satisfies Pick<RotowireSourceRecord, "fixtureIndex" | "kickoff" | "opponentAbbreviation" | "teamSide" | "teamName" | "teamAbbreviation" | "lineupStatus">;
     for (const player of team.starters) {
       records.push({ ...base, ...player, source: "STARTER" });
     }

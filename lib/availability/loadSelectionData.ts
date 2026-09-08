@@ -41,6 +41,17 @@ export function loadRotowireSelectionData(
   const mappingsData = readJson(path.join(generatedDir, "rotowire-player-mappings.json"));
   const mappings = record(mappingsData) && Array.isArray(mappingsData.mappings)
     ? mappingsData.mappings.filter(mappedRecord)
+      .map((mapping) => {
+        const fixture = snapshotData?.fixtures[mapping.fixtureIndex];
+        if (!fixture) return mapping;
+        return {
+          ...mapping,
+          kickoff: mapping.kickoff ?? fixture.kickoff,
+          opponentAbbreviation: mapping.opponentAbbreviation ?? (
+            mapping.teamSide === "HOME" ? fixture.away.abbreviation : fixture.home.abbreviation
+          ),
+        };
+      })
     : [];
   if (!snapshotData && !mappings.length) return null;
   return { snapshot: snapshotData, mappings };
