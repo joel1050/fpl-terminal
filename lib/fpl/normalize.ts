@@ -16,6 +16,7 @@ import { loadInSeasonPlayerRates, loadInSeasonStarts, loadInSeasonTeamXG } from 
 import { rotowireSnapshotAge } from "@/lib/availability/refreshLineups";
 import { historicalBundleGeneration } from "@/lib/historical/load";
 import type { FreshnessMetadata } from "./cache";
+import { CLUB_ELO_SNAPSHOT, fixtureDifficultyFromClubElo, type ClubEloSnapshot } from "@/lib/clubElo";
 import {
   type FplBootstrapPayload,
   type FplFixturePayload,
@@ -109,10 +110,36 @@ export interface LineupSnapshotStatus {
   ageSeconds?: number;
 }
 
+/**
+ * Age of the ClubElo ratings behind this request. `snapshotDate` is the day
+ * ClubElo rated the clubs, `fetchedAt` the day we downloaded that rating: the
+ * first is what drifts, the second what a refresh moves. Elo feeds every
+ * fixture difficulty, so a snapshot left alone for months quietly skews xP
+ * with nothing on screen to say so.
+ */
+export interface ClubEloSnapshotStatus {
+  fetchedAt: string;
+  snapshotDate: string;
+  ageSeconds: number;
+}
+
 export type BootstrapProjectionMetadata = PlayerEnrichmentMetadata & {
   /** Age of the lineup snapshot behind this request. */
   lineups?: LineupSnapshotStatus;
+  /** Age of the ClubElo ratings behind this request. */
+  clubElo?: ClubEloSnapshotStatus;
 };
+
+/** Read per request, never cached: the age grows while the snapshot does not. */
+function clubEloStatus(snapshot: ClubEloSnapshot): ClubEloSnapshotStatus | undefined {
+  const fetchedAt = Date.parse(snapshot.fetchedAt);
+  if (!Number.isFinite(fetchedAt)) return undefined;
+  return {
+    fetchedAt: snapshot.fetchedAt,
+    snapshotDate: snapshot.snapshotDate,
+    ageSeconds: Math.max(0, Math.floor((Date.now() - fetchedAt) / 1000)),
+  };
+}
 
 export type NormalizedPlayerDetail = PlayerProfileData;
 
@@ -212,26 +239,31 @@ function normalizeFixtureStats(
 export function normalizeFixtures(
   fixtures: FplFixturePayload,
   teams: FplBootstrapPayload["teams"] = [],
+  clubElo: ClubEloSnapshot = CLUB_ELO_SNAPSHOT,
 ): NormalizedFixture[] {
-  const names = new Map(teams.map((team) => [team.id, team.name]));
-  return fixtures.map((fixture) => ({
-    id: fixture.id,
-    gameweek: fixture.event ?? undefined,
-    kickoffTime: fixture.kickoff_time ?? undefined,
-    teamHomeId: fixture.team_h,
-    teamAwayId: fixture.team_a,
-    teamHomeName: names.get(fixture.team_h),
-    teamAwayName: names.get(fixture.team_a),
-    homeScore: fixture.team_h_score,
-    awayScore: fixture.team_a_score,
-    finished: fixture.finished ?? false,
-    finishedProvisional: fixture.finished_provisional ?? false,
-    started: fixture.started ?? false,
-    minutes: fixture.minutes,
-    homeDifficulty: fixture.team_h_difficulty,
-    awayDifficulty: fixture.team_a_difficulty,
-    stats: normalizeFixtureStats(fixture.stats),
-  }));
+  const teamById = new Map(teams.map((team) => [team.id, team]));
+  return fixtures.map((fixture) => {
+    const home = teamById.get(fixture.team_h);
+    const away = teamById.get(fixture.team_a);
+    return {
+      id: fixture.id,
+      gameweek: fixture.event ?? undefined,
+      kickoffTime: fixture.kickoff_time ?? undefined,
+      teamHomeId: fixture.team_h,
+      teamAwayId: fixture.team_a,
+      teamHomeName: home?.name,
+      teamAwayName: away?.name,
+      homeScore: fixture.team_h_score,
+      awayScore: fixture.team_a_score,
+      finished: fixture.finished ?? false,
+      finishedProvisional: fixture.finished_provisional ?? false,
+      started: fixture.started ?? false,
+      minutes: fixture.minutes,
+      homeDifficulty: fixtureDifficultyFromClubElo(home?.short_name, away?.short_name, true, clubElo),
+      awayDifficulty: fixtureDifficultyFromClubElo(away?.short_name, home?.short_name, false, clubElo),
+      stats: normalizeFixtureStats(fixture.stats),
+    };
+  });
 }
 
 function playerFixtures(
@@ -447,6 +479,9 @@ export async function enrichBootstrapWithProjections(
   const lineups: LineupSnapshotStatus = snapshot
     ? { fetchedAt: snapshot.fetchedAt, ageSeconds: Math.floor(snapshot.ageMs / 1000) }
     : {};
+  // Static import, so it cannot change inside one process and stays out of the
+  // cache key. Only its age moves, and that is re-read on every call.
+  const clubElo = clubEloStatus(CLUB_ELO_SNAPSHOT);
 
   // The caller's key covers the FPL payloads. The rest of the inputs move on
   // their own schedule, so each contributes its own generation.
@@ -462,7 +497,7 @@ export async function enrichBootstrapWithProjections(
     // The projections are reused, but the age was just re-read: report that
     // rather than the age recorded when the slot was filled. `fetchedAt` is
     // part of the key, so only the age can differ.
-    return { ...projectionCache.result, metadata: { ...projectionCache.result.metadata, lineups } };
+    return { ...projectionCache.result, metadata: { ...projectionCache.result.metadata, lineups, clubElo } };
   }
 
   // Both loaders read the snapshot cache and are independent of each other.
@@ -483,7 +518,7 @@ export async function enrichBootstrapWithProjections(
   );
   const result: EnrichedBootstrap = {
     bootstrap: { ...bootstrap, players: withoutFixtureComponents(enriched.players) },
-    metadata: { ...enriched.metadata, lineups },
+    metadata: { ...enriched.metadata, lineups, clubElo },
   };
   if (key) projectionCache = { key, result };
   return result;
@@ -527,18 +562,21 @@ export function normalizePlayerDetail(
   player: Player,
   payload: FplPlayerSummaryPayload,
   teams?: Map<number, NormalizedTeam> | ReadonlyMap<number, NormalizedTeam>,
+  clubElo: ClubEloSnapshot = CLUB_ELO_SNAPSHOT,
 ): NormalizedPlayerDetail {
-  const fixtures: PlayerFixture[] = payload.fixtures.map((fixture) => ({
-    fixtureId: fixture.id,
-    gameweek: fixture.event ?? 0,
-    opponentTeamId: fixture.is_home ? fixture.team_a : fixture.team_h,
-    opponentShortName:
-      teams?.get(fixture.is_home ? fixture.team_a : fixture.team_h)?.shortName ??
-      String(fixture.is_home ? fixture.team_a : fixture.team_h),
-    isHome: fixture.is_home,
-    difficulty: fixture.difficulty,
-    kickoffTime: fixture.kickoff_time ?? undefined,
-  }));
+  const fixtures: PlayerFixture[] = payload.fixtures.map((fixture) => {
+    const opponentTeamId = fixture.is_home ? fixture.team_a : fixture.team_h;
+    const opponentShortName = teams?.get(opponentTeamId)?.shortName ?? String(opponentTeamId);
+    return {
+      fixtureId: fixture.id,
+      gameweek: fixture.event ?? 0,
+      opponentTeamId,
+      opponentShortName,
+      isHome: fixture.is_home,
+      difficulty: fixtureDifficultyFromClubElo(player.teamShortName, opponentShortName, fixture.is_home, clubElo),
+      kickoffTime: fixture.kickoff_time ?? undefined,
+    };
+  });
   return {
     player: { ...player, fixtures },
     fixtures,

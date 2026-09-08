@@ -37,9 +37,22 @@ From `normalizePlayer` (`lib/fpl/normalize.ts:207`):
 | `priceTenths` | `now_cost` |
 | `ownership` | `selected_by_percent` |
 
-### 2.2 Fixtures and difficulty (facts)
+### 2.2 Fixtures (facts) and difficulty (estimate)
 
-`playerFixtures` (`lib/fpl/normalize.ts:183`) builds each player's fixture list. `difficulty` is the FPL fixture difficulty rating (1–5) for the player's side (home uses `team_h_difficulty`, away uses `team_a_difficulty`).
+`normalizeFixtures` and `normalizePlayerDetail` replace FPL's supplied difficulty labels with the generated ClubElo snapshot (`data/generated/club-elo.json`). The upstream `team_h_difficulty`, `team_a_difficulty`, and player-detail `difficulty` fields remain accepted by the schemas for transport compatibility, but they are ignored. Both take an optional snapshot argument, so a test can rate fixtures against a snapshot it builds itself rather than the committed one.
+
+A fixture's own-team and opponent short names are matched to ClubElo's three-letter codes. Those codes are not unique in the source: its England table lists both Stoke and Stockport as `STO`. A code held by two clubs names neither, so the lookup returns nothing rather than the higher-rated of the two. `BHA`, `MUN`, and `NFO` have no matching code and are mapped by slug in `FPL_TO_CLUB_ELO_SLUG` (`Brighton`, `ManUnited`, `Forest`); the snapshot's slugs are unique, so a mapped club cannot be displaced. An unresolved club returns neutral difficulty `3` rather than falling back to FPL, and `npm run data:elo` refuses to write a snapshot that cannot rate a current team, naming each one and the repair it needs: a shared code, a code no club carries, or a mapped slug ClubElo has since renamed.
+
+For a team with Elo `E_own`, opponent Elo `E_opp`, home-field advantage `H = 40`, and venue flag `home`, the normalized FDR is:
+
+```
+venueAdjustedOwn = E_own + (home ? H : -H)
+difficulty       = clamp(round(3 + (E_opp - venueAdjustedOwn) / 200), 1, 5)
+```
+
+Missing Elo values use `difficulty = 3`. The manual `npm run data:elo` refresh parses exact decimal rows embedded in ClubElo's `vegaJson`, merges the server-rendered full England ranking so clubs outside the chart's top 25 remain available, and writes the validated snapshot atomically. Where two exact rows share a code, the merge keeps the ranking's own rounded Elo rather than attach one club's rating to another's row.
+
+The snapshot is a static import, so it cannot change inside one process and stays out of the projection cache key. Its age can, so `enrichBootstrapWithProjections` re-reads it on every call and reports `clubElo` alongside `lineups`: `snapshotDate` is the day ClubElo rated the clubs, `fetchedAt` the day the file was downloaded, `ageSeconds` how long ago that was. Elo feeds every fixture difficulty, so a snapshot left alone drifts.
 
 ### 2.3 Historical stats (evidence)
 
@@ -442,7 +455,7 @@ Ceilings (`lib/projections/projectPlayer.ts:34`): goal involvement 3, saves 10, 
 ### 7.1 Base difficulty and venue
 
 ```
-difficulty       = clamp(round(fixture.difficulty ?? 3), 1, 5)
+difficulty       = clamp(round(fixture.difficulty ?? 3), 1, 5)  // ClubElo FDR from §2.2
 base             = {1: 1.14, 2: 1.07, 3: 1.00, 4: 0.92, 5: 0.84}[difficulty]
 venue            = home ? 1.102 : 0.898
 attackMultiplier = base * venue
@@ -456,25 +469,13 @@ mean the multipliers are `1.102` and `0.898`; actual goals agree (1.453 against
 contradicted the `0.9 / 1.1` used on the goals-against side of the same fixture.
 Re-derive with `npx tsx scripts/backtest/sweep.ts`.
 
-In practice `base` moves far less than the table suggests: FPL only ever issued
-difficulty 2, 3 or 4 to home sides across the 380 fixtures of the current
-season, so `base` spans `1.07`-`0.92`, not `1.14`-`0.84`.
-
-**`base` and the strength ratio are not the same signal.** Both encode "how hard
-is this fixture", so multiplying them looks like counting the opponent twice.
-Measured over 2022/23-2025/26, it is not: their correlation is only 0.19-0.63,
-and they point opposite ways on 9.5-30.6% of team-fixtures. Regress a team's
-actual xG on the strength ratio and the residual still moves with `base`
-(correlation 0.055, 0.071, 0.089 and 0.157 by season), so FPL's rating carries
-information the model's own strengths miss. Dropping `base` whenever strengths
-exist raises team-xG RMSE in all four seasons and is worse on xP in roughly 61%
-of gameweeks; the xP difference resolves in 2022/23 alone (+0.0042, interval
-excluding zero) and spans zero in the other three. **Keep both.** Re-run with
-`npx tsx scripts/backtest/fdr.ts`.
-
-What that leaves open is the *weighting*, not the inputs. Two partially
-correlated signals are currently combined by plain multiplication, which is an
-assumption rather than a fit, and no arm has yet tested a weighted blend.
+`base` now reflects the ClubElo scale rather than a live FPL label; the neutral
+fallback remains `3`, so an unmapped club keeps `base = 1.00`. The old
+walk-forward evidence in `scripts/backtest/fdr.ts` measured FPL's supplied FDR,
+so it does not validate this replacement. ClubElo FDR and the strength ratio
+both describe the matchup and are still multiplied; that weighting is an
+explicit model assumption until the ClubElo input is available across the
+historical backtest seasons.
 
 ### 7.2 Strength-based adjustment
 

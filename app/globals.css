@@ -108,8 +108,8 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .player-table tbody tr:hover td:last-child, .player-table tbody tr.selected td:last-child { background: #13181b; }
 
 /* Panel-width aware density: the fixtures column breathes with the panel —
-   one badge (~33px) per step, twelve rendered at most — then yields RISK,
-   EXP MIN and XGI/90 before hitting the horizontal-scroll floor. Thresholds
+   one badge (~33px) per step, twelve rendered at most — then yields XGI/90,
+   XP10/£ and XP10 before hitting the horizontal-scroll floor. Thresholds
    are measured against real row content (fixed cols ≈ 504px on desktop) plus
    a 45px safety margin for long names, sort arrows and classic scrollbars. */
 @container market-table (max-width: 648px) { .player-table .fixture-run span:nth-child(n+4) { display: none; } }
@@ -122,8 +122,8 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 @container market-table (max-width: 879px) { .player-table .fixture-run span:nth-child(n+11) { display: none; } }
 @container market-table (max-width: 912px) { .player-table .fixture-run span:nth-child(n+12) { display: none; } }
 @container market-table (max-width: 647px) { .player-table th:nth-child(11), .player-table td:nth-child(11) { display: none; } }
-@container market-table (max-width: 619px) { .player-table th:nth-child(9), .player-table td:nth-child(9) { display: none; } }
-@container market-table (max-width: 577px) { .player-table th:nth-child(10), .player-table td:nth-child(10) { display: none; } }
+@container market-table (max-width: 619px) { .player-table th:nth-child(10), .player-table td:nth-child(10) { display: none; } }
+@container market-table (max-width: 577px) { .player-table th:nth-child(9), .player-table td:nth-child(9) { display: none; } }
 .player-name-button { display: inline-flex; align-items: baseline; max-width: 205px; gap: 4px; overflow: hidden; border: 0; background: transparent; color: var(--text); text-align: left; }
 .player-name-button strong { overflow: hidden; text-overflow: ellipsis; font-size: 10px; font-weight: 600; }
 .player-name-button small { color: var(--muted); font-size: 9px; }
@@ -767,7 +767,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .topbar-actions .text-button { font-size: 8px; padding-inline: 4px; }
   .mobile-tabs, .leagues-mobile-tabs { top: 0; }
 
-  /* Smallest phones: also drop XP/£ so PLAYER/PRICE/XP/FIXTURES/ADD fit. */
+  /* Smallest phones: also drop XP5/£ so PLAYER/PRICE/XP/FIXTURES/ADD fit. */
   .player-table th:nth-child(8), .player-table td:nth-child(8) { display: none; }
   /* FIXTURES is the last 117px keeping the table wider than the pane; without
      it the sticky ADD column has nothing left to park on top of. */

@@ -275,6 +275,15 @@ sharper instrument for an attacking term, exactly as `sweep.ts` argued.
 The open question is the *weighting*. Two partially correlated signals are
 combined by plain multiplication, which is an assumption nobody has fitted.
 
+**The table above no longer reproduces at HEAD.** Commit 79eafa3 changed
+`lib/historical/enrichPlayers.ts` and `loadInSeasonForm.ts`, which moves the team
+strengths every column here is built on - including the `without base` arm, which
+never touched FDR. Re-running `fdr.ts` unchanged now gives corr(base, ratio)
+0.575 and 0.403 for 2024/25 and 2025/26 against the 0.631 and 0.460 recorded
+here, and team xG RMSE 0.53679 / 0.54124 against 0.53333 / 0.53739. The verdict
+is unchanged in sign and size; the numbers are stale. Do not compare them against
+the ClubElo section below, which was measured at HEAD.
+
 **Bonus, now that `base` is live in the harness:** the outer multiplier clamp
 binds on 0.8% (2022/23), 4.4%, 6.4% and 3.8% of team-fixtures. README previously
 recorded that this could not be checked here "because FDR is neutralized in the
@@ -290,3 +299,77 @@ The adjusted path is covered by `tests/core/schedule-adjusted-form.test.ts` and
 by `schedule-adjust.ts`, which computes its arms standalone rather than through
 `xp.ts`. Porting the adjustment into `xp.ts` would move the baseline for every
 arm recorded above, so it was left alone deliberately.
+
+## ClubElo difficulty: the gap, or the opponent alone?
+
+`normalizeFixtures` now replaces FPL's published rating with one read off a
+ClubElo snapshot, `clamp(round(3 + (Eopp - Eown_venue) / 200), 1, 5)`. That is a
+function of the Elo *difference*, so the two sides of a fixture always sum to 6
+and 187 of 2026/27's 380 fixtures score 3/3 - Arsenal against Man City (FPL 4/5)
+and Hull against Sunderland (FPL 2/2) come out identical. Since `base`
+multiplies the attack term, and attacking output depends on the quality of the
+defence being faced, the objection was that the rating should read the opponent
+absolutely rather than relatively.
+
+Tested as a continuum rather than two points. `MIX(w)` subtracts `w` of the own
+side's rating; `w = 1` is the shipped gap formula, `w = 0` reads the opponent
+alone, and the divisor grows with the spread of the numerator so every weight
+produces a comparable 1-5 spread. `elo-history.ts`, `elo-fdr.ts`.
+
+Team xG, correlation of the attack multiplier with actual team xG:
+
+| Season | w=0 | w=0.25 | w=0.5 | w=0.75 | w=1 (shipped) | FPL | none |
+|---|---|---|---|---|---|---|---|
+| 2023/24 | 0.4777 | 0.4854 | 0.4858 | 0.4930 | 0.4920 | 0.4809 | 0.4831 |
+| 2024/25 | 0.4173 | 0.4235 | 0.4290 | 0.4302 | **0.4328** | 0.4321 | 0.4112 |
+| 2025/26 | 0.3543 | 0.3562 | 0.3611 | 0.3623 | 0.3651 | **0.3704** | 0.3493 |
+
+**Verdict: reject the change to opponent-only, keep the gap.** `w` improves
+monotonically toward 1 in all three seasons on both correlation and team-xG
+RMSE. Individually the differences are inside the noise - `w = 0` costs
++0.00378 [-0.0018, +0.0098] team-xG RMSE in 2024/25 and +0.00044 [-0.0047,
++0.0051] in 2025/26 - but three seasons agreeing on the direction is the
+evidence, and it points away from the proposal.
+
+The expressiveness argument was right about what the formula *cannot say* and
+wrong about it mattering. The reason is visible in the residual column: after
+regressing team xG on the strength ratio, the residual still moves with the gap
+`base` (0.097 and 0.139) and barely moves with the opponent-only `base` (0.036
+and 0.078). A ratio `ownAttack / opponentDefence` cancels the *level* of the two
+sides; the gap `base` keeps a read on own-team quality that the ratio has
+divided away. That is signal the model does not otherwise carry, which is also
+the answer to the redundancy worry above - `corr(base, ratio)` rises from 0.575
+to 0.758 when FPL's rating is swapped for the Elo gap, and the residual
+correlation does not fall.
+
+**Reject a tighter divisor; 300 is unresolved.** `GAP(130)` is significantly
+worse than the shipped 200 in both evaluation seasons (+0.00293 [+0.0005,
++0.0054] and +0.00357 [+0.0001, +0.0069]) and binds the outer multiplier clamp
+on 13% of team-fixtures against 6-10%. `GAP(300)` is directionally better in two
+seasons of three and binds on 3%, but no interval resolves, so 200 stands.
+
+**Unresolved: ClubElo against FPL.** FPL's own rating is significantly better in
+2025/26 (-0.00567 [-0.0110, -0.0009]), a null in 2024/25 and worse in 2023/24.
+This comparison is not clean - see the scope limit below - so it is recorded,
+not concluded from.
+
+### Scope limits
+
+- **These are not ClubElo's ratings.** ClubElo's history API returns 502 and
+  `clubelo.com/<date>/ENG` redirects to the front page, so no dated historical
+  values are obtainable. `elo-history.ts` computes ratings from the corpus's own
+  match results instead: K=20 with the World Football Elo goal-difference term,
+  65 Elo points of home advantage, chained across seasons by club name, promoted
+  clubs entering at the mean of the relegated, then rescaled to the real
+  snapshot's mean 1830 / sd 120 using burn-in seasons only. A difference between
+  `MIX` arms is a difference of *formula* - they read identical ratings. A
+  difference against FPL confounds the rating source with the formula.
+- **2022/23 and 2023/24 are Elo burn-in.** A flat-seeded rating is compressed
+  toward the mean for most of a season. Opening league sd runs 0, 123, 150, 153
+  across the four seasons; only 2024/25 and 2025/26 are evaluated on a converged
+  rating.
+- **The player-xP block is unguarded.** `validate.ts` fails at HEAD, so xP
+  numbers from this script are reported but carry no replication gate. On xP,
+  flatter arms win - `NONE`, which makes every fixture neutral, beats the
+  shipped formula - which is what a sum of squares over single-match points
+  rewards regardless of whether the signal is real. Team xG is the instrument.

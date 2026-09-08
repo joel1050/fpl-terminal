@@ -25,7 +25,7 @@ export function sanitizePanelRatios(ratios: Partial<Record<DesktopPanel, number>
 }
 
 export type TerminalMode = "BUILD" | "ANALYZE";
-export type SortKey = "name" | "price" | "nextGW" | "form" | "next5" | "value" | "ownership" | "risk";
+export type SortKey = "name" | "price" | "nextGW" | "form" | "next5" | "value" | "next10" | "value10" | "xgi" | "ownership";
 
 export type TerminalFilters = {
   position: Position | "ALL";

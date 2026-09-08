@@ -1,0 +1,254 @@
+{
+  "source": "https://clubelo.com/ENG",
+  "fetchedAt": "2026-09-08T06:13:55.178Z",
+  "snapshotDate": "2026-09-06",
+  "homeFieldAdvantage": 40,
+  "clubs": [
+    {
+      "name": "Arsenal",
+      "tlc": "ARS",
+      "slug": "Arsenal",
+      "elo": 2034.1982070221597
+    },
+    {
+      "name": "Aston Villa",
+      "tlc": "AVL",
+      "slug": "AstonVilla",
+      "elo": 1884.3609356943095
+    },
+    {
+      "name": "Birmingham",
+      "tlc": "BIR",
+      "slug": "Birmingham",
+      "elo": 1621
+    },
+    {
+      "name": "Blackburn",
+      "tlc": "BLA",
+      "slug": "Blackburn",
+      "elo": 1572
+    },
+    {
+      "name": "Bournemouth",
+      "tlc": "BOU",
+      "slug": "Bournemouth",
+      "elo": 1853.5927427479899
+    },
+    {
+      "name": "Bristol City",
+      "tlc": "BRC",
+      "slug": "BristolCity",
+      "elo": 1589
+    },
+    {
+      "name": "Brentford",
+      "tlc": "BRE",
+      "slug": "Brentford",
+      "elo": 1844.9809200280392
+    },
+    {
+      "name": "Brighton",
+      "tlc": "BRI",
+      "slug": "Brighton",
+      "elo": 1860.6488744357755
+    },
+    {
+      "name": "Burnley",
+      "tlc": "BUR",
+      "slug": "Burnley",
+      "elo": 1653.1320357886088
+    },
+    {
+      "name": "Cardiff",
+      "tlc": "CAR",
+      "slug": "Cardiff",
+      "elo": 1569
+    },
+    {
+      "name": "Chelsea",
+      "tlc": "CHE",
+      "slug": "Chelsea",
+      "elo": 1885.2451929386536
+    },
+    {
+      "name": "Coventry",
+      "tlc": "COV",
+      "slug": "Coventry",
+      "elo": 1692.2966557156028
+    },
+    {
+      "name": "Crystal Palace",
+      "tlc": "CRY",
+      "slug": "CrystalPalace",
+      "elo": 1820.6844627832272
+    },
+    {
+      "name": "Derby",
+      "tlc": "DER",
+      "slug": "Derby",
+      "elo": 1578
+    },
+    {
+      "name": "Everton",
+      "tlc": "EVE",
+      "slug": "Everton",
+      "elo": 1817.1348881464803
+    },
+    {
+      "name": "Forest",
+      "tlc": "FOR",
+      "slug": "Forest",
+      "elo": 1802.566869114777
+    },
+    {
+      "name": "Fulham",
+      "tlc": "FUL",
+      "slug": "Fulham",
+      "elo": 1792.3112887235927
+    },
+    {
+      "name": "Hull",
+      "tlc": "HUL",
+      "slug": "Hull",
+      "elo": 1633
+    },
+    {
+      "name": "Ipswich",
+      "tlc": "IPS",
+      "slug": "Ipswich",
+      "elo": 1689.4467242660496
+    },
+    {
+      "name": "Leeds",
+      "tlc": "LEE",
+      "slug": "Leeds",
+      "elo": 1810.0927868576682
+    },
+    {
+      "name": "Leicester",
+      "tlc": "LEI",
+      "slug": "Leicester",
+      "elo": 1575
+    },
+    {
+      "name": "Lincoln City",
+      "tlc": "LIN",
+      "slug": "LincolnCity",
+      "elo": 1609
+    },
+    {
+      "name": "Liverpool",
+      "tlc": "LIV",
+      "slug": "Liverpool",
+      "elo": 1925.4474486950573
+    },
+    {
+      "name": "Luton",
+      "tlc": "LUT",
+      "slug": "Luton",
+      "elo": 1556
+    },
+    {
+      "name": "Man City",
+      "tlc": "MCI",
+      "slug": "ManCity",
+      "elo": 2021.661842397073
+    },
+    {
+      "name": "Middlesbrough",
+      "tlc": "MID",
+      "slug": "Middlesbrough",
+      "elo": 1650.3101553211234
+    },
+    {
+      "name": "Millwall",
+      "tlc": "MIL",
+      "slug": "Millwall",
+      "elo": 1646.6630376747862
+    },
+    {
+      "name": "Man United",
+      "tlc": "MNU",
+      "slug": "ManUnited",
+      "elo": 1883.9456103565544
+    },
+    {
+      "name": "Newcastle",
+      "tlc": "NEW",
+      "slug": "Newcastle",
+      "elo": 1881.5587717482454
+    },
+    {
+      "name": "Norwich",
+      "tlc": "NOR",
+      "slug": "Norwich",
+      "elo": 1620
+    },
+    {
+      "name": "Portsmouth",
+      "tlc": "POR",
+      "slug": "Portsmouth",
+      "elo": 1554
+    },
+    {
+      "name": "QPR",
+      "tlc": "QPR",
+      "slug": "QPR",
+      "elo": 1572
+    },
+    {
+      "name": "Sheffield United",
+      "tlc": "SHU",
+      "slug": "SheffieldUnited",
+      "elo": 1622
+    },
+    {
+      "name": "Southampton",
+      "tlc": "SOU",
+      "slug": "Southampton",
+      "elo": 1695.0117601136633
+    },
+    {
+      "name": "Sunderland",
+      "tlc": "SUN",
+      "slug": "Sunderland",
+      "elo": 1732.4239241210005
+    },
+    {
+      "name": "Swansea",
+      "tlc": "SWA",
+      "slug": "Swansea",
+      "elo": 1605
+    },
+    {
+      "name": "Tottenham",
+      "tlc": "TOT",
+      "slug": "Tottenham",
+      "elo": 1804.667286848122
+    },
+    {
+      "name": "West Brom",
+      "tlc": "WBA",
+      "slug": "WestBrom",
+      "elo": 1589
+    },
+    {
+      "name": "West Ham",
+      "tlc": "WHU",
+      "slug": "WestHam",
+      "elo": 1773.2037833286306
+    },
+    {
+      "name": "Wolves",
+      "tlc": "WOL",
+      "slug": "Wolves",
+      "elo": 1718.6749699964878
+    },
+    {
+      "name": "Wrexham",
+      "tlc": "WRE",
+      "slug": "Wrexham",
+      "elo": 1617
+    }
+  ]
+}

@@ -131,7 +131,9 @@ describe("FPL data boundary", () => {
       opponentTeamId: 2,
       opponentShortName: "TUN",
       isHome: true,
-      difficulty: 2,
+      // Unknown synthetic club codes use the neutral ClubElo FDR; the
+      // upstream team_h_difficulty value is intentionally ignored.
+      difficulty: 3,
     });
     expect(normalized.players[0]?.current).toMatchObject({ minutes: 0, totalPoints: 0 });
     expect(normalized.players[0]?.current.form).toBeUndefined();
