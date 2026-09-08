@@ -125,7 +125,7 @@ describe("player selection model", () => {
     expect(selections.get(2)?.expectedMinutes).not.toBe(73);
   });
 
-  it("updates a stale historical start duration from current-season minutes", () => {
+  it("overrides a stale historical role after 240 current-season minutes", () => {
     const rows = [65, 60, 20].map((minutes, index) => ({
       historicalPlayerId: 101,
       gameweek: index + 1,
@@ -143,12 +143,28 @@ describe("player selection model", () => {
         playerMappings: [{ currentPlayerId: 1, historicalPlayerId: 101, confidence: "EXACT" }],
       },
       startHistory: {
-        1: [81, 81, 81].map((minutes) => ({ started: true, appeared: true, minutes })),
+        1: [90, 90, 63].map((minutes) => ({ started: true, appeared: true, minutes })),
       },
     }).get(1)!;
 
-    expect(selection.expectedStartMinutes).toBeGreaterThan(62.5);
-    expect(selection.expectedStartMinutes).toBeCloseTo(77.004, 2);
+    expect(selection.startProbability).toBe(1);
+    expect(selection.cameoProbability).toBe(0);
+    expect(selection.expectedStartMinutes).toBe(81);
+    expect(selection.expectedMinutes).toBe(81);
+  });
+
+  it("keeps the historical blend below the current-role threshold", () => {
+    const selection = buildPlayerSelections([player(1, 1, 239)], {
+      historicalStats: {
+        1: { season: "2025/26", minutes: 900, starts: 2 },
+      },
+      startHistory: {
+        1: [80, 80, 79].map((minutes) => ({ started: true, appeared: true, minutes })),
+      },
+    }).get(1)!;
+
+    expect(selection.startProbability).toBeLessThan(1);
+    expect(selection.expectedStartMinutes).not.toBeCloseTo(239 / 3, 3);
   });
 
   it("caps RotoWire OUT/SUS and lowers QUES", () => {

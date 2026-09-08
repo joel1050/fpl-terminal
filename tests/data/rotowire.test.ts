@@ -25,6 +25,20 @@ const html = `
     </ul>
   </div>`;
 
+const unpostedFixture = `
+  <div class="lineup is-soccer">
+    <div class="lineup__time"><b>August 21</b>&nbsp; 3:00 PM ET</div>
+    <div class="lineup__abbr">BRE</div><div class="lineup__abbr">CHE</div>
+    <div class="lineup__mteam is-home">Brentford <span></span></div>
+    <div class="lineup__mteam is-visit">Chelsea <span></span></div>
+    <ul class="lineup__list is-home">
+      <li class="lineup__status is-expected">Predicted Lineup</li>
+    </ul>
+    <ul class="lineup__list is-visit">
+      <li class="lineup__status is-expected">Predicted Lineup</li>
+    </ul>
+  </div>`;
+
 describe("RotoWire lineup ingestion", () => {
   it("extracts teams, statuses, starters, injuries, and stable RotoWire IDs", () => {
     const snapshot = parseRotowireLineups(html, "2026-08-20T12:00:00.000Z");
@@ -37,7 +51,15 @@ describe("RotoWire lineup ingestion", () => {
     expect(snapshot.fixtures[0].away.status).toBe("CONFIRMED");
   });
 
-  it("rejects incomplete source data instead of publishing a partial snapshot", () => {
+  it("skips unposted fixtures while retaining complete fixtures", () => {
+    const snapshot = parseRotowireLineups(`${html}${unpostedFixture}`);
+
+    expect(snapshot.fixtures).toHaveLength(1);
+    expect(snapshot.fixtures[0].home.name).toBe("Home & City");
+    expect(snapshot.fixtures.some((fixture) => fixture.home.name === "Brentford" || fixture.away.name === "Chelsea")).toBe(false);
+  });
+
+  it("rejects a source with no complete fixture instead of publishing a partial snapshot", () => {
     expect(() => parseRotowireLineups(html.replace(players("Away"), players("Away").replace(/<li class="lineup__player">[\s\S]*?<\/li>/, "")))).toThrow(/Away United \(10 starters\)/);
   });
 });

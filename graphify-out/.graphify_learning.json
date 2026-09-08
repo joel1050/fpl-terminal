@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-07T18:21:13.534638+00:00",
+  "generated_at": "2026-09-08T05:01:22.443092+00:00",
   "nodes": {
     "lib_ai_tools": {
       "code_fingerprint": "",
@@ -12,7 +12,7 @@
           "q": "ok integraye into the app"
         }
       ],
-      "score": 0.66866214,
+      "score": 0.661829309,
       "source_file": "lib/ai/tools.ts",
       "status": "tentative",
       "uses": 1
@@ -28,7 +28,7 @@
           "q": "PLEASE IMPLEMENT THIS PLAN: Actual Selling Prices and ITB"
         }
       ],
-      "score": 0.92388768,
+      "score": 0.914446786,
       "source_file": "lib/analysis/analyzeSquad.ts",
       "status": "tentative",
       "uses": 1
@@ -44,7 +44,7 @@
           "q": "PLEASE IMPLEMENT THIS PLAN: Actual Selling Prices and ITB"
         }
       ],
-      "score": 0.92388768,
+      "score": 0.914446786,
       "source_file": "lib/analysis/context.ts",
       "status": "tentative",
       "uses": 1
@@ -70,32 +70,42 @@
           "q": "look at the pts/pound does it look more accurate"
         }
       ],
-      "score": 2.002460752,
+      "score": 1.981998285,
       "source_file": "lib/analysis/context.ts",
       "status": "preferred",
       "uses": 3
     },
     "lib_availability_rotowiremapping": {
-      "code_fingerprint": "d3e143389f60c055f420ab1211ef0ac05b1e4257a898827802baeb3ce13e9445",
+      "code_fingerprint": "d34525675066debb3866eec17e44ab5c5f9a04f25e07532ed818bad4b606af8a",
       "label": "rotowireMapping.ts",
-      "last": "2026-08-24T16:54:25.896536+00:00",
+      "last": "2026-09-07T18:49:49.313215+00:00",
       "provenance": [
+        {
+          "date": "2026-09-07T18:49:49.313215+00:00",
+          "outcome": "useful",
+          "q": "1. Regress every historical xG/xA anchor with regressPer90(historical.rate, historical.minutes, pricePrior, 900) before passing it to blendPlayerRate. 2. Keep generic price priors league-neutral so the upcoming team-strength multiplier still lowers players from weak attacks. 3. For transferred players, normalize historical production using their former team’s strength, rather than their current club. 4. Tie RotoWire evidence to the projected fixture/Gameweek. Previous-GW confirmed teams should feed role history, not act as next-GW predictions. 5. Let current-season starts update expected start duration; Isak’s 81 minutes per match shouldn’t still produce a 62-minute forecast. apply these changes"
+        },
         {
           "date": "2026-08-24T16:54:25.896536+00:00",
           "outcome": "useful",
           "q": "@calculations.md do section 4 now\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 0.722627575,
+      "score": 1.705478874,
       "source_file": "lib/availability/rotowireMapping.ts",
-      "status": "tentative",
-      "uses": 1
+      "status": "preferred",
+      "uses": 2
     },
     "lib_historical_enrichplayers": {
-      "code_fingerprint": "e2c441be73041b87d1e9f51473620311ddb7ef8182964bc073c9577dd5583d41",
+      "code_fingerprint": "5325aadd1e892a1a09ce493105df78b84a09e26825b3bd64deeb9fb274d0213b",
       "label": "enrichPlayers.ts",
-      "last": "2026-08-22T04:36:26.631134+00:00",
+      "last": "2026-09-07T18:49:49.313215+00:00",
       "provenance": [
+        {
+          "date": "2026-09-07T18:49:49.313215+00:00",
+          "outcome": "useful",
+          "q": "1. Regress every historical xG/xA anchor with regressPer90(historical.rate, historical.minutes, pricePrior, 900) before passing it to blendPlayerRate. 2. Keep generic price priors league-neutral so the upcoming team-strength multiplier still lowers players from weak attacks. 3. For transferred players, normalize historical production using their former team’s strength, rather than their current club. 4. Tie RotoWire evidence to the projected fixture/Gameweek. Previous-GW confirmed teams should feed role history, not act as next-GW predictions. 5. Let current-season starts update expected start duration; Isak’s 81 minutes per match shouldn’t still produce a 62-minute forecast. apply these changes"
+        },
         {
           "date": "2026-08-22T04:36:26.631134+00:00",
           "outcome": "useful",
@@ -117,13 +127,13 @@
           "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
         }
       ],
-      "score": 2.726364329,
+      "score": 3.688740123,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "preferred",
-      "uses": 4
+      "uses": 5
     },
     "lib_historical_enrichplayers_deriveteamstrengths": {
-      "code_fingerprint": "e2c441be73041b87d1e9f51473620311ddb7ef8182964bc073c9577dd5583d41",
+      "code_fingerprint": "5325aadd1e892a1a09ce493105df78b84a09e26825b3bd64deeb9fb274d0213b",
       "label": "deriveTeamStrengths()",
       "last": "2026-09-01T03:50:51.456890+00:00",
       "provenance": [
@@ -143,13 +153,13 @@
           "q": "@calculations.md lets go section by section and try to improve the metrics formulation in this app, start with section 3\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 2.302564099,
+      "score": 2.279034979,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "preferred",
       "uses": 3
     },
     "lib_historical_enrichplayers_enrichplayerswithhistory": {
-      "code_fingerprint": "e2c441be73041b87d1e9f51473620311ddb7ef8182964bc073c9577dd5583d41",
+      "code_fingerprint": "5325aadd1e892a1a09ce493105df78b84a09e26825b3bd64deeb9fb274d0213b",
       "label": "enrichPlayersWithHistory()",
       "last": "2026-08-24T16:10:17.253370+00:00",
       "provenance": [
@@ -159,7 +169,7 @@
           "q": "Fix the xG input first just do this,&#x20;\n\nafter this show me the team strength rankings"
         }
       ],
-      "score": 0.722115923,
+      "score": 0.714736866,
       "source_file": "lib/historical/enrichPlayers.ts",
       "status": "tentative",
       "uses": 1
@@ -175,7 +185,7 @@
           "q": "1. this mostly fine 2. yeah how do we make this more realistic, it should be closer to zero, do we have access to last seasons stats 3. thats whatever its fine 4. look at betting odds for recent matches for clean sheets match it against our strength rating system and design appropriate clean sheet odds, it should be closer to 0 for ars - cov"
         }
       ],
-      "score": 0.678835683,
+      "score": 0.671898892,
       "source_file": "lib/historical/ingest.ts",
       "status": "tentative",
       "uses": 1
@@ -196,7 +206,7 @@
           "q": "i want to backtest for more than 1 season is there any way you can get data for more seasons"
         }
       ],
-      "score": 1.719492411,
+      "score": 1.701921502,
       "source_file": "lib/historical/ingest.ts",
       "status": "preferred",
       "uses": 2
@@ -204,8 +214,13 @@
     "lib_historical_types_historicalbundle": {
       "code_fingerprint": "8a4d2e3260f70dfbe4e69a4e980aaac40c9dbaf9cda8985fa6287d2da1f1a1ac",
       "label": "HistoricalBundle",
-      "last": "2026-09-07T18:02:58.527349+00:00",
+      "last": "2026-09-08T04:50:57.968917+00:00",
       "provenance": [
+        {
+          "date": "2026-09-08T04:50:57.968917+00:00",
+          "outcome": "useful",
+          "q": "why are isaks xmin at 60 even though hes played 90 min 90 min 63 min last few games"
+        },
         {
           "date": "2026-09-07T18:02:58.527349+00:00",
           "outcome": "useful",
@@ -225,17 +240,12 @@
           "date": "2026-08-24T16:54:25.896536+00:00",
           "outcome": "useful",
           "q": "@calculations.md do section 4 now\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
-        },
-        {
-          "date": "2026-08-22T04:42:12.345810+00:00",
-          "outcome": "useful",
-          "q": "normalize minutes played, and compare the xp bias, +.7 is a lot and may point at some issues"
         }
       ],
-      "score": 8.21036481,
+      "score": 9.126298898,
       "source_file": "lib/historical/types.ts",
       "status": "preferred",
-      "uses": 11
+      "uses": 12
     },
     "lib_optimizer_objective": {
       "code_fingerprint": "bd2bb830d7e878b6c4837bd4e42139665e5498b8e4a5a54213ff2bb989833a52",
@@ -263,7 +273,7 @@
           "q": "the optimizer takes way too long now, lets revert back to standardized bench options\\n\\nCHEAP, BALANCED AND STRONG\\n\\nBUT THE CHEAP OPTIONS SHOULD STILL BE GOOD FOR THE PRICE"
         }
       ],
-      "score": 3.680955178,
+      "score": 3.643340747,
       "source_file": "lib/optimizer/objective.ts",
       "status": "preferred",
       "uses": 4
@@ -300,7 +310,7 @@
           "q": "would you say its optimal to handle gks as one starting gk and one 4mill bench gk that will stay on the bench or handle gks how the solver handles it"
         }
       ],
-      "score": 8.42471552,
+      "score": 8.338626213,
       "source_file": "lib/optimizer/optimizer.ts",
       "status": "contested",
       "uses": 11,
@@ -309,8 +319,13 @@
     "lib_projections_expectedminutes": {
       "code_fingerprint": "b770bed063cf12c4c5dd09c29fc480164fca7113f39ae80607ffab12c8958df8",
       "label": "expectedMinutes.ts",
-      "last": "2026-09-07T18:02:58.527349+00:00",
+      "last": "2026-09-08T04:50:57.968917+00:00",
       "provenance": [
+        {
+          "date": "2026-09-08T04:50:57.968917+00:00",
+          "outcome": "useful",
+          "q": "why are isaks xmin at 60 even though hes played 90 min 90 min 63 min last few games"
+        },
         {
           "date": "2026-09-07T18:02:58.527349+00:00",
           "outcome": "useful",
@@ -330,17 +345,12 @@
           "date": "2026-08-22T04:04:37.299189+00:00",
           "outcome": "useful",
           "q": "try shaw and calafiori"
-        },
-        {
-          "date": "2026-08-22T03:59:07.265070+00:00",
-          "outcome": "useful",
-          "q": "sort by xp 5 gw top to bottom do the top 20s expected minutes look accurate compared to last seasons minutes played?"
         }
       ],
-      "score": 5.075372284,
+      "score": 6.023341796,
       "source_file": "lib/projections/expectedMinutes.ts",
       "status": "preferred",
-      "uses": 7
+      "uses": 8
     },
     "lib_projections_fixtureadjustment": {
       "code_fingerprint": "f16312a2c117582ef79ff749f6e35eb5efad7aea99d7c6c1846be854b8ac5052",
@@ -373,7 +383,7 @@
           "q": "normalize minutes played, and compare the xp bias, +.7 is a lot and may point at some issues"
         }
       ],
-      "score": 7.548389805,
+      "score": 7.471255373,
       "source_file": "lib/projections/fixtureAdjustment.ts",
       "status": "preferred",
       "uses": 10
@@ -409,7 +419,7 @@
           "q": "@calculations.md lets go section by section and try to improve the metrics formulation in this app, start with section 3\nsummarize it in a simple manner and rate 1-10 on how accurate you think it is as an estimate, and propose changes that you think would make it more accurate"
         }
       ],
-      "score": 4.159545779,
+      "score": 4.117040794,
       "source_file": "lib/projections/fixtureAdjustment.ts",
       "status": "preferred",
       "uses": 5
@@ -430,16 +440,26 @@
           "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
         }
       ],
-      "score": 1.3638086,
+      "score": 1.349872303,
       "source_file": "lib/projections/metrics.ts",
       "status": "preferred",
       "uses": 2
     },
     "lib_projections_projectplayer": {
-      "code_fingerprint": "e2bb19b490f9f15b48d5388b1a0b56ab01af1ce08aea5d8cf675d59d53af401d",
+      "code_fingerprint": "facc4976dd967c1619206f8268827d8ac6ac76e06cddc24f9914f0995f041527",
       "label": "projectPlayer.ts",
-      "last": "2026-09-07T18:02:58.527349+00:00",
+      "last": "2026-09-08T04:50:57.968917+00:00",
       "provenance": [
+        {
+          "date": "2026-09-08T04:50:57.968917+00:00",
+          "outcome": "useful",
+          "q": "why are isaks xmin at 60 even though hes played 90 min 90 min 63 min last few games"
+        },
+        {
+          "date": "2026-09-07T18:49:49.313215+00:00",
+          "outcome": "useful",
+          "q": "1. Regress every historical xG/xA anchor with regressPer90(historical.rate, historical.minutes, pricePrior, 900) before passing it to blendPlayerRate. 2. Keep generic price priors league-neutral so the upcoming team-strength multiplier still lowers players from weak attacks. 3. For transferred players, normalize historical production using their former team’s strength, rather than their current club. 4. Tie RotoWire evidence to the projected fixture/Gameweek. Previous-GW confirmed teams should feed role history, not act as next-GW predictions. 5. Let current-season starts update expected start duration; Isak’s 81 minutes per match shouldn’t still produce a 62-minute forecast. apply these changes"
+        },
         {
           "date": "2026-09-07T18:02:58.527349+00:00",
           "outcome": "useful",
@@ -454,25 +474,15 @@
           "date": "2026-09-03T05:53:06.868558+00:00",
           "outcome": "useful",
           "q": "are double gameweeks and blank gameweeks handled in this app"
-        },
-        {
-          "date": "2026-08-22T04:02:34.197546+00:00",
-          "outcome": "useful",
-          "q": "what about average xp vs last seasons points per week"
-        },
-        {
-          "date": "2026-08-22T00:07:34.722253+00:00",
-          "outcome": "useful",
-          "q": "Implement conservative unmapped-defender xG/xA priors and market-calibrated clean-sheet probabilities using Luna xhigh subagents"
         }
       ],
-      "score": 4.178756492,
+      "score": 6.126123801,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "preferred",
-      "uses": 5
+      "uses": 7
     },
     "lib_projections_projectplayer_projectplayer": {
-      "code_fingerprint": "e2bb19b490f9f15b48d5388b1a0b56ab01af1ce08aea5d8cf675d59d53af401d",
+      "code_fingerprint": "facc4976dd967c1619206f8268827d8ac6ac76e06cddc24f9914f0995f041527",
       "label": "projectPlayer()",
       "last": "2026-09-07T18:02:58.527349+00:00",
       "provenance": [
@@ -502,13 +512,13 @@
           "q": "ok next sort by xp/pound and see if their xp/week matches with previous seasons pts/week among other other stats like min and xmin"
         }
       ],
-      "score": 8.006561232,
+      "score": 7.924744901,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "preferred",
       "uses": 11
     },
     "lib_projections_projectplayer_regressedplayerrate": {
-      "code_fingerprint": "e2bb19b490f9f15b48d5388b1a0b56ab01af1ce08aea5d8cf675d59d53af401d",
+      "code_fingerprint": "facc4976dd967c1619206f8268827d8ac6ac76e06cddc24f9914f0995f041527",
       "label": "regressedPlayerRate()",
       "last": "2026-09-01T05:19:40.412482+00:00",
       "provenance": [
@@ -518,7 +528,7 @@
           "q": "cool ok, we need to run further model tuning because of this, can you break down every single calculation that could need tuning in xp calculations"
         }
       ],
-      "score": 0.85970197,
+      "score": 0.850916968,
       "source_file": "lib/projections/projectPlayer.ts",
       "status": "tentative",
       "uses": 1
@@ -554,7 +564,7 @@
           "q": "look at the pts/pound does it look more accurate"
         }
       ],
-      "score": 4.348312305,
+      "score": 4.303878378,
       "source_file": "lib/projections/value.ts",
       "status": "preferred",
       "uses": 5
@@ -570,7 +580,7 @@
           "q": "can you look online for fpl strategies that the solver should maybe incorporate"
         }
       ],
-      "score": 0.920495859,
+      "score": 0.911089624,
       "source_file": "lib/squad/captain.ts",
       "status": "tentative",
       "uses": 1
@@ -586,7 +596,7 @@
           "q": "PLEASE IMPLEMENT THIS PLAN: Actual Selling Prices and ITB"
         }
       ],
-      "score": 0.92388768,
+      "score": 0.914446786,
       "source_file": "lib/squad/validation.ts",
       "status": "tentative",
       "uses": 1
@@ -622,7 +632,7 @@
           "q": "ok the optimizer doesnt account for the bench if the horizon is set to gw\\n\\ncan you make the optimizer account for the fact the bench players come on at the rate of P(not start/cameo)"
         }
       ],
-      "score": 9.574313275,
+      "score": 9.476476618,
       "source_file": "lib/squad/weeklyLineup.ts",
       "status": "preferred",
       "uses": 11
@@ -638,7 +648,7 @@
           "q": "ok the optimizer doesnt account for the bench if the horizon is set to gw\\n\\ncan you make the optimizer account for the fact the bench players come on at the rate of P(not start/cameo)"
         }
       ],
-      "score": 0.91830464,
+      "score": 0.908920796,
       "source_file": "lib/squad/weeklyLineup.ts",
       "status": "tentative",
       "uses": 1
@@ -654,7 +664,7 @@
           "q": "ok the optimizer doesnt account for the bench if the horizon is set to gw\\n\\ncan you make the optimizer account for the fact the bench players come on at the rate of P(not start/cameo)"
         }
       ],
-      "score": 0.91830464,
+      "score": 0.908920796,
       "source_file": "lib/squad/weeklyLineup.ts",
       "status": "tentative",
       "uses": 1

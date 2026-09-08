@@ -67,10 +67,9 @@ export async function rotowireSnapshotAge(
 /**
  * Fetches, maps and writes a lineup snapshot. The one caller is
  * `scripts/ingestRotowireLineups.ts`, run by hand. It goes through
- * `fetchRotowireLineups`, which rejects a partial page or a team without
- * eleven distinct starters, and writes nothing unless that validation passes -
- * so a bad scrape leaves the committed snapshot alone rather than replacing
- * good data with unusable data.
+ * `fetchRotowireLineups`, which skips fixtures without eleven distinct starters
+ * and rejects a page with no complete fixtures, so a bad scrape leaves the
+ * committed snapshot alone rather than replacing good data with unusable data.
  */
 export async function refreshRotowireLineups(
   players: readonly Player[],

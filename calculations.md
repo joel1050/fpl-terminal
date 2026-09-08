@@ -141,7 +141,7 @@ cameoRate = clamp(max(0, appearances - starts) / sample, 0, 1 - startRate)
 
 `starts` comes from the recorded `starts` count when present, otherwise from the number of matches with `minutes >= 60`. Start and cameo minute averages come from the top-`starts` and remaining appearance rows, respectively.
 
-This is the **seed only**. It is then updated by this season's own team sheets (§4.1.1).
+This is the **seed only**. It is then updated by this season's own team sheets (§4.1.1), and discarded once the current-season role reaches the override threshold.
 
 ### 4.1.1 Current-season update
 
@@ -190,6 +190,13 @@ cameo      = historicalCameo * (1 - seedWeight) + fallbackCameoRate * seedWeight
 
 The `0.25` fallback term applies only while the player has no current-season observations (`observations.length === 0`). It existed to temper an estimate whose sole evidence was last season; once this season's own matches are in the estimate that term only dilutes them, since `fallbackStartRate` is clamped to 0.15–0.80 and would drag a measured 0.99 down to 0.94 and push a measured 0.02 up to 0.05.
 
+Once eligible current-season observations contain at least 240 total minutes,
+the previous-season role is replaced rather than blended: start and cameo
+probabilities become their current-season frequencies, and expected start
+duration becomes the current-season average across starts. Below 240 minutes,
+the historical EWMA remains in place so one or two matches cannot redefine a
+player's role.
+
 If the player's team is covered by RotoWire for the target fixture/gameweek,
 the RotoWire signal dominates:
 
@@ -236,11 +243,12 @@ expectedMinutes      = startProbability * expectedStartMinutes
                        + cameoProbability * expectedCameoMinutes
 ```
 
-`currentStartDuration` starts from the previous-season average, or from the
-first current-season start when there is no historical average, and updates
-only observations classified as starts. Each update is
-`duration_n = duration_(n-1) * (1 - 0.40) + observedMinutes_n * 0.40`; the
-position default applies only when neither source exists.
+Below the 240-minute role threshold, `currentStartDuration` starts from the
+previous-season average, or from the first current-season start when there is
+no historical average, and updates only observations classified as starts.
+Each update is `duration_n = duration_(n-1) * (1 - 0.40) + observedMinutes_n * 0.40`;
+the position default applies only when neither source exists. At or above the
+threshold, the current-season start average replaces this blend.
 
 Position defaults (`lib/availability/selection.ts:45`):
 

@@ -49,6 +49,7 @@ const clamp = (value: number, minimum: number, maximum: number): number =>
 
 const START_MINUTES: Record<Player["position"], number> = { GK: 90, DEF: 84, MID: 79, FWD: 78 };
 const CAMEO_MINUTES: Record<Player["position"], number> = { GK: 5, DEF: 14, MID: 20, FWD: 20 };
+const CURRENT_ROLE_OVERRIDE_MINUTES = 240;
 
 function rounded(value: number): number {
   return Math.round(value * 1000) / 1000;
@@ -368,22 +369,36 @@ export function buildPlayerSelections(
     const seedCameo = history.matches > 0
       ? history.cameoRate
       : observations.length > 0 ? UNKNOWN_CAMEO_SEED : fallbackCameoRate(player);
-    const historicalStart = blendStartRate(seedStart, observations);
-    const historicalCameo = blendCameoRate(seedStart, seedCameo, observations);
+    const observedMinutes = observations.reduce(
+      (sum, observation) => sum + (finite(observation.minutes) ? observation.minutes : 0),
+      0,
+    );
+    const currentRoleEstablished = observedMinutes >= CURRENT_ROLE_OVERRIDE_MINUTES;
+    const currentStarts = observations.filter((observation) => observation.started);
+    const currentStartDurations = currentStarts
+      .map((observation) => observation.minutes)
+      .filter(finite);
+    const currentAppearances = observations.filter((observation) => observation.appeared).length;
+    const roleStart = currentRoleEstablished
+      ? currentStarts.length / observations.length
+      : blendStartRate(seedStart, observations);
+    const roleCameo = currentRoleEstablished
+      ? Math.max(0, currentAppearances - currentStarts.length) / observations.length
+      : blendCameoRate(seedStart, seedCameo, observations);
     // The 0.25 fallback term existed to temper an estimate whose only evidence
     // was last season. Once this season's own matches are in the estimate that
     // term only dilutes them - it is clamped to 0.15-0.8, so it would drag a
     // measured 0.99 down to 0.94 and push a measured 0.02 up to 0.05. Keep it
     // only while there is nothing better.
     const seedWeight = observations.length > 0 ? 0 : 0.25;
-    let start = historicalStart * (1 - seedWeight) + fallbackStartRate(player) * seedWeight;
-    let cameo = historicalCameo * (1 - seedWeight) + fallbackCameoRate(player) * seedWeight;
+    let start = roleStart * (1 - seedWeight) + fallbackStartRate(player) * seedWeight;
+    let cameo = roleCameo * (1 - seedWeight) + fallbackCameoRate(player) * seedWeight;
     const teamCovered = coveredTeams.has(player.teamId);
     if (teamCovered) {
       const rotowireStart = signal?.starter ? (signal.confirmed ? 0.96 : 0.9) : 0.1;
       const rotowireCameo = signal?.starter ? 0.05 : 0.12;
-      start = rotowireStart * 0.75 + historicalStart * 0.25;
-      cameo = rotowireCameo * 0.75 + historicalCameo * 0.25;
+      start = rotowireStart * 0.75 + roleStart * 0.25;
+      cameo = rotowireCameo * 0.75 + roleCameo * 0.25;
     }
     const official = officialAvailability(player);
     // RotoWire OUT and SUS are rulings, not doubts, and gate as hard as FPL's
@@ -418,8 +433,12 @@ export function buildPlayerSelections(
       }
     }
     const scenarios = adjustRounding(normalizeScenarios(start, cameo));
+    const currentStartDuration = currentStartDurations.length
+      ? currentStartDurations.reduce((sum, minutes) => sum + minutes, 0) / currentStartDurations.length
+      : undefined;
     const expectedStartMinutes = rounded(clamp(
-      currentStartMinutes(history.startMinutes, observations) ?? START_MINUTES[player.position],
+      (currentRoleEstablished ? currentStartDuration : currentStartMinutes(history.startMinutes, observations))
+        ?? START_MINUTES[player.position],
       60,
       90,
     ));

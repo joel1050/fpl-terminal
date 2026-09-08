@@ -105,6 +105,10 @@ function fixtureBlocks(html: string): string[] {
   return starts.map((start, index) => html.slice(start, starts[index + 1] ?? html.length));
 }
 
+function hasCompleteStarters(team: RotowireTeamLineup): boolean {
+  return team.starters.length === 11 && new Set(team.starters.map((player) => player.rotowireId)).size === 11;
+}
+
 export function parseRotowireLineups(html: string, fetchedAt = new Date().toISOString()): RotowireLineupSnapshot {
   const fixtures = fixtureBlocks(html).flatMap((block): RotowireFixtureLineup[] => {
     const names = [
@@ -122,13 +126,16 @@ export function parseRotowireLineups(html: string, fetchedAt = new Date().toISOS
     }];
   });
   if (!fixtures.length) throw new Error("RotoWire returned no EPL lineup fixtures; its page structure may have changed.");
-  const invalid = fixtures.flatMap((fixture) => [fixture.home, fixture.away]).filter((team) => team.starters.length !== 11 || new Set(team.starters.map((player) => player.rotowireId)).size !== 11);
-  if (invalid.length) throw new Error(`RotoWire lineup validation failed for: ${invalid.map((team) => `${team.name} (${team.starters.length} starters)`).join(", ")}.`);
+  const completeFixtures = fixtures.filter((fixture) => hasCompleteStarters(fixture.home) && hasCompleteStarters(fixture.away));
+  if (!completeFixtures.length) {
+    const invalid = fixtures.flatMap((fixture) => [fixture.home, fixture.away]).filter((team) => !hasCompleteStarters(team));
+    throw new Error(`RotoWire lineup validation failed for: ${invalid.map((team) => `${team.name} (${team.starters.length} starters)`).join(", ")}.`);
+  }
   return {
     source: ROTOWIRE_LINEUPS_URL,
     fetchedAt,
     dateRange: capture(html, /<div class="page-title__secondary">([\s\S]*?)<\/div>/),
-    fixtures,
+    fixtures: completeFixtures,
   };
 }
 
