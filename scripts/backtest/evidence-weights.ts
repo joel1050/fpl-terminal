@@ -13,13 +13,14 @@ import type { Player } from "@/types/player";
 import { expectedPoints, playerRates, type RateOverrides } from "./xp";
 import { formBefore, loadSeason, playerAt, strengthsBefore, type MatchRow } from "./season";
 import { BASELINE } from "./variants";
+import { PLAYER_FORM_WINSOR_RATIO } from "@/lib/projections/playerForm";
 
 const ANCHOR_THROUGH = Number(process.argv[2] ?? 12);
 const MINUTES_K = 0.7;
 const START_K = 1.2;
 const XG_K = 2;
 const XA_K = 4.5;
-const WINSOR_RATIO = 2.5;
+const WINSOR_RATIO = PLAYER_FORM_WINSOR_RATIO;
 const BOOTSTRAPS = Number(process.env.BACKTEST_BOOTSTRAPS ?? 2_000);
 const RATE_SPLITS = [
   { name: "10 / 24 legacy", current: 10, previous: 24 },

@@ -46,27 +46,27 @@ describe("blendPlayerRate", () => {
     expect(heavilyAnchored - 0.3).toBeLessThan(lightlyAnchored - 0.3);
   });
 
-  it("winsorises extreme rate spikes to 2.5x prior", () => {
+  it("winsorises extreme rate spikes to 3.0x prior", () => {
     const prior = 0.4;
-    // 3.0 is 7.5x prior, well beyond the 2.5x cap (1.0)
+    // 3.0 is 7.5x prior, well beyond the 3.0x cap (1.2)
     const uncappedObserved = [3.0];
     const blendedWithCap = blendPlayerRate(uncappedObserved, prior);
     const blendedEquivalent = blendPlayerRate([prior * PLAYER_FORM_WINSOR_RATIO], prior);
     expect(blendedWithCap).toBeCloseTo(blendedEquivalent, 10);
   });
 
-  it("floors extreme cold streaks to prior / 2.5", () => {
+  it("floors extreme cold streaks to prior / 3.0", () => {
     const prior = 0.5;
-    // 0 is well below the 0.2 floor (0.5 / 2.5)
+    // 0 is well below the 0.167 floor (0.5 / 3.0)
     const zeroForm = [0.0];
     const blendedWithFloor = blendPlayerRate(zeroForm, prior);
     const blendedEquivalent = blendPlayerRate([prior / PLAYER_FORM_WINSOR_RATIO], prior);
     expect(blendedWithFloor).toBeCloseTo(blendedEquivalent, 10);
   });
 
-  it("leaves rates within [prior / 2.5, prior * 2.5] uncapped", () => {
+  it("leaves rates within [prior / 3.0, prior * 3.0] uncapped", () => {
     const prior = 0.4;
-    const moderateRate = [0.6]; // 1.5x prior, well inside [0.16, 1.0]
+    const moderateRate = [0.6]; // 1.5x prior, well inside [0.133, 1.2]
     const blendedNormal = blendPlayerRate(moderateRate, prior);
     const blendedUnconstrained = blendPlayerRate(moderateRate, prior, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES, 0);
     expect(blendedNormal).toBe(blendedUnconstrained);

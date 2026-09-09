@@ -124,6 +124,7 @@ export interface PlayerFixture {
   opponentShortName: string;
   isHome: boolean;
   difficulty?: number;
+  exactDifficulty?: number;
   kickoffTime?: string;
 }
 

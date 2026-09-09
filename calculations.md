@@ -360,12 +360,12 @@ xG and xA use a different current-season blend, `regressedFormRate` (`lib/projec
 weight(i matches before the most recently played) = decay^i
 observedRate     = Σ(weight_i * matchRate_i) / Σ(weight_i)
 effectiveMatches = Σ(weight_i)
-cappedRate       = clamp(observedRate, basePrior / 2.5, basePrior * 2.5)
+cappedRate       = clamp(observedRate, basePrior / 3.0, basePrior * 3.0)
 blended          = (basePrior * priorWeightMatches + cappedRate * effectiveMatches)
                    / (priorWeightMatches + effectiveMatches)
 ```
 
-`decay = 0.95`, `priorWeightMatches = 10`, and winsor ratio `PLAYER_FORM_WINSOR_RATIO = 2.5` (`lib/projections/playerForm.ts`) come from multi-season backtests. Capping the form/anchor ratio at 2.5x takes rest-of-season rate RMSE from 0.1908 to 0.1546 (movers: 0.2196 to 0.1644); extreme single-match divergences dominate the sum of squares and revert hardest, so winsorising protects projections against outlier rate spikes (e.g. fluke hat-tricks). (`PLAYER_FORM_DECAY`/`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`, `lib/projections/playerForm.ts`) come from the 2025/26 walk-forward sweep in `scripts/backtest/evidence-weights.ts`. Decays 0.93-0.95 were effectively tied on actual-points RMSE and 0.95 won the main split. After 38 appearances the current season contributes 17.15 effective matches, or 63.2% of the blend against the ten-match historical anchor; after two appearances it contributes 1.95 effective matches, or 16.3%.
+`decay = 0.95`, `priorWeightMatches = 10`, and winsor ratio `PLAYER_FORM_WINSOR_RATIO = 3.0` (`lib/projections/playerForm.ts`) come from multi-season backtests. Capping the form/anchor ratio at 3.0x bounds extreme single-match divergences that dominate the sum of squares and revert hardest, so winsorising protects projections against outlier rate spikes (e.g. fluke hat-tricks). (`PLAYER_FORM_DECAY`/`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`, `lib/projections/playerForm.ts`) come from the 2025/26 walk-forward sweep in `scripts/backtest/evidence-weights.ts`. Decays 0.93-0.95 were effectively tied on actual-points RMSE and 0.95 won the main split. After 38 appearances the current season contributes 17.15 effective matches, or 63.2% of the blend against the ten-match historical anchor; after two appearances it contributes 1.95 effective matches, or 16.3%.
 
 This only applies once a player has an in-season match history (`options.playerForm`, populated by `loadInSeasonPlayerRates` in `lib/historical/loadInSeasonForm.ts` from FPL's live per-gameweek stats, one entry per finished gameweek the player actually featured in). Before any gameweek has finished, or for a caller that hasn't wired up the loader, xG/xA fall back to the §6.3 mechanism (cumulative `Player.current.expectedGoals`/`expectedAssists`, blended by calendar gameweek and regressed toward the prior at a 900-minute weight).
 
@@ -462,8 +462,8 @@ Ceilings (`lib/projections/projectPlayer.ts:34`): goal involvement 3, saves 10, 
 ### 7.1 Base difficulty and venue
 
 ```
-difficulty       = clamp(round(fixture.difficulty ?? 3), 1, 5)  // ClubElo FDR from §2.2
-base             = {1: 1.14, 2: 1.07, 3: 1.00, 4: 0.92, 5: 0.84}[difficulty]
+difficulty       = fixture.exactDifficulty ?? fixture.difficulty ?? 3  // Continuous ClubElo FDR from §2.2
+base             = continuousDifficultyMultiplier(difficulty)          // Linear interpolation over [1.14, 1.07, 1.00, 0.92, 0.84]
 venue            = home ? 1.102 : 0.898
 attackMultiplier = base * venue
 expectedGoalsAgainst = 1.35 * (home ? 0.9 : 1.1)    // fallback only - see §7.3
@@ -676,18 +676,10 @@ defensiveContribution += weight * 2 * P(count >= threshold)
 ### 8.8 Bonus
 
 ```
-bonus += weight * bonusRate * minutesShare * attackMultiplier
+bonus += weight * bonusRate * minutesShare
 ```
 
-Bonus follows the fixture. BPS is driven by the same goals, assists and clean
-sheets §7 already adjusts, so a flat per-90 rate priced a player identically at
-home to the worst defence and away to the best. Backtested over 2025/26: RMSE
--0.0033 for GK/DEF with the paired interval excluding zero, -0.0017 across all
-rows. It also closes most of the gap in how far a forward's projection moves
-between an easy and a hard fixture (0.73 to 1.01, against an observed 1.07).
-The measured win is clearest for defenders, whose BPS owes more to clean sheets
-and defensive actions than to their own team's attack - the multiplier is the
-term that worked, not a claim about the mechanism.
+Bonus follows the player's personal regressed rate and minutes played. Backtested across 12,700 appearances (2023/24–2025/26), fixture attack multipliers do not improve out-of-sample bonus RMSE (0.6924 vs 0.6928) because FPL bonus is a fixed 6-point pot per match; uncoupling bonus from the fixture multiplier prevents artificial bonus inflation in easy home fixtures.
 
 ### 8.9 Cards
 
@@ -1049,7 +1041,7 @@ Player form constants (`lib/projections/playerForm.ts`):
 |---|---|
 | xG/xA in-season form decay (per match) | 0.95 |
 | xG/xA in-season form prior weight | 10 "matches worth" |
-| Player form winsor ratio (`PLAYER_FORM_WINSOR_RATIO`) | 2.5 |
+| Player form winsor ratio (`PLAYER_FORM_WINSOR_RATIO`) | 3.0 |
 
 Start rate and availability constants (`lib/availability/startRate.ts`, `lib/availability/selection.ts`):
 

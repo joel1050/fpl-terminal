@@ -16,7 +16,7 @@ import { loadInSeasonPlayerRates, loadInSeasonStarts, loadInSeasonTeamXG } from 
 import { rotowireSnapshotAge } from "@/lib/availability/refreshLineups";
 import { historicalBundleGeneration } from "@/lib/historical/load";
 import type { FreshnessMetadata } from "./cache";
-import { CLUB_ELO_SNAPSHOT, fixtureDifficultyFromClubElo, type ClubEloSnapshot } from "@/lib/clubElo";
+import { CLUB_ELO_SNAPSHOT, fixtureDifficultyFromClubElo, continuousFixtureDifficultyFromClubElo, type ClubEloSnapshot } from "@/lib/clubElo";
 import {
   type FplBootstrapPayload,
   type FplFixturePayload,
@@ -82,6 +82,8 @@ export interface NormalizedFixture {
   minutes?: number;
   homeDifficulty?: number;
   awayDifficulty?: number;
+  homeExactDifficulty?: number;
+  awayExactDifficulty?: number;
   /** Goals, assists, bonus and BPS as FPL scored them for this match alone. */
   stats?: FixtureStatLine[];
 }
@@ -261,6 +263,8 @@ export function normalizeFixtures(
       minutes: fixture.minutes,
       homeDifficulty: fixtureDifficultyFromClubElo(home?.short_name, away?.short_name, true, clubElo),
       awayDifficulty: fixtureDifficultyFromClubElo(away?.short_name, home?.short_name, false, clubElo),
+      homeExactDifficulty: continuousFixtureDifficultyFromClubElo(home?.short_name, away?.short_name, true, clubElo),
+      awayExactDifficulty: continuousFixtureDifficultyFromClubElo(away?.short_name, home?.short_name, false, clubElo),
       stats: normalizeFixtureStats(fixture.stats),
     };
   });
@@ -286,6 +290,7 @@ function playerFixtures(
         opponentShortName: teams.get(opponentTeamId)?.shortName ?? "UNK",
         isHome,
         difficulty: isHome ? fixture.homeDifficulty : fixture.awayDifficulty,
+        exactDifficulty: isHome ? fixture.homeExactDifficulty : fixture.awayExactDifficulty,
       };
     });
 }

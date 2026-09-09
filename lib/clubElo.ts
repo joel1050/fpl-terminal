@@ -321,4 +321,30 @@ export function fixtureDifficultyFromClubElo(
   );
 }
 
+
+export function calculateContinuousClubEloFdr(
+  ownElo: number | undefined,
+  opponentElo: number | undefined,
+  isHome: boolean,
+  homeFieldAdvantage = CLUB_ELO_HOME_FIELD_ADVANTAGE,
+): number {
+  if (!Number.isFinite(ownElo) || !Number.isFinite(opponentElo)) return NEUTRAL_CLUB_ELO_FDR;
+  const venueAdjustedOwnElo = (ownElo as number) + (isHome ? homeFieldAdvantage : -homeFieldAdvantage);
+  return Math.min(5, Math.max(1, 3 + ((opponentElo as number) - venueAdjustedOwnElo) / 200));
+}
+
+export function continuousFixtureDifficultyFromClubElo(
+  ownShortName: string | undefined,
+  opponentShortName: string | undefined,
+  isHome: boolean,
+  snapshot: ClubEloSnapshot = CLUB_ELO_SNAPSHOT,
+): number {
+  return calculateContinuousClubEloFdr(
+    clubEloForFplShortName(ownShortName, snapshot)?.elo,
+    clubEloForFplShortName(opponentShortName, snapshot)?.elo,
+    isHome,
+    snapshot.homeFieldAdvantage,
+  );
+}
+
 export const CLUB_ELO_SNAPSHOT = generatedClubElo as unknown as ClubEloSnapshot;

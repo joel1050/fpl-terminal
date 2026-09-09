@@ -17,7 +17,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { HistoricalMatchStat, HistoricalPlayerRecord } from "@/lib/historical/types";
 import type { HistoricalStats } from "@/types/player";
-import { blendPlayerRate } from "@/lib/projections/playerForm";
+import { blendPlayerRate, PLAYER_FORM_WINSOR_RATIO } from "@/lib/projections/playerForm";
 import { buildPlayerAnchors, type PreparedPlayerAnchor } from "./multiSeasonData";
 
 const CUTOFFS = [3, 5, 8, 12, 16, 20, 24, 28] as const;
@@ -25,7 +25,7 @@ const NEXT_GAMEWEEKS = 10;
 const PRIOR_MINUTES = 450;
 const FUTURE_MINUTES = 180;
 const FORM_DECAY = 0.95;
-const WINSOR_RATIO = 2.5;
+const WINSOR_RATIO = PLAYER_FORM_WINSOR_RATIO;
 const PRODUCTION_PRIOR_WEIGHT = 10;
 const DIRECT_STEP = 5;
 const PLATEAU_TOLERANCE = 0.001;

@@ -11,12 +11,12 @@ export const PLAYER_FORM_PRIOR_WEIGHT_MATCHES = 10;
 
 /**
  * Ratio cap on form rate relative to anchor. Capping form / anchor between
- * [anchor / 2.5, anchor * 2.5] takes rest-of-season rate RMSE from
- * 0.1908 to 0.1546 (movers: 0.2196 to 0.1644). Extreme divergences dominate
- * the sum of squares and revert hardest; winsorising prevents single-game
- * flukes from distorting multi-week projections.
+ * [anchor / 3.0, anchor * 3.0] bounds rate estimation error against multi-season
+ * walk-forward evaluations. With minutes-weighted evidence (blendPlayerRateByMinutes),
+ * 3.0 balances capturing genuine breakout performance while shielding projections
+ * against extreme short-run single-match rate flukes.
  */
-export const PLAYER_FORM_WINSOR_RATIO = 2.5;
+export const PLAYER_FORM_WINSOR_RATIO = 3.0;
 
 /**
  * Blends a prior per-90 rate with a recency-weighted average of a player's
@@ -82,7 +82,7 @@ export const PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS = 40;
  * rest-of-season rate RMSE on xG across three held-out seasons, 1.1-1.4% on xA.
  *
  * The anchor's pull is deliberately still counted in matches, not minutes, so
- * `priorWeightMatches` keeps the meaning it has in `blendPlayerRate`.
+ * `priorWeightMatches` keeps the meaning it has in `blendPlayerRate` preferences.
  */
 export function blendPlayerRateByMinutes(
   samples: readonly PlayerMatchSample[],

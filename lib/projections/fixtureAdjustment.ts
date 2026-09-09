@@ -87,6 +87,23 @@ const difficultyMultiplier: Record<number, number> = {
   5: 0.84,
 };
 
+
+/**
+ * Linear interpolation across the discrete difficulty multipliers.
+ * When continuous Elo FDR is provided (e.g. 2.34 or 3.71), this avoids coarse
+ * integer quantization and preserves high-resolution rating differences.
+ */
+export function continuousDifficultyMultiplier(difficulty: number): number {
+  const clamped = clamp(difficulty, 1, 5);
+  const lo = Math.floor(clamped);
+  const hi = Math.ceil(clamped);
+  if (lo === hi) return difficultyMultiplier[lo] ?? 1;
+  const frac = clamped - lo;
+  const loVal = difficultyMultiplier[lo] ?? 1;
+  const hiVal = difficultyMultiplier[hi] ?? 1;
+  return loVal * (1 - frac) + hiVal * frac;
+}
+
 const consensusStrengthTiers = [0.84, 0.92, 1, 1.08, 1.16] as const;
 
 // Market-calibrated clean-sheet probabilities. Rows are the defending team's
@@ -150,10 +167,8 @@ export function calculateFixtureAdjustment(
   fixture: PlayerFixture,
   options: FixtureAdjustmentOptions = {},
 ): FixtureAdjustmentResult {
-  const difficulty = fixture.difficulty === undefined
-    ? 3
-    : clamp(Math.round(fixture.difficulty), 1, 5);
-  const base = difficultyMultiplier[difficulty] ?? 1;
+  const difficulty = fixture.exactDifficulty ?? fixture.difficulty ?? 3;
+  const base = continuousDifficultyMultiplier(difficulty);
   const venue = fixture.isHome ? HOME_ATTACK_MULTIPLIER : AWAY_ATTACK_MULTIPLIER;
   // Only live in the no-strengths fallback below: once a table lookup happens,
   // this is overwritten from the clean-sheet probability. Its 0.9/1.1 spread

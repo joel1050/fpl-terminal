@@ -18,6 +18,7 @@ import {
   PLAYER_FORM_DECAY,
   PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
   PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS,
+  PLAYER_FORM_WINSOR_RATIO,
 } from "./playerForm";
 
 export type ProjectPlayerOptions = Partial<ProjectionOptions> & {
@@ -193,7 +194,7 @@ function regressedPlayerRate(
   fallback: "goals" | "assists" | undefined,
   prior: number,
   currentGameweek: number,
-  ceiling: number = RATE_CEILING.goalInvolvement,
+  ceiling?: number,
   form?: readonly PlayerMatchRate[],
   priorWeightMatches: number = PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
 ): number {
@@ -203,10 +204,18 @@ function regressedPlayerRate(
   let sample = historical?.minutes ?? 0;
   if (current) {
     const currentWeight = currentSeasonWeight(form, currentGameweek, priorWeightMatches);
-    rate = rate * (1 - currentWeight) + current.rate * currentWeight;
+    const baselineAnchor = rate > 0 ? rate : prior;
+    const cap = baselineAnchor > 0 && PLAYER_FORM_WINSOR_RATIO > 0
+      ? baselineAnchor * PLAYER_FORM_WINSOR_RATIO
+      : undefined;
+    const winsorizedCurrentRate = cap !== undefined
+      ? Math.min(current.rate, cap)
+      : current.rate;
+    rate = rate * (1 - currentWeight) + winsorizedCurrentRate * currentWeight;
     sample += current.minutes * currentWeight;
   }
-  return clamp(regressPer90(rate, sample, prior, 900), 0, ceiling);
+  const maxCeiling = ceiling ?? RATE_CEILING.goalInvolvement;
+  return clamp(regressPer90(rate, sample, prior, 900), 0, maxCeiling);
 }
 
 /**
@@ -259,8 +268,9 @@ function regressedFormRate(
   ownTeam: TeamStrength | undefined,
   strengths: Record<number, TeamStrength> | undefined,
   historicalTeam: TeamStrength | undefined,
-  ceiling: number = RATE_CEILING.goalInvolvement,
+  ceiling?: number,
 ): number {
+  const maxCeiling = ceiling ?? RATE_CEILING.goalInvolvement;
   const historical = historicalRate(player, primary) ?? historicalRate(player, fallback);
   const normalizedOwnTeam = ownTeam && strengths?.[ownTeam.teamId] ? ownTeam : undefined;
   const ownAttack = normalizedOwnTeam ? (normalizedOwnTeam.attackHome + normalizedOwnTeam.attackAway) / 2 : 1;
@@ -280,7 +290,16 @@ function regressedFormRate(
     const field = primary === "expectedGoals" ? "xg" : "xa";
     // Raw value and minutes per match, not a per-90 rate each: see
     // blendPlayerRateByMinutes for why a cameo must not count as a full match.
-    const samples = form.map((match) => ({ value: match[field], minutes: match.minutes }));
+    const samples = form.map((match) => {
+      let val = match[field];
+      if (player.position === "DEF" && primary === "expectedGoals" && match.minutes > 0) {
+        const ratePer90 = (val / match.minutes) * 90;
+        if (ratePer90 > 0.35) {
+          val = (0.35 / 90) * match.minutes;
+        }
+      }
+      return { value: val, minutes: match.minutes };
+    });
     // Schedule adjustment: a match played against a weak defence produced a
     // higher rate for that reason, and the upcoming fixture's multiplier is
     // about to be applied on top. Dividing each match out by the fixture it
@@ -305,7 +324,7 @@ function regressedFormRate(
             PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
           ),
           0,
-          ceiling,
+          maxCeiling,
         );
       }
     }
@@ -315,7 +334,7 @@ function regressedFormRate(
       // would mix two different scales in the same blend.
       blendPlayerRateByMinutes(samples, historicalAnchor, PLAYER_FORM_DECAY, PLAYER_FORM_PRIOR_WEIGHT_MATCHES),
       0,
-      ceiling,
+      maxCeiling,
     );
   }
 
@@ -329,7 +348,7 @@ function regressedFormRate(
     sample += current.minutes * currentWeight;
   }
   const regressed = regressPer90(rate, sample, prior, 900);
-  return clamp(regressed, 0, ceiling);
+  return clamp(regressed, 0, maxCeiling);
 }
 
 function teamFor(
@@ -511,7 +530,7 @@ function fixtureComponents(
     // confidence interval excluding zero, -0.0017 across all rows. It also
     // closes most of the gap in how far a forward's projection moves between
     // an easy and a hard fixture (0.73 -> 1.01 against an observed 1.07).
-    components.bonus += weight * rates.bonus * minutesShare * adjustment.attackMultiplier;
+    components.bonus += weight * rates.bonus * minutesShare;
     // A booking is something that either happens or does not, so this is a
     // probability rather than a rate times minutes: at a 0.18 yellow rate the
     // difference is small, but it keeps a full match from ever implying more

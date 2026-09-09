@@ -62,7 +62,7 @@ describe("blendPlayerRateByMinutes", () => {
       .toBeGreaterThan(blendPlayerRateByMinutes(declining, 0.5));
   });
 
-  it("winsorises an extreme spike to 2.5x prior", () => {
+  it("winsorises an extreme spike to 3.0x prior", () => {
     const prior = 0.4;
     const spike = [{ value: 3.0, minutes: 90 }]; // 7.5x prior
     const equivalent = [{ value: prior * PLAYER_FORM_WINSOR_RATIO, minutes: 90 }];
