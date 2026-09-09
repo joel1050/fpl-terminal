@@ -2,12 +2,15 @@ export type { PlayerMatchRate } from "@/types/projection";
 
 /**
  * The 2025/26 walk-forward sweep put decay 0.93-0.95 in the same xP RMSE
- * band; 0.95 won the main split. With ten matches of anchor weight, current
- * form reaches 63.2% of the blend after 38 appearances without discarding the
- * previous season. Re-run `scripts/backtest/evidence-weights.ts` to recalibrate.
+ * band; 0.95 won the main split. A three-season (2023/24-2025/26) walk-forward
+ * sweep of the prior weight against next-match xG/xA, scored separately with
+ * genuine previous-season anchors, bottomed at 6 for xG and 4 for xA (flat
+ * across 4-8), so 6 covers both within noise. With six matches of anchor
+ * weight, current form reaches 74.1% of the blend after 38 appearances
+ * without discarding the previous season. Re-run the sweep to recalibrate.
  */
 export const PLAYER_FORM_DECAY = 0.95;
-export const PLAYER_FORM_PRIOR_WEIGHT_MATCHES = 10;
+export const PLAYER_FORM_PRIOR_WEIGHT_MATCHES = 6;
 
 /**
  * Ratio cap on form rate relative to anchor. Capping form / anchor between

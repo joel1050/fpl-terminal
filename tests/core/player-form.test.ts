@@ -11,11 +11,11 @@ describe("blendPlayerRate", () => {
     expect(blendPlayerRate([], 0.3)).toBe(0.3);
   });
 
-  it("uses the selected 0.95/10 model by default", () => {
+  it("uses the selected 0.95/6 model by default", () => {
     const effectiveMatches = (1 - PLAYER_FORM_DECAY ** 38) / (1 - PLAYER_FORM_DECAY);
     const expected = effectiveMatches / (PLAYER_FORM_PRIOR_WEIGHT_MATCHES + effectiveMatches);
     expect(blendPlayerRate(Array(38).fill(1), 0)).toBeCloseTo(expected, 12);
-    expect(expected).toBeCloseTo(0.632, 3);
+    expect(expected).toBeCloseTo(0.741, 3);
   });
 
   it("moves toward observed form as matches accumulate, without fully discarding the prior", () => {

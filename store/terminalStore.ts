@@ -844,6 +844,7 @@ export type TerminalState = {
   clearPlanNotice: () => void;
   setTransferBaseline: (baseline: TransferBaseline | null) => void;
   toggleLock: (id: number) => void;
+  toggleAllLocks: () => void;
   setSelectedPlayer: (id?: number) => void;
   setStrategy: (strategy: Partial<Pick<TerminalState, "horizon" | "transferHorizon" | "riskMode" | "benchStrategy">>) => void;
   setPanelRatios: (ratios: Partial<Record<DesktopPanel, number>>) => void;
@@ -1461,6 +1462,12 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       ? state.lockedPlayerIds.filter((playerId) => playerId !== id)
       : [...state.lockedPlayerIds, id],
   })),
+  toggleAllLocks: () => {
+    const state = get();
+    if (state.playerIds.length === 0) return;
+    const allLocked = state.playerIds.every((id) => state.lockedPlayerIds.includes(id));
+    set(activePlanPatch(state, { lockedPlayerIds: allLocked ? [] : [...state.playerIds] }));
+  },
   setSelectedPlayer: (selectedPlayerId) => set({ selectedPlayerId }),
   setStrategy: (strategy) => set(strategy),
   setSelectedLeagueKey: (key) => {

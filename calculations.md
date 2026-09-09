@@ -381,7 +381,7 @@ blended          = (basePrior * priorWeightMatches + cappedRate * effectiveMatch
                    / (priorWeightMatches + effectiveMatches)
 ```
 
-`decay = 0.95`, `priorWeightMatches = 10`, and winsor ratio `PLAYER_FORM_WINSOR_RATIO = 3.0` (`lib/projections/playerForm.ts`) come from multi-season backtests. Capping the form/anchor ratio at 3.0x bounds extreme single-match divergences that dominate the sum of squares and revert hardest, so winsorising protects projections against outlier rate spikes (e.g. fluke hat-tricks). (`PLAYER_FORM_DECAY`/`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`, `lib/projections/playerForm.ts`) come from the 2025/26 walk-forward sweep in `scripts/backtest/evidence-weights.ts`. Decays 0.93-0.95 were effectively tied on actual-points RMSE and 0.95 won the main split. After 38 appearances the current season contributes 17.15 effective matches, or 63.2% of the blend against the ten-match historical anchor; after two appearances it contributes 1.95 effective matches, or 16.3%.
+`decay = 0.95`, `priorWeightMatches = 6`, and winsor ratio `PLAYER_FORM_WINSOR_RATIO = 3.0` (`lib/projections/playerForm.ts`) come from multi-season backtests. Capping the form/anchor ratio at 3.0x bounds extreme single-match divergences that dominate the sum of squares and revert hardest, so winsorising protects projections against outlier rate spikes (e.g. fluke hat-tricks). (`PLAYER_FORM_DECAY`/`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`, `lib/projections/playerForm.ts`) come from walk-forward sweeps: decay 0.93-0.95 was effectively tied on actual-points RMSE and 0.95 won the main split (`scripts/backtest/evidence-weights.ts`), and a three-season (2023/24-2025/26) sweep of the prior weight against next-match xG/xA, scored separately with genuine previous-season anchors, bottomed at 6 for xG and 4 for xA (flat across 4-8), so 6 covers both within noise. After 38 appearances the current season contributes 17.15 effective matches, or 74.1% of the blend against the six-match historical anchor; after two appearances it contributes 1.95 effective matches, or 24.5%.
 
 This only applies once a player has an in-season match history (`options.playerForm`, populated by `loadInSeasonPlayerRates` in `lib/historical/loadInSeasonForm.ts` from FPL's live per-gameweek stats, one entry per finished gameweek the player actually featured in). Before any gameweek has finished, or for a caller that hasn't wired up the loader, xG/xA fall back to the §6.3 mechanism (cumulative `Player.current.expectedGoals`/`expectedAssists`, blended by calendar gameweek and regressed toward the prior at a 900-minute weight).
 
@@ -1122,7 +1122,7 @@ Player form constants (`lib/projections/playerForm.ts`):
 | Constant | Value |
 |---|---|
 | xG/xA in-season form decay (per match) | 0.95 |
-| xG/xA in-season form prior weight | 10 "matches worth" |
+| xG/xA in-season form prior weight | 6 "matches worth" |
 | Player form winsor ratio (`PLAYER_FORM_WINSOR_RATIO`) | 3.0 |
 
 Start rate and availability constants (`lib/availability/startRate.ts`, `lib/availability/selection.ts`):

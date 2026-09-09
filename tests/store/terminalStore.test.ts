@@ -74,6 +74,18 @@ describe("persisted weekly lineup state", () => {
     expect(useTerminalStore.getState()).toMatchObject({ captainId: 1, viceCaptainId: 3 });
   });
 
+  it("locks and unlocks the whole squad in one plan update", () => {
+    const store = useTerminalStore.getState();
+    store.toggleLock(1);
+    store.toggleAllLocks();
+    expect(useTerminalStore.getState().lockedPlayerIds).toEqual(squad.playerIds);
+    expect(useTerminalStore.getState().gameweekPlans[1].lockedPlayerIds).toEqual(squad.playerIds);
+
+    useTerminalStore.getState().toggleAllLocks();
+    expect(useTerminalStore.getState().lockedPlayerIds).toEqual([]);
+    expect(useTerminalStore.getState().gameweekPlans[1].lockedPlayerIds).toEqual([]);
+  });
+
   it("only accepts a permutation of the three outfield substitutes", () => {
     const store = useTerminalStore.getState();
     expect(store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "fp", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 })).toBe(true);

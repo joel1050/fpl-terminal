@@ -207,9 +207,10 @@ test.describe("FPL Terminal acceptance", () => {
     await page.waitForTimeout(250);
     expect(optimizerRequests).toBe(0);
 
-    const haaland = page.getByRole("article").filter({ hasText: "Haaland" }).first();
-    await haaland.hover();
-    await haaland.getByRole("button", { name: /unlock haaland/i }).click();
+    const unlockAll = page.getByRole("button", { name: /unlock all squad players/i });
+    await expect(unlockAll).toHaveAttribute("aria-pressed", "true");
+    await unlockAll.click();
+    await expect(page.getByRole("button", { name: /lock all squad players/i })).toHaveAttribute("aria-pressed", "false");
     await clickButton(page, /^OPTIMIZE$/i);
     await expect(page.getByRole("status")).toContainText(/exact optimizer applied/i);
     await expect.poll(() => optimizerRequests).toBe(1);

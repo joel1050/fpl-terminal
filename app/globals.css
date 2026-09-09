@@ -64,6 +64,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .header-actions { display: flex; align-items: center; gap: 5px; }
 .compact-action { min-height: 26px; padding: 0 7px; border: 1px solid var(--amber); background: transparent; color: var(--amber); font-size: 9px; letter-spacing: .05em; }
 .compact-action:hover { background: color-mix(in srgb, var(--amber) 10%, transparent); }
+.squad-lock-all { display: inline-grid; place-items: center; width: 28px; padding: 0; }
+.squad-lock-all[aria-pressed="true"] .lock-body { fill: currentColor; }
+.squad-lock-all:active:not(:disabled) { transform: scale(.96); }
 .panel-count { margin-left: 9px; color: var(--dim); font-size: 10px; }
 .section-kicker { color: var(--amber); font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
 .data-badge, .mode-pill, .pos-tag { display: inline-flex; align-items: center; justify-content: center; padding: 3px 5px; border: 1px solid var(--border); color: var(--muted); font-size: 9px; letter-spacing: .08em; line-height: 1; white-space: nowrap; }
