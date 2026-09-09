@@ -531,7 +531,50 @@ expectedGoalsAgainst = -ln(clamp(cleanSheetProbability, 0.03, 0.9))
 
 This is the single Poisson parameter used by the goals-conceded deduction (§8).
 
-### 7.4 Clean-sheet probability table
+### 7.4 Clean sheets from Elo and goal lean
+
+The clean-sheet probability is read off a distribution, not the 5x5 table. The table (§7.4.1) remains as the fallback for any fixture where either side has no ClubElo rating.
+
+`deriveCleanSheetStrengths` (`lib/projections/cleanSheetStrength.ts`) splits every team's §3 strengths into two parts:
+
+```
+level_i = log(attack_i) + log(defence_i)
+skew_i  = log(attack_i) - log(defence_i)
+```
+
+The level is discarded and rebuilt from ClubElo; the skew is kept, shrunk toward neutral:
+
+```
+level'_i = ELO_LEVEL_SLOPE * (elo_i - meanElo)          ELO_LEVEL_SLOPE = 0.0034
+skew'_i  = CLEAN_SHEET_SKEW_WEIGHT * skew_i             CLEAN_SHEET_SKEW_WEIGHT = 0.6
+attack'_i  = exp((level'_i + skew'_i) / 2)
+defence'_i = exp((level'_i - skew'_i) / 2)
+```
+
+**Why the level comes from Elo.** Elo measures a team's overall level with years of memory rather than a few gameweeks of xG, and it rates promoted clubs on the same scale as everyone else - Coventry, Hull and Ipswich have no top-flight goal history at all. It cannot distinguish an attacking side from a defensive one at the same rating, which is exactly what the xG fit is good at, so the lean is kept from §3.
+
+**Why `ELO_LEVEL_SLOPE` is a measured constant and not refitted per call.** An independent Poisson fitted to all 380 fixtures of 2025/26 xG gives 0.00340 log units of level per Elo point, r = 0.949. The §3 strengths are normalized ratios whose level spread is 1.69x narrower than that fit (sd 0.189 against 0.319), so regressing against them reproduces the narrowness and leaves Elo re-ordering teams it should also be spreading apart.
+
+The probability is then P(0 goals) under a negative binomial:
+
+```
+goalsAgainst = LEAGUE_MEAN_XG * (attack'_opponent / defence'_own) * venue
+             venue = 0.898 at home, 1.102 away        LEAGUE_MEAN_XG = 1.408
+cleanSheetProbability = (phi / (phi + goalsAgainst))^phi     phi = 12
+```
+
+`phi` is swept on realized clean sheets over 760 team-fixtures: Brier is flat from 10 to 15 (0.18569) and worse either side, with the Poisson limit the worst of the sweep at 0.18601. A Poisson understates clean sheets because goals arrive lumpier than the xG the rates are fitted on - it puts the 2025/26 league rate at 0.249 against an actual 0.270.
+
+Two consequences for the rest of section 7:
+
+- **No compression.** `CLEAN_SHEET_RETAINED_WEIGHT` corrects a top-end error the table makes and this read does not, so it applies only on the table path.
+- **`expectedGoalsAgainst` is the fitted mean**, not the Poisson inversion of the probability. Inverting a negative binomial as though it were a Poisson understates the mean by about 5% at a typical goals-against.
+
+Against the gameweek-4 2026/27 bookmaker clean-sheet market, with no parameter fitted to that market, this reads MAE 2.97 against the table's 5.67, and a spread of sd 9.23 against the market's 10.27 and the table's 7.25.
+
+**Scope limit.** The walk-forward arm in `scripts/backtest/cleansheets.ts` could not resolve a gain against realized clean sheets, but it reads `elo-history.ts`'s synthetic ratings rather than ClubElo's - ClubElo's history API returns 502, so no dated past values are obtainable and the shipped inputs cannot be tested on a past season. The market agreement above is the only evidence that bears on ClubElo's own numbers.
+
+### 7.4.1 Clean-sheet probability table (fallback)
 
 Rows are the defending team's tier; columns are the opponent's attacking tier (`lib/projections/fixtureAdjustment.ts:62`). Home first, then away:
 

@@ -377,6 +377,8 @@ function fixtureFor(
   return calculateFixtureAdjustment(fixture, {
     ownTeam: teamFor(player, options),
     opponentTeam: options.teamStrengths?.[fixture.opponentTeamId],
+    ownCleanSheet: options.cleanSheetStrengths?.[player.teamId],
+    opponentCleanSheet: options.cleanSheetStrengths?.[fixture.opponentTeamId],
   });
 }
 

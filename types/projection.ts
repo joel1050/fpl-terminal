@@ -1,3 +1,4 @@
+import type { CleanSheetStrength } from "@/lib/projections/cleanSheetStrength";
 import type { Position } from "./player";
 
 export type Horizon = 1 | 3 | 5 | 10;
@@ -66,4 +67,6 @@ export interface ProjectionOptions {
   playerForm?: Record<number, readonly PlayerMatchRate[]>;
   /** Previous-season team strengths keyed by current player id, for transferred players. */
   historicalTeamStrengths?: Record<number, TeamStrength>;
+  /** Elo-levelled rates for the clean sheet, from `deriveCleanSheetStrengths`. */
+  cleanSheetStrengths?: Record<number, CleanSheetStrength>;
 }

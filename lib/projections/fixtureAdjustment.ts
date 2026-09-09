@@ -1,9 +1,13 @@
 import type { PlayerFixture } from "@/types/player";
 import type { TeamStrength } from "@/types/projection";
+import type { CleanSheetStrength } from "./cleanSheetStrength";
 
 export interface FixtureAdjustmentOptions {
   ownTeam?: TeamStrength;
   opponentTeam?: TeamStrength;
+  /** Elo-levelled rates for the clean sheet. Absent for either side falls back to the table. */
+  ownCleanSheet?: CleanSheetStrength;
+  opponentCleanSheet?: CleanSheetStrength;
 }
 
 export interface FixtureAdjustmentResult {
@@ -32,6 +36,23 @@ export const CLEAN_SHEET_BASE_RATE = 0.25;
  * dRMSE -0.00163 with the paired gameweek-cluster interval excluding zero.
  */
 export const CLEAN_SHEET_RETAINED_WEIGHT = 0.75;
+
+/**
+ * League mean xG per team per fixture, over all 380 fixtures of 2025/26. The
+ * same measurement the venue multipliers below come from.
+ */
+export const LEAGUE_MEAN_XG = 1.408;
+
+/**
+ * Dispersion for the clean-sheet count, `variance = mean + mean^2 / dispersion`.
+ *
+ * Goals arrive lumpier than the xG the rates are fitted on, so reading P(0) off
+ * a plain Poisson understates it: on 2025/26 that gives a league clean-sheet
+ * rate of 0.249 against an actual 0.270. Swept on realized clean sheets over
+ * 760 team-fixtures, Brier is flat from 10 to 15 (0.18569 at both) and worse
+ * either side, the Poisson limit being the worst of the sweep at 0.18601.
+ */
+export const CLEAN_SHEET_DISPERSION = 12;
 
 /**
  * Attacking home advantage, measured over all 380 fixtures of 2025/26 rather
@@ -129,6 +150,30 @@ function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
+/**
+ * Clean-sheet probability as P(0 goals conceded) under a negative binomial.
+ *
+ * The mean is the opponent's attacking rate against this side's defensive rate,
+ * both re-levelled against Elo by `deriveCleanSheetStrengths`, times the venue
+ * split. Reading a distribution rather than a table means the two ends are not
+ * capped: the 5x5 table cannot express more than 0.50 before compression, which
+ * is below what the market and the outcomes both give a strong defence against
+ * a weak attack.
+ */
+export function cleanSheetFromRates(
+  isHome: boolean,
+  ownDefence: number,
+  opponentAttack: number,
+): { cleanSheetProbability: number; goalsAgainst: number } {
+  const venue = isHome ? AWAY_ATTACK_MULTIPLIER : HOME_ATTACK_MULTIPLIER;
+  const goalsAgainst = LEAGUE_MEAN_XG * (opponentAttack / ownDefence) * venue;
+  const dispersion = CLEAN_SHEET_DISPERSION;
+  return {
+    cleanSheetProbability: clamp(Math.pow(dispersion / (dispersion + goalsAgainst), dispersion), 0.02, 0.9),
+    goalsAgainst,
+  };
+}
+
 const TIER_STEP = 0.08;
 
 function cleanPosition(value: number): number {
@@ -176,6 +221,8 @@ export function calculateFixtureAdjustment(
   let expectedGoalsAgainst = LEAGUE_AVERAGE_GOALS_AGAINST * (fixture.isHome ? 0.9 : 1.1);
   let attackMultiplier = base * venue;
   let cleanSheetProbability: number | undefined;
+  let ratedGoalsAgainst: number | undefined;
+  let fromRates = false;
 
   const own = options.ownTeam;
   const opponent = options.opponentTeam;
@@ -187,7 +234,14 @@ export function calculateFixtureAdjustment(
     if (ownAttack > 0 && opponentDefence > 0) {
       attackMultiplier *= clamp(ownAttack / opponentDefence, ATTACK_RATIO_CLAMP[0], ATTACK_RATIO_CLAMP[1]);
     }
-    if (ownDefence > 0 && opponentAttack > 0) {
+    const ownRates = options.ownCleanSheet;
+    const opponentRates = options.opponentCleanSheet;
+    if (ownRates && opponentRates) {
+      const rated = cleanSheetFromRates(fixture.isHome, ownRates.defence, opponentRates.attack);
+      cleanSheetProbability = rated.cleanSheetProbability;
+      ratedGoalsAgainst = rated.goalsAgainst;
+      fromRates = true;
+    } else if (ownDefence > 0 && opponentAttack > 0) {
       cleanSheetProbability = interpolatedCleanSheet(fixture.isHome, ownDefence, opponentAttack);
     }
   } else {
@@ -199,12 +253,19 @@ export function calculateFixtureAdjustment(
   // defences keep fewer clean sheets than the top rows imply), so compress
   // reads above the long-run rate toward it. One-sided by measurement, not by
   // caution: shrinking the bottom end as well cost xP in both seasons tested.
-  cleanSheetProbability -= (1 - CLEAN_SHEET_RETAINED_WEIGHT)
-    * Math.max(0, cleanSheetProbability - CLEAN_SHEET_BASE_RATE);
-  // One goals-against number per fixture. Inverting the clean-sheet probability
-  // keeps the lookup table and the goals-conceded deduction from disagreeing:
-  // both now come from the same Poisson.
-  expectedGoalsAgainst = -Math.log(clamp(cleanSheetProbability, 0.03, 0.9));
+  // The Elo-levelled read is calibrated at the top by construction and is not
+  // compressed; doing so would correct an error it does not make.
+  if (!fromRates) {
+    cleanSheetProbability -= (1 - CLEAN_SHEET_RETAINED_WEIGHT)
+      * Math.max(0, cleanSheetProbability - CLEAN_SHEET_BASE_RATE);
+  }
+  // One goals-against number per fixture, so the clean sheet and the
+  // goals-conceded deduction cannot disagree. On the table path that means
+  // inverting the probability as a Poisson, which is the distribution the table
+  // is read as. On the rated path the mean is already known, and inverting a
+  // negative binomial as if it were a Poisson would understate it by about 5%
+  // at a typical goals-against, so the fitted mean is used directly.
+  expectedGoalsAgainst = ratedGoalsAgainst ?? -Math.log(clamp(cleanSheetProbability, 0.03, 0.9));
   return {
     attackMultiplier,
     cleanSheetProbability,

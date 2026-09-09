@@ -4,11 +4,15 @@ import { projectPlayers } from "@/lib/projections/projectPlayer";
 import { loadRotowireSelectionData } from "@/lib/availability/loadSelectionData";
 import { buildPlayerSelections } from "@/lib/availability/selection";
 import type { StartObservation } from "@/lib/availability/startRate";
+import { deriveCleanSheetStrengths, type CleanSheetStrength } from "@/lib/projections/cleanSheetStrength";
 import { applyInSeasonForm, type TeamMatchXG } from "./inSeasonForm";
 import type { HistoricalBundle } from "./types";
 
 export interface EnrichmentTeam {
   id: number;
+  name?: string;
+  /** Needed to resolve the team's ClubElo rating for the clean-sheet model. */
+  shortName?: string;
   strength?: {
     rating?: number;
     attackRating?: number;
@@ -46,6 +50,7 @@ export interface EnrichedPlayers {
   players: Player[];
   projections: PlayerProjection[];
   teamStrengths: Record<number, TeamStrength>;
+  cleanSheetStrengths: Record<number, CleanSheetStrength>;
   metadata: PlayerEnrichmentMetadata;
 }
 
@@ -252,12 +257,17 @@ export function enrichPlayersWithHistory(
     ...player,
     selection: selections.get(player.id),
   }));
+  const cleanSheetStrengths = deriveCleanSheetStrengths(
+    strengths,
+    new Map(teams.flatMap((team) => (team.shortName ? [[team.id, team.shortName] as const] : []))),
+  );
   const projections = projectPlayers(selectedPlayers, {
     horizon: 5,
     fixtureHorizon: 39 - startGw,
     currentGameweek: gw,
     startGameweek: startGw,
     teamStrengths: strengths,
+    cleanSheetStrengths,
     historicalTeamStrengths: historicalSourceStrengths(historical, mappingByCurrentId),
     playerForm,
   });
@@ -268,6 +278,7 @@ export function enrichPlayersWithHistory(
     })),
     projections,
     teamStrengths: strengths,
+    cleanSheetStrengths,
     metadata: {
       currentGameweek: gw,
       historical: {
