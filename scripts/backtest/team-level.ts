@@ -23,7 +23,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { TeamStrength } from "@/types/projection";
-import { cleanSheetFromRates } from "@/lib/projections/fixtureAdjustment";
+import { cleanSheetFromRates, continuousDifficultyMultiplier } from "@/lib/projections/fixtureAdjustment";
 import { CLEAN_SHEET_SKEW_WEIGHT } from "@/lib/projections/cleanSheetStrength";
 import { loadSeason, strengthsBefore } from "./season";
 
@@ -136,7 +136,12 @@ function main(): void {
         const ownElo = (isHome ? eloRow.homeElo : eloRow.awayElo) + (isHome ? 40 : -40);
         const oppElo = isHome ? eloRow.awayElo : eloRow.homeElo;
         const difficulty = clamp(3 + (oppElo - ownElo) / 200, 1, 5);
-        const baseTerm = 1 + (3 - difficulty) * 0.07;
+        // Read from the shipped curve rather than a slope of its own. The
+        // production rungs are [1.14, 1.07, 1.00, 0.92, 0.84], which step by
+        // 0.07 on the easy side and 0.08 on the hard side; the flat 0.07 this
+        // used understated `base` on exactly the hard fixtures these arms are
+        // read for.
+        const baseTerm = continuousDifficultyMultiplier(difficulty);
         const venue = isHome ? VENUE[0] : VENUE[1];
 
         const xgPredicted: number[] = [], csPredicted: number[] = [], bound: boolean[] = [];

@@ -26,7 +26,10 @@
  *
  *   npx tsx scripts/backtest/multiplier-calibration.ts
  */
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { loadSeason, strengthsBefore, type Season } from "./season";
+import { CLUB_ELO_HOME_FIELD_ADVANTAGE, calculateContinuousClubEloFdr } from "@/lib/clubElo";
 import {
   calculateFixtureAdjustment,
   continuousDifficultyMultiplier,
@@ -38,6 +41,22 @@ import type { PlayerFixture } from "@/types/player";
 
 const BOOTSTRAP_DRAWS = 2000;
 const NEUTRAL_DIFFICULTY = 3;
+
+/**
+ * Production reads a continuous Elo-gap difficulty, not FPL's published 1-5
+ * (`normalizeFixtures` -> `continuousFixtureDifficultyFromClubElo`). Scoring the
+ * published integer instead would put a different `base` on every row than the
+ * one the model actually applies, so the walk-forward Elo is used when it is
+ * there. Falling back to the published rating keeps the script runnable without
+ * it, and the header of the output says which was used.
+ */
+interface EloRow { fixtureId: number; homeElo: number; awayElo: number }
+const dataDir = process.env.BACKTEST_DATA_DIR ?? path.join(path.resolve(__dirname, "../.."), "data/generated");
+const eloPath = path.join(dataDir, "backtest-elo.json");
+const eloByFixture = existsSync(eloPath)
+  ? new Map((JSON.parse(readFileSync(eloPath, "utf8")) as EloRow[]).map((row) => [row.fixtureId, row]))
+  : new Map<number, EloRow>();
+const difficultySource = eloByFixture.size > 0 ? "continuous ClubElo gap (as production)" : "FPL published 1-5";
 
 interface Row {
   gameweek: number;
@@ -66,14 +85,22 @@ function buildRows(season: Season, useBase: boolean): Row[] {
       const own = strengths[teamId];
       const opponent = strengths[opponentId];
       if (!own || !opponent) continue;
-      const published = (isHome ? fixture.homeDifficulty : fixture.awayDifficulty) ?? NEUTRAL_DIFFICULTY;
+      const elo = eloByFixture.get(fixture.fixtureId);
+      const published = elo
+        ? calculateContinuousClubEloFdr(
+            isHome ? elo.homeElo : elo.awayElo,
+            isHome ? elo.awayElo : elo.homeElo,
+            isHome,
+            CLUB_ELO_HOME_FIELD_ADVANTAGE,
+          )
+        : (isHome ? fixture.homeDifficulty : fixture.awayDifficulty) ?? NEUTRAL_DIFFICULTY;
       const difficulty = useBase ? published : NEUTRAL_DIFFICULTY;
       const playerFixture: PlayerFixture = {
         gameweek: fixture.gameweek,
         opponentTeamId: opponentId,
         opponentShortName: "",
         isHome,
-        difficulty,
+        exactDifficulty: difficulty,
       };
       const adjustment = calculateFixtureAdjustment(playerFixture, { ownTeam: own, opponentTeam: opponent });
       const xg = Math.max(isHome ? fixture.homeXg : fixture.awayXg, 0.05);
@@ -237,6 +264,26 @@ function reportTerms(label: string, rows: Row[], terms: readonly Term[]): void {
 }
 
 const season = loadSeason();
+/**
+ * The legacy single-season corpus in `data/generated` has no
+ * `preseason-team-strength.json`, so `loadSeason` falls back to
+ * `team-strength.json` - that season's *own final* ratings. Every strength then
+ * carries end-of-season information into a gameweek that has not happened,
+ * which inflates the strength terms and makes the Elo-gap `base` look redundant
+ * when it is not. Scoring the terms against each other needs an honest prior,
+ * so this refuses to run without one rather than reporting a number that
+ * reverses on better data.
+ */
+if (!season.hasPreparedPriors) {
+  console.error(
+    "refusing to run on the legacy corpus: it seeds strengths from the target season's own\n"
+    + "final ratings, which reverses the sign of the base term. Prepare a season first:\n"
+    + "  npx tsx -e \"import('@/scripts/backtest/prepare-seasons').then(m => m.prepareBacktestSeasons('<root>'))\"\n"
+    + "  npx tsx scripts/backtest/elo-history.ts <root>\n"
+    + "  BACKTEST_DATA_DIR=<root>/2025-26 npx tsx scripts/backtest/multiplier-calibration.ts",
+  );
+  process.exit(1);
+}
 const phases: [string, (row: Row) => boolean][] = [
   ["all gameweeks", () => true],
   ["GW1-9, preseason prior dominates", (row) => row.gameweek <= 9],
@@ -248,6 +295,7 @@ for (const useBase of [false, true]) {
   const rows = buildRows(season, useBase);
   console.log(`\n${"=".repeat(74)}`);
   console.log(useBase ? "SHIPPED SHAPE: base x venue x strength ratio" : "WITHOUT THE FDR BASE TERM: venue x strength ratio");
+  console.log(`difficulty read as: ${difficultySource}`);
   console.log("=".repeat(74));
   for (const [label, keep] of phases) reportSlopes(label, rows.filter(keep));
 }

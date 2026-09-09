@@ -13,12 +13,11 @@ import {
   PLAYER_FORM_DECAY,
   PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
   PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS,
+  PLAYER_FORM_WINSOR_RATIO,
 } from "@/lib/projections/playerForm";
 import { priceTieredAttackingPrior } from "@/lib/projections/projectPlayer";
 import { adjust, type Variant } from "./variants";
 
-const PRIOR_XG: Record<Position, number> = { GK: 0.01, DEF: 0.08, MID: 0.25, FWD: 0.45 };
-const PRIOR_XA: Record<Position, number> = { GK: 0.02, DEF: 0.08, MID: 0.2, FWD: 0.15 };
 const GOAL_POINTS: Record<Position, number> = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
 const PRIOR_DEFENSIVE_CONTRIBUTION: Record<Position, number> = { GK: 0, DEF: 7.7, MID: 8.6, FWD: 4.7 };
 const PRIOR_SAVES: Record<Position, number> = { GK: 2.8, DEF: 0, MID: 0, FWD: 0 };
@@ -54,10 +53,6 @@ function currentRate(player: Player, field: RateField) {
   return { rate: (value / player.current.minutes) * 90, minutes: player.current.minutes };
 }
 
-function hasUsableHistoricalRate(player: Player, primary: "expectedGoals" | "expectedAssists", fallback: "goals" | "assists") {
-  return historicalRate(player, primary) !== undefined || historicalRate(player, fallback) !== undefined;
-}
-
 /** Mirrors currentSeasonWeight in lib/projections/projectPlayer.ts. */
 function currentSeasonWeight(
   form: readonly PlayerMatchRate[] | undefined, currentGameweek: number,
@@ -82,7 +77,16 @@ function regressedPlayerRate(
     const currentWeight = currentSeasonWeight(
       form, currentGameweek, priorWeightMatches, currentWeightDivisor, currentWeightCap,
     );
-    rate = rate * (1 - currentWeight) + current.rate * currentWeight;
+    // Production caps the current-season rate at a multiple of the anchor
+    // before blending. A handful of extreme divergences otherwise dominate a
+    // sum of squares and revert hardest - the largest single gain the form
+    // sweep measured anywhere.
+    const baselineAnchor = rate > 0 ? rate : prior;
+    const cap = baselineAnchor > 0 && PLAYER_FORM_WINSOR_RATIO > 0
+      ? baselineAnchor * PLAYER_FORM_WINSOR_RATIO
+      : undefined;
+    const winsorizedCurrentRate = cap !== undefined ? Math.min(current.rate, cap) : current.rate;
+    rate = rate * (1 - currentWeight) + winsorizedCurrentRate * currentWeight;
     sample += current.minutes * currentWeight;
   }
   return clamp(regressPer90(rate, sample, prior, 900), 0, ceiling);
@@ -102,34 +106,60 @@ function regressedFormRate(
   // A player's own prior-period rate is used raw today. It is an estimate, so
   // shrinking it toward the pool by its own sample size removes the survivorship
   // tilt without touching a player who has a genuinely large sample.
+  // Production regresses the anchor toward the position/price prior by its own
+  // sample size before anything else (projectPlayer's `historicalAnchor`), so
+  // that is the default here too. The arm knobs stay: an override shrinks
+  // toward `poolRate` over `shrinkMinutes` instead.
+  const anchorTarget = poolRate ?? prior;
+  const anchorMinutes = shrinkMinutes > 0 ? shrinkMinutes : 900;
   const basePrior = historical
-    ? (shrinkMinutes > 0 && poolRate !== undefined
-        ? regressPer90(historical.rate, historical.minutes, poolRate, shrinkMinutes)
-        : historical.rate)
+    ? regressPer90(historical.rate, historical.minutes, anchorTarget, anchorMinutes)
     : prior;
   if (form && form.length > 0) {
     const field = primary === "expectedGoals" ? "xg" : "xa";
-    const samples = form.map((m) => ({ value: m[field], minutes: m.minutes }));
+    // Production caps a defender's per-match xG at 0.35 per 90 before blending
+    // (projectPlayer's DEF winsorisation), so a penalty or a set-piece header
+    // does not carry a centre-back's rate for the rest of the season.
+    const samples = form.map((m) => {
+      let value = m[field];
+      if (player.position === "DEF" && primary === "expectedGoals" && m.minutes > 0) {
+        const ratePer90 = (value / m.minutes) * 90;
+        if (ratePer90 > 0.35) value = (0.35 / 90) * m.minutes;
+      }
+      return { value, minutes: m.minutes };
+    });
     return clamp(blendPlayerRateByMinutes(samples, basePrior, formDecay, formPriorWeight), 0, ceiling);
   }
+  // No form to blend. Production normalizes each *input* rate by the team's
+  // attack and only then regresses the result toward the prior. Dividing the
+  // regressed output instead - as this did - also divides the prior term, which
+  // is not on the team's scale, so the two disagreed by the prior's share of
+  // the blend on every row without form.
   const current = currentRate(player, primary) ?? currentRate(player, fallback);
-  let rate = basePrior;
+  const normalizedOwnTeam = ownTeam && strengths?.[ownTeam.teamId] ? ownTeam : undefined;
+  const ownAttack = normalizedOwnTeam
+    ? (normalizedOwnTeam.attackHome + normalizedOwnTeam.attackAway) / 2
+    : 1;
+  let rate = historical && ownAttack > 0 ? historical.rate / ownAttack : prior;
   let sample = historical?.minutes ?? 0;
   if (current) {
     const currentWeight = clamp(currentGameweek / currentWeightDivisor, 0, currentWeightCap);
-    rate = rate * (1 - currentWeight) + current.rate * currentWeight;
+    const normalizedCurrent = ownAttack > 0 ? current.rate / ownAttack : current.rate;
+    rate = rate * (1 - currentWeight) + normalizedCurrent * currentWeight;
     sample += current.minutes * currentWeight;
   }
-  const regressed = regressPer90(rate, sample, prior, 900);
-  const ownAttack = ownTeam && strengths ? (ownTeam.attackHome + ownTeam.attackAway) / 2 : 1;
-  const normalized = ownAttack > 0 ? regressed / ownAttack : regressed;
-  return clamp(normalized, 0, ceiling);
+  return clamp(regressPer90(rate, sample, prior, 900), 0, ceiling);
 }
 
-function attackingPrior(player: Player, primary: "expectedGoals" | "expectedAssists", fallback: "goals" | "assists") {
-  if (hasUsableHistoricalRate(player, primary, fallback)) {
-    return primary === "expectedGoals" ? PRIOR_XG[player.position] : PRIOR_XA[player.position];
-  }
+/**
+ * Production reads the price-tiered prior for every player, whether or not a
+ * historical rate exists (`projectPlayer`'s `attackingPrior`). This used to
+ * swap in a flat position prior once a player had any history, which is 2.8x
+ * the tiered value for a mid-priced midfielder. It only ever showed on a corpus
+ * carrying real previous-season xG, so the gate on the legacy corpus never saw
+ * it - which is exactly why the gate has to be run on a prepared season too.
+ */
+function attackingPrior(player: Player, primary: "expectedGoals" | "expectedAssists") {
   const tiered = priceTieredAttackingPrior(player.position, player.priceTenths);
   return primary === "expectedGoals" ? tiered.xg : tiered.xa;
 }
@@ -167,8 +197,8 @@ export function playerRates(
   const cc = overrides.currentWeightCap ?? 0.6;
   const rw = overrides.rareEventPriorWeight ?? PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS;
   return {
-    xg: regressedFormRate(player, "expectedGoals", "goals", priorXg ?? attackingPrior(player, "expectedGoals", "goals"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXg, fd, fw, cd, cc, ownTeam, strengths),
-    xa: regressedFormRate(player, "expectedAssists", "assists", priorXa ?? attackingPrior(player, "expectedAssists", "assists"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXa, fd, fw, cd, cc, ownTeam, strengths),
+    xg: regressedFormRate(player, "expectedGoals", "goals", priorXg ?? attackingPrior(player, "expectedGoals"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXg, fd, fw, cd, cc, ownTeam, strengths),
+    xa: regressedFormRate(player, "expectedAssists", "assists", priorXa ?? attackingPrior(player, "expectedAssists"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXa, fd, fw, cd, cc, ownTeam, strengths),
     saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves, cd, cc, form),
     defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution, cd, cc, form),
     bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus, cd, cc, form),
