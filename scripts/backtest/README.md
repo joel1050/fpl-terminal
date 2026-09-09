@@ -35,9 +35,18 @@ xG is zero - rows *and* fixtures, or `strengthsBefore` folds those blanks into
 every team's in-season form. 2022/23 is therefore a reduced replication:
 gameweeks 16-38, a 12-match anchor over 16-27, and one rest-of-season cutoff.
 
-`validate.ts` reproduces `projectPlayer()` to 0.0e+0 on all 9,972 played rows, so
-an arm difference is a model difference and not a harness difference. Run it
-first; the other scripts are meaningless if it fails.
+**`validate.ts` no longer passes at HEAD, and the drift is confined.** All 9,972
+rows differ, but by component it is `bonus` on every row, `goals` on 1,357 and
+`assists` on 123. `cleanSheets` reproduces exactly, so the clean-sheet scripts -
+`cleansheets.ts`, `cs-tiers.ts`, `cs-fit.ts`, `team-level.ts` - are unaffected;
+they score the clean-sheet probability against the event and never call
+`projectPlayer()`. Any arm reading xP does carry the drift and has no replication
+gate until the bonus path is reconciled.
+
+The gate exists because when it passes - as it did, to 0.0e+0 on all 9,972 played
+rows - an arm difference is a model difference and not a harness difference. Run
+it first, and read its failure by component rather than as a single verdict: an
+xP arm is meaningless while it fails, a clean-sheet arm is not.
 
 ## Method
 
@@ -88,6 +97,10 @@ calling anything a defect.
 | Re-tuning the defensive-contribution dispersion | **Reject, keep 8.** Swept 3, 5, 12, 20 and 1000: every value is inside the noise and the Poisson end (1000) is the worst of them. The assumed 8 sits at the optimum. `run.ts` |
 | Defender bonus following the clean sheet instead of the attack | **Reject.** +0.0015 following the clean sheet, +0.0008 following both, neither resolving. The mechanism story favours the defensive side; the measurement does not, so the shipped attacking multiplier stays. `run.ts` |
 | Scaling down the weak end of the clean-sheet table | **Reject.** Fitting a scale on the tier-1 rows helps in-sample (0.18403 → 0.18366) and **hurts out of sample** (0.18410), improving 3 folds of 5. Per team-fixture the tier-1 miss is +0.063 [-0.027, 0.144] and the tier-1 defender bias +0.185 [-0.610, 0.820]. `cs-fit.ts`, `cs-tiers.ts` |
+| Rescale the team-strength level onto the goal scale | **Reject.** Section 3's strengths are ratios, so the level cancels in every consumer and has never had to be right; it is 1.7x narrower than a Poisson fit on the same xG. Fixing it is monotonically worse on team xG: +0.0100 at 1.35x, +0.0186 at 1.69x, +0.0241 at 2.0x, every interval excluding zero, while clean-sheet Brier moves less than the corpus resolves. `team-level.ts` |
+| Take part of the team-strength level from Elo | **Reject.** Worse on team xG at every weight from 0.25 to 1.0 (+0.0183 to +0.0242). Best clean-sheet Brier is 0.18195 at weight 0.5 against 0.18237 for the level as is - well inside the noise. `team-level.ts` |
+| Remove the §7.2 clamps | **Reject, and they are more load-bearing than before.** Opening both windows costs +0.0121 team-xG RMSE, interval excluding zero; on a widened level it costs +0.1283. They bite on 16.4% of team-fixtures as shipped. `team-level.ts` |
+| Drop the Elo-gap `base` once the strength ratio carries the fixture | **Unresolved, and the only live lead here.** -0.0038 team-xG RMSE on the shipped level with the interval spanning zero. It reverses sign on a widened level (+0.0081, excluding zero), so it is a claim about the shipped scale only. `team-level.ts` |
 | Interpolating the clean-sheet table | **Reject.** Reading the same 5×5 table continuously rather than snapping to a cell: Brier -0.0001 on the event itself and xP RMSE **+0.0019 for GK/DEF**, both intervals spanning zero. Extrapolating past the grid as well is directionally better but cannot be resolved: [-0.0201, +0.0141]. `cleansheets.ts`, `run.ts` |
 
 | Lower `PLAYER_FORM_PRIOR_WEIGHT_MATCHES` so recent form counts for more | **Reject — the evidence points the other way.** Swept decay 0.80-1.00 against prior weight 0-48 and both null arms. The aggregate optimum is 32 against a 7.1-match anchor and 48+ against a 10.8-match anchor, both above the shipped 24, and the optimum rises as the anchor improves. Production's anchor is a full 38-match season, longer than either split, so the trend argues for *less* form weight, not more. Gains are tiny either way (held-out RATE RMSE -0.0010 and -0.0023; xP RMSE 2.7572 -> 2.7557). `form-weight.ts` |

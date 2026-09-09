@@ -142,6 +142,22 @@ blended            = prior * (1 - currentShare) + observed * currentShare
 
 `lib/historical/loadInSeasonForm.ts` supplies the observed data: once every fixture in a gameweek is finished, it sums each player's live `expected_goals` (`event/{gw}/live/`) by team, pairs each fixture's two teams to get xG-for/xG-against, and persists the small aggregate so an immutable gameweek is never re-fetched from FPL again. Double Gameweeks are skipped because the event feed aggregates each player's xG across the whole gameweek and cannot separate it by fixture. A gameweek whose aggregate sums to zero across every team is treated as unresolved (likely an upstream field rename) rather than cached as a false shutout.
 
+### 3.4 What a strength number is, and what it is not
+
+Every value section 3 produces is a **ratio centred on 1.0**, and every consumer divides one by another:
+
+| consumer | expression |
+|---|---|
+| attack multiplier (§7.2) | `ownAttack / opponentDefence` |
+| schedule-adjusted form (§6.3.2) | player's past xG `/` his team's attack |
+| clean sheets (§7.4) | `attack'_opponent / defence'_own` |
+
+A ratio cancels the level. Double every team's attack and defence and nothing above changes. So the absolute scale has never had to be right, and it is not: the level `log(attack) + log(defence)` is about **1.7x narrower** than an independent Poisson fitted to the same season's xG (sd 0.189 against 0.319 over 2026/27's opening rounds). Two things compress it - the §3.1 seed only ever spans `0.84`-`1.16` by construction, and §3.3 pulls the fit back toward that seed with a prior weight of 12.
+
+**Rescaling the level onto the goal scale is rejected.** Walk-forward on 660 team-fixtures it is monotonically worse on team xG - `+0.0100` at 1.35x, `+0.0186` at 1.69x, `+0.0241` at 2.0x, every paired interval excluding zero - while clean-sheet Brier moves by less than the corpus can resolve. It also drives the §7.2 clamps from biting on 16.4% of team-fixtures to 43.3%. Substituting ClubElo for part of the level is worse on the same measure at every weight tested (0.25 to 1.0). `scripts/backtest/team-level.ts`.
+
+This is the reason §7.4 carries its own level rather than re-levelling section 3 for everyone: the clean-sheet read needs an absolute goal-scale mean, and the ratios were never built to supply one.
+
 ---
 
 ## 4. Selection / availability model
@@ -492,7 +508,7 @@ When both own and opponent team strengths exist:
 attackMultiplier *= clamp(ownAttack / opponentDefence, 0.70, 1.35)
 ```
 
-`cleanSheetProbability` is read from a market-calibrated table indexed by the nearest strength tier of the defending team and the opponent's attacking tier (see table in §7.4). Without strengths, `expectedGoalsAgainst` is divided by `base^2`.
+`cleanSheetProbability` no longer comes from this ratio at all - see §7.4. Without strengths, `expectedGoalsAgainst` is divided by `base^2`.
 
 The ratio window was `0.78`-`1.22`, which truncated a real signal: walk-forward
 strengths for 2025/26 produced ratios from `0.47` to `1.62`, so the old clamp bit
@@ -520,6 +536,12 @@ matters: widening the clamp left match-level RMSE unchanged (+0.0006, interval
 spanning zero) and top-30 selection flat. Single-match points are too noisy to
 reward getting the slope right. The case for it is that a ceiling erasing a
 third of a player's fixture variation misleads anyone planning a fixture run.
+
+**Removing either clamp is worse, and the margin grows with the level's spread.**
+Walk-forward on 660 team-fixtures, opening both windows costs +0.0121 team-xG
+RMSE with the paired interval excluding zero; on top of a widened level (§3.4) it
+costs +0.1283. The two shipped windows together bite on 16.4% of team-fixtures.
+`scripts/backtest/team-level.ts`.
 
 ### 7.3 Consistent goals-against
 
@@ -572,7 +594,24 @@ Two consequences for the rest of section 7:
 
 Against the gameweek-4 2026/27 bookmaker clean-sheet market, with no parameter fitted to that market, this reads MAE 2.97 against the table's 5.67, and a spread of sd 9.23 against the market's 10.27 and the table's 7.25.
 
-**Scope limit.** The walk-forward arm in `scripts/backtest/cleansheets.ts` could not resolve a gain against realized clean sheets, but it reads `elo-history.ts`'s synthetic ratings rather than ClubElo's - ClubElo's history API returns 502, so no dated past values are obtainable and the shipped inputs cannot be tested on a past season. The market agreement above is the only evidence that bears on ClubElo's own numbers.
+**How much of that is ClubElo, and how much is the scale.** Mostly the scale. Holding everything else fixed and varying only the level term against the same gameweek-4 market:
+
+| level term | MAE | sd |
+|---|---|---|
+| ClubElo (shipped) | 2.97 | 9.23 |
+| the strengths' own level, unchanged | 4.48 | 6.23 |
+| the strengths' own level x1.69 | 2.90 | 9.00 |
+| half rescaled, half ClubElo | 2.53 | 8.96 |
+
+Rescaling the app's own level matches ClubElo without using it. ClubElo adds something as a complement - the blend is the best arm - but it is not what carries the result.
+
+**Scope limits, and they are severe.**
+
+- The walk-forward arm in `scripts/backtest/cleansheets.ts` could not resolve a gain against realized clean sheets, and neither could `team-level.ts`: taking the level from ClubElo scores Brier 0.18287 against 0.18237 for the strengths' own level, both inside a corpus that resolves nothing below +/-0.0025. **No outcome test has yet found a gain from the Elo term.**
+- Those arms read `elo-history.ts`'s synthetic ratings, not ClubElo's. ClubElo's history API returns 502 and dated pages redirect, so no past values are obtainable and the shipped input cannot be tested on a past season at all.
+- The gameweek-4 market table is 20 values, and matching it is not evidence about outcomes. Twice now a change that improved market agreement has been worse against realized results - the grid extrapolation arm in the backtest README, and the level rescale in §3.4. The market's clean-sheet odds look like a wide, ratings-derived surface, so a ratings-driven model agrees with them partly by sharing their construction.
+
+What is actually carrying this section is the negative binomial replacing the table (Brier 0.1824 against the table's 0.1847, unresolved). The ClubElo level is kept on the market evidence and the promoted-club coverage, not on an outcome test. Revisit it once a season of live predictions has accumulated against real ratings.
 
 ### 7.4.1 Clean-sheet probability table (fallback)
 
