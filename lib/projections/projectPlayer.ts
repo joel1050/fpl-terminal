@@ -532,7 +532,7 @@ function fixtureComponents(
     // confidence interval excluding zero, -0.0017 across all rows. It also
     // closes most of the gap in how far a forward's projection moves between
     // an easy and a hard fixture (0.73 -> 1.01 against an observed 1.07).
-    components.bonus += weight * rates.bonus * minutesShare;
+    components.bonus += weight * rates.bonus * minutesShare * adjustment.attackMultiplier;
     // A booking is something that either happens or does not, so this is a
     // probability rather than a rate times minutes: at a 0.18 yellow rate the
     // difference is small, but it keeps a full match from ever implying more
