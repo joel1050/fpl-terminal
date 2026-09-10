@@ -72,8 +72,8 @@ describe("ClubElo snapshot and FDR", () => {
     expect(snapshot.clubs.map((club) => club.tlc)).toEqual([...snapshot.clubs].sort((left, right) => left.tlc.localeCompare(right.tlc)).map((club) => club.tlc));
   });
 
-  it("applies the venue-adjusted Elo formula, aliases, and neutral fallback", () => {
-    expect(calculateClubEloFdr(1700, 1800, true)).toBe(3);
+  it("applies the venue-agnostic Elo formula, aliases, and neutral fallback", () => {
+    expect(calculateClubEloFdr(1700, 1800, true)).toBe(4);
     expect(calculateClubEloFdr(1700, 1800, false)).toBe(4);
     expect(calculateClubEloFdr(2200, 1200, true)).toBe(1);
     expect(calculateClubEloFdr(1200, 2200, false)).toBe(5);
@@ -181,8 +181,8 @@ describe("ClubElo snapshot injection", () => {
       element_types: [],
       elements: [],
     });
-    // ARS 2200 at home (+40) vs CHE 1400 -> 3 + (1400 - 2240) / 200 = -1.2 -> 1.
-    // CHE 1400 away (-40) vs ARS 2200 -> 3 + (2200 - 1360) / 200 = 7.2 -> 5.
+    // ARS 2200 vs CHE 1400 -> 3 + (1400 - 2200) / 200 = -1 -> 1.
+    // CHE 1400 vs ARS 2200 -> 3 + (2200 - 1400) / 200 = 7 -> 5.
     const fixtures = normalizeFixtures(
       [{ id: 1, team_h: 1, team_a: 2, team_h_difficulty: 5, team_a_difficulty: 1 }],
       payload.teams,

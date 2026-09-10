@@ -303,8 +303,11 @@ export function calculateClubEloFdr(
   homeFieldAdvantage = CLUB_ELO_HOME_FIELD_ADVANTAGE,
 ): number {
   if (!Number.isFinite(ownElo) || !Number.isFinite(opponentElo)) return NEUTRAL_CLUB_ELO_FDR;
-  const venueAdjustedOwnElo = (ownElo as number) + (isHome ? homeFieldAdvantage : -homeFieldAdvantage);
-  return Math.min(5, Math.max(1, Math.round(3 + ((opponentElo as number) - venueAdjustedOwnElo) / 200)));
+  // Venue-agnostic by design: venue lives in the attack multiplier (1.102 /
+  // 0.898) and the clean-sheet path, so FDR rates only the Elo gap.
+  void isHome;
+  void homeFieldAdvantage;
+  return Math.min(5, Math.max(1, Math.round(3 + ((opponentElo as number) - (ownElo as number)) / 200)));
 }
 
 export function fixtureDifficultyFromClubElo(
@@ -329,8 +332,10 @@ export function calculateContinuousClubEloFdr(
   homeFieldAdvantage = CLUB_ELO_HOME_FIELD_ADVANTAGE,
 ): number {
   if (!Number.isFinite(ownElo) || !Number.isFinite(opponentElo)) return NEUTRAL_CLUB_ELO_FDR;
-  const venueAdjustedOwnElo = (ownElo as number) + (isHome ? homeFieldAdvantage : -homeFieldAdvantage);
-  return Math.min(5, Math.max(1, 3 + ((opponentElo as number) - venueAdjustedOwnElo) / 200));
+  // Venue-agnostic by design: see calculateClubEloFdr.
+  void isHome;
+  void homeFieldAdvantage;
+  return Math.min(5, Math.max(1, 3 + ((opponentElo as number) - (ownElo as number)) / 200));
 }
 
 export function continuousFixtureDifficultyFromClubElo(
