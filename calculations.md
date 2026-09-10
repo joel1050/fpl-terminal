@@ -46,8 +46,11 @@ A fixture's own-team and opponent short names are matched to ClubElo's three-let
 For a team with Elo `E_own` and opponent Elo `E_opp`, the normalized FDR is venue-agnostic by design - venue lives in the attack multiplier (`1.102 / 0.898`) and the clean-sheet path (§7), so FDR rates only the Elo gap:
 
 ```
-difficulty       = clamp(round(3 + (E_opp - E_own) / 200), 1, 5)
+difficulty       = clamp(round(3 + (E_opp - E_own) / 150), 1, 5)
+exactDifficulty  = clamp(3 + (E_opp - E_own) / 200, 1, 5)
 ```
+
+The displayed integer rating uses 150 Elo per step to separate more midrange fixtures. The continuous projection input retains 200 Elo per step.
 
 Missing Elo values use `difficulty = 3`. The manual `npm run data:elo` refresh parses exact decimal rows embedded in ClubElo's `vegaJson`, merges the server-rendered full England ranking so clubs outside the chart's top 25 remain available, and writes the validated snapshot atomically. Where two exact rows share a code, the merge keeps the ranking's own rounded Elo rather than attach one club's rating to another's row.
 

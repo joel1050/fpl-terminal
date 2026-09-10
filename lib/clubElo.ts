@@ -307,7 +307,7 @@ export function calculateClubEloFdr(
   // 0.898) and the clean-sheet path, so FDR rates only the Elo gap.
   void isHome;
   void homeFieldAdvantage;
-  return Math.min(5, Math.max(1, Math.round(3 + ((opponentElo as number) - (ownElo as number)) / 200)));
+  return Math.min(5, Math.max(1, Math.round(3 + ((opponentElo as number) - (ownElo as number)) / 150)));
 }
 
 export function fixtureDifficultyFromClubElo(
