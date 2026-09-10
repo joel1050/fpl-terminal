@@ -8,12 +8,16 @@
  *   npx tsx scripts/backtest/evidence-weights.ts
  */
 import { estimateExpectedMinutes } from "@/lib/projections/expectedMinutes";
-import type { PlayerMatchRate } from "@/types/projection";
+import type { PlayerMatchRate, TeamStrength } from "@/types/projection";
 import type { Player } from "@/types/player";
 import { expectedPoints, playerRates, type RateOverrides } from "./xp";
 import { formBefore, loadSeason, playerAt, strengthsBefore, type MatchRow } from "./season";
 import { BASELINE } from "./variants";
-import { PLAYER_FORM_WINSOR_RATIO } from "@/lib/projections/playerForm";
+import {
+  PLAYER_FORM_DECAY,
+  PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
+  PLAYER_FORM_WINSOR_RATIO,
+} from "@/lib/projections/playerForm";
 
 const ANCHOR_THROUGH = Number(process.argv[2] ?? 12);
 const MINUTES_K = 0.7;
@@ -111,22 +115,27 @@ function winsoriseForm(player: Player, form: readonly PlayerMatchRate[]): Player
   return form.map((row) => ({ ...row, xg: row.xg * scale, xa: row.xa * scale }));
 }
 
-function ratesAt(player: Player, form: readonly PlayerMatchRate[], gameweek: number) {
+function ratesAt(
+  player: Player,
+  form: readonly PlayerMatchRate[],
+  gameweek: number,
+  strengths: Record<number, TeamStrength>,
+) {
   const anchorMatches = Math.max((player.historical?.minutes ?? 0) / 90, 1);
   const shared: RateOverrides = { formDecay: 1, formPriorWeight: anchorMatches };
-  const equal = playerRates(player, form, gameweek, shared);
+  const equal = playerRates(player, form, gameweek, shared, strengths);
   const slowXa = playerRates(player, form, gameweek, {
     formDecay: 1,
     formPriorWeight: anchorMatches * (XA_K / XG_K),
-  });
+  }, strengths);
   const winsor = winsoriseForm(player, form);
-  const equalWinsor = playerRates(player, winsor, gameweek, shared);
+  const equalWinsor = playerRates(player, winsor, gameweek, shared, strengths);
   const slowXaWinsor = playerRates(player, winsor, gameweek, {
     formDecay: 1,
     formPriorWeight: anchorMatches * (XA_K / XG_K),
-  });
+  }, strengths);
   const rates: Record<string, ReturnType<typeof playerRates>> = {
-    shipped: playerRates(player, form, gameweek),
+    shipped: playerRates(player, form, gameweek, undefined, strengths),
     equal,
     metric: { ...equal, xa: slowXa.xa },
     equalWinsor,
@@ -136,25 +145,25 @@ function ratesAt(player: Player, form: readonly PlayerMatchRate[], gameweek: num
     rates[`split:${split.name}`] = playerRates(player, form, gameweek, {
       formDecay: split.current === 0 ? 0.9 : 1 - 1 / split.current,
       formPriorWeight: split.current === 0 ? 1e9 : split.previous,
-    });
+    }, strengths);
   }
   for (const current of CURRENT_CAP_SWEEP) {
     rates[`sweep:${current}`] = playerRates(player, form, gameweek, {
       formDecay: 1 - 1 / current,
       formPriorWeight: 10,
-    });
+    }, strengths);
   }
   for (const previous of PREVIOUS_WEIGHT_SWEEP) {
     rates[`previous-sweep:${previous}`] = playerRates(player, form, gameweek, {
       formDecay: 0.95,
       formPriorWeight: previous,
-    });
+    }, strengths);
   }
   for (const decay of DECAY_SWEEP) {
     rates[`decay-sweep:${decay}`] = playerRates(player, form, gameweek, {
       formDecay: decay,
       formPriorWeight: 10,
-    });
+    }, strengths);
   }
   return rates;
 }
@@ -191,7 +200,7 @@ function collect(): Case[] {
       const role = rolePrediction(player, anchor, current);
       const form = formBefore(season, row.historicalPlayerId, gameweek)
         .slice(anchor.filter((item) => item.minutes > 0).length);
-      const rates = ratesAt(player, form, gameweek);
+      const rates = ratesAt(player, form, gameweek, strengths);
       const fixtureInput = player.fixtures[0];
       const xp: Record<string, number> = {
         shipped: expectedPoints(player, fixtureInput, baseMinutes, rates.shipped, strengths, BASELINE).total,
@@ -261,7 +270,8 @@ function main() {
   const startDelta = (rows: readonly Case[]) =>
     mean(rows.map((row) => (row.proposedStartProbability - row.actualStart) ** 2))
     - mean(rows.map((row) => (row.baselineStartProbability - row.actualStart) ** 2));
-  console.log(`2025/26 walk-forward: ${cases.length.toLocaleString()} player-fixtures; gameweeks 1-${ANCHOR_THROUGH} are the anchor\n`);
+  const corpus = process.env.BACKTEST_DATA_DIR?.split("/").pop() ?? "legacy generated corpus";
+  console.log(`${corpus} walk-forward: ${cases.length.toLocaleString()} player-fixtures; gameweeks 1-${ANCHOR_THROUGH} are the anchor\n`);
   console.log("ROLE MODEL (all rows, including zero-minute non-appearances)");
   console.log(`minutes RMSE   shipped ${rmse(cases.map((row) => row.baselineMinutes - row.actualMinutes)).toFixed(3)}   reliability ${rmse(cases.map((row) => row.proposedMinutes - row.actualMinutes)).toFixed(3)}   delta ${minuteDelta(cases).toFixed(3)}   95% CI [${interval(cases, minuteDelta).map((x) => x.toFixed(3)).join(", ")}]`);
   console.log(`start Brier    shipped ${mean(cases.map((row) => (row.baselineStartProbability - row.actualStart) ** 2)).toFixed(4)}   reliability ${mean(cases.map((row) => (row.proposedStartProbability - row.actualStart) ** 2)).toFixed(4)}   delta ${startDelta(cases).toFixed(4)}   95% CI [${interval(cases, startDelta).map((x) => x.toFixed(4)).join(", ")}]`);
@@ -281,10 +291,11 @@ function main() {
     rmse(rows.map((row) => row.xp[name] - row.actualPoints))
     - rmse(rows.map((row) => row.xp.shipped - row.actualPoints));
   console.log("\nCURRENT / PREVIOUS RATE SPLITS");
-  console.log("The current number is the asymptotic effective-match ceiling; 20/10 is shipped.");
+  console.log(`The current number is the asymptotic effective-match ceiling; ${PLAYER_FORM_DECAY}/${PLAYER_FORM_PRIOR_WEIGHT_MATCHES} is shipped.`);
   console.log("split              current share at 38   xG RMSE   xA RMSE   xP RMSE   xP delta [95% CI]");
-  const shippedEffective = (1 - 0.95 ** 38) / (1 - 0.95);
-  console.log(`${"20 / 10 shipped".padEnd(19)} ${(shippedEffective / (shippedEffective + 10) * 100).toFixed(1).padStart(6)}%              ${shippedRateXg.toFixed(4)}    ${shippedRateXa.toFixed(4)}    ${shippedXp.toFixed(4)}   baseline`);
+  const shippedEffective = (1 - PLAYER_FORM_DECAY ** 38) / (1 - PLAYER_FORM_DECAY);
+  const shippedLabel = `${PLAYER_FORM_DECAY} / ${PLAYER_FORM_PRIOR_WEIGHT_MATCHES} shipped`;
+  console.log(`${shippedLabel.padEnd(19)} ${(shippedEffective / (shippedEffective + PLAYER_FORM_PRIOR_WEIGHT_MATCHES) * 100).toFixed(1).padStart(6)}%              ${shippedRateXg.toFixed(4)}    ${shippedRateXa.toFixed(4)}    ${shippedXp.toFixed(4)}   baseline`);
   for (const split of RATE_SPLITS) {
     const name = `split:${split.name}`;
     const effective = split.current === 0 ? 0 : split.current * (1 - (1 - 1 / split.current) ** 38);

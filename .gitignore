@@ -19,3 +19,8 @@ data/snapshots/
 *.tsbuildinfo
 .DS_Store
 .vercel
+
+# codex-workflow-managed-start
+.codex_workflow_hidden_resources/
+AGENTS.md
+# codex-workflow-managed-end

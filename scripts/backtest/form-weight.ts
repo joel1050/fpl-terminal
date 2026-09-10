@@ -2,11 +2,8 @@
  * How much should this season's form outweigh the player's prior-season rate?
  *
  * Sweeps blendPlayerRate's two parameters - the recency decay and the anchor's
- * weight in "matches worth" - which are the only constants in the model with no
- * runnable backtest behind them. PLAYER_FORM_DECAY and
- * PLAYER_FORM_PRIOR_WEIGHT_MATCHES cite a 2023/24 + 2024/25 corpus that is not
- * in this repository, so nothing here can confirm or refute that fit; this
- * measures them against the one season that is.
+ * weight in "matches worth". Run this once per prepared season; a single
+ * invocation still measures only the corpus selected by BACKTEST_DATA_DIR.
  *
  * The corpus has no previous season, so a block of early gameweeks plays that
  * part, exactly as anchor.ts and players.ts do. Two splits are run because the
@@ -37,6 +34,9 @@ import type { TeamStrength } from "@/types/projection";
 
 const DECAYS = [0.8, 0.85, 0.9, 0.95, 1.0] as const;
 const WEIGHTS = [0, 2, 4, 6, 8, 12, 16, 24, 32, 48, 1e9] as const;
+const LEVEL_WEIGHTS = [...new Set([0, 4, PLAYER_FORM_PRIOR_WEIGHT_MATCHES, 8, 12, 16, 24, 48, 1e9])]
+  .sort((a, b) => a - b);
+const DIVERGENCE_WEIGHTS = LEVEL_WEIGHTS.filter((weight) => weight !== 0);
 const FOLDS = 5;
 const label = (w: number) => (w >= 1e9 ? "anchor-only" : w === 0 ? "form-only" : String(w));
 
@@ -83,7 +83,9 @@ function errors(rows: readonly Row[], decay: number, weight: number) {
   const rate: { gw: number; e: number; row: number }[] = [];
   const xp: { gw: number; e: number }[] = [];
   rows.forEach((r, row) => {
-    const rates = playerRates(r.player, r.form, r.gameweek, { formDecay: decay, formPriorWeight: weight });
+    const rates = playerRates(
+      r.player, r.form, r.gameweek, { formDecay: decay, formPriorWeight: weight }, r.strengths,
+    );
     if (r.minutes >= 60) {
       const predicted = (rates.xg + rates.xa) * (r.minutes / 90);
       rate.push({ gw: r.gameweek, e: (predicted - r.actualXgi) ** 2, row });
@@ -156,12 +158,12 @@ function run(season: Season, anchorThrough: number): void {
   const atShipped = DECAYS.map((d) => rmse(get(d, PLAYER_FORM_PRIOR_WEIGHT_MATCHES).rate));
   const atShippedDecay = WEIGHTS.filter((w) => w < 1e9).map((w) => rmse(get(PLAYER_FORM_DECAY, w).rate));
   const spread = (a: number[]) => Math.max(...a) - Math.min(...a);
-  console.log(`\nRATE RMSE spread across decay (at prior 24):  ${spread(atShipped).toFixed(4)}`);
-  console.log(`RATE RMSE spread across prior (at decay 0.9): ${spread(atShippedDecay).toFixed(4)}`);
+  console.log(`\nRATE RMSE spread across decay (at prior ${PLAYER_FORM_PRIOR_WEIGHT_MATCHES}):  ${spread(atShipped).toFixed(4)}`);
+  console.log(`RATE RMSE spread across prior (at decay ${PLAYER_FORM_DECAY}): ${spread(atShippedDecay).toFixed(4)}`);
 
   // 5-fold cross-validation on gameweek clusters, interleaved so each fold spans the season.
   console.log(`\n${FOLDS}-FOLD CV over gameweek clusters - winner chosen on 4 folds, scored on the 5th`);
-  console.log("fold   held-out GWs                      picked (decay, prior)    held-out RATE RMSE   shipped (0.9, 24)");
+  console.log(`fold   held-out GWs                      picked (decay, prior)    held-out RATE RMSE   shipped (${PLAYER_FORM_DECAY}, ${PLAYER_FORM_PRIOR_WEIGHT_MATCHES})`);
   console.log("-".repeat(104));
   let cvPicked = 0, cvShipped = 0, cvN = 0;
   const picks: string[] = [];
@@ -197,7 +199,7 @@ function run(season: Season, anchorThrough: number): void {
     + `  ${lo < 0 && hi < 0 ? "SIGNIFICANT" : "not resolved"}`);
   if (bestW < 1e9 && anchorMatches > 0) {
     console.log(`  as a ratio to the anchor: ${(bestW / anchorMatches).toFixed(2)} x anchor length`
-      + `   (shipped 24 against a 38-match season = 0.63 x)`);
+      + `   (shipped ${PLAYER_FORM_PRIOR_WEIGHT_MATCHES} against a 38-match season = ${(PLAYER_FORM_PRIOR_WEIGHT_MATCHES / 38).toFixed(2)} x)`);
   }
 
   // The aggregate is dominated by players whose rate never moved, and they
@@ -223,13 +225,13 @@ function run(season: Season, anchorThrough: number): void {
   console.log(`\nBY HOW FAR THIS SEASON'S FORM DIVERGES FROM THE ANCHOR (started rows, 4+ form matches, n=${withDiv.length})`);
   console.log("  the aggregate above is carried by players whose rate never moved; these are the ones it turns on");
   console.log("divergence band            n     anchor/90  form/90   RATE RMSE at prior weight");
-  console.log("                                                     " + [4, 8, 16, 24, 48, 1e9].map((w) => label(w).padStart(9)).join(""));
+  console.log("                                                     " + DIVERGENCE_WEIGHTS.map((w) => label(w).padStart(9)).join(""));
   console.log("-".repeat(104));
   const q = Math.floor(withDiv.length / 4);
   for (let b = 0; b < 4; b += 1) {
     const band = withDiv.slice(b * q, b === 3 ? withDiv.length : (b + 1) * q);
     const idx = new Set(band.map((x) => x.i));
-    const cells = [4, 8, 16, 24, 48, 1e9].map((w) =>
+    const cells = DIVERGENCE_WEIGHTS.map((w) =>
       rmse(get(PLAYER_FORM_DECAY, w).rate.filter((x) => idx.has(x.row))).toFixed(4).padStart(9));
     const mean = (a: number[]) => a.reduce((s, x) => s + x, 0) / a.length;
     console.log(`${(b === 3 ? "widest 25%" : b === 0 ? "narrowest 25%" : `band ${b + 1}`).padEnd(22)} ${String(band.length).padStart(5)}`
@@ -242,14 +244,14 @@ function run(season: Season, anchorThrough: number): void {
   const [alo, ahi] = pairedCI(shipped.rate, get(PLAYER_FORM_DECAY, 1e9).rate);
   console.log(`\nDoes in-season form earn its place?`);
   console.log(`  anchor only (form ignored)  ${anchorOnly.toFixed(4)}`);
-  console.log(`  shipped (0.9, 24)           ${rmse(shipped.rate).toFixed(4)}   delta vs anchor-only ${(rmse(shipped.rate) - anchorOnly).toFixed(4)}  95% CI [${alo.toFixed(4)}, ${ahi.toFixed(4)}]  ${alo < 0 && ahi < 0 ? "form helps" : "NOT RESOLVED"}`);
+  console.log(`  shipped (${PLAYER_FORM_DECAY}, ${PLAYER_FORM_PRIOR_WEIGHT_MATCHES})           ${rmse(shipped.rate).toFixed(4)}   delta vs anchor-only ${(rmse(shipped.rate) - anchorOnly).toFixed(4)}  95% CI [${alo.toFixed(4)}, ${ahi.toFixed(4)}]  ${alo < 0 && ahi < 0 ? "form helps" : "NOT RESOLVED"}`);
   console.log(`  form only (anchor ignored)  ${formOnly.toFixed(4)}`);
 }
 
 /**
  * The other current-season weight: regressedPlayerRate's
  * `clamp(gameweek / divisor, 0, cap)`, which caps this season at 60% by
- * gameweek 6 while the xG/xA blend above caps it at 29% forever.
+ * gameweek 6 while the xG/xA blend above approaches a 77% form share.
  *
  * In this harness only bonus (and goals/assists as xG/xA fallbacks) has a
  * walk-forward current value. `currentBefore` carries no defensive
@@ -268,7 +270,9 @@ function currentWeightSweep(season: Season, anchorThrough: number): void {
   for (const cap of [0, 0.2, 0.4, 0.6, 0.8, 1.0]) {
     const cells = [5, 10, 20, 38].map((div) => {
       const e = rows.map((r) => {
-        const rates = playerRates(r.player, r.form, r.gameweek, { ...base, currentWeightDivisor: div, currentWeightCap: cap });
+        const rates = playerRates(
+          r.player, r.form, r.gameweek, { ...base, currentWeightDivisor: div, currentWeightCap: cap }, r.strengths,
+        );
         return { gw: r.gameweek, e: (expectedPoints(r.player, r.fixture, r.minutes, rates, r.strengths, BASELINE).total - r.actualPoints) ** 2 };
       });
       return rmse(e).toFixed(4).padStart(10);
@@ -323,21 +327,24 @@ function levelChange(season: Season, anchorThrough: number, quiet = false): { ob
     const future = (futureRows.reduce((s, r) => s + (r.expectedGoals ?? 0) + (r.expectedAssists ?? 0), 0) / futureMinutes) * 90;
     const formInput = formRows.map((r) => ({ xg: r.expectedGoals ?? 0, xa: r.expectedAssists ?? 0, minutes: r.minutes }));
     const pred = new Map<number, number>();
-    for (const w of [0, 4, 8, 12, 16, 24, 48, 1e9]) {
-      const rates = playerRates(player, formInput, at + 1, { formDecay: PLAYER_FORM_DECAY, formPriorWeight: w });
+    for (const w of LEVEL_WEIGHTS) {
+      const rates = playerRates(
+        player, formInput, at + 1, { formDecay: PLAYER_FORM_DECAY, formPriorWeight: w }, strengths,
+      );
       pred.set(w, rates.xg + rates.xa);
     }
     // The proposed shape: same anchor weight, but let the form side keep
     // accumulating instead of asymptoting at 10 effective matches.
-    const flat = playerRates(player, formInput, at + 1, { formDecay: 1, formPriorWeight: 24 });
+    const flat = playerRates(
+      player, formInput, at + 1,
+      { formDecay: 1, formPriorWeight: PLAYER_FORM_PRIOR_WEIGHT_MATCHES }, strengths,
+    );
     pred.set(-1, flat.xg + flat.xa);
     out.push({ name: player.displayName, position: player.position, anchor, form, future, pred, formMatches: formRows.length });
   }
-  void strengths;
-
   const mean = (a: number[]) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN);
   const rms = (a: number[]) => Math.sqrt(mean(a.map((x) => x * x)));
-  const WS = [0, 4, 8, 12, 16, 24, 48, 1e9];
+  const WS = LEVEL_WEIGHTS;
 
   const groups: [string, P[]][] = [
     [`ROSE (form >= ${RISE}x anchor)`, out.filter((p) => p.form / p.anchor >= RISE)],
@@ -390,32 +397,34 @@ function levelChange(season: Season, anchorThrough: number, quiet = false): { ob
   }
 
   console.log(`\n${movers.length} of ${out.length} players (${(movers.length / out.length * 100).toFixed(0)}%) moved by more than 1.5x in either direction.`);
-  const worst = movers.map((p) => ({ ...p, miss: p.pred.get(24)! - p.future })).sort((a, b) => a.miss - b.miss);
-  console.log("\nbiggest under-projections at the shipped weight of 24 (xGI/90):");
+  const worst = movers.map((p) => ({
+    ...p, miss: p.pred.get(PLAYER_FORM_PRIOR_WEIGHT_MATCHES)! - p.future,
+  })).sort((a, b) => a.miss - b.miss);
+  console.log(`\nbiggest under-projections at the shipped weight of ${PLAYER_FORM_PRIOR_WEIGHT_MATCHES} (xGI/90):`);
   for (const p of worst.slice(0, 6)) {
     console.log(`  ${p.name.padEnd(30)} ${p.position}  anchor ${p.anchor.toFixed(3)}  form ${p.form.toFixed(3)}  future ${p.future.toFixed(3)}`
-      + `  predicted ${p.pred.get(24)!.toFixed(3)}  miss ${p.miss.toFixed(3)}`);
+      + `  predicted ${p.pred.get(PLAYER_FORM_PRIOR_WEIGHT_MATCHES)!.toFixed(3)}  miss ${p.miss.toFixed(3)}`);
   }
   }
   const pick = (list: P[]) => { const c = WS.map((w) => rms(list.map((q) => q.pred.get(w)! - q.future))); return WS[c.indexOf(Math.min(...c))]; };
   return {
     obs: OBSERVE, bestAll: pick(out), bestMovers: pick(movers), n: out.length,
-    biasRose: mean(groups[0][1].map((q) => q.pred.get(24)! - q.future)),
-    biasFell: mean(groups[2][1].map((q) => q.pred.get(24)! - q.future)),
-    allShipped: rms(out.map((q) => q.pred.get(24)! - q.future)),
+    biasRose: mean(groups[0][1].map((q) => q.pred.get(PLAYER_FORM_PRIOR_WEIGHT_MATCHES)! - q.future)),
+    biasFell: mean(groups[2][1].map((q) => q.pred.get(PLAYER_FORM_PRIOR_WEIGHT_MATCHES)! - q.future)),
+    allShipped: rms(out.map((q) => q.pred.get(PLAYER_FORM_PRIOR_WEIGHT_MATCHES)! - q.future)),
     allProposed: rms(out.map((q) => q.pred.get(-1)! - q.future)),
-    movShipped: rms(movers.map((q) => q.pred.get(24)! - q.future)),
+    movShipped: rms(movers.map((q) => q.pred.get(PLAYER_FORM_PRIOR_WEIGHT_MATCHES)! - q.future)),
     movProposed: rms(movers.map((q) => q.pred.get(-1)! - q.future)),
     biasRoseProposed: mean(groups[0][1].map((q) => q.pred.get(-1)! - q.future)),
     biasFellProposed: mean(groups[2][1].map((q) => q.pred.get(-1)! - q.future)),
   };
 }
 
-/** Scores one concrete fix: keep the anchor at 24, stop capping the form side. */
+/** Scores one concrete fix: keep the shipped anchor, stop capping the form side. */
 function adaptiveArm(season: Season, anchorThrough: number): void {
   console.log("\n" + "=".repeat(112));
-  console.log("ONE CONCRETE FIX: decay 1.0 (form weight grows with matches played) against the shipped decay 0.9");
-  console.log("anchor weight stays 24 in both. RMSE and bias against the actual rest-of-season rate.");
+  console.log(`ONE CONCRETE FIX: decay 1.0 (form weight grows with matches played) against the shipped decay ${PLAYER_FORM_DECAY}`);
+  console.log(`anchor weight stays ${PLAYER_FORM_PRIOR_WEIGHT_MATCHES} in both. RMSE and bias against the actual rest-of-season rate.`);
   console.log("=".repeat(112));
   console.log("form matches        ALL players                      MOVERS (>1.5x either way)");
   console.log("               shipped   proposed   delta      shipped   proposed   delta      signed bias, shipped -> proposed");
@@ -439,7 +448,7 @@ function evidenceScaling(season: Season, anchorThrough: number): void {
   console.log("DOES THE RIGHT WEIGHT MOVE AS FORM ACCUMULATES?");
   console.log("form matches observed -> best prior weight, scored on actual rest-of-season rate");
   console.log("=".repeat(112));
-  console.log("form matches   players   best weight (all)   best weight (movers)   bias at shipped 24: risers / fallers");
+  console.log(`form matches   players   best weight (all)   best weight (movers)   bias at shipped ${PLAYER_FORM_PRIOR_WEIGHT_MATCHES}: risers / fallers`);
   console.log("-".repeat(112));
   const saved = OBSERVE;
   for (const o of [4, 6, 8, 12, 16]) {
@@ -476,8 +485,8 @@ main();
  *
  * The share is the operative quantity. blendPlayerRate reaches it only through
  * decay and prior weight together, which is why no single constant can trace a
- * curve at all: with decay 0.9 the form side asymptotes at 10 effective matches,
- * so the share it implies stops rising at 29.4% however long the season runs.
+ * curve at all: the shipped decay makes the form side asymptote at a finite
+ * effective sample, so its share stops rising before the end of a long season.
  *
  * Run for two anchor lengths, because the optimal share depends on how good the
  * anchor is, and production's is longer than either.
@@ -487,6 +496,9 @@ function shareCurve(season: Season, anchorThrough: number): void {
     const ws = (1 - PLAYER_FORM_DECAY ** n) / (1 - PLAYER_FORM_DECAY);
     return ws / (PLAYER_FORM_PRIOR_WEIGHT_MATCHES + ws);
   };
+  const shippedAsymptote = 1 / (1 - PLAYER_FORM_DECAY);
+  const shippedAsymptoticShare = shippedAsymptote
+    / (PLAYER_FORM_PRIOR_WEIGHT_MATCHES + shippedAsymptote);
   interface Obs { n: number; anchor: number; form: number; future: number; moved: boolean }
 
   /**
@@ -589,7 +601,7 @@ function shareCurve(season: Season, anchorThrough: number): void {
   console.log("  fitted: " + bins.map((b) => `n=${b.mid.toFixed(0)}: ${((b.mid / (b.mid + trimK)) * 100).toFixed(0)}%`).join("   "));
 
   const rules: [string, (n: number) => number][] = [
-    ["shipped blend (asymptotes at 29%)", impliedShipped],
+    [`shipped blend (asymptotes at ${(shippedAsymptoticShare * 100).toFixed(0)}%)`, impliedShipped],
     ["linear to 100% by 38 matches", (n) => Math.min(1, n / 37)],
     [`fitted n/(n+${bestK.toFixed(1)})`, (n) => n / (n + bestK)],
     ["flat 50%", () => 0.5],

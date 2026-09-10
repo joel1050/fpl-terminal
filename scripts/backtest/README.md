@@ -1,8 +1,101 @@
-# Section 7 backtest
+# Projection backtests
 
-Walk-forward test of the fixture-adjustment model against the ingested 2025/26
-season. Everything a projection sees at gameweek `t` comes from gameweeks before
-`t`.
+Walk-forward tests of the projection model. Everything a projection sees at
+gameweek `t` comes from gameweeks before `t`.
+
+## Remeasurement after production-parity repair — 2026-09-09
+
+This is the authoritative result set after the harness fixes in `fa8f4ca` and
+`316d270`. `expectedPoints(...)` now matches `projectPlayer(...)` component by
+component, including price-tiered historical xG, team-normalized fallback
+priors, and fixture-scaled bonus. `tests/core/backtest-parity.test.ts` covers GK,
+DEF, MID and FWD cases with and without historical/form evidence, plus an easy
+versus hard fixture bonus check. Reverting the historical xG fix breaks the
+DEF/MID goal assertions; reverting fixture scaling breaks every parity case and
+the bonus direction test.
+
+Prepared inputs came from `prepare-seasons.ts`, followed by `elo-history.ts`.
+The validation gate reproduces production exactly on the legacy 2025/26 corpus
+(9,972 played rows) and on all four prepared corpora: 2022/23 9,872, 2023/24
+9,905, 2024/25 10,030, and 2025/26 9,972. The paired intervals below resample
+gameweek clusters. An arm delta is arm RMSE minus shipped RMSE, so negative is
+better.
+
+For a clean rerun, keep the prepared inputs in a scratch root rather than
+`data/generated`, then run each season in its own process because
+`BACKTEST_DATA_DIR` is read at module import:
+
+```bash
+BACKTEST_ROOT=$(mktemp -d)
+BACKTEST_MULTI_DATA_DIR=$BACKTEST_ROOT npx tsx scripts/backtest/prepare-seasons.ts
+BACKTEST_MULTI_DATA_DIR=$BACKTEST_ROOT npx tsx scripts/backtest/elo-history.ts
+for season in 2022-23 2023-24 2024-25 2025-26; do
+  BACKTEST_DATA_DIR=$BACKTEST_ROOT/$season npx tsx scripts/backtest/validate.ts
+done
+```
+
+Run the remaining scripts the same way by replacing `validate.ts`; the
+prepared root already contains the walk-forward `backtest-elo.json` and
+`fixture-difficulty.json` inputs produced by `elo-history.ts`.
+
+FPL published no xG before gameweek 16 of 2022/23. Treat that season as a
+reduced replication for fixture and xP checks and do not use its form or
+conversion result to choose a constant. The Elo model also uses 2022/23 and
+2023/24 as burn-in; its evaluation seasons are 2024/25 and 2025/26.
+
+### Remeasured scripts and corpora
+
+| Script | Corpus | Status |
+|---|---|---|
+| `validate.ts` | legacy 2025/26 plus prepared 2022/23–2025/26 | Exact parity on every played row. |
+| `team-level.ts`, `elo-strength-arms.ts` | prepared 2022/23–2025/26 | Remeasured; only 2024/25 and 2025/26 count as converged Elo evaluation. |
+| `fit-conversions.ts` | prepared 2022/23–2025/26 | Remeasured; 2022/23 is incomplete and excluded from constant selection. |
+| `run.ts`, `fwd-swing.ts`, `bias.ts`, `players.ts` | prepared 2022/23–2025/26 | Remeasured; 2022/23 retains the xG caveat. |
+| `form-weight.ts` | prepared 2023/24–2025/26, anchor GWs 1–12 and 1–19 | Remeasured. The 2022/23 1–12 split has zero usable rows and its later split is not comparable. |
+| `evidence-weights.ts` | prepared 2023/24–2025/26, anchor GWs 1–12 and 1–19 | Remeasured with 2,000 clustered bootstrap samples per run. |
+
+Every other backtest verdict later in this file is a historical result and is
+**unverified after the parity repair**. In particular, `cleansheets.ts`,
+`sweep.ts`, `anchor.ts`, `position.ts`, `cs-tiers.ts`, `cs-fit.ts`,
+`reliability.ts`, `schedule-adjust.ts`, `fdr.ts`, and `elo-fdr.ts` were not
+rerun in this pass.
+
+### Current verdicts
+
+| Question | Remeasured verdict |
+|---|---|
+| Widen the team-strength level | **Reject.** On converged seasons, level 1.35 costs +0.0090 RMSE in 2024/25 and +0.0101 in 2025/26, with both intervals above zero; 1.69 and 2.0 are worse again. |
+| Add Elo to the widened team-strength level | **Reject.** Every `team-level.ts` level-1.69-plus-Elo arm is worse on both evaluation seasons. |
+| Add Elo at the shipped strength level | **Unresolved.** In `elo-strength-arms.ts`, measured-slope Elo is +0.00459 in 2024/25 and +0.01334 in 2025/26, while an Elo level matched to the shipped spread is -0.00292 and -0.00046; all four intervals cross zero. This disagrees with the broad old “Elo rejected” wording because `team-level.ts` tests Elo only after widening the level. The scripts also build their fixture base differently, so their shipped xG baselines differ (2025/26 0.7422 versus 0.74018). |
+| Remove the opening clamps | **Reject.** The no-clamp arm costs +0.0097 [-0.0070, +0.0252] in 2024/25 and +0.0122 [+0.0035, +0.0212] in 2025/26. |
+| Drop the Elo/FDR base | **Unresolved.** The direction changes by season and the shipped-level intervals cross zero. |
+| Let bonus follow the attacking fixture | **Keep, with a position caveat.** Making bonus flat is worse for GK/DEF in 2022/23 (+0.0053 [+0.0020, +0.0092]) and 2025/26 (+0.0040 [+0.0008, +0.0071]), but better for MID/FWD in 2024/25 (-0.0060 [-0.0112, -0.0018]) and 2025/26 (-0.0042 [-0.0078, -0.0006]). The old claim of a universal gain has flipped for recent attackers. |
+| Restore the old outer clamp `[0.70, 1.30]` | **Mixed; keep shipped.** It is worse overall in 2022/23 (+0.0046, resolved), better in 2024/25 (-0.0064, resolved), and unresolved in the other seasons. The separate team-level test still rejects removing clamps entirely. |
+| Widen the attack-ratio clamp to `[0.55, 1.75]` | **No general gain.** Overall intervals cross zero in all four seasons; only the 2025/26 GK/DEF slice resolves in its favour. |
+| Change defensive-contribution dispersion | **No stable constant.** The near-Poisson arm improves 2023/24 and 2024/25, reverses and worsens in 2025/26, and is unresolved in 2022/23. This flips the old “8 is the optimum and Poisson is worst” verdict. |
+| Scale defensive contributions with opponent attack | **Reject.** It is significantly worse in 2023/24 and 2024/25 and unresolved, not better, in the other two seasons. |
+| Make GK/DEF bonus follow clean-sheet conditions | **Reject.** Both defensive bonus arms are worse in 2022/23 and 2025/26 and unresolved in 2023/24 and 2024/25. |
+| Extrapolate the clean-sheet table | **Reject.** It is worse in 2022/23 and 2025/26 and unresolved in the middle seasons. Bilinear interpolation does not change these integer-tier rows. |
+| Widen forward fixture swing further | **Reject.** Shipped swing matches observed swing only in reduced 2022/23; it is already too steep for all forwards in 2023/24, 2024/25, and 2025/26. The old “forward swing is too flat” verdict has flipped. |
+| Change the shipped form decay/prior weight from `0.95 / 6` | **No.** In-season form beats anchor-only in all six usable season/anchor runs, but no alternative prior at the shipped decay has an interval excluding zero. The selected surfaces also disagree by season and anchor length. |
+| Use reliability weights for starts and minutes | **Start model supported; minutes model unresolved.** Start Brier improves in all six runs, with every interval below zero. Minutes RMSE improves directionally in all six, but every interval crosses zero. Holding rates fixed, the minutes arm improves xP on all three 12-GW anchors and narrowly on the 2025/26 19-GW anchor; the other two 19-GW xP intervals cross zero. Historical RotoWire inputs remain unavailable, so this tests the fallback role model only. |
+| Replace the shipped rate blend with direct reliability weights | **Do not ship.** Equal/metric rate arms are mixed or worse. A selected 20/current-to-1/previous arm improves xP on all three 12-GW splits, but not on the 19-GW splits; it is an exploratory minimum from a sweep, not a replicated constant. |
+| Infer a stable section-8 bias or team-tier correction | **No.** Overall appearance bias is -0.295, +0.038, +0.071, and -0.258 across 2022/23–2025/26, and the anchored team-tier slices in `players.ts` do not show a stable monotone gradient. These scripts are descriptive and do not support a constant change. |
+
+### Goal and assist conversion fits
+
+The table reports out-of-fold bias-neutral scalars as goal/assist by position,
+then the whole-model RMSE delta against no conversion. The only resolved gain
+is the incomplete 2022/23 season. The three usable seasons disagree on most
+directions and every whole-model interval crosses zero, so production constants
+remain unchanged.
+
+| Season | DEF | MID | FWD | RMSE delta [95% CI] | Decision |
+|---|---:|---:|---:|---:|---|
+| 2022/23 reduced | 1.109 / 1.349 | 1.467 / 2.009 | 1.332 / 3.486 | -0.0179 [-0.0348, -0.0010] | Exclude: xG begins at GW16. |
+| 2023/24 | 1.108 / 1.184 | 1.011 / 1.332 | 1.021 / 2.051 | +0.0031 [-0.0041, +0.0102] | Unresolved. |
+| 2024/25 | 0.818 / 1.121 | 0.888 / 1.261 | 1.010 / 1.531 | -0.0006 [-0.0044, +0.0028] | Unresolved. |
+| 2025/26 | 0.818 / 1.272 | 0.871 / 1.201 | 0.973 / 2.584 | +0.0006 [-0.0050, +0.0060] | Unresolved. |
 
 ```bash
 npx tsx scripts/backtest/validate.ts      # gate: harness must reproduce projectPlayer()
@@ -19,9 +112,8 @@ npx tsx scripts/backtest/evidence-weights.ts  # turns those reliabilities into w
 BACKTEST_DATA_DIR=... npx tsx scripts/backtest/schedule-adjust.ts 2024-25  # schedule-adjusting a player's own form
 ```
 
-`schedule-adjust.ts` is the only script here that runs on seasons other than the
-ingested one. `season.ts` reads `BACKTEST_DATA_DIR` once at import, so ingest each
-season to its own directory (never `data/generated`) and loop in the shell:
+`season.ts` reads `BACKTEST_DATA_DIR` once at import, so prepare each season in
+its own scratch directory (never `data/generated`) and loop in the shell:
 
 ```bash
 for s in 2022-23 2023-24 2024-25 2025-26; do
@@ -29,24 +121,15 @@ for s in 2022-23 2023-24 2024-25 2025-26; do
 done
 ```
 
-FPL published no xG before gameweek 16 of 2022/23, so that season carries 14
-gameweeks of minutes with a hard zero. The script drops any gameweek whose total
-xG is zero - rows *and* fixtures, or `strengthsBefore` folds those blanks into
-every team's in-season form. 2022/23 is therefore a reduced replication:
-gameweeks 16-38, a 12-match anchor over 16-27, and one rest-of-season cutoff.
+The gate exists because when it passes, an arm difference is a model difference
+and not a harness difference. Run it before any xP script.
 
-**`validate.ts` no longer passes at HEAD, and the drift is confined.** All 9,972
-rows differ, but by component it is `bonus` on every row, `goals` on 1,357 and
-`assists` on 123. `cleanSheets` reproduces exactly, so the clean-sheet scripts -
-`cleansheets.ts`, `cs-tiers.ts`, `cs-fit.ts`, `team-level.ts` - are unaffected;
-they score the clean-sheet probability against the event and never call
-`projectPlayer()`. Any arm reading xP does carry the drift and has no replication
-gate until the bonus path is reconciled.
+---
 
-The gate exists because when it passes - as it did, to 0.0e+0 on all 9,972 played
-rows - an arm difference is a model difference and not a harness difference. Run
-it first, and read its failure by component rather than as a single verdict: an
-xP arm is meaningless while it fails, a clean-sheet arm is not.
+Everything below this divider is the pre-repair research record. Preserve it as
+context, but treat every verdict as **unverified after the parity repair** unless
+the 2026-09-09 tables above explicitly remeasure it. Where the two disagree, the
+remeasurement wins.
 
 ## Method
 

@@ -7,15 +7,15 @@ const mean = (a: number[]) => (a.length ? a.reduce((s, x) => s + x, 0) / a.lengt
 const v = (o: Partial<Variant>): Variant => ({ ...BASELINE, ...o });
 
 const ARMS: { name: string; variant: Variant }[] = [
-  { name: "shipped: ratio[.70,1.35] mult[.70,1.30]", variant: BASELINE },
-  { name: "ratio[.55,1.75] mult[.70,1.30]", variant: v({ attackRatioClamp: [0.55, 1.75] }) },
-  { name: "ratio[.70,1.35] mult[.55,1.60]", variant: v({ multiplierClamp: [0.55, 1.60] }) },
-  { name: "ratio[.55,1.75] mult[.55,1.60] + bonus follows", variant: v({ attackRatioClamp: [0.55, 1.75], multiplierClamp: [0.55, 1.60] }) },
-  { name: "ratio[.40,2.20] mult[.45,1.90]", variant: v({ attackRatioClamp: [0.40, 2.20], multiplierClamp: [0.45, 1.90] }) },
-  { name: "no clamps at all", variant: v({ attackRatioClamp: [0.01, 100], multiplierClamp: [0.01, 100] }) },
+  { name: "shipped: ratio[.70,1.35] mult[.55,1.60] + bonus", variant: BASELINE },
+  { name: "bonus flat (pre-ship)", variant: BASELINE },
+  { name: "outer [.70,1.30] (pre-ship) + bonus", variant: v({ multiplierClamp: [0.70, 1.30] }) },
+  { name: "ratio[.55,1.75] mult[.55,1.60] + bonus", variant: v({ attackRatioClamp: [0.55, 1.75] }) },
+  { name: "ratio[.40,2.20] mult[.45,1.90] + bonus", variant: v({ attackRatioClamp: [0.40, 2.20], multiplierClamp: [0.45, 1.90] }) },
+  { name: "no clamps at all + bonus", variant: v({ attackRatioClamp: [0.01, 100], multiplierClamp: [0.01, 100] }) },
 ];
 /** Second axis: does bonus follow the fixture? Index-matched to ARMS. */
-const BONUS_FIXTURE = [false, false, false, true, false, false];
+const BONUS_FIXTURE = [true, false, true, true, true, true];
 
 interface Row { gameweek: number; playerId: number; name: string; ratio: number; actual: number; minutes: number; preds: number[]; mults: number[]; seasonXg: number }
 
@@ -31,7 +31,7 @@ function main(): void {
       if (!fx) continue;
       const p = playerAt(season, r.historicalPlayerId, gw, fx, r.wasHome);
       if (!p || p.position !== "FWD") continue;
-      const rates = playerRates(p, formBefore(season, r.historicalPlayerId, gw), gw);
+      const rates = playerRates(p, formBefore(season, r.historicalPlayerId, gw), gw, undefined, strengths);
       const f = p.fixtures[0];
       const own = strengths[p.teamId], opp = strengths[f.opponentTeamId];
       const st = season.players.get(r.historicalPlayerId)!.stats;
@@ -121,9 +121,9 @@ function main(): void {
     const raw = rs.map((r) => r.ratio).sort((a, b) => a - b);
     const cur = rs.map((r) => r.mults[0]).sort((a, b) => a - b);
     const wide = rs.map((r) => r.mults[3]).sort((a, b) => a - b);
-    const atCap = rs.filter((r) => r.mults[0] >= 1.2999).length;
+    const atCap = rs.filter((r) => r.mults[0] >= 1.5999).length;
     console.log(`  ${rs[0].name.slice(0, 22).padEnd(23)} raw ratio ${raw[0].toFixed(2)}-${raw[raw.length - 1].toFixed(2)}`
-      + `   shipped mult ${cur[0].toFixed(2)}-${cur[cur.length - 1].toFixed(2)} (${atCap}/${rs.length} pinned at 1.30)`
+      + `   shipped mult ${cur[0].toFixed(2)}-${cur[cur.length - 1].toFixed(2)} (${atCap}/${rs.length} pinned at 1.60)`
       + `   widened ${wide[0].toFixed(2)}-${wide[wide.length - 1].toFixed(2)}`);
   }
 }

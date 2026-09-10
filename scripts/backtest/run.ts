@@ -1,6 +1,6 @@
 /**
  * Walk-forward backtest of section 7 variants, scored on section 8 xP against
- * actual FPL points, 2025/26.
+ * actual FPL points.
  *
  * Minutes are the actual minutes played. That is deliberate: the minutes model
  * (sections 4-5) contributes far more error than anything in section 7, and
@@ -36,7 +36,7 @@ const ARMS: { name: string; variant: Variant; note: string; bonusFixture?: boole
   // against the wrong reference. Bonus following the fixture shipped in fd89d2f.
   { name: "shipped", variant: BASELINE, note: "", bonusFixture: true },
   { name: "bonus flat (pre-ship)", variant: BASELINE, note: "", bonusFixture: false },
-  { name: "outer clamp [0.55,1.60]", variant: v({ multiplierClamp: [0.55, 1.60] }), note: "", bonusFixture: true },
+  { name: "outer clamp [0.70,1.30] (pre-ship)", variant: v({ multiplierClamp: [0.70, 1.30] }), note: "", bonusFixture: true },
   { name: "+ ratio [0.55,1.75]", variant: v({ attackRatioClamp: [0.55, 1.75], multiplierClamp: [0.55, 1.60] }), note: "", bonusFixture: true },
 
   // The defensive-contribution threshold. Its dispersion of 8 is an assumption
@@ -70,7 +70,9 @@ function collect(season: Season): Row[] {
       if (!fixture) continue;
       const player = playerAt(season, row.historicalPlayerId, gameweek, fixture, row.wasHome);
       if (!player) continue;
-      const rates = playerRates(player, formBefore(season, row.historicalPlayerId, gameweek), gameweek);
+      const rates = playerRates(
+        player, formBefore(season, row.historicalPlayerId, gameweek), gameweek, undefined, strengths,
+      );
       const upcoming = player.fixtures[0];
       const predictions = ARMS.map((arm) =>
         expectedPoints(player, upcoming, row.minutes, rates, strengths, arm.variant, arm.bonusFixture ?? false,
@@ -186,7 +188,8 @@ function table(title: string, rows: readonly Row[], filter?: (row: Row) => boole
 function main(): void {
   const season = loadSeason();
   const rows = collect(season);
-  console.log(`walk-forward 2025/26, gameweeks ${FIRST_GAMEWEEK}-38, minutes held at actual`);
+  const corpus = process.env.BACKTEST_DATA_DIR?.split("/").pop() ?? "legacy generated corpus";
+  console.log(`walk-forward ${corpus}, gameweeks ${FIRST_GAMEWEEK}-38, minutes held at actual`);
   console.log(`scored rows: ${rows.length.toLocaleString()}   bootstrap resamples: ${BOOTSTRAP}`);
   console.log(`held constant across all arms (would otherwise leak):`);
   for (const leak of KNOWN_LEAKS) console.log(`  - ${leak}`);

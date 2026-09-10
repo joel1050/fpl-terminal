@@ -758,10 +758,15 @@ defensiveContribution += weight * 2 * P(count >= threshold)
 ### 8.8 Bonus
 
 ```
-bonus += weight * bonusRate * minutesShare
+bonus += weight * bonusRate * minutesShare * adjustment.attackMultiplier
 ```
 
-Bonus follows the player's personal regressed rate and minutes played. Backtested across 12,700 appearances (2023/24–2025/26), fixture attack multipliers do not improve out-of-sample bonus RMSE (0.6924 vs 0.6928) because FPL bonus is a fixed 6-point pot per match; uncoupling bonus from the fixture multiplier prevents artificial bonus inflation in easy home fixtures.
+Bonus follows the player's personal regressed rate, minutes played, and the
+attacking fixture multiplier. The 2026-09-09 remeasurement keeps this shipped
+fixture-scaled path overall, with a position caveat: a flat bonus is better for
+MID/FWD in 2024/25 and 2025/26, while fixture scaling is supported for GK/DEF
+in 2022/23 and 2025/26. See `scripts/backtest/README.md` for the paired
+season results; no production constant changed.
 
 ### 8.9 Cards
 

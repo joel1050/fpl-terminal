@@ -1,4 +1,4 @@
-/** Where section 8 is systematically high or low, walk-forward over 2025/26. */
+/** Where section 8 is systematically high or low in a selected walk-forward season. */
 import { loadSeason, strengthsBefore, formBefore, playerAt } from "./season";
 import { expectedPoints, playerRates } from "./xp";
 import { BASELINE } from "./variants";
@@ -18,7 +18,7 @@ function main(): void {
       if (!p) continue;
       const form = formBefore(season, r.historicalPlayerId, gw);
       const c = expectedPoints(p, p.fixtures[0], r.minutes,
-        playerRates(p, form, gw), strengths, BASELINE);
+        playerRates(p, form, gw, undefined, strengths), strengths, BASELINE);
       rows.push({
         position: p.position, minutes: r.minutes, actual: r.totalPoints, pred: c.total, priorMatches: form.length,
         seasonXgiPer90: (() => {

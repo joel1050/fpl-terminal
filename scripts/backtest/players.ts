@@ -3,9 +3,8 @@
  *
  * Runs twice, because the answer depends entirely on what anchors a player's
  * rate. Production blends a player's PREVIOUS SEASON per-90 with this season's
- * form, and gives that anchor 71% of the weight (prior 24 "matches" against an
- * effective cap of 10). A one-season backtest has no previous season, so the
- * anchor silently falls back to the POSITION prior - which prices every forward
+ * form using decay 0.95 and an anchor worth 6 matches. A one-season backtest
+ * has no previous season, so the anchor silently falls back to the POSITION prior - which prices every forward
  * like an average forward. Mode B emulates the real anchor with an early-season
  * block, and is the honest one to read.
  */
@@ -45,7 +44,9 @@ function collect(season: Season, first: number, anchor?: number): Row[] {
       rows.push({
         playerId: r.historicalPlayerId, name: p.displayName, position: p.position, teamId: p.teamId,
         gameweek: gw, actual: r.totalPoints, minutes: r.minutes,
-        pred: expectedPoints(p, p.fixtures[0], r.minutes, playerRates(p, form, gw), strengths, BASELINE).total,
+        pred: expectedPoints(
+          p, p.fixtures[0], r.minutes, playerRates(p, form, gw, undefined, strengths), strengths, BASELINE,
+        ).total,
         tier: own ? tierOf(own.overall) : 2,
       });
     }
