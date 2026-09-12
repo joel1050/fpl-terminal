@@ -1,6 +1,6 @@
 {
   "source": "https://www.rotowire.com/soccer/lineups.php",
-  "fetchedAt": "2026-09-10T22:15:21.109Z",
+  "fetchedAt": "2026-09-12T19:11:17.415Z",
   "dateRange": "Starting lineups for September 12, 2026 - September 17, 2026",
   "fixtures": [
     {
@@ -9,7 +9,7 @@
         "name": "Liverpool",
         "abbreviation": "LIV",
         "side": "HOME",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 21124,
@@ -18,16 +18,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/alisson-21124"
           },
           {
-            "rotowireId": 35296,
-            "name": "Milos Kerkez",
+            "rotowireId": 29723,
+            "name": "Kostas Tsimikas",
             "position": "DL",
-            "profileUrl": "https://www.rotowire.com/soccer/player/milos-kerkez-35296"
-          },
-          {
-            "rotowireId": 39552,
-            "name": "Jeremy Jacquet",
-            "position": "DC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/jeremy-jacquet-39552"
+            "profileUrl": "https://www.rotowire.com/soccer/player/kostas-tsimikas-29723"
           },
           {
             "rotowireId": 19194,
@@ -36,16 +30,22 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/virgil-van-dijk-19194"
           },
           {
+            "rotowireId": 39552,
+            "name": "Jeremy Jacquet",
+            "position": "DC",
+            "profileUrl": "https://www.rotowire.com/soccer/player/jeremy-jacquet-39552"
+          },
+          {
             "rotowireId": 30591,
             "name": "Ronald Araujo",
             "position": "DR",
             "profileUrl": "https://www.rotowire.com/soccer/player/ronald-araujo-30591"
           },
           {
-            "rotowireId": 29041,
-            "name": "Alexis Mac Allister",
+            "rotowireId": 30875,
+            "name": "Ryan Gravenberch",
             "position": "DMC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/alexis-mac-allister-29041"
+            "profileUrl": "https://www.rotowire.com/soccer/player/ryan-gravenberch-30875"
           },
           {
             "rotowireId": 29729,
@@ -80,20 +80,6 @@
         ],
         "unavailable": [
           {
-            "rotowireId": 26727,
-            "name": "Cody Gakpo",
-            "position": "F/M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/cody-gakpo-26727",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 19162,
-            "name": "Joe Gomez",
-            "position": "D",
-            "profileUrl": "https://www.rotowire.com/soccer/player/joe-gomez-19162",
-            "status": "QUES"
-          },
-          {
             "rotowireId": 35976,
             "name": "Conor Bradley",
             "position": "D",
@@ -115,6 +101,13 @@
             "status": "OUT"
           },
           {
+            "rotowireId": 19162,
+            "name": "Joe Gomez",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/joe-gomez-19162",
+            "status": "OUT"
+          },
+          {
             "rotowireId": 44124,
             "name": "Giovanni Leoni",
             "position": "D",
@@ -127,7 +120,7 @@
         "name": "Fulham",
         "abbreviation": "FUL",
         "side": "AWAY",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 17247,
@@ -142,16 +135,16 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/antonee-robinson-26508"
           },
           {
-            "rotowireId": 25272,
-            "name": "Joachim Andersen",
-            "position": "DC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/joachim-andersen-25272"
-          },
-          {
             "rotowireId": 33701,
             "name": "Calvin Bassey",
             "position": "DC",
             "profileUrl": "https://www.rotowire.com/soccer/player/calvin-bassey-33701"
+          },
+          {
+            "rotowireId": 37689,
+            "name": "David Affengruber",
+            "position": "DC",
+            "profileUrl": "https://www.rotowire.com/soccer/player/david-affengruber-37689"
           },
           {
             "rotowireId": 24955,
@@ -160,10 +153,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/timothy-castagne-24955"
           },
           {
-            "rotowireId": 18583,
-            "name": "Alex Iwobi",
+            "rotowireId": 29740,
+            "name": "Sander Berge",
             "position": "DMC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/alex-iwobi-18583"
+            "profileUrl": "https://www.rotowire.com/soccer/player/sander-berge-29740"
           },
           {
             "rotowireId": 38835,
@@ -172,10 +165,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/shea-charles-38835"
           },
           {
-            "rotowireId": 47650,
-            "name": "Cesar Palacios",
+            "rotowireId": 18583,
+            "name": "Alex Iwobi",
             "position": "AML",
-            "profileUrl": "https://www.rotowire.com/soccer/player/cesar-palacios-47650"
+            "profileUrl": "https://www.rotowire.com/soccer/player/alex-iwobi-18583"
           },
           {
             "rotowireId": 41215,
@@ -203,13 +196,6 @@
             "position": "M",
             "profileUrl": "https://www.rotowire.com/soccer/player/tom-cairney-26126",
             "status": "OUT"
-          },
-          {
-            "rotowireId": 39974,
-            "name": "Luc De Fougerolles",
-            "position": "D",
-            "profileUrl": "https://www.rotowire.com/soccer/player/luc-de-fougerolles-39974",
-            "status": "OUT"
           }
         ]
       }
@@ -220,19 +206,13 @@
         "name": "Crystal Palace",
         "abbreviation": "CRY",
         "side": "HOME",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
-            "rotowireId": 26159,
-            "name": "Dean Henderson",
+            "rotowireId": 21938,
+            "name": "Walter Benitez",
             "position": "GK",
-            "profileUrl": "https://www.rotowire.com/soccer/player/dean-henderson-26159"
-          },
-          {
-            "rotowireId": 26569,
-            "name": "Axel Disasi",
-            "position": "DC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/axel-disasi-26569"
+            "profileUrl": "https://www.rotowire.com/soccer/player/walter-benitez-21938"
           },
           {
             "rotowireId": 27137,
@@ -241,10 +221,16 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/chris-richards-27137"
           },
           {
-            "rotowireId": 43876,
-            "name": "Jaydee Canvot",
+            "rotowireId": 26569,
+            "name": "Axel Disasi",
             "position": "DC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/jaydee-canvot-43876"
+            "profileUrl": "https://www.rotowire.com/soccer/player/axel-disasi-26569"
+          },
+          {
+            "rotowireId": 44051,
+            "name": "Honest Ahanor",
+            "position": "DC",
+            "profileUrl": "https://www.rotowire.com/soccer/player/honest-ahanor-44051"
           },
           {
             "rotowireId": 30835,
@@ -291,17 +277,38 @@
         ],
         "unavailable": [
           {
-            "rotowireId": 25374,
-            "name": "Eddie Nketiah",
-            "position": "F",
-            "profileUrl": "https://www.rotowire.com/soccer/player/eddie-nketiah-25374",
-            "status": "QUES"
+            "rotowireId": 26569,
+            "name": "Axel Disasi",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/axel-disasi-26569",
+            "status": "SUS"
+          },
+          {
+            "rotowireId": 43876,
+            "name": "Jaydee Canvot",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/jaydee-canvot-43876",
+            "status": "OUT"
+          },
+          {
+            "rotowireId": 26159,
+            "name": "Dean Henderson",
+            "position": "G",
+            "profileUrl": "https://www.rotowire.com/soccer/player/dean-henderson-26159",
+            "status": "OUT"
           },
           {
             "rotowireId": 23173,
             "name": "Jean-Philippe Mateta",
             "position": "F",
             "profileUrl": "https://www.rotowire.com/soccer/player/jean-philippe-mateta-23173",
+            "status": "OUT"
+          },
+          {
+            "rotowireId": 25374,
+            "name": "Eddie Nketiah",
+            "position": "F",
+            "profileUrl": "https://www.rotowire.com/soccer/player/eddie-nketiah-25374",
             "status": "OUT"
           },
           {
@@ -324,7 +331,7 @@
         "name": "Ipswich Town",
         "abbreviation": "IPS",
         "side": "AWAY",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 29845,
@@ -369,10 +376,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/sasa-lukic-22120"
           },
           {
-            "rotowireId": 29012,
-            "name": "Daizen Maeda",
+            "rotowireId": 29193,
+            "name": "Jack Clarke",
             "position": "AML",
-            "profileUrl": "https://www.rotowire.com/soccer/player/daizen-maeda-29012"
+            "profileUrl": "https://www.rotowire.com/soccer/player/jack-clarke-29193"
           },
           {
             "rotowireId": 37012,
@@ -395,25 +402,25 @@
         ],
         "unavailable": [
           {
+            "rotowireId": 46898,
+            "name": "Emersonn",
+            "position": "F",
+            "profileUrl": "https://www.rotowire.com/soccer/player/emersonn-46898",
+            "status": "OUT"
+          },
+          {
             "rotowireId": 35734,
             "name": "Azor Matusiwa",
             "position": "M",
             "profileUrl": "https://www.rotowire.com/soccer/player/azor-matusiwa-35734",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 34533,
-            "name": "Jaden Philogene",
-            "position": "F/M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/jaden-philogene-34533",
-            "status": "QUES"
+            "status": "OUT"
           },
           {
             "rotowireId": 35815,
             "name": "Jack Taylor",
             "position": "M",
             "profileUrl": "https://www.rotowire.com/soccer/player/jack-taylor-35815",
-            "status": "QUES"
+            "status": "OUT"
           }
         ]
       }
@@ -424,7 +431,7 @@
         "name": "Chelsea",
         "abbreviation": "CHE",
         "side": "HOME",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 17946,
@@ -439,28 +446,22 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/wesley-fofana-27949"
           },
           {
-            "rotowireId": 32878,
-            "name": "Maxence Lacroix",
-            "position": "DC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/maxence-lacroix-32878"
-          },
-          {
-            "rotowireId": 41373,
-            "name": "Josh Acheampong",
-            "position": "DC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/josh-acheampong-41373"
-          },
-          {
             "rotowireId": 40583,
             "name": "Jorrel Hato",
-            "position": "ML",
+            "position": "DC",
             "profileUrl": "https://www.rotowire.com/soccer/player/jorrel-hato-40583"
           },
           {
-            "rotowireId": 35752,
-            "name": "Romeo Lavia",
-            "position": "MC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/romeo-lavia-35752"
+            "rotowireId": 35818,
+            "name": "Levi Colwill",
+            "position": "DC",
+            "profileUrl": "https://www.rotowire.com/soccer/player/levi-colwill-35818"
+          },
+          {
+            "rotowireId": 25329,
+            "name": "Pedro Neto",
+            "position": "ML",
+            "profileUrl": "https://www.rotowire.com/soccer/player/pedro-neto-25329"
           },
           {
             "rotowireId": 29315,
@@ -469,10 +470,16 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/reece-james-29315"
           },
           {
-            "rotowireId": 25329,
-            "name": "Pedro Neto",
+            "rotowireId": 35752,
+            "name": "Romeo Lavia",
+            "position": "MC",
+            "profileUrl": "https://www.rotowire.com/soccer/player/romeo-lavia-35752"
+          },
+          {
+            "rotowireId": 34083,
+            "name": "Malo Gusto",
             "position": "MR",
-            "profileUrl": "https://www.rotowire.com/soccer/player/pedro-neto-25329"
+            "profileUrl": "https://www.rotowire.com/soccer/player/malo-gusto-34083"
           },
           {
             "rotowireId": 32484,
@@ -495,31 +502,31 @@
         ],
         "unavailable": [
           {
+            "rotowireId": 39555,
+            "name": "Marco Palestra",
+            "position": "M/D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/marco-palestra-39555",
+            "status": "QUES"
+          },
+          {
             "rotowireId": 34431,
             "name": "Moises Caicedo",
             "position": "M",
             "profileUrl": "https://www.rotowire.com/soccer/player/moises-caicedo-34431",
-            "status": "QUES"
+            "status": "OUT"
           },
           {
             "rotowireId": 37904,
             "name": "Emmanuel Emegha",
             "position": "F",
             "profileUrl": "https://www.rotowire.com/soccer/player/emmanuel-emegha-37904",
-            "status": "QUES"
+            "status": "OUT"
           },
           {
             "rotowireId": 16186,
             "name": "Jordan Henderson",
             "position": "M",
             "profileUrl": "https://www.rotowire.com/soccer/player/jordan-henderson-16186",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 39555,
-            "name": "Marco Palestra",
-            "position": "M/D",
-            "profileUrl": "https://www.rotowire.com/soccer/player/marco-palestra-39555",
             "status": "OUT"
           }
         ]
@@ -528,7 +535,7 @@
         "name": "Hull City",
         "abbreviation": "HUL",
         "side": "AWAY",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 29869,
@@ -543,16 +550,16 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/ryan-giles-29177"
           },
           {
-            "rotowireId": 18543,
-            "name": "Semi Ajayi",
-            "position": "DC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/semi-ajayi-18543"
-          },
-          {
             "rotowireId": 28920,
             "name": "John Egan",
             "position": "DC",
             "profileUrl": "https://www.rotowire.com/soccer/player/john-egan-28920"
+          },
+          {
+            "rotowireId": 18543,
+            "name": "Semi Ajayi",
+            "position": "DC",
+            "profileUrl": "https://www.rotowire.com/soccer/player/semi-ajayi-18543"
           },
           {
             "rotowireId": 40910,
@@ -573,16 +580,16 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/elliot-stroud-48188"
           },
           {
-            "rotowireId": 31007,
-            "name": "Lucas Gourna-Douath",
-            "position": "MC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/lucas-gourna-douath-31007"
-          },
-          {
             "rotowireId": 33122,
             "name": "Regan Slater",
             "position": "MC",
             "profileUrl": "https://www.rotowire.com/soccer/player/regan-slater-33122"
+          },
+          {
+            "rotowireId": 33139,
+            "name": "Matt Crooks",
+            "position": "MC",
+            "profileUrl": "https://www.rotowire.com/soccer/player/matt-crooks-33139"
           },
           {
             "rotowireId": 44636,
@@ -598,34 +605,6 @@
           }
         ],
         "unavailable": [
-          {
-            "rotowireId": 28920,
-            "name": "John Egan",
-            "position": "D",
-            "profileUrl": "https://www.rotowire.com/soccer/player/john-egan-28920",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 34720,
-            "name": "Tim Iroegbunam",
-            "position": "M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/tim-iroegbunam-34720",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 18525,
-            "name": "Paddy McNair",
-            "position": "D",
-            "profileUrl": "https://www.rotowire.com/soccer/player/paddy-mcnair-18525",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 38417,
-            "name": "Brooke Norton-Cuffy",
-            "position": "M/D",
-            "profileUrl": "https://www.rotowire.com/soccer/player/brooke-norton-cuffy-38417",
-            "status": "QUES"
-          },
           {
             "rotowireId": 46542,
             "name": "Ilyas Ansah",
@@ -662,6 +641,20 @@
             "status": "OUT"
           },
           {
+            "rotowireId": 18525,
+            "name": "Paddy McNair",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/paddy-mcnair-18525",
+            "status": "OUT"
+          },
+          {
+            "rotowireId": 40910,
+            "name": "Nobel Mendy",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/nobel-mendy-40910",
+            "status": "OUT"
+          },
+          {
             "rotowireId": 28833,
             "name": "Hidemasa Morita",
             "position": "M",
@@ -677,7 +670,7 @@
         "name": "Aston Villa",
         "abbreviation": "AVL",
         "side": "HOME",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 35017,
@@ -692,10 +685,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/ian-maatsen-32666"
           },
           {
-            "rotowireId": 19134,
-            "name": "Tyrone Mings",
+            "rotowireId": 25009,
+            "name": "Pau Torres",
             "position": "DC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/tyrone-mings-19134"
+            "profileUrl": "https://www.rotowire.com/soccer/player/pau-torres-25009"
           },
           {
             "rotowireId": 18234,
@@ -704,22 +697,22 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/victor-lindelof-18234"
           },
           {
-            "rotowireId": 31043,
-            "name": "Matty Cash",
+            "rotowireId": 23609,
+            "name": "Aaron Wan-Bissaka",
             "position": "DR",
-            "profileUrl": "https://www.rotowire.com/soccer/player/matty-cash-31043"
-          },
-          {
-            "rotowireId": 17201,
-            "name": "Ross Barkley",
-            "position": "DMC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/ross-barkley-17201"
+            "profileUrl": "https://www.rotowire.com/soccer/player/aaron-wan-bissaka-23609"
           },
           {
             "rotowireId": 23566,
             "name": "Boubacar Kamara",
             "position": "DMC",
             "profileUrl": "https://www.rotowire.com/soccer/player/boubacar-kamara-23566"
+          },
+          {
+            "rotowireId": 17201,
+            "name": "Ross Barkley",
+            "position": "DMC",
+            "profileUrl": "https://www.rotowire.com/soccer/player/ross-barkley-17201"
           },
           {
             "rotowireId": 47458,
@@ -748,25 +741,18 @@
         ],
         "unavailable": [
           {
-            "rotowireId": 31043,
-            "name": "Matty Cash",
-            "position": "D",
-            "profileUrl": "https://www.rotowire.com/soccer/player/matty-cash-31043",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 44680,
-            "name": "Johan Manzambi",
-            "position": "M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/johan-manzambi-44680",
-            "status": "QUES"
-          },
-          {
             "rotowireId": 38731,
             "name": "Joao Gomes",
             "position": "M",
             "profileUrl": "https://www.rotowire.com/soccer/player/joao-gomes-38731",
             "status": "SUS"
+          },
+          {
+            "rotowireId": 31043,
+            "name": "Matty Cash",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/matty-cash-31043",
+            "status": "OUT"
           },
           {
             "rotowireId": 46822,
@@ -783,10 +769,24 @@
             "status": "OUT"
           },
           {
+            "rotowireId": 32666,
+            "name": "Ian Maatsen",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/ian-maatsen-32666",
+            "status": "OUT"
+          },
+          {
             "rotowireId": 35483,
             "name": "Amadou Onana",
             "position": "M",
             "profileUrl": "https://www.rotowire.com/soccer/player/amadou-onana-35483",
+            "status": "OUT"
+          },
+          {
+            "rotowireId": 25009,
+            "name": "Pau Torres",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/pau-torres-25009",
             "status": "OUT"
           }
         ]
@@ -795,7 +795,7 @@
         "name": "Nottingham Forest",
         "abbreviation": "NOT",
         "side": "AWAY",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 19220,
@@ -804,10 +804,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/matz-sels-19220"
           },
           {
-            "rotowireId": 24967,
-            "name": "Nikola Milenkovic",
+            "rotowireId": 23162,
+            "name": "Ola Aina",
             "position": "DC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/nikola-milenkovic-24967"
+            "profileUrl": "https://www.rotowire.com/soccer/player/ola-aina-23162"
           },
           {
             "rotowireId": 40313,
@@ -816,10 +816,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/murillo-40313"
           },
           {
-            "rotowireId": 46674,
-            "name": "Jair Cunha",
+            "rotowireId": 38747,
+            "name": "Ousmane Diomande",
             "position": "DC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/jair-cunha-46674"
+            "profileUrl": "https://www.rotowire.com/soccer/player/ousmane-diomande-38747"
           },
           {
             "rotowireId": 30731,
@@ -866,11 +866,18 @@
         ],
         "unavailable": [
           {
-            "rotowireId": 21982,
-            "name": "Ibrahim Sangare",
-            "position": "M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/ibrahim-sangare-21982",
-            "status": "QUES"
+            "rotowireId": 46674,
+            "name": "Jair Cunha",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/jair-cunha-46674",
+            "status": "OUT"
+          },
+          {
+            "rotowireId": 24967,
+            "name": "Nikola Milenkovic",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/nikola-milenkovic-24967",
+            "status": "OUT"
           },
           {
             "rotowireId": 43918,
@@ -888,7 +895,7 @@
         "name": "AFC Bournemouth",
         "abbreviation": "BOU",
         "side": "HOME",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 36625,
@@ -992,7 +999,7 @@
         "name": "Brentford",
         "abbreviation": "BRE",
         "side": "AWAY",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 29639,
@@ -1019,10 +1026,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/jannik-schuster-44208"
           },
           {
-            "rotowireId": 38617,
-            "name": "Michael Kayode",
+            "rotowireId": 33364,
+            "name": "Aaron Hickey",
             "position": "DR",
-            "profileUrl": "https://www.rotowire.com/soccer/player/michael-kayode-38617"
+            "profileUrl": "https://www.rotowire.com/soccer/player/aaron-hickey-33364"
           },
           {
             "rotowireId": 46862,
@@ -1031,10 +1038,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/mamadou-sangare-46862"
           },
           {
-            "rotowireId": 34081,
-            "name": "Vitaly Janelt",
+            "rotowireId": 37190,
+            "name": "Yehor Yarmolyuk",
             "position": "DMC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/vitaly-janelt-34081"
+            "profileUrl": "https://www.rotowire.com/soccer/player/yehor-yarmolyuk-37190"
           },
           {
             "rotowireId": 34216,
@@ -1043,10 +1050,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/kevin-schade-34216"
           },
           {
-            "rotowireId": 32949,
-            "name": "Mikkel Damsgaard",
+            "rotowireId": 34081,
+            "name": "Vitaly Janelt",
             "position": "AMC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/mikkel-damsgaard-32949"
+            "profileUrl": "https://www.rotowire.com/soccer/player/vitaly-janelt-34081"
           },
           {
             "rotowireId": 33344,
@@ -1067,20 +1074,20 @@
             "name": "Nathan Collins",
             "position": "D",
             "profileUrl": "https://www.rotowire.com/soccer/player/nathan-collins-31313",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 25973,
-            "name": "Mathias Jensen",
-            "position": "M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/mathias-jensen-25973",
-            "status": "QUES"
+            "status": "OUT"
           },
           {
             "rotowireId": 31282,
             "name": "Josh Dasilva",
             "position": "M",
             "profileUrl": "https://www.rotowire.com/soccer/player/josh-dasilva-31282",
+            "status": "OUT"
+          },
+          {
+            "rotowireId": 25973,
+            "name": "Mathias Jensen",
+            "position": "M",
+            "profileUrl": "https://www.rotowire.com/soccer/player/mathias-jensen-25973",
             "status": "OUT"
           },
           {
@@ -1106,7 +1113,7 @@
         "name": "Tottenham Hotspur",
         "abbreviation": "TOT",
         "side": "HOME",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 44361,
@@ -1115,10 +1122,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/antonin-kinsky-44361"
           },
           {
-            "rotowireId": 33338,
-            "name": "Destiny Udogie",
+            "rotowireId": 17945,
+            "name": "Andrew Robertson",
             "position": "DL",
-            "profileUrl": "https://www.rotowire.com/soccer/player/destiny-udogie-33338"
+            "profileUrl": "https://www.rotowire.com/soccer/player/andrew-robertson-17945"
           },
           {
             "rotowireId": 33114,
@@ -1133,10 +1140,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/micky-van-de-ven-35610"
           },
           {
-            "rotowireId": 26581,
-            "name": "Pedro Porro",
+            "rotowireId": 36115,
+            "name": "Archie Gray",
             "position": "DR",
-            "profileUrl": "https://www.rotowire.com/soccer/player/pedro-porro-26581"
+            "profileUrl": "https://www.rotowire.com/soccer/player/archie-gray-36115"
           },
           {
             "rotowireId": 28953,
@@ -1151,10 +1158,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/rodrigo-bentancur-24952"
           },
           {
-            "rotowireId": 35494,
-            "name": "Mathys Tel",
+            "rotowireId": 32408,
+            "name": "Omar Marmoush",
             "position": "AML",
-            "profileUrl": "https://www.rotowire.com/soccer/player/mathys-tel-35494"
+            "profileUrl": "https://www.rotowire.com/soccer/player/omar-marmoush-32408"
           },
           {
             "rotowireId": 37969,
@@ -1169,32 +1176,32 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/savio-37734"
           },
           {
-            "rotowireId": 32408,
-            "name": "Omar Marmoush",
+            "rotowireId": 18544,
+            "name": "Dominic Solanke",
             "position": "FW",
-            "profileUrl": "https://www.rotowire.com/soccer/player/omar-marmoush-32408"
+            "profileUrl": "https://www.rotowire.com/soccer/player/dominic-solanke-18544"
           }
         ],
         "unavailable": [
-          {
-            "rotowireId": 25834,
-            "name": "Dejan Kulusevski",
-            "position": "F/M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/dejan-kulusevski-25834",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 20951,
-            "name": "James Maddison",
-            "position": "F/M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/james-maddison-20951",
-            "status": "QUES"
-          },
           {
             "rotowireId": 24036,
             "name": "Richarlison",
             "position": "F",
             "profileUrl": "https://www.rotowire.com/soccer/player/richarlison-24036",
+            "status": "OUT"
+          },
+          {
+            "rotowireId": 33338,
+            "name": "Destiny Udogie",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/destiny-udogie-33338",
+            "status": "OUT"
+          },
+          {
+            "rotowireId": 25834,
+            "name": "Dejan Kulusevski",
+            "position": "F/M",
+            "profileUrl": "https://www.rotowire.com/soccer/player/dejan-kulusevski-25834",
             "status": "OUT"
           },
           {
@@ -1212,6 +1219,13 @@
             "status": "OUT"
           },
           {
+            "rotowireId": 26581,
+            "name": "Pedro Porro",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/pedro-porro-26581",
+            "status": "OUT"
+          },
+          {
             "rotowireId": 29449,
             "name": "Xavi Simons",
             "position": "F/M",
@@ -1224,7 +1238,7 @@
         "name": "Everton",
         "abbreviation": "EVE",
         "side": "AWAY",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 19035,
@@ -1251,10 +1265,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/james-tarkowski-21464"
           },
           {
-            "rotowireId": 37835,
-            "name": "Merlin Rohl",
+            "rotowireId": 18579,
+            "name": "Ainsley Maitland-Niles",
             "position": "DR",
-            "profileUrl": "https://www.rotowire.com/soccer/player/merlin-rohl-37835"
+            "profileUrl": "https://www.rotowire.com/soccer/player/ainsley-maitland-niles-18579"
           },
           {
             "rotowireId": 27639,
@@ -1263,16 +1277,16 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/james-garner-27639"
           },
           {
-            "rotowireId": 31162,
-            "name": "Hayden Hackney",
+            "rotowireId": 44062,
+            "name": "Harrison Armstrong",
             "position": "DMC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/hayden-hackney-31162"
+            "profileUrl": "https://www.rotowire.com/soccer/player/harrison-armstrong-44062"
           },
           {
-            "rotowireId": 17516,
-            "name": "Jack Grealish",
+            "rotowireId": 41461,
+            "name": "Tyrique George",
             "position": "AML",
-            "profileUrl": "https://www.rotowire.com/soccer/player/jack-grealish-17516"
+            "profileUrl": "https://www.rotowire.com/soccer/player/tyrique-george-41461"
           },
           {
             "rotowireId": 33116,
@@ -1281,10 +1295,10 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/kiernan-dewsbury-hall-33116"
           },
           {
-            "rotowireId": 41461,
-            "name": "Tyrique George",
+            "rotowireId": 31046,
+            "name": "Brennan Johnson",
             "position": "AMR",
-            "profileUrl": "https://www.rotowire.com/soccer/player/tyrique-george-41461"
+            "profileUrl": "https://www.rotowire.com/soccer/player/brennan-johnson-31046"
           },
           {
             "rotowireId": 44100,
@@ -1294,13 +1308,6 @@
           }
         ],
         "unavailable": [
-          {
-            "rotowireId": 27639,
-            "name": "James Garner",
-            "position": "M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/james-garner-27639",
-            "status": "QUES"
-          },
           {
             "rotowireId": 26355,
             "name": "Christian Norgaard",
@@ -1317,7 +1324,7 @@
         "name": "Sunderland",
         "abbreviation": "SUN",
         "side": "HOME",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 46776,
@@ -1407,7 +1414,7 @@
         "name": "Arsenal",
         "abbreviation": "ARS",
         "side": "AWAY",
-        "status": "PREDICTED",
+        "status": "CONFIRMED",
         "starters": [
           {
             "rotowireId": 31126,
@@ -1482,14 +1489,7 @@
             "name": "Cristhian Mosquera",
             "position": "D",
             "profileUrl": "https://www.rotowire.com/soccer/player/cristhian-mosquera-35765",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 30868,
-            "name": "Jurrien Timber",
-            "position": "D",
-            "profileUrl": "https://www.rotowire.com/soccer/player/jurrien-timber-30868",
-            "status": "QUES"
+            "status": "OUT"
           },
           {
             "rotowireId": 26575,
@@ -1831,20 +1831,6 @@
         ],
         "unavailable": [
           {
-            "rotowireId": 36612,
-            "name": "Carlos Baleba",
-            "position": "M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/carlos-baleba-36612",
-            "status": "QUES"
-          },
-          {
-            "rotowireId": 30618,
-            "name": "Amad Diallo",
-            "position": "F/M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/amad-diallo-30618",
-            "status": "QUES"
-          },
-          {
             "rotowireId": 16889,
             "name": "Luke Shaw",
             "position": "D",
@@ -1852,10 +1838,24 @@
             "status": "QUES"
           },
           {
+            "rotowireId": 36612,
+            "name": "Carlos Baleba",
+            "position": "M",
+            "profileUrl": "https://www.rotowire.com/soccer/player/carlos-baleba-36612",
+            "status": "OUT"
+          },
+          {
             "rotowireId": 26851,
             "name": "Matthijs De Ligt",
             "position": "D",
             "profileUrl": "https://www.rotowire.com/soccer/player/matthijs-de-ligt-26851",
+            "status": "OUT"
+          },
+          {
+            "rotowireId": 30618,
+            "name": "Amad Diallo",
+            "position": "F/M",
+            "profileUrl": "https://www.rotowire.com/soccer/player/amad-diallo-30618",
             "status": "OUT"
           },
           {
@@ -1911,16 +1911,16 @@
             "profileUrl": "https://www.rotowire.com/soccer/player/abdukodir-khusanov-40143"
           },
           {
-            "rotowireId": 34207,
-            "name": "Elliot Anderson",
-            "position": "DMC",
-            "profileUrl": "https://www.rotowire.com/soccer/player/elliot-anderson-34207"
-          },
-          {
             "rotowireId": 37578,
             "name": "Enzo Fernandez",
             "position": "DMC",
             "profileUrl": "https://www.rotowire.com/soccer/player/enzo-fernandez-37578"
+          },
+          {
+            "rotowireId": 34207,
+            "name": "Elliot Anderson",
+            "position": "DMC",
+            "profileUrl": "https://www.rotowire.com/soccer/player/elliot-anderson-34207"
           },
           {
             "rotowireId": 34436,
@@ -1949,18 +1949,18 @@
         ],
         "unavailable": [
           {
-            "rotowireId": 33441,
-            "name": "Jeremy Doku",
-            "position": "F/M",
-            "profileUrl": "https://www.rotowire.com/soccer/player/jeremy-doku-33441",
-            "status": "QUES"
-          },
-          {
             "rotowireId": 39597,
             "name": "Nico O'Reilly",
             "position": "M/D",
             "profileUrl": "https://www.rotowire.com/soccer/player/nico-oreilly-39597",
             "status": "QUES"
+          },
+          {
+            "rotowireId": 33441,
+            "name": "Jeremy Doku",
+            "position": "F/M",
+            "profileUrl": "https://www.rotowire.com/soccer/player/jeremy-doku-33441",
+            "status": "OUT"
           }
         ]
       }
