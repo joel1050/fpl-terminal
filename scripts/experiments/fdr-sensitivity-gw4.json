@@ -1,0 +1,4296 @@
+{
+  "taskId": "fdr150_experiments",
+  "generatedAt": "2026-09-10T23:52:13.220Z",
+  "frozenInputSet": "Sept 10 2026 GW4 snapshots",
+  "source": {
+    "script": "scripts/experiments/fdr-sensitivity-gw4.ts",
+    "productionProjection": "lib/projections/projectPlayer.ts",
+    "productionFdr": "lib/clubElo.ts calculateContinuousClubEloFdr"
+  },
+  "inputs": [
+    {
+      "path": "data/snapshots/bootstrap.json",
+      "sha256": "374ec0c135ed047791c5c085d3adfcaef6a8b59eaf269d1fc5190cecd0896870",
+      "bytes": 1740855,
+      "mtime": "2026-09-10T23:32:05.887Z",
+      "fetchedAt": "2026-09-10T23:32:05.839Z"
+    },
+    {
+      "path": "data/snapshots/fixtures.json",
+      "sha256": "c35845b9f47f422e1b289d2374af06879c26c58b3aad112feddf57b107624b82",
+      "bytes": 186413,
+      "mtime": "2026-09-10T23:32:05.756Z",
+      "fetchedAt": "2026-09-10T23:32:05.744Z"
+    },
+    {
+      "path": "data/snapshots/in-season-xg-gw-1.json",
+      "sha256": "428df129c9ce17dd59878d7be59fbeeae0adfd7bc49ed87129600292ed80bf16",
+      "bytes": 1148,
+      "mtime": "2026-08-25T21:38:45.583Z",
+      "fetchedAt": "2026-08-25T21:38:45.569Z"
+    },
+    {
+      "path": "data/snapshots/in-season-xg-gw-2.json",
+      "sha256": "190e33aa0b6d7d27fb4de40c5b3cb1d2b94f6ca53b3f1768bef5ebd0ccac51cd",
+      "bytes": 1086,
+      "mtime": "2026-09-01T18:29:16.863Z",
+      "fetchedAt": "2026-09-01T18:29:16.862Z"
+    },
+    {
+      "path": "data/snapshots/in-season-xg-gw-3.json",
+      "sha256": "58523fc07a2d67da4423666ac31664b516d639bc2bb87a1243d5755aa20c6499",
+      "bytes": 1761,
+      "mtime": "2026-09-07T15:21:29.637Z",
+      "fetchedAt": "2026-09-07T15:21:29.635Z"
+    },
+    {
+      "path": "data/snapshots/in-season-player-rates-gw-1.json",
+      "sha256": "48328601c5d9490b4c888e14728271ac5447c41d4e9a37d2335ec797ef79b100",
+      "bytes": 14645,
+      "mtime": "2026-08-25T21:38:45.588Z",
+      "fetchedAt": "2026-08-25T21:38:45.588Z"
+    },
+    {
+      "path": "data/snapshots/in-season-player-rates-gw-2.json",
+      "sha256": "ae14ef92f8bd9d41954e88c768dad512683c677440700b090d015f3cf6de0a4e",
+      "bytes": 14731,
+      "mtime": "2026-09-01T18:29:16.849Z",
+      "fetchedAt": "2026-09-01T18:29:16.834Z"
+    },
+    {
+      "path": "data/snapshots/in-season-player-rates-gw-3.json",
+      "sha256": "10184665d12edb0ee9955b5966ccc963c424afcff13035627192dde865110e87",
+      "bytes": 14503,
+      "mtime": "2026-09-07T15:21:29.639Z",
+      "fetchedAt": "2026-09-07T15:21:29.638Z"
+    },
+    {
+      "path": "data/snapshots/in-season-starts-gw-1.json",
+      "sha256": "aae261931997861d6cc777ef3931ad06e9d59b192d72fc3692ac0dfe2b364890",
+      "bytes": 37532,
+      "mtime": "2026-09-07T18:46:24.323Z",
+      "fetchedAt": "2026-09-07T18:46:24.222Z"
+    },
+    {
+      "path": "data/snapshots/in-season-starts-gw-2.json",
+      "sha256": "23479931d1575237c02e8000a0f946b695036e996e11be9c4fd035dfe84b5e85",
+      "bytes": 38519,
+      "mtime": "2026-09-07T18:46:24.352Z",
+      "fetchedAt": "2026-09-07T18:46:24.333Z"
+    },
+    {
+      "path": "data/snapshots/in-season-starts-gw-3.json",
+      "sha256": "64491ecddb58ffc6838650319248c5771420310a1c5a9095672945200fb963cb",
+      "bytes": 40251,
+      "mtime": "2026-09-07T18:46:24.452Z",
+      "fetchedAt": "2026-09-07T18:46:24.444Z"
+    },
+    {
+      "path": "data/generated/historical-players.json",
+      "sha256": "8a23bc8974cb6fa3234d2b6db8ea7cfd4b680b681a4c97a7c99687c30d4ebef8",
+      "bytes": 359735,
+      "mtime": "2026-08-21T00:24:28.436Z"
+    },
+    {
+      "path": "data/generated/historical-match-stats.json",
+      "sha256": "f54cf800a342cb8db14ed50a11fcd15c0596e4e524be8ac3c17a35cdf08f810c",
+      "bytes": 5931190,
+      "mtime": "2026-08-21T00:24:28.439Z"
+    },
+    {
+      "path": "data/generated/team-strength.json",
+      "sha256": "17da5d6fa4dc6985819cae00a34ad63a81eea00ab1b57de64104df250c0243b5",
+      "bytes": 3235,
+      "mtime": "2026-08-21T00:24:28.436Z"
+    },
+    {
+      "path": "data/generated/player-mappings.json",
+      "sha256": "52ebbf1aa83248f25cfb1b2930ae902e56f4cb4d79a033979708c1e3d50b6df2",
+      "bytes": 38996,
+      "mtime": "2026-08-21T00:24:28.437Z"
+    },
+    {
+      "path": "data/generated/rotowire-lineups.json",
+      "sha256": "06ec85be9d73c7ac006abc69fca79e72a5bdef407503454e997c7cf933795c48",
+      "bytes": 73147,
+      "mtime": "2026-09-10T22:15:21.162Z",
+      "fetchedAt": "2026-09-10T22:15:21.109Z"
+    },
+    {
+      "path": "data/generated/rotowire-player-mappings.json",
+      "sha256": "929f10e318ac9124166adbd4e5c609a4472672c1ecc16ee4810e79ff654c6301",
+      "bytes": 156254,
+      "mtime": "2026-09-10T22:15:21.162Z"
+    },
+    {
+      "path": "data/generated/club-elo.json",
+      "sha256": "e19df76d2a261013ce8a6f70842d0dccfa74b2816bca9940d5c9e44bb8f1b802",
+      "bytes": 4759,
+      "mtime": "2026-09-08T06:13:55.196Z",
+      "fetchedAt": "2026-09-08T06:13:55.178Z"
+    },
+    {
+      "path": "data/manual/team-strengths.json",
+      "sha256": "2a79c5034f7da7687d85d593e51ceec9569d42909740858c319cedd07c93dacb",
+      "bytes": 3966,
+      "mtime": "2026-08-24T05:35:07.967Z"
+    }
+  ],
+  "model": {
+    "baseline": {
+      "fdrDivisor": 150,
+      "formDecay": 0.95,
+      "formPriorWeight": 6,
+      "winsorRatio": 3,
+      "regressionPriorWeightMinutes": 900,
+      "pricePriorScale": 1,
+      "teamFormDecay": 0.9,
+      "teamPriorWeight": 12,
+      "cleanSheetMode": "ELO_RATES",
+      "cleanSheetEloSlope": 0.0034,
+      "cleanSheetSkewWeight": 0.6,
+      "bonusMode": "ATTACK",
+      "attackRatioClamp": [
+        0.7,
+        1.35
+      ],
+      "selectionCertainty": 1,
+      "minutesShift": 0
+    },
+    "variantsTested": 24,
+    "totalArmsIncludingBaseline": 25,
+    "desiredSignThresholdRawXPoints": 0.001,
+    "ranking": [
+      "desiredSignCountDescending",
+      "netDirectionalSumDescending",
+      "variantIdAscending"
+    ],
+    "desiredSigns": {
+      "lower": [
+        "Bruno Fernandes",
+        "Bryan Mbeumo",
+        "Marcus Tavernier"
+      ],
+      "higher": [
+        "Morgan Rogers",
+        "Cole Palmer"
+      ]
+    },
+    "omittedNoOpArm": {
+      "label": "START_RATE_ALPHA 0.60",
+      "reason": "All five targets have >=240 observed current-season minutes, so production selection uses the role-established path and bypasses START_RATE_ALPHA."
+    }
+  },
+  "baseline": {
+    "fdrDivisor": 150,
+    "currentGameweek": 4,
+    "targetGameweek": 4,
+    "strengthInputs": [
+      {
+        "id": 426,
+        "currentTeam": {
+          "teamId": 16,
+          "attackHome": 1.0474469104540962,
+          "attackAway": 1.0474469104540962,
+          "defenceHome": 1.1214316983984356,
+          "defenceAway": 1.1214316983984356,
+          "overall": 1.084439304426266
+        },
+        "opponentTeam": {
+          "teamId": 15,
+          "attackHome": 1.1045323517410808,
+          "attackAway": 1.1045323517410808,
+          "defenceHome": 1.1327497777922855,
+          "defenceAway": 1.1327497777922855,
+          "overall": 1.1186410647666831
+        },
+        "historicalSourceTeam": {
+          "teamId": 14,
+          "attackHome": 1.0122006326253954,
+          "attackAway": 1.0149253731343284,
+          "defenceHome": 1.0680447889750215,
+          "defenceAway": 1.0706988148753576,
+          "overall": 1.0420997509631085
+        }
+      },
+      {
+        "id": 427,
+        "currentTeam": {
+          "teamId": 16,
+          "attackHome": 1.0474469104540962,
+          "attackAway": 1.0474469104540962,
+          "defenceHome": 1.1214316983984356,
+          "defenceAway": 1.1214316983984356,
+          "overall": 1.084439304426266
+        },
+        "opponentTeam": {
+          "teamId": 15,
+          "attackHome": 1.1045323517410808,
+          "attackAway": 1.1045323517410808,
+          "defenceHome": 1.1327497777922855,
+          "defenceAway": 1.1327497777922855,
+          "overall": 1.1186410647666831
+        },
+        "historicalSourceTeam": {
+          "teamId": 14,
+          "attackHome": 1.0122006326253954,
+          "attackAway": 1.0149253731343284,
+          "defenceHome": 1.0680447889750215,
+          "defenceAway": 1.0706988148753576,
+          "overall": 1.0420997509631085
+        }
+      },
+      {
+        "id": 68,
+        "currentTeam": {
+          "teamId": 3,
+          "attackHome": 1.0231071085159196,
+          "attackAway": 1.0231071085159196,
+          "defenceHome": 1.1460930266972587,
+          "defenceAway": 1.1460930266972587,
+          "overall": 1.0846000676065892
+        },
+        "opponentTeam": {
+          "teamId": 4,
+          "attackHome": 0.9841049655682472,
+          "attackAway": 0.9841049655682472,
+          "defenceHome": 0.9791746656642183,
+          "defenceAway": 0.9791746656642183,
+          "overall": 0.9816398156162327
+        },
+        "historicalSourceTeam": {
+          "teamId": 4,
+          "attackHome": 0.9579755987347492,
+          "attackAway": 1.049040511727079,
+          "defenceHome": 1.0680447889750215,
+          "defenceAway": 1.0134859011033919,
+          "overall": 1.0226088869173724
+        }
+      },
+      {
+        "id": 40,
+        "currentTeam": {
+          "teamId": 6,
+          "attackHome": 1.0324915985661467,
+          "attackAway": 1.0324915985661467,
+          "defenceHome": 1.0633577224018675,
+          "defenceAway": 1.0633577224018675,
+          "overall": 1.0479246604840071
+        },
+        "opponentTeam": {
+          "teamId": 11,
+          "attackHome": 0.8162624515319625,
+          "attackAway": 0.8162624515319625,
+          "defenceHome": 0.8316744131777777,
+          "defenceAway": 0.8316744131777777,
+          "overall": 0.8239684323548702
+        },
+        "historicalSourceTeam": {
+          "teamId": 2,
+          "attackHome": 1.0122006326253954,
+          "attackAway": 1.0319829424307037,
+          "defenceHome": 0.9905254091300603,
+          "defenceAway": 1.021659174499387,
+          "overall": 1.0139068605706312
+        }
+      },
+      {
+        "id": 154,
+        "currentTeam": {
+          "teamId": 6,
+          "attackHome": 1.0324915985661467,
+          "attackAway": 1.0324915985661467,
+          "defenceHome": 1.0633577224018675,
+          "defenceAway": 1.0633577224018675,
+          "overall": 1.0479246604840071
+        },
+        "opponentTeam": {
+          "teamId": 11,
+          "attackHome": 0.8162624515319625,
+          "attackAway": 0.8162624515319625,
+          "defenceHome": 0.8316744131777777,
+          "defenceAway": 0.8316744131777777,
+          "overall": 0.8239684323548702
+        },
+        "historicalSourceTeam": {
+          "teamId": 7,
+          "attackHome": 1.0212381382738365,
+          "attackAway": 0.9722814498933902,
+          "defenceHome": 1.0766580534022394,
+          "defenceAway": 1.021659174499387,
+          "overall": 1.023554969417975
+        }
+      }
+    ],
+    "targets": [
+      {
+        "id": 426,
+        "label": "Bruno Fernandes",
+        "value": 5.811,
+        "rawValue": 5.810642,
+        "fixture": {
+          "gameweek": 4,
+          "opponentTeamId": 15,
+          "opponentShortName": "MCI",
+          "isHome": true,
+          "difficulty": 4,
+          "exactDifficulty": 3.9181082136034577
+        },
+        "selection": {
+          "startProbability": 0.925,
+          "cameoProbability": 0.038,
+          "noAppearanceProbability": 0.037,
+          "expectedMinutes": 84.01,
+          "expectedStartMinutes": 90,
+          "expectedCameoMinutes": 20,
+          "nailedRating": 5,
+          "confidence": "HIGH",
+          "updatedAt": "2026-09-10T22:15:21.109Z",
+          "evidence": [
+            {
+              "source": "PREDICTED_XI",
+              "detail": "Predicted to start"
+            },
+            {
+              "source": "HISTORICAL_STARTS",
+              "detail": "35 starts across 38 historical matches"
+            },
+            {
+              "source": "CURRENT_SEASON",
+              "detail": "3 starts in 3 matches this season (last 3: SSS)"
+            },
+            {
+              "source": "CURRENT_SEASON",
+              "detail": "270 current-season minutes"
+            },
+            {
+              "source": "FPL_STATUS",
+              "detail": "FPL status: a"
+            }
+          ]
+        },
+        "components": {
+          "appearance": 1.8880000000000001,
+          "goals": 1.8034918530554793,
+          "assists": 0.9484060244025148,
+          "cleanSheets": 0.21459026659072677,
+          "goalsConceded": 0,
+          "saves": 0,
+          "defensiveContribution": 0.28844585363705866,
+          "bonus": 0.8415327936049353,
+          "cards": -0.17382497709928724,
+          "penalties": 0,
+          "total": 5.8106418141914284
+        }
+      },
+      {
+        "id": 427,
+        "label": "Bryan Mbeumo",
+        "value": 5.019,
+        "rawValue": 5.018601,
+        "fixture": {
+          "gameweek": 4,
+          "opponentTeamId": 15,
+          "opponentShortName": "MCI",
+          "isHome": true,
+          "difficulty": 4,
+          "exactDifficulty": 3.9181082136034577
+        },
+        "selection": {
+          "startProbability": 0.925,
+          "cameoProbability": 0.038,
+          "noAppearanceProbability": 0.037,
+          "expectedMinutes": 83.915,
+          "expectedStartMinutes": 90,
+          "expectedCameoMinutes": 17.5,
+          "nailedRating": 5,
+          "confidence": "HIGH",
+          "updatedAt": "2026-09-10T22:15:21.109Z",
+          "evidence": [
+            {
+              "source": "PREDICTED_XI",
+              "detail": "Predicted to start"
+            },
+            {
+              "source": "HISTORICAL_STARTS",
+              "detail": "31 starts across 38 historical matches"
+            },
+            {
+              "source": "CURRENT_SEASON",
+              "detail": "3 starts in 3 matches this season (last 3: SSS)"
+            },
+            {
+              "source": "CURRENT_SEASON",
+              "detail": "270 current-season minutes"
+            },
+            {
+              "source": "FPL_STATUS",
+              "detail": "FPL status: a"
+            }
+          ]
+        },
+        "components": {
+          "appearance": 1.8880000000000001,
+          "goals": 1.9314246254409004,
+          "assists": 0.5163375451019684,
+          "cleanSheets": 0.21459026659072677,
+          "goalsConceded": 0,
+          "saves": 0,
+          "defensiveContribution": 0.10894630679473469,
+          "bonus": 0.5332896982896163,
+          "cards": -0.17398745989512382,
+          "penalties": 0,
+          "total": 5.018600982322822
+        }
+      },
+      {
+        "id": 68,
+        "label": "Marcus Tavernier",
+        "value": 5.577,
+        "rawValue": 5.576818,
+        "fixture": {
+          "gameweek": 4,
+          "opponentTeamId": 4,
+          "opponentShortName": "BRE",
+          "isHome": true,
+          "difficulty": 3,
+          "exactDifficulty": 2.9425878485336625
+        },
+        "selection": {
+          "startProbability": 0.925,
+          "cameoProbability": 0.038,
+          "noAppearanceProbability": 0.037,
+          "expectedMinutes": 83.52,
+          "expectedStartMinutes": 89.333,
+          "expectedCameoMinutes": 23.333,
+          "nailedRating": 5,
+          "confidence": "HIGH",
+          "updatedAt": "2026-09-10T22:15:21.109Z",
+          "evidence": [
+            {
+              "source": "PREDICTED_XI",
+              "detail": "Predicted to start"
+            },
+            {
+              "source": "HISTORICAL_STARTS",
+              "detail": "31 starts across 38 historical matches"
+            },
+            {
+              "source": "CURRENT_SEASON",
+              "detail": "3 starts in 3 matches this season (last 3: SSS)"
+            },
+            {
+              "source": "CURRENT_SEASON",
+              "detail": "268 current-season minutes"
+            },
+            {
+              "source": "FPL_STATUS",
+              "detail": "FPL status: a"
+            }
+          ]
+        },
+        "components": {
+          "appearance": 1.8880000000000001,
+          "goals": 1.9135116275790958,
+          "assists": 0.5363160361197905,
+          "cleanSheets": 0.2931022683923979,
+          "goalsConceded": 0,
+          "saves": 0,
+          "defensiveContribution": 0.41094978737984844,
+          "bonus": 0.7082368746824312,
+          "cards": -0.1732983744194305,
+          "penalties": 0,
+          "total": 5.576818219734133
+        }
+      },
+      {
+        "id": 40,
+        "label": "Morgan Rogers",
+        "value": 5.549,
+        "rawValue": 5.548908,
+        "fixture": {
+          "gameweek": 4,
+          "opponentTeamId": 11,
+          "opponentShortName": "HUL",
+          "isHome": true,
+          "difficulty": 1,
+          "exactDifficulty": 1.3183653804089757
+        },
+        "selection": {
+          "startProbability": 0.925,
+          "cameoProbability": 0.038,
+          "noAppearanceProbability": 0.037,
+          "expectedMinutes": 80.002,
+          "expectedStartMinutes": 85.667,
+          "expectedCameoMinutes": 20,
+          "nailedRating": 5,
+          "confidence": "HIGH",
+          "updatedAt": "2026-09-10T22:15:21.109Z",
+          "evidence": [
+            {
+              "source": "PREDICTED_XI",
+              "detail": "Predicted to start"
+            },
+            {
+              "source": "HISTORICAL_STARTS",
+              "detail": "37 starts across 38 historical matches"
+            },
+            {
+              "source": "CURRENT_SEASON",
+              "detail": "3 starts in 3 matches this season (last 3: SSS)"
+            },
+            {
+              "source": "CURRENT_SEASON",
+              "detail": "257 current-season minutes"
+            },
+            {
+              "source": "FPL_STATUS",
+              "detail": "FPL status: a"
+            }
+          ]
+        },
+        "components": {
+          "appearance": 1.8880000000000001,
+          "goals": 1.7119753556023949,
+          "assists": 0.9982483617046484,
+          "cleanSheets": 0.4217489357425536,
+          "goalsConceded": 0,
+          "saves": 0,
+          "defensiveContribution": 0.14502364087811506,
+          "bonus": 0.5504779258674818,
+          "cards": -0.16656595817903985,
+          "penalties": 0,
+          "total": 5.548908261616155
+        }
+      },
+      {
+        "id": 154,
+        "label": "Cole Palmer",
+        "value": 6.687,
+        "rawValue": 6.68675,
+        "fixture": {
+          "gameweek": 4,
+          "opponentTeamId": 11,
+          "opponentShortName": "HUL",
+          "isHome": true,
+          "difficulty": 1,
+          "exactDifficulty": 1.3183653804089757
+        },
+        "selection": {
+          "startProbability": 0.925,
+          "cameoProbability": 0.038,
+          "noAppearanceProbability": 0.037,
+          "expectedMinutes": 81.714,
+          "expectedStartMinutes": 87.333,
+          "expectedCameoMinutes": 24.5,
+          "nailedRating": 5,
+          "confidence": "HIGH",
+          "updatedAt": "2026-09-10T22:15:21.109Z",
+          "evidence": [
+            {
+              "source": "PREDICTED_XI",
+              "detail": "Predicted to start"
+            },
+            {
+              "source": "HISTORICAL_STARTS",
+              "detail": "24 starts across 38 historical matches"
+            },
+            {
+              "source": "CURRENT_SEASON",
+              "detail": "3 starts in 3 matches this season (last 3: SSS)"
+            },
+            {
+              "source": "CURRENT_SEASON",
+              "detail": "262 current-season minutes"
+            },
+            {
+              "source": "FPL_STATUS",
+              "detail": "FPL status: a, 100% chance"
+            }
+          ]
+        },
+        "components": {
+          "appearance": 1.8880000000000001,
+          "goals": 2.8222506022141944,
+          "assists": 0.735602982822114,
+          "cleanSheets": 0.4217489357425536,
+          "goalsConceded": 0,
+          "saves": 0,
+          "defensiveContribution": 0.19664322399688028,
+          "bonus": 0.7923803692992096,
+          "cards": -0.1698763598016289,
+          "penalties": 0,
+          "total": 6.686749754273324
+        }
+      }
+    ],
+    "parity": {
+      "tolerance": 1e-9,
+      "maxComponentGap": 0,
+      "maxAdjustmentGap": 0
+    }
+  },
+  "frozenHistory": {
+    "teamXGRows": 60,
+    "teamXGRowsWithFixtureContext": 20,
+    "teamXGJointFixtures": 10,
+    "teamXGJointGameweeks": [
+      3
+    ],
+    "playerFormRows": 929,
+    "startRows": 1890,
+    "note": "Team-xG rows retain the cached GW1/GW2 context-free shape; player-rate rows derive fixture context from the normalized frozen fixtures, matching the production loaders. applyInSeasonForm therefore fits only the ten contextual GW3 fixtures."
+  },
+  "rankedArms": [
+    {
+      "rank": 1,
+      "id": "team_prior_weight_24",
+      "label": "Team prior weight 24",
+      "changedParameter": "teamPriorWeight",
+      "note": "Double the current team prior weight.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 24,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 5,
+      "netDirectionalSum": 0.242957,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.783,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.783105,
+          "delta": -0.027537,
+          "displayDelta": -0.028,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.775066583894623,
+            "assists": 0.9458043389747643,
+            "cleanSheets": 0.21319630911116622,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8464164583318363,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.78310456685016
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 4.996,
+          "rawBaseline": 5.018601,
+          "rawValue": 4.996345,
+          "delta": -0.022256,
+          "displayDelta": -0.022,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9084984027960223,
+            "assists": 0.5153072725058749,
+            "cleanSheets": 0.21319630911116622,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5363845367897299,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 4.996345368102404
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.53,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.530182,
+          "delta": -0.046636,
+          "displayDelta": -0.047,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8899611668933465,
+            "assists": 0.5268703532740041,
+            "cleanSheets": 0.29118095677460054,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.6965184637660427,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.530182353668412
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.612,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.612128,
+          "delta": 0.06322,
+          "displayDelta": 0.063,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7390307380021437,
+            "assists": 1.0264301015610273,
+            "cleanSheets": 0.4189599403924113,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5612498397425999,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.612128302397258
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.77,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.770058,
+          "delta": 0.083308,
+          "displayDelta": 0.083,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.87933045934561,
+            "assists": 0.7491149076227243,
+            "cleanSheets": 0.4189599403924113,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.8078859012984712,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.770058072854468
+          }
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "id": "regression_prior_1800",
+      "label": "Regression prior 1800 minutes",
+      "changedParameter": "regressionPriorWeightMinutes",
+      "note": "Double the per-90 regression prior.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 1800,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 4,
+      "netDirectionalSum": 0.344568,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.726,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.726235,
+          "delta": -0.084407,
+          "displayDelta": -0.084,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8296034237837477,
+            "assists": 0.9177093956227904,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.3103626835969022,
+            "bonus": 0.7399067522343147,
+            "cards": -0.1739379199681367,
+            "penalties": 0,
+            "total": 5.7262346018603445
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 4.953,
+          "rawBaseline": 5.018601,
+          "rawValue": 4.952796,
+          "delta": -0.065805,
+          "displayDelta": -0.066,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8600337125175894,
+            "assists": 0.5253928128817945,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.15571296257986483,
+            "bonus": 0.4829841492616199,
+            "cards": -0.17391775034583445,
+            "penalties": 0,
+            "total": 4.952796153485761
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.427,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.426818,
+          "delta": -0.15,
+          "displayDelta": -0.15,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.840000291761598,
+            "assists": 0.5317941808671959,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.4099821767803154,
+            "bonus": 0.637166845548836,
+            "cards": -0.17322801293213952,
+            "penalties": 0,
+            "total": 5.426817750418204
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.635,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.635104,
+          "delta": 0.086196,
+          "displayDelta": 0.086,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7502773748005818,
+            "assists": 1.0352113219385695,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.17600736442599882,
+            "bonus": 0.5303523370722664,
+            "cards": -0.1664934768571177,
+            "penalties": 0,
+            "total": 5.6351038571228536
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.645,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.64491,
+          "delta": -0.04184,
+          "displayDelta": -0.042,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.741739420806259,
+            "assists": 0.8171379513581446,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.23526735768780976,
+            "bonus": 0.7108209728690057,
+            "cards": -0.1698046872808525,
+            "penalties": 0,
+            "total": 6.64490995118292
+          }
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "id": "form_prior_12",
+      "label": "Player form prior weight 12",
+      "changedParameter": "formPriorWeight",
+      "note": "Double the current six-match prior weight.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 12,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 4,
+      "netDirectionalSum": 0.319788,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.758,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.758326,
+          "delta": -0.052316,
+          "displayDelta": -0.052,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.6455314391388707,
+            "assists": 0.9948811516925672,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.33044890564905566,
+            "bonus": 0.8586992886469441,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.758326074618878
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 4.85,
+          "rawBaseline": 5.018601,
+          "rawValue": 4.849846,
+          "delta": -0.168755,
+          "displayDelta": -0.169,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7899845910802017,
+            "assists": 0.5353997916617336,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10276806570265616,
+            "bonus": 0.4930906374964778,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 4.849845892636671
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.262,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.262417,
+          "delta": -0.314401,
+          "displayDelta": -0.314,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.700075741475482,
+            "assists": 0.552167201441533,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.394986306321104,
+            "bonus": 0.6073841763402329,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.262417319551319
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.269,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.268769,
+          "delta": -0.28014,
+          "displayDelta": -0.28,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.5503136370500823,
+            "assists": 0.8596979125916119,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.148756269418143,
+            "bonus": 0.5668178691075794,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.2687686657309305
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.751,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.751206,
+          "delta": 0.064456,
+          "displayDelta": 0.064,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.9310757739836237,
+            "assists": 0.7654758290177368,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19119339265365468,
+            "bonus": 0.7235882947927481,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.751205866388688
+          }
+        }
+      ]
+    },
+    {
+      "rank": 4,
+      "id": "fdr_divisor_130",
+      "label": "FDR divisor 130",
+      "changedParameter": "fdrDivisor",
+      "note": "Narrower Elo gap; included as a bounded fixture sensitivity.",
+      "config": {
+        "fdrDivisor": 130,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 4,
+      "netDirectionalSum": 0.201552,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.767,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.766818,
+          "delta": -0.043824,
+          "displayDelta": -0.044,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.781497297124218,
+            "assists": 0.9368397013753684,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8312698472735858,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.76681798890167
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 4.982,
+          "rawBaseline": 5.018601,
+          "rawValue": 4.982245,
+          "delta": -0.036356,
+          "displayDelta": -0.036,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9078698603448982,
+            "assists": 0.5100405302327773,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5267859427685007,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 4.982245446836514
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.579,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.578763,
+          "delta": 0.001945,
+          "displayDelta": 0.002,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9146899869071021,
+            "assists": 0.5366463048230546,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7086730139332683,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.578762987016241
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.602,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.60174,
+          "delta": 0.052832,
+          "displayDelta": 0.053,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7397138558567973,
+            "assists": 1.0144226088072636,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5593971150583479,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.6017401981640385
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.757,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.757235,
+          "delta": 0.070485,
+          "displayDelta": 0.07,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8679784795410024,
+            "assists": 0.7475216844899721,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.8052190138529776,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.757234977821757
+          }
+        }
+      ]
+    },
+    {
+      "rank": 5,
+      "id": "clean_sheet_elo_slope_005",
+      "label": "Clean sheet Elo slope 0.005",
+      "changedParameter": "cleanSheetEloSlope",
+      "note": "Higher Elo level slope in the global clean-sheet rates.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.005,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 4,
+      "netDirectionalSum": 0.187433,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.779,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.779067,
+          "delta": -0.031575,
+          "displayDelta": -0.032,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8034918530554793,
+            "assists": 0.9484060244025148,
+            "cleanSheets": 0.18301545026602217,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.779066997866724
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 4.987,
+          "rawBaseline": 5.018601,
+          "rawValue": 4.987026,
+          "delta": -0.031575,
+          "displayDelta": -0.032,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9314246254409004,
+            "assists": 0.5163375451019684,
+            "cleanSheets": 0.18301545026602217,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 4.987026165998118
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.579,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.579033,
+          "delta": 0.002214,
+          "displayDelta": 0.002,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9135116275790958,
+            "assists": 0.5363160361197905,
+            "cleanSheets": 0.2953167538503909,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.579032705192126
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.612,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.612157,
+          "delta": 0.063249,
+          "displayDelta": 0.063,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7119753556023949,
+            "assists": 0.9982483617046484,
+            "cleanSheets": 0.4849979410240765,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.612157266897678
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.75,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.749999,
+          "delta": 0.063249,
+          "displayDelta": 0.063,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8222506022141944,
+            "assists": 0.735602982822114,
+            "cleanSheets": 0.4849979410240765,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.749998759554846
+          }
+        }
+      ]
+    },
+    {
+      "rank": 6,
+      "id": "selection_shrink_075",
+      "label": "Selection certainty 0.75",
+      "changedParameter": "selectionCertainty",
+      "note": "Shrinks every target's start/cameo probabilities toward uncertainty.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 0.75,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 3,
+      "netDirectionalSum": 0.485215,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.134,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.133902,
+          "delta": -0.67674,
+          "displayDelta": -0.677,
+          "components": {
+            "appearance": 1.6660000000000001,
+            "goals": 1.594129226023893,
+            "assists": 0.8383080628147809,
+            "cleanSheets": 0.18994138461746762,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.25531343073349366,
+            "bonus": 0.743841464362796,
+            "cards": -0.15363169083625147,
+            "penalties": 0,
+            "total": 5.13390187771618
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 4.434,
+          "rawBaseline": 5.018601,
+          "rawValue": 4.434012,
+          "delta": -0.584589,
+          "displayDelta": -0.585,
+          "components": {
+            "appearance": 1.6660000000000001,
+            "goals": 1.7075034275053924,
+            "assists": 0.4564755550893274,
+            "cleanSheets": 0.18994138461746762,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.0964322003132179,
+            "bonus": 0.4714623473721985,
+            "cards": -0.15380293683942556,
+            "penalties": 0,
+            "total": 4.434011978058178
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 4.927,
+          "rawBaseline": 5.576818,
+          "rawValue": 4.926835,
+          "delta": -0.649983,
+          "displayDelta": -0.65,
+          "components": {
+            "appearance": 1.6660000000000001,
+            "goals": 1.6909712314860026,
+            "assists": 0.4739427631336341,
+            "cleanSheets": 0.25943511594191976,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.36374480919007973,
+            "bonus": 0.6258692985737005,
+            "cards": -0.15312800037322782,
+            "penalties": 0,
+            "total": 4.926835217952108
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 4.902,
+          "rawBaseline": 5.548908,
+          "rawValue": 4.90244,
+          "delta": -0.646468,
+          "displayDelta": -0.646,
+          "components": {
+            "appearance": 1.6660000000000001,
+            "goals": 1.5131317857863882,
+            "assists": 0.882303195114042,
+            "cleanSheets": 0.37330480123158466,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.12836548128192835,
+            "bonus": 0.4865406761131559,
+            "cards": -0.14720594077623395,
+            "penalties": 0,
+            "total": 4.902439998750865
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 5.907,
+          "rawBaseline": 6.68675,
+          "rawValue": 5.907121,
+          "delta": -0.779629,
+          "displayDelta": -0.78,
+          "components": {
+            "appearance": 1.6660000000000001,
+            "goals": 2.493727896521966,
+            "assists": 0.6499754761639884,
+            "cleanSheets": 0.37330480123158466,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.17405544389985056,
+            "bonus": 0.7001437186433984,
+            "cards": -0.15008612954072767,
+            "penalties": 0,
+            "total": 5.907121206920061
+          }
+        }
+      ]
+    },
+    {
+      "rank": 7,
+      "id": "price_prior_scale_075",
+      "label": "Price prior scale 0.75",
+      "changedParameter": "pricePriorScale",
+      "note": "Lower global MID xG/xA price-tier priors.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 0.75,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 3,
+      "netDirectionalSum": -0.078037,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.717,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.716821,
+          "delta": -0.093821,
+          "displayDelta": -0.094,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.741156547263447,
+            "assists": 0.916920323994249,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.716820807991129
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 4.945,
+          "rawBaseline": 5.018601,
+          "rawValue": 4.94502,
+          "delta": -0.073581,
+          "displayDelta": -0.074,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8851640018504774,
+            "assists": 0.48901689792220565,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 4.945019711552637
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.519,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.518834,
+          "delta": -0.057984,
+          "displayDelta": -0.058,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8782833972814434,
+            "assists": 0.5135604307845563,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.518834384101248
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.454,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.454276,
+          "delta": -0.094632,
+          "displayDelta": -0.095,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.65247980229797,
+            "assists": 0.9631114159733013,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.454275762580383
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.478,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.477959,
+          "delta": -0.208791,
+          "displayDelta": -0.209,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.683528490775833,
+            "assists": 0.6655341384448625,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.477958798457711
+          }
+        }
+      ]
+    },
+    {
+      "rank": 8,
+      "id": "minutes_shift_plus5",
+      "label": "Expected role minutes +5",
+      "changedParameter": "minutesShift",
+      "note": "Adds five minutes to every start and cameo role duration, within model bounds.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 5
+      },
+      "desiredSignCount": 2,
+      "netDirectionalSum": 0.302507,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.818,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.818364,
+          "delta": 0.007723,
+          "displayDelta": 0.008,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8075706942896244,
+            "assists": 0.950550973154288,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28845123103341463,
+            "bonus": 0.8434360340618444,
+            "cards": -0.17423471123697173,
+            "penalties": 0,
+            "total": 5.818364487892927
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.025,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.024938,
+          "delta": 0.006337,
+          "displayDelta": 0.006,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9357977491831846,
+            "assists": 0.5175066344610743,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894656879050554,
+            "bonus": 0.5344971706446782,
+            "cards": -0.1744001005626402,
+            "penalties": 0,
+            "total": 5.024938289107529
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.615,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.614842,
+          "delta": 0.038024,
+          "displayDelta": 0.038,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.932000157038909,
+            "assists": 0.5414979721428897,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.42003998351914,
+            "bonus": 0.7150799260302083,
+            "cards": -0.1748781887179237,
+            "penalties": 0,
+            "total": 5.614842118405622
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.744,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.743713,
+          "delta": 0.194805,
+          "displayDelta": 0.195,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8018095795975244,
+            "assists": 1.0506304632545809,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.17677668226759657,
+            "bonus": 0.5793637139338368,
+            "cards": -0.17461609197076922,
+            "penalties": 0,
+            "total": 5.743713282825324
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.847,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.846536,
+          "delta": 0.159786,
+          "displayDelta": 0.16,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.914017582164308,
+            "assists": 0.7595215051967465,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.22008061503374,
+            "bonus": 0.818145038604372,
+            "cards": -0.17497801527672222,
+            "penalties": 0,
+            "total": 6.846535661464999
+          }
+        }
+      ]
+    },
+    {
+      "rank": 9,
+      "id": "price_prior_scale_125",
+      "label": "Price prior scale 1.25",
+      "changedParameter": "pricePriorScale",
+      "note": "Higher global MID xG/xA price-tier priors.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1.25,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 2,
+      "netDirectionalSum": 0.078037,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.904,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.904463,
+          "delta": 0.093821,
+          "displayDelta": 0.094,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8658271588475115,
+            "assists": 0.9798917248107804,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.904462820391726
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.092,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.092182,
+          "delta": 0.073581,
+          "displayDelta": 0.074,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9776852490313233,
+            "assists": 0.5436581922817312,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.092182253093009
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.635,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.634802,
+          "delta": 0.057984,
+          "displayDelta": 0.058,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9487398578767483,
+            "assists": 0.5590716414550252,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.634802055367021
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.644,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.643541,
+          "delta": 0.094632,
+          "displayDelta": 0.095,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7714709089068192,
+            "assists": 1.0333853074359953,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.643540760651926
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.896,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.895541,
+          "delta": 0.208791,
+          "displayDelta": 0.209,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.9609727136525548,
+            "assists": 0.8056718271993654,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.895540710088935
+          }
+        }
+      ]
+    },
+    {
+      "rank": 10,
+      "id": "form_decay_100",
+      "label": "Player form decay 1.00",
+      "changedParameter": "formDecay",
+      "note": "Flat recency weights across the three current matches.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 1,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 2,
+      "netDirectionalSum": 0.027408,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.821,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.821384,
+          "delta": 0.010742,
+          "displayDelta": 0.011,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8151760769391605,
+            "assists": 0.9474639736788899,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.821383987351484
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.042,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.042105,
+          "delta": 0.023504,
+          "displayDelta": 0.024,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9534608017419666,
+            "assists": 0.5178057405944786,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.042105354116399
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.576,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.575516,
+          "delta": -0.001303,
+          "displayDelta": -0.001,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.912590934638112,
+            "assists": 0.5359340328765095,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.575515523549869
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.61,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.61032,
+          "delta": 0.061412,
+          "displayDelta": 0.061,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7588940883878195,
+            "assists": 1.0127412141136125,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.610319846810543
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.686,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.68569,
+          "delta": -0.00106,
+          "displayDelta": -0.001,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.819566866566417,
+            "assists": 0.7372270114393475,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.68569004724278
+          }
+        }
+      ]
+    },
+    {
+      "rank": 11,
+      "id": "form_decay_090",
+      "label": "Player form decay 0.90",
+      "changedParameter": "formDecay",
+      "note": "Faster recency fade.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.9,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 2,
+      "netDirectionalSum": -0.025397,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.799,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.798559,
+          "delta": -0.012083,
+          "displayDelta": -0.012,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7905588375081896,
+            "assists": 0.9492561551285457,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.798558929370169
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 4.994,
+          "rawBaseline": 5.018601,
+          "rawValue": 4.994377,
+          "delta": -0.024224,
+          "displayDelta": -0.024,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9086418659047355,
+            "assists": 0.5148961949713561,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 4.994376872656045
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.578,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.57848,
+          "delta": 0.001662,
+          "displayDelta": 0.002,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.91486804685909,
+            "assists": 0.5366217046097735,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.578480307504111
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.488,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.488064,
+          "delta": -0.060844,
+          "displayDelta": -0.061,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.66633638350217,
+            "assists": 0.9830435278764822,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.488064455687764
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.688,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.687552,
+          "delta": 0.000802,
+          "displayDelta": 0.001,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.824580683152626,
+            "assists": 0.734074872620054,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.687551725009695
+          }
+        }
+      ]
+    },
+    {
+      "rank": 12,
+      "id": "winsor_ratio_2",
+      "label": "Player winsor ratio 2.0",
+      "changedParameter": "winsorRatio",
+      "note": "Tighter short-run rate cap.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 2,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 1,
+      "netDirectionalSum": 0.069692,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.811,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.810642,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8034918530554793,
+            "assists": 0.9484060244025148,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.8106418141914284
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.019,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.018601,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9314246254409004,
+            "assists": 0.5163375451019684,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.018600982322822
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.37,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.36977,
+          "delta": -0.207048,
+          "displayDelta": -0.207,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8315054182744472,
+            "assists": 0.5363160361197905,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.5831951012818531,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.3697702370289075
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.417,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.417085,
+          "delta": -0.131823,
+          "displayDelta": -0.132,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7119753556023949,
+            "assists": 0.8664255475479454,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.417085447459452
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.681,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.681216,
+          "delta": -0.005533,
+          "displayDelta": -0.006,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8222506022141944,
+            "assists": 0.735602982822114,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7868469842566247,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.6812163692307385
+          }
+        }
+      ]
+    },
+    {
+      "rank": 13,
+      "id": "clean_sheet_elo_slope_002",
+      "label": "Clean sheet Elo slope 0.002",
+      "changedParameter": "cleanSheetEloSlope",
+      "note": "Lower Elo level slope in the global clean-sheet rates.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.002,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 1,
+      "netDirectionalSum": -0.170756,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.84,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.839723,
+          "delta": 0.029081,
+          "displayDelta": 0.029,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8034918530554793,
+            "assists": 0.9484060244025148,
+            "cleanSheets": 0.2436715720247069,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.8397231196254085
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.048,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.047682,
+          "delta": 0.029081,
+          "displayDelta": 0.029,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9314246254409004,
+            "assists": 0.5163375451019684,
+            "cleanSheets": 0.2436715720247069,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.047682287756802
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.575,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.574883,
+          "delta": -0.001935,
+          "displayDelta": -0.002,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9135116275790958,
+            "assists": 0.5363160361197905,
+            "cleanSheets": 0.2911669322687162,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.574882883610452
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.492,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.491644,
+          "delta": -0.057264,
+          "displayDelta": -0.057,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7119753556023949,
+            "assists": 0.9982483617046484,
+            "cleanSheets": 0.36448476275594616,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.491644088629548
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.629,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.629486,
+          "delta": -0.057264,
+          "displayDelta": -0.057,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8222506022141944,
+            "assists": 0.735602982822114,
+            "cleanSheets": 0.36448476275594616,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.629485581286716
+          }
+        }
+      ]
+    },
+    {
+      "rank": 14,
+      "id": "regression_prior_450",
+      "label": "Regression prior 450 minutes",
+      "changedParameter": "regressionPriorWeightMinutes",
+      "note": "Half the per-90 regression prior.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 450,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 1,
+      "netDirectionalSum": -0.240373,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.869,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.869149,
+          "delta": 0.058507,
+          "displayDelta": 0.059,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.785421754678093,
+            "assists": 0.9696491394826512,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.2737190064779703,
+            "bonus": 0.9113742686384201,
+            "cards": -0.173605859295524,
+            "penalties": 0,
+            "total": 5.8691485765723375
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.071,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.071488,
+          "delta": 0.052887,
+          "displayDelta": 0.053,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.982862932677869,
+            "assists": 0.5098130782321851,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.08112593247201438,
+            "bonus": 0.5692188122494721,
+            "cards": -0.1741226544927496,
+            "penalties": 0,
+            "total": 5.071488367729518
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.683,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.683135,
+          "delta": 0.106317,
+          "displayDelta": 0.106,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9658613092140578,
+            "assists": 0.5395361882261326,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41163355336730933,
+            "bonus": 0.7584363287229942,
+            "cards": -0.17343486358137206,
+            "penalties": 0,
+            "total": 5.6831347843415205
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.492,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.491911,
+          "delta": -0.056998,
+          "displayDelta": -0.057,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.6858930154513505,
+            "assists": 0.9730778740386539,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.12579644519156027,
+            "bonus": 0.5641009821075208,
+            "cards": -0.16670673067563907,
+            "penalties": 0,
+            "total": 5.491910521856
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.721,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.721085,
+          "delta": 0.034335,
+          "displayDelta": 0.034,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.885112285867561,
+            "assists": 0.6719419445766359,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.16903973929084265,
+            "bonus": 0.8552577097100784,
+            "cards": -0.17001548443436001,
+            "penalties": 0,
+            "total": 6.721085130753311
+          }
+        }
+      ]
+    },
+    {
+      "rank": 15,
+      "id": "fdr_divisor_200",
+      "label": "FDR divisor 200",
+      "changedParameter": "fdrDivisor",
+      "note": "Previous continuous divisor used before the 150 change.",
+      "config": {
+        "fdrDivisor": 200,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 1,
+      "netDirectionalSum": -0.327522,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.882,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.881856,
+          "delta": 0.071214,
+          "displayDelta": 0.071,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8392330064437794,
+            "assists": 0.9672012993216276,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8582100813933783,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.881855530287282
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.078,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.077679,
+          "delta": 0.059078,
+          "displayDelta": 0.059,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9697011187219042,
+            "assists": 0.526570194264404,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.543858301011429,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.077678727488075
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.574,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.573658,
+          "delta": -0.00316,
+          "displayDelta": -0.003,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9115967936710856,
+            "assists": 0.5357793494769867,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7075281483998213,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.57365797290071
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.463,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.463056,
+          "delta": -0.085852,
+          "displayDelta": -0.086,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.6669002926889909,
+            "assists": 0.971965210162898,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5359842434323243,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.463056364725842
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.572,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.572211,
+          "delta": -0.114538,
+          "displayDelta": -0.115,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.7479428015581306,
+            "assists": 0.7162350926118443,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7715175718993367,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.572211266007118
+          }
+        }
+      ]
+    },
+    {
+      "rank": 16,
+      "id": "form_prior_3",
+      "label": "Player form prior weight 3",
+      "changedParameter": "formPriorWeight",
+      "note": "Half the current six-match prior weight.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 3,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 1,
+      "netDirectionalSum": -0.408177,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.881,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.880701,
+          "delta": 0.07006,
+          "displayDelta": 0.07,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.0039281663998985,
+            "assists": 0.8894336341354919,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.23866742320265613,
+            "bonus": 0.8199068551563525,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.8807013683858385
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.233,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.232578,
+          "delta": 0.213977,
+          "displayDelta": 0.214,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.1108981931762503,
+            "assists": 0.49214941891410763,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.11704321649327881,
+            "bonus": 0.5838840753913219,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.2325777106705615
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.975,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.974717,
+          "delta": 0.397899,
+          "displayDelta": 0.398,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.184340888438038,
+            "assists": 0.5162024579103776,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.43123743209032844,
+            "bonus": 0.8351324514819332,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.974717123893646
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.905,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.904709,
+          "delta": 0.355801,
+          "displayDelta": 0.356,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9171082624625584,
+            "assists": 1.1740553284241164,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14041511479086738,
+            "bonus": 0.5299471472005887,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.904708830441645
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.605,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.604707,
+          "delta": -0.082042,
+          "displayDelta": -0.082,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.6841621046742166,
+            "assists": 0.6976972632048146,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.20367717711944675,
+            "bonus": 0.8792981766482383,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.604707297587641
+          }
+        }
+      ]
+    },
+    {
+      "rank": 17,
+      "id": "bonus_flat",
+      "label": "Bonus rate flat",
+      "changedParameter": "bonusMode",
+      "note": "Removes the fixture attack multiplier from bonus expectation.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "FLAT",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 1,
+      "netDirectionalSum": -0.450362,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.86,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.860405,
+          "delta": 0.049763,
+          "displayDelta": 0.05,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8034918530554793,
+            "assists": 0.9484060244025148,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8912959350022326,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.860404955588725
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.05,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.050136,
+          "delta": 0.031536,
+          "displayDelta": 0.032,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9314246254409004,
+            "assists": 0.5163375451019684,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5648252140334824,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.0501364980666885
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.481,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.481206,
+          "delta": -0.095613,
+          "displayDelta": -0.096,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9135116275790958,
+            "assists": 0.5363160361197905,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.6126241876638621,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.481205532715564
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.358,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.358424,
+          "delta": -0.190485,
+          "displayDelta": -0.19,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7119753556023949,
+            "assists": 0.9982483617046484,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.35999317954207966,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.358423515290753
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.413,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.412558,
+          "delta": -0.274192,
+          "displayDelta": -0.274,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8222506022141944,
+            "assists": 0.735602982822114,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.518188859437425,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.412558244411539
+          }
+        }
+      ]
+    },
+    {
+      "rank": 18,
+      "id": "fdr_divisor_300",
+      "label": "FDR divisor 300",
+      "changedParameter": "fdrDivisor",
+      "note": "Wider Elo gap; included as a bounded fixture sensitivity.",
+      "config": {
+        "fdrDivisor": 300,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 1,
+      "netDirectionalSum": -0.655043,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.953,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.953069,
+          "delta": 0.142427,
+          "displayDelta": 0.142,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.874974159832079,
+            "assists": 0.9859965742407404,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8748873691818212,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.953069246383139
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.137,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.136756,
+          "delta": 0.118155,
+          "displayDelta": 0.118,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.0079776120029074,
+            "assists": 0.5368028434268397,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5544269037332418,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.1367564726533255
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.57,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.570498,
+          "delta": -0.00632,
+          "displayDelta": -0.006,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9096819597630752,
+            "assists": 0.5352426628341826,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7068194221172114,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.570497726067285
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.377,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.377204,
+          "delta": -0.171704,
+          "displayDelta": -0.172,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.6218252297755873,
+            "assists": 0.9456820586211481,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.521490560997167,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.377204467835531
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.458,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.457673,
+          "delta": -0.229077,
+          "displayDelta": -0.229,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.673635000902067,
+            "assists": 0.6968672024015748,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7506547744994638,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.45767277774091
+          }
+        }
+      ]
+    },
+    {
+      "rank": 19,
+      "id": "attack_ratio_wide",
+      "label": "Attack ratio clamp [0.55, 1.75]",
+      "changedParameter": "attackRatioClamp",
+      "note": "Allows more of the global attack-versus-defence ratio through.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.55,
+          1.75
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 0,
+      "netDirectionalSum": 0,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.811,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.810642,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8034918530554793,
+            "assists": 0.9484060244025148,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.8106418141914284
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.019,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.018601,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9314246254409004,
+            "assists": 0.5163375451019684,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.018600982322822
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.577,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.576818,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9135116275790958,
+            "assists": 0.5363160361197905,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.576818219734133
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.549,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.548908,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7119753556023949,
+            "assists": 0.9982483617046484,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.548908261616155
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.687,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.68675,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8222506022141944,
+            "assists": 0.735602982822114,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.686749754273324
+          }
+        }
+      ]
+    },
+    {
+      "rank": 20,
+      "id": "baseline_continuous_150",
+      "label": "Baseline continuous FDR 150",
+      "changedParameter": "none",
+      "note": "Production baseline; no parameter change.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 0,
+      "netDirectionalSum": 0,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.811,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.810642,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8034918530554793,
+            "assists": 0.9484060244025148,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.8106418141914284
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.019,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.018601,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9314246254409004,
+            "assists": 0.5163375451019684,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.018600982322822
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.577,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.576818,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9135116275790958,
+            "assists": 0.5363160361197905,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.576818219734133
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.549,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.548908,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7119753556023949,
+            "assists": 0.9982483617046484,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.548908261616155
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.687,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.68675,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8222506022141944,
+            "assists": 0.735602982822114,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.686749754273324
+          }
+        }
+      ]
+    },
+    {
+      "rank": 21,
+      "id": "team_form_decay_080",
+      "label": "Team form decay 0.80",
+      "changedParameter": "teamFormDecay",
+      "note": "Faster recency fade for joint team xG form.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.8,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 0,
+      "netDirectionalSum": 0,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.811,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.810642,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8034918530554793,
+            "assists": 0.9484060244025148,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.8106418141914284
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.019,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.018601,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9314246254409004,
+            "assists": 0.5163375451019684,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.018600982322822
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.577,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.576818,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9135116275790958,
+            "assists": 0.5363160361197905,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.576818219734133
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.549,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.548908,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7119753556023949,
+            "assists": 0.9982483617046484,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.548908261616155
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.687,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.68675,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8222506022141944,
+            "assists": 0.735602982822114,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.686749754273324
+          }
+        }
+      ]
+    },
+    {
+      "rank": 22,
+      "id": "team_form_decay_100",
+      "label": "Team form decay 1.00",
+      "changedParameter": "teamFormDecay",
+      "note": "Flat weights for completed team fixtures.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 1,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 0,
+      "netDirectionalSum": 0,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.811,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.810642,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8034918530554793,
+            "assists": 0.9484060244025148,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.8106418141914284
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.019,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.018601,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9314246254409004,
+            "assists": 0.5163375451019684,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.018600982322822
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.577,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.576818,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9135116275790958,
+            "assists": 0.5363160361197905,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.576818219734133
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.549,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.548908,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7119753556023949,
+            "assists": 0.9982483617046484,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.548908261616155
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.687,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.68675,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8222506022141944,
+            "assists": 0.735602982822114,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.686749754273324
+          }
+        }
+      ]
+    },
+    {
+      "rank": 23,
+      "id": "winsor_ratio_5",
+      "label": "Player winsor ratio 5.0",
+      "changedParameter": "winsorRatio",
+      "note": "Looser short-run rate cap.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 5,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 0,
+      "netDirectionalSum": -0.171166,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.811,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.810642,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8034918530554793,
+            "assists": 0.9484060244025148,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.8106418141914284
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.019,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.018601,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9314246254409004,
+            "assists": 0.5163375451019684,
+            "cleanSheets": 0.21459026659072677,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.018600982322822
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.748,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.747984,
+          "delta": 0.171166,
+          "displayDelta": 0.171,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9135116275790958,
+            "assists": 0.5363160361197905,
+            "cleanSheets": 0.2931022683923979,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.8794027990388729,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.747984144090576
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.549,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.548908,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7119753556023949,
+            "assists": 0.9982483617046484,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.548908261616155
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.687,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.68675,
+          "delta": 0,
+          "displayDelta": 0,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8222506022141944,
+            "assists": 0.735602982822114,
+            "cleanSheets": 0.4217489357425536,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.686749754273324
+          }
+        }
+      ]
+    },
+    {
+      "rank": 24,
+      "id": "clean_sheet_table",
+      "label": "Clean sheet table path",
+      "changedParameter": "cleanSheetMode",
+      "note": "Uses the interpolated market table instead of Elo-levelled rates.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 12,
+        "cleanSheetMode": "TABLE",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 0,
+      "netDirectionalSum": -0.258462,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.848,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.847906,
+          "delta": 0.037264,
+          "displayDelta": 0.037,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8034918530554793,
+            "assists": 0.9484060244025148,
+            "cleanSheets": 0.251854375,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8415327936049353,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.8479059226007015
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.056,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.055865,
+          "delta": 0.037264,
+          "displayDelta": 0.037,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9314246254409004,
+            "assists": 0.5163375451019684,
+            "cleanSheets": 0.251854375,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5332896982896163,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.0558650907320954
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.607,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.607027,
+          "delta": 0.030208,
+          "displayDelta": 0.03,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9135116275790958,
+            "assists": 0.5363160361197905,
+            "cleanSheets": 0.323310625,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.7082368746824312,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.6070265763417355
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.472,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.472046,
+          "delta": -0.076863,
+          "displayDelta": -0.077,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.7119753556023949,
+            "assists": 0.9982483617046484,
+            "cleanSheets": 0.34488625,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5504779258674818,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.472045575873602
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.61,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.609887,
+          "delta": -0.076863,
+          "displayDelta": -0.077,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.8222506022141944,
+            "assists": 0.735602982822114,
+            "cleanSheets": 0.34488625,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7923803692992096,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.60988706853077
+          }
+        }
+      ]
+    },
+    {
+      "rank": 25,
+      "id": "team_prior_weight_6",
+      "label": "Team prior weight 6",
+      "changedParameter": "teamPriorWeight",
+      "note": "Half the current team prior weight.",
+      "config": {
+        "fdrDivisor": 150,
+        "formDecay": 0.95,
+        "formPriorWeight": 6,
+        "winsorRatio": 3,
+        "regressionPriorWeightMinutes": 900,
+        "pricePriorScale": 1,
+        "teamFormDecay": 0.9,
+        "teamPriorWeight": 6,
+        "cleanSheetMode": "ELO_RATES",
+        "cleanSheetEloSlope": 0.0034,
+        "cleanSheetSkewWeight": 0.6,
+        "bonusMode": "ATTACK",
+        "attackRatioClamp": [
+          0.7,
+          1.35
+        ],
+        "selectionCertainty": 1,
+        "minutesShift": 0
+      },
+      "desiredSignCount": 0,
+      "netDirectionalSum": -0.391467,
+      "targets": [
+        {
+          "id": 426,
+          "label": "Bruno Fernandes",
+          "baseline": 5.811,
+          "value": 5.864,
+          "rawBaseline": 5.810642,
+          "rawValue": 5.863864,
+          "delta": 0.053222,
+          "displayDelta": 0.053,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.8535892653322172,
+            "assists": 0.9551152185016829,
+            "cleanSheets": 0.21639933532414393,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.28844585363705866,
+            "bonus": 0.8361393551182477,
+            "cards": -0.17382497709928724,
+            "penalties": 0,
+            "total": 5.863864050814064
+          }
+        },
+        {
+          "id": 427,
+          "label": "Bryan Mbeumo",
+          "baseline": 5.019,
+          "value": 5.062,
+          "rawBaseline": 5.018601,
+          "rawValue": 5.061587,
+          "delta": 0.042986,
+          "displayDelta": 0.043,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.97300319014669,
+            "assists": 0.5193542940148351,
+            "cleanSheets": 0.21639933532414393,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.10894630679473469,
+            "bonus": 0.5298718098779382,
+            "cards": -0.17398745989512382,
+            "penalties": 0,
+            "total": 5.061587476263218
+          }
+        },
+        {
+          "id": 68,
+          "label": "Marcus Tavernier",
+          "baseline": 5.577,
+          "value": 5.653,
+          "rawBaseline": 5.576818,
+          "rawValue": 5.652576,
+          "delta": 0.075757,
+          "displayDelta": 0.076,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.9514965364870454,
+            "assists": 0.5518826548433703,
+            "cleanSheets": 0.2956986386575125,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.41094978737984844,
+            "bonus": 0.727846388046708,
+            "cards": -0.1732983744194305,
+            "penalties": 0,
+            "total": 5.652575630995054
+          }
+        },
+        {
+          "id": 40,
+          "label": "Morgan Rogers",
+          "baseline": 5.549,
+          "value": 5.455,
+          "rawBaseline": 5.548908,
+          "rawValue": 5.45487,
+          "delta": -0.094038,
+          "displayDelta": -0.094,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 1.671234911353395,
+            "assists": 0.9571385401517644,
+            "cleanSheets": 0.42617480636576377,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.14502364087811506,
+            "bonus": 0.5338642806706722,
+            "cards": -0.16656595817903985,
+            "penalties": 0,
+            "total": 5.454870221240672
+          }
+        },
+        {
+          "id": 154,
+          "label": "Cole Palmer",
+          "baseline": 6.687,
+          "value": 6.561,
+          "rawBaseline": 6.68675,
+          "rawValue": 6.561287,
+          "delta": -0.125463,
+          "displayDelta": -0.125,
+          "components": {
+            "appearance": 1.8880000000000001,
+            "goals": 2.7366807051559996,
+            "assists": 0.7151985033233454,
+            "cleanSheets": 0.42617480636576377,
+            "goalsConceded": 0,
+            "saves": 0,
+            "defensiveContribution": 0.19664322399688028,
+            "bonus": 0.7684660110700239,
+            "cards": -0.1698763598016289,
+            "penalties": 0,
+            "total": 6.561286890110385
+          }
+        }
+      ]
+    }
+  ]
+}

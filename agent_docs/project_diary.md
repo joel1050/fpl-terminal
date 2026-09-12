@@ -32,3 +32,15 @@ context, reason, outcome, and applicability of each lesson. Do not record
 session chronology, releases, commits, routine maintenance, or raw logs.
 
 ## Decisions and Lessons
+
+## 2026-09-10 — FDR sensitivity
+
+- Integer and continuous ClubElo FDR both use divisor 150 by user choice; a
+  more varied display or a preferred player ranking is not calibration evidence.
+- For live-input experiments, verify the parameterized evaluator against actual
+  production scoring components. Historical harness parity does not establish
+  parity on the continuous FDR path.
+- Inspect usable team-history coverage, not just file count: older GW1–2 xG
+  snapshots lack opponent/venue fields, while GW3 has them. The presence of
+  any complete fixture activates the joint fitter, so these inputs fit GW3
+  only rather than falling back to an aggregate blend of all three rounds.

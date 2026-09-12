@@ -219,6 +219,8 @@ export function enrichPlayersWithHistory(
   playerForm?: Record<number, readonly PlayerMatchRate[]>,
   startHistory?: Record<number, readonly StartObservation[]>,
   liveGameweek?: number,
+  /** Diagnostic knobs. Nothing in the app passes this; see ProjectPlayerOptions. */
+  projectionOverrides?: { savesPriorWeight?: number; savePercentageKappa?: number },
 ): EnrichedPlayers {
   const historicalById = new Map(
     (historical?.players ?? []).map((player) => [player.historicalPlayerId, player]),
@@ -260,6 +262,12 @@ export function enrichPlayersWithHistory(
   const cleanSheetStrengths = deriveCleanSheetStrengths(
     strengths,
     new Map(teams.flatMap((team) => (team.shortName ? [[team.id, team.shortName] as const] : []))),
+    undefined,
+    // How far the clean-sheet level has moved off Elo and onto this season's
+    // fit. Absent before a ball is kicked, which leaves the level on Elo.
+    inSeasonForm
+      ? new Map(Object.entries(inSeasonForm).map(([teamId, matches]) => [Number(teamId), matches.length]))
+      : undefined,
   );
   const projections = projectPlayers(selectedPlayers, {
     horizon: 5,
@@ -270,6 +278,26 @@ export function enrichPlayersWithHistory(
     cleanSheetStrengths,
     historicalTeamStrengths: historicalSourceStrengths(historical, mappingByCurrentId),
     playerForm,
+    ...projectionOverrides,
+    // The kappa prior needs a league rate on the same evidence the keepers'
+    // own percentages are built from: previous-season bundle totals. Absent
+    // (no shots anywhere) the rate is left unset and the coherent arm cannot
+    // run, rather than falling back to a hardcoded number.
+    ...(projectionOverrides?.savePercentageKappa !== undefined
+      ? (() => {
+        let saves = 0;
+        let shots = 0;
+        for (const player of historical?.players ?? []) {
+          // Goalkeeper rows only: outfield conceded totals would crush the rate.
+          if (player.position !== "GK") continue;
+          const s = player.stats.saves ?? 0;
+          const c = player.stats.goalsConceded ?? 0;
+          saves += s;
+          shots += s + c;
+        }
+        return shots > 0 ? { leagueSavePercentage: saves / shots } : {};
+      })()
+      : {}),
   });
   return {
     players: selectedPlayers.map((player, index) => ({

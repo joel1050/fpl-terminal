@@ -338,6 +338,21 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("region", { name: /^transfer suggestions$/i })).not.toContainText(/Rice\s*→\s*Saka/i);
   });
 
+  test("says so plainly when a projection carries no points breakdown", async ({ page }) => {
+    // The browser fixture projects a player total with no per-fixture detail,
+    // which is also what a blank gameweek and an older cached payload look
+    // like. The section has to explain itself rather than show a row of zeroes.
+    await chooseMode(page, /build from scratch/i);
+    await waitForMarket(page);
+    await page.getByRole("button", { name: /haaland/i }).first().click();
+
+    const breakdown = page.getByRole("dialog", { name: /haaland/i })
+      .getByRole("region", { name: /xp breakdown/i });
+    await expect(breakdown).toBeVisible();
+    await expect(breakdown).toContainText(/no match to break down in gameweek 1/i);
+    await expect(breakdown.locator(".breakdown-row")).toHaveCount(0);
+  });
+
   test("shows recent matches, dense season stats, previous years, and compact projections in player details", async ({ page }) => {
     await chooseMode(page, /build from scratch/i);
     await waitForMarket(page);

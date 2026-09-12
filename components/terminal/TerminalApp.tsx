@@ -12,6 +12,7 @@ import type { ChipKind } from "@/types/chips";
 import type { OptimizerResult } from "@/lib/optimizer/optimizer";
 import { projectPlayer, projectedPointsForGameweeks } from "@/lib/projections/projectPlayer";
 import { valuePerMillion } from "@/lib/projections/metrics";
+import { BREAKDOWN_COMPONENT_KEYS, gameweekBreakdown } from "@/lib/projections/breakdown";
 import { cacheBootstrapData, peekBootstrapData, readBootstrapData } from "@/lib/fpl/browserBootstrapCache";
 import {
   exportTerminalState,
@@ -215,6 +216,17 @@ function readField(record: UnknownRecord | null | undefined, ...keys: string[]):
   return undefined;
 }
 
+/**
+ * The packed points breakdown is positional, so a list of the wrong length has
+ * no safe reading: the values would be attributed to the wrong rows. Anything
+ * but a full list of numbers is dropped rather than padded.
+ */
+function normalizePackedComponents(value: unknown): number[] | undefined {
+  if (!Array.isArray(value) || value.length !== BREAKDOWN_COMPONENT_KEYS.length) return undefined;
+  const packed = value.map((entry) => numberOf(entry));
+  return packed.every((entry): entry is number => entry !== undefined) ? packed : undefined;
+}
+
 function normalizeProjectionFixtures(value: unknown): NonNullable<Player["projection"]>["fixtures"] {
   return arrayOf(value).flatMap((item) => {
     const projection = objectOf(item);
@@ -231,6 +243,7 @@ function normalizeProjectionFixtures(value: unknown): NonNullable<Player["projec
       expectedPoints,
       expectedMinutes,
       fixture: { gameweek, opponentTeamId, opponentShortName, isHome, difficulty: numberOf(readField(fixture, "difficulty")) },
+      packedComponents: normalizePackedComponents(readField(projection, "packedComponents", "packed_components")),
     }];
   });
 }
@@ -305,6 +318,11 @@ function normalizePlayer(value: unknown, index: number): TerminalPlayer | null {
       saves: numberOf(readField(currentRaw, "saves")),
       expectedGoals: numberOf(readField(currentRaw, "expectedGoals", "expected_goals", "xG")),
       expectedAssists: numberOf(readField(currentRaw, "expectedAssists", "expected_assists", "xA")),
+      // Quoted as evidence under the xP breakdown rows they feed.
+      expectedGoalsConceded: numberOf(readField(currentRaw, "expectedGoalsConceded", "expected_goals_conceded", "xGC")),
+      goalsConceded: numberOf(readField(currentRaw, "goalsConceded", "goals_conceded")),
+      defensiveContribution: numberOf(readField(currentRaw, "defensiveContribution", "defensive_contribution")),
+      yellowCards: numberOf(readField(currentRaw, "yellowCards", "yellow_cards")),
     },
     historical: historical as Player["historical"],
     selection,
@@ -1419,6 +1437,8 @@ function PlayerDetail({ player, gameweek, inSquad, locked, onClose, onAdd, onTog
           </div>
         </section>
 
+        <PointsBreakdown player={player} gameweek={gameweek} />
+
         <section className="profile-section" aria-labelledby="recent-matches-heading">
           <div className="profile-section-head"><div><h3 id="recent-matches-heading">Recent matches</h3><p>Latest FPL performances, newest first</p></div><span className="data-badge live">Live FPL</span></div>
           {profile.status === "LOADING" && <div className="profile-loading" role="status">Loading match history…</div>}
@@ -1473,6 +1493,39 @@ function PlayerDetail({ player, gameweek, inSquad, locked, onClose, onAdd, onTog
       </footer>
     </div>
   </dialog>;
+}
+
+/** Explains the gameweek xP shown in the hero, one row per way points are earned. */
+function PointsBreakdown({ player, gameweek }: { player: TerminalPlayer; gameweek: number }) {
+  const breakdown = gameweekBreakdown(player, gameweek);
+  const widest = breakdown ? Math.max(...breakdown.rows.map((row) => Math.abs(row.points)), 0.01) : 1;
+  return <section className="profile-section" aria-labelledby="points-breakdown-heading">
+    <div className="profile-section-head">
+      <div>
+        <h3 id="points-breakdown-heading">xP breakdown</h3>
+        <p>An average over every way the match could go, not a forecast of one scoreline. The figures under each row are the record behind it, not the sum that produced it — the model weighs them against position averages and the opponent.</p>
+      </div>
+      <span className="data-badge model">Model</span>
+    </div>
+    {!breakdown
+      ? <div className="profile-empty">No match to break down in gameweek {gameweek}.</div>
+      : <div className="breakdown-rows">
+        {breakdown.rows.map((row) => <div className="breakdown-row" key={row.key}>
+          <span className="breakdown-label">
+            <strong>{row.label}</strong>
+            {row.note && <small>{row.note}</small>}
+            <small className="breakdown-evidence">{row.metric && <em>{row.metric}</em>}{row.evidence.map((entry) => <span key={entry.label}><i>{entry.label}</i> {entry.value}</span>)}</small>
+          </span>
+          <span className="breakdown-bar" aria-hidden="true"><i className={row.deduction ? "minus" : ""} style={{ width: `${Math.min(100, (Math.abs(row.points) / widest) * 100)}%` }} /></span>
+          <strong className={`breakdown-points ${row.deduction ? "minus" : ""}`}>{row.points.toFixed(2)}</strong>
+        </div>)}
+        <div className="breakdown-row breakdown-total">
+          <span className="breakdown-label"><strong>Gameweek {gameweek} total</strong>{breakdown.matches > 1 && <small>Both matches of a double gameweek, added together</small>}</span>
+          <span className="breakdown-bar" aria-hidden="true" />
+          <strong className="breakdown-points">{breakdown.total.toFixed(2)}</strong>
+        </div>
+      </div>}
+  </section>;
 }
 
 function RecentMatchRow({ match, teamShortName }: { match: PlayerMatchPerformance; teamShortName: string }) {

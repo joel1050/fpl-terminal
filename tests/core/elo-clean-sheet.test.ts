@@ -129,3 +129,53 @@ describe("calculateFixtureAdjustment clean-sheet source", () => {
     expect(tabled.expectedGoalsAgainst).toBeCloseTo(-Math.log(tabled.cleanSheetProbability), 10);
   });
 });
+
+describe("deriveCleanSheetStrengths level blend", () => {
+  // A side whose attack and defence have both collapsed is a worse team, but
+  // its attack-minus-defence lean is unchanged, so a level taken purely from
+  // Elo cannot see it. These cover the handover to the in-season fit.
+  const collapsed = { ...strengths, 2: flat(2, 0.70, 0.74) };
+
+  it("ignores the fitted level when no matches have been played", () => {
+    const none = deriveCleanSheetStrengths(collapsed, names, snapshot, new Map());
+    const elo = deriveCleanSheetStrengths(collapsed, names, snapshot);
+    for (const id of [1, 2, 3]) {
+      expect(none[id].defence).toBeCloseTo(elo[id].defence, 12);
+      expect(none[id].attack).toBeCloseTo(elo[id].attack, 12);
+    }
+  });
+
+  it("marks a collapsed side down once its matches carry the level", () => {
+    const played = new Map([[1, 20], [2, 20], [3, 20]]);
+    const before = deriveCleanSheetStrengths(collapsed, names, snapshot);
+    const after = deriveCleanSheetStrengths(collapsed, names, snapshot, played);
+    // Everton's lean barely moves, so the shipped read barely moves either.
+    expect(Math.abs(after[2].defence - before[2].defence)).toBeGreaterThan(0.02);
+    expect(after[2].defence).toBeLessThan(before[2].defence);
+  });
+
+  it("keeps the lean untouched and moves only the level", () => {
+    const played = new Map([[1, 20], [2, 20], [3, 20]]);
+    const after = deriveCleanSheetStrengths(collapsed, names, snapshot, played);
+    const skew = (id: number) => Math.log(after[id].attack) - Math.log(after[id].defence);
+    expect(skew(2)).toBeCloseTo(CLEAN_SHEET_SKEW_WEIGHT * Math.log(0.70 / 0.74), 10);
+  });
+
+  it("holds the fitted level to the spread Elo already has", () => {
+    // Only true in the limit: at any finite match count the level is a blend of
+    // two differently ordered series, whose spread is legitimately narrower
+    // than either. The claim under test is about the stretch, so take the
+    // weight to 1.
+    const played = new Map([[1, 1e7], [2, 1e7], [3, 1e7]]);
+    const after = deriveCleanSheetStrengths(collapsed, names, snapshot, played);
+    const level = (id: number) => Math.log(after[id].attack) + Math.log(after[id].defence);
+    const eloOnly = deriveCleanSheetStrengths(collapsed, names, snapshot);
+    const eloLevel = (id: number) => Math.log(eloOnly[id].attack) + Math.log(eloOnly[id].defence);
+    const spread = (f: (id: number) => number) => {
+      const values = [1, 2, 3].map(f);
+      const m = values.reduce((s, v) => s + v, 0) / values.length;
+      return Math.sqrt(values.reduce((s, v) => s + (v - m) ** 2, 0) / values.length);
+    };
+    expect(spread(level)).toBeCloseTo(spread(eloLevel), 6);
+  });
+});

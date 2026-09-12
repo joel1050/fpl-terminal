@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { enrichBootstrapWithProjections, normalizeBootstrap } from "@/lib/fpl/normalize";
 import { FplBootstrapSchema } from "@/lib/fpl/schemas";
 import { projectPlayer } from "@/lib/projections/projectPlayer";
+import { BREAKDOWN_COMPONENT_KEYS, gameweekBreakdown } from "@/lib/projections/breakdown";
 import type { HistoricalBundle } from "@/lib/historical/types";
 
 function normalized() {
@@ -40,7 +41,7 @@ const HISTORICAL: HistoricalBundle = {
 };
 
 describe("bootstrap payload weight", () => {
-  it("drops the per-fixture component breakdown, which only the aggregation reads", async () => {
+  it("drops the named per-fixture breakdown, which costs ten times what the packed one does", async () => {
     const enriched = await enrichBootstrapWithProjections(normalized(), HISTORICAL);
     const projection = enriched.bootstrap.players[0]?.projection;
     const fixtures = projection?.fixtures ?? [];
@@ -49,6 +50,16 @@ describe("bootstrap payload weight", () => {
     for (const fixture of fixtures) {
       expect(fixture.components).toBeUndefined();
     }
+  });
+
+  it("ships the breakdown packed, so the profile can explain a gameweek", async () => {
+    const enriched = await enrichBootstrapWithProjections(normalized(), HISTORICAL);
+    const player = enriched.bootstrap.players[0]!;
+    const fixture = player.projection!.fixtures[0]!;
+
+    expect(fixture.packedComponents).toHaveLength(BREAKDOWN_COMPONENT_KEYS.length);
+    const breakdown = gameweekBreakdown(player, fixture.gameweek)!;
+    expect(breakdown.total).toBeCloseTo(fixture.expectedPoints, 1);
   });
 
   it("keeps everything the breakdown fed into", async () => {

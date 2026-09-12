@@ -42,7 +42,36 @@ export const CLEAN_SHEET_SKEW_WEIGHT = 0.6;
  */
 export const ELO_LEVEL_SLOPE = 0.0034;
 
+/**
+ * Matches-worth of Elo the in-season fitted level has to outweigh, on the
+ * `n / (n + k)` schedule the team-form blend already uses.
+ *
+ * Elo has to own the level early: promoted clubs have no top-flight goal
+ * history, and one match of xG says almost nothing about a goal scale. But it
+ * cannot own the level forever. A side whose attack and defence have both
+ * collapsed is a worse team with an unchanged lean, so a level frozen to Elo
+ * cannot see the collapse at all - and because defence enters as
+ * `exp((level - skew) / 2)`, a side whose attack falls faster than its defence
+ * is rated as defending *better*. Chelsea sat 5th of 20 on this rating at
+ * gameweek 4 of 2026/27 having conceded 7 in 3.
+ *
+ * Walk-forward over 2022/23-2025/26, handing the level over on this schedule is
+ * worth -0.00123 clean-sheet Brier pooled, interval [-0.00219, -0.00047], and
+ * the gain is in discrimination rather than calibration: AUC rises from 0.638
+ * to 0.648. The delta is negative in all four seasons and resolved on the two
+ * converged Elo seasons in both the gameweek 2-5 and 6-38 windows.
+ * `scripts/backtest/cs-level-source.ts`; 3, 6 and 20 all score within noise of
+ * 12, so this reuses the form blend's constant rather than fitting a second.
+ */
+export const CLEAN_SHEET_LEVEL_PRIOR_MATCHES = 12;
+
 const mean = (values: readonly number[]) => values.reduce((sum, v) => sum + v, 0) / values.length;
+
+const standardDeviation = (values: readonly number[]) => {
+  if (values.length < 2) return 0;
+  const centre = mean(values);
+  return Math.sqrt(mean(values.map((value) => (value - centre) ** 2)));
+};
 
 /** Venue-agnostic, matching `applyInSeasonForm`, which fits one rate per team. */
 const attackOf = (strength: TeamStrength) => (strength.attackHome + strength.attackAway) / 2;
@@ -69,8 +98,14 @@ export function deriveCleanSheetStrengths(
   strengths: Record<number, TeamStrength>,
   shortNameByTeamId: ReadonlyMap<number, string>,
   snapshot: ClubEloSnapshot = CLUB_ELO_SNAPSHOT,
+  /**
+   * Matches each team has played this season. Omit it and the level comes from
+   * Elo alone, which is what every caller did before the level blend and what
+   * the preseason case still wants.
+   */
+  matchesPlayed?: ReadonlyMap<number, number>,
 ): Record<number, CleanSheetStrength> {
-  const rated: { teamId: number; elo: number; skew: number }[] = [];
+  const rated: { teamId: number; elo: number; skew: number; fitLevel: number; played: number }[] = [];
   for (const [key, strength] of Object.entries(strengths)) {
     const teamId = Number(key);
     const attack = attackOf(strength);
@@ -78,19 +113,37 @@ export function deriveCleanSheetStrengths(
     if (!(attack > 0) || !(defence > 0)) continue;
     const elo = clubEloForFplShortName(shortNameByTeamId.get(teamId), snapshot)?.elo;
     if (elo === undefined) continue;
-    rated.push({ teamId, elo, skew: Math.log(attack) - Math.log(defence) });
+    rated.push({
+      teamId,
+      elo,
+      skew: Math.log(attack) - Math.log(defence),
+      fitLevel: Math.log(attack) + Math.log(defence),
+      played: matchesPlayed?.get(teamId) ?? 0,
+    });
   }
   if (rated.length === 0) return {};
 
   const meanElo = mean(rated.map((r) => r.elo));
+  const eloLevels = rated.map((r) => ELO_LEVEL_SLOPE * (r.elo - meanElo));
+  // The fitted level is centred and stretched onto the spread Elo already has.
+  // Without the stretch this would be a downgrade dressed as a swap: these
+  // strengths are normalized ratios whose level spread is 1.69x narrower than a
+  // direct Poisson fit on the same xG, so handing them the level raw would
+  // re-order the teams while quietly pulling them together.
+  const meanFitLevel = mean(rated.map((r) => r.fitLevel));
+  const fitSpread = standardDeviation(rated.map((r) => r.fitLevel));
+  const stretch = fitSpread > 1e-9 ? standardDeviation(eloLevels) / fitSpread : 0;
+
   const result: Record<number, CleanSheetStrength> = {};
-  for (const team of rated) {
-    const level = ELO_LEVEL_SLOPE * (team.elo - meanElo);
+  rated.forEach((team, index) => {
+    const fitWeight = team.played / (team.played + CLEAN_SHEET_LEVEL_PRIOR_MATCHES);
+    const fitted = (team.fitLevel - meanFitLevel) * stretch;
+    const level = (1 - fitWeight) * eloLevels[index] + fitWeight * fitted;
     const skew = CLEAN_SHEET_SKEW_WEIGHT * team.skew;
     result[team.teamId] = {
       attack: Math.exp((level + skew) / 2),
       defence: Math.exp((level - skew) / 2),
     };
-  }
+  });
   return result;
 }

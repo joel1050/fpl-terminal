@@ -178,6 +178,8 @@ export interface RateOverrides {
   currentWeightCap?: number;
   /** The anchor's weight for cards. Defaults to the shipped 40. */
   rareEventPriorWeight?: number;
+  /** The anchor's weight for saves, in matches. Defaults to the shipped 6. */
+  savesPriorWeight?: number;
 }
 
 export function playerRates(
@@ -199,7 +201,11 @@ export function playerRates(
   return {
     xg: regressedFormRate(player, "expectedGoals", "goals", priorXg ?? attackingPrior(player, "expectedGoals"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXg, fd, fw, cd, cc, ownTeam, strengths),
     xa: regressedFormRate(player, "expectedAssists", "assists", priorXa ?? attackingPrior(player, "expectedAssists"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXa, fd, fw, cd, cc, ownTeam, strengths),
-    saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves, cd, cc, form),
+    // The saves blend weight is its own arm: production gives the current
+    // season n/(n+6), the constant `form-weight.ts` selected on overall xP,
+    // which is dominated by outfield attacking returns. Defaulting to that
+    // constant keeps validate.ts's parity gate intact.
+    saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves, cd, cc, form, overrides.savesPriorWeight ?? PLAYER_FORM_PRIOR_WEIGHT_MATCHES),
     defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution, cd, cc, form),
     bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus, cd, cc, form),
     yellowCards: regressedPlayerRate(player, "yellowCards", undefined, PRIOR_YELLOW_CARDS[player.position], currentGameweek, RATE_CEILING.yellowCards, cd, cc, form, rw),
@@ -265,7 +271,11 @@ export function expectedPoints(
   const playedSixty = minutes >= 60;
 
   c.appearance += playedSixty ? 2 : 1;
-  c.goals += rates.xg * goalConversion[player.position] * minutesShare * a.attackMultiplier * GOAL_POINTS[player.position];
+  // Mirrors production: goalkeeper goals are killed outright (0 goals in the
+  // walk-forward corpus), assists are kept.
+  if (player.position !== "GK") {
+    c.goals += rates.xg * goalConversion[player.position] * minutesShare * a.attackMultiplier * GOAL_POINTS[player.position];
+  }
   c.assists += rates.xa * assistConversion[player.position] * minutesShare * a.attackMultiplier * 3;
   if (playedSixty) c.cleanSheets += a.cleanSheetProbability * CLEAN_SHEET_POINTS[player.position];
   if (player.position === "GK" || player.position === "DEF") {

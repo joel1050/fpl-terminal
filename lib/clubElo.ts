@@ -335,7 +335,7 @@ export function calculateContinuousClubEloFdr(
   // Venue-agnostic by design: see calculateClubEloFdr.
   void isHome;
   void homeFieldAdvantage;
-  return Math.min(5, Math.max(1, 3 + ((opponentElo as number) - (ownElo as number)) / 200));
+  return Math.min(5, Math.max(1, 3 + ((opponentElo as number) - (ownElo as number)) / 150));
 }
 
 export function continuousFixtureDifficultyFromClubElo(

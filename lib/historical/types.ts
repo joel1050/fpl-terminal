@@ -24,6 +24,12 @@ export interface HistoricalMatchStat {
   bps: number;
   yellowCards?: number;
   redCards?: number;
+  /** Goalkeeper saves in this match. Absent in corpora ingested before 2026-09. */
+  saves?: number;
+  /** Goals conceded in this match. Absent in corpora ingested before 2026-09. */
+  goalsConceded?: number;
+  /** Expected goals conceded in this match, for shot-quality diagnostics. */
+  expectedGoalsConceded?: number;
   wasHome?: boolean;
 }
 

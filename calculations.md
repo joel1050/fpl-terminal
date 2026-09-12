@@ -47,10 +47,10 @@ For a team with Elo `E_own` and opponent Elo `E_opp`, the normalized FDR is venu
 
 ```
 difficulty       = clamp(round(3 + (E_opp - E_own) / 150), 1, 5)
-exactDifficulty  = clamp(3 + (E_opp - E_own) / 200, 1, 5)
+exactDifficulty  = clamp(3 + (E_opp - E_own) / 150, 1, 5)
 ```
 
-The displayed integer rating uses 150 Elo per step to separate more midrange fixtures. The continuous projection input retains 200 Elo per step.
+Both ratings use 150 Elo per step. The displayed difficulty rounds to an integer, while the continuous projection input preserves the fractional value.
 
 Missing Elo values use `difficulty = 3`. The manual `npm run data:elo` refresh parses exact decimal rows embedded in ClubElo's `vegaJson`, merges the server-rendered full England ranking so clubs outside the chart's top 25 remain available, and writes the validated snapshot atomically. Where two exact rows share a code, the merge keeps the ranking's own rounded Elo rather than attach one club's rating to another's row.
 
@@ -464,7 +464,7 @@ Non-attacking per-position priors (`lib/projections/projectPlayer.ts`):
 | Bonus | 0.22 | 0.22 | 0.32 | 0.59 |
 
 Players with no usable historical goal/assist sample use price-tiered attacking priors (`priceTieredAttackingPrior` in `lib/projections/projectPlayer.ts`) rather than a single flat position prior, reflecting empirical FPL output by cost bracket:
-- **GK**: `0.01` xG, `0.02` xA across all prices.
+- **GK**: `0` xG, `0.02` xA across all prices (goals killed outright; assists kept).
 - **DEF**: `0.02` xG / `0.02` xA for budget CBs/fullbacks (≤ £4.5m); `0.05` xG / `0.06` xA for mid-tier (£5.0m–£5.5m); `0.08` xG / `0.10` xA for premium attacking wing-backs (≥ £6.0m).
 - **MID**: `0.05` xG / `0.06` xA for holding/defensive mids (≤ £4.5m); `0.09` xG / `0.08` xA for box-to-box (£5.0m); `0.16` xG / `0.14` xA for mid-tier wingers/creators (£5.5m–£6.5m); `0.25` xG / `0.20` xA for secondary talismans (£7.0m–£8.5m); `0.38` xG / `0.26` xA for premiums (≥ £9.0m).
 - **FWD**: `0.20` xG / `0.06` xA for bench enablers (≤ £5.0m); `0.36` xG / `0.09` xA for mid-table starters (£5.5m–£6.5m); `0.45` xG / `0.14` xA for upper-tier strikers (£7.0m–£8.5m); `0.70` xG / `0.16` xA for super-premiums (≥ £9.0m).
@@ -675,7 +675,9 @@ appearance += weight * (minutes >= 60 ? 2 : 1)      // 1 for playing, 2 for 60+ 
 goals += weight * xgRate * GOAL_CONVERSION[position] * minutesShare * attackMultiplier * GOAL_POINTS[position]
 ```
 
-`GOAL_POINTS = { GK: 10, DEF: 6, MID: 5, FWD: 4 }`.
+`GOAL_POINTS = { GK: 10, DEF: 6, MID: 5, FWD: 4 }`. Goalkeepers are the
+exception: their goals component is always zero (0 goals across ~9,700
+walk-forward GK rows in 2023/24-2025/26) and their xG prior is 0.
 
 ### 8.3 Assists
 

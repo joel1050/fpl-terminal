@@ -25,8 +25,7 @@ const dataDir = process.env.BACKTEST_DATA_DIR ?? path.join(root, "data/generated
 export const KNOWN_LEAKS = existsSync(path.join(dataDir, "previous-player-anchors.json"))
   ? []
   : [
-      "saves per-90: only a season aggregate exists per player, so it is reused at every gameweek",
-      "defensive contributions per-90: same, season aggregate only",
+      "defensive contributions per-90: season aggregate only",
       "card rates per-90: season aggregate only, so they are reused at every gameweek",
     ];
 const read = <T,>(file: string): T =>
@@ -51,6 +50,12 @@ export interface MatchRow {
   bps: number;
   yellowCards?: number;
   redCards?: number;
+  /** Absent in corpora ingested before per-match saves were carried. */
+  saves?: number;
+  /** Goals conceded in this match. Absent in corpora ingested before 2026-09. */
+  goalsConceded?: number;
+  /** Expected goals conceded in this match, for shot-quality diagnostics. */
+  expectedGoalsConceded?: number;
   wasHome: boolean;
 }
 
@@ -216,6 +221,18 @@ export function currentBefore(season: Season, playerId: number, gameweek: number
     cleanSheets: 0,
     bonus: sum((r) => r.bonus),
     minutes: sum((r) => r.minutes),
+    // Walk-forward saves, so the current-season blend is exercised rather than
+    // skipped. Undefined when the corpus predates per-match saves, which keeps
+    // the old behaviour of leaving `current.saves` unset.
+    saves: rows.some((row) => row.saves !== undefined)
+      ? sum((r) => r.saves ?? 0)
+      : undefined,
+    // Walk-forward goals conceded, pairing with saves for keeper save
+    // percentage. Same degradation rule: a corpus without the column leaves
+    // `current.goalsConceded` unset rather than reporting zeros.
+    goalsConceded: rows.some((row) => row.goalsConceded !== undefined)
+      ? sum((r) => r.goalsConceded ?? 0)
+      : undefined,
     expectedGoals: sum((r) => r.expectedGoals),
     expectedAssists: sum((r) => r.expectedAssists),
     matches: rows.length,
@@ -275,7 +292,11 @@ export function playerAt(
               expectedAssists: anchor.expectedAssists,
               // saves and defensive contributions have no per-match source, so
               // they stay on the season aggregate and are rescaled to match.
+              // goalsConceded has a per-match source in re-prepared corpora but
+              // follows the same rescale on this legacy path for consistency.
               saves: (seasonStats.saves ?? 0) * (anchor.minutes / seasonStats.minutes),
+              goalsConceded: (seasonStats.goalsConceded ?? 0)
+                * (anchor.minutes / seasonStats.minutes),
               defensiveContribution: (seasonStats.defensiveContribution ?? 0) * (anchor.minutes / seasonStats.minutes),
             }
           : {}),
@@ -300,6 +321,8 @@ export function playerAt(
       cleanSheets: current.cleanSheets,
       bonus: current.bonus,
       minutes: current.minutes,
+      saves: current.saves,
+      goalsConceded: current.goalsConceded,
       expectedGoals: current.expectedGoals,
       expectedAssists: current.expectedAssists,
     },

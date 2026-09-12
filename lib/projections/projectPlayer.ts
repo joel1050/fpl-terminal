@@ -24,6 +24,25 @@ import {
 export type ProjectPlayerOptions = Partial<ProjectionOptions> & {
   expectedMinutesOptions?: ExpectedMinutesOptions;
   fixtureHorizon?: number;
+  /**
+   * The anchor's weight for goalkeeper saves, in matches. Defaults to the
+   * shipped `PLAYER_FORM_PRIOR_WEIGHT_MATCHES`, which
+   * `scripts/backtest/results/saves-weight.md` measured as already optimal over
+   * 3,002 keeper appearances. Exposed so a sweep can be run against live data
+   * without editing the constant; nothing in the app sets it.
+   */
+  savesPriorWeight?: number;
+  /**
+   * Coherent-saves experiment: Beta-binomial prior weight in equivalent shots
+   * faced. When set (with `leagueSavePercentage`), a goalkeeper's saves come
+   * from the team model's lambda times their save percentage instead of the
+   * regressed per-90 rate times `savesEnvironment`. Undefined reproduces
+   * shipped behaviour exactly; nothing in the app sets it. Measured in
+   * `scripts/backtest/results/coherent-saves.md` and rejected.
+   */
+  savePercentageKappa?: number;
+  /** League save percentage feeding the kappa prior; required when kappa is set. */
+  leagueSavePercentage?: number;
 };
 
 export const UNKNOWN_DEFENDER_XG_PRIOR = 0.02;
@@ -37,7 +56,10 @@ export interface AttackingPrior {
 /**
  * Baseline xG and xA per 90 priors stratified by position and price tier
  * (in tenths of a million, e.g. 45 = £4.5m). Grounded in empirical FPL data:
- * - GK: Negligible attacking return across all prices (0.01 xG / 0.02 xA).
+ * - GK: Assists only (0 xG / 0.02 xA). Goalkeeper goals never occurred
+ *   across 2023/24-2025/26 walk-forward (~9,700 GK rows, 0 goals), while the
+ *   0.01 prior predicted ~2-3 per season, so the goals component is killed
+ *   outright (see fixtureComponents) rather than merely shrunk.
  * - DEF:
  *   - <= £4.5m: Budget CBs and low-threat fullbacks (0.02 xG / 0.02 xA)
  *   - £5.0m - £5.5m: Mid-tier fullbacks and top-six CBs (0.05 xG / 0.06 xA)
@@ -61,7 +83,7 @@ export function priceTieredAttackingPrior(
   const price = priceTenths ?? 50;
   switch (position) {
     case "GK":
-      return { xg: 0.01, xa: 0.02 };
+      return { xg: 0, xa: 0.02 };
     case "DEF":
       if (price <= 45) return { xg: 0.02, xa: 0.02 };
       if (price <= 55) return { xg: 0.05, xa: 0.06 };
@@ -80,6 +102,31 @@ export function priceTieredAttackingPrior(
   }
 }
 const GOAL_POINTS: Record<Position, number> = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
+/** Numerical guard only: a keeper who has saved everything would imply p = 1. */
+export const MAX_KEEPER_SAVE_PERCENTAGE = 0.95;
+
+/**
+ * A goalkeeper's Beta-binomial save percentage from previous-season and
+ * current-season shots faced, with `kappa` equivalent shots of league rate.
+ * `Infinity` returns the league rate for every keeper. Mirrors the arms in
+ * `scripts/backtest/coherent-saves.ts`.
+ */
+export function keeperSavePercentage(
+  player: Player,
+  kappa: number,
+  leagueRate: number,
+): number {
+  if (!Number.isFinite(kappa)) return leagueRate;
+  const prevSaves = player.historical?.saves ?? 0;
+  const prevConceded = player.historical?.goalsConceded ?? 0;
+  const currSaves = player.current.saves ?? 0;
+  const currConceded = player.current.goalsConceded ?? 0;
+  const shots = prevSaves + prevConceded + currSaves + currConceded;
+  const p = shots + kappa > 0
+    ? (prevSaves + currSaves + kappa * leagueRate) / (shots + kappa)
+    : leagueRate;
+  return clamp(p, 0, MAX_KEEPER_SAVE_PERCENTAGE);
+}
 // Pool averages per 90 from 2025/26, used when a player has no usable sample.
 const PRIOR_DEFENSIVE_CONTRIBUTION: Record<Position, number> = { GK: 0, DEF: 7.7, MID: 8.6, FWD: 4.7 };
 const PRIOR_SAVES: Record<Position, number> = { GK: 2.8, DEF: 0, MID: 0, FWD: 0 };
@@ -88,7 +135,8 @@ const PRIOR_BONUS: Record<Position, number> = { GK: 0.22, DEF: 0.22, MID: 0.32, 
 // capped defensive contributions and goalkeeper saves, which run far higher.
 const RATE_CEILING = { goalInvolvement: 3, saves: 10, defensiveContribution: 30, bonus: 3, yellowCards: 0.8, redCards: 0.1 } as const;
 const CLEAN_SHEET_POINTS: Record<Position, number> = { GK: 4, DEF: 4, MID: 1, FWD: 0 };
-const DEFENSIVE_CONTRIBUTION_THRESHOLD: Record<Position, number> = { GK: 0, DEF: 10, MID: 12, FWD: 12 };
+/** Defensive actions that earn the 2 points. Exported so the xP breakdown quotes the same figure. */
+export const DEFENSIVE_CONTRIBUTION_THRESHOLD: Record<Position, number> = { GK: 0, DEF: 10, MID: 12, FWD: 12 };
 const DEFENSIVE_CONTRIBUTION_POINTS = 2;
 const SAVES_PER_POINT = 3;
 /**
@@ -493,7 +541,11 @@ function fixtureComponents(
     const weight = scenario.probability;
     const playedSixty = scenario.minutes >= 60;
     components.appearance += weight * (playedSixty ? 2 : 1);
-    components.goals += weight * rates.xg * GOAL_CONVERSION[player.position] * minutesShare * adjustment.attackMultiplier * GOAL_POINTS[player.position];
+    // Goalkeeper goals never occurred in the walk-forward corpus, so this
+    // stays zero even if a rate slips through (e.g. an explicit override).
+    if (player.position !== "GK") {
+      components.goals += weight * rates.xg * GOAL_CONVERSION[player.position] * minutesShare * adjustment.attackMultiplier * GOAL_POINTS[player.position];
+    }
     components.assists += weight * rates.xa * ASSIST_CONVERSION[player.position] * minutesShare * adjustment.attackMultiplier * 3;
     if (playedSixty) {
       components.cleanSheets += weight * adjustment.cleanSheetProbability * CLEAN_SHEET_POINTS[player.position];
@@ -507,16 +559,29 @@ function fixtureComponents(
       );
     }
     if (player.position === "GK") {
-      // Save volume follows the opponent's threat, not the team's own attack.
-      const savesEnvironment = clamp(
-        adjustment.expectedGoalsAgainst / LEAGUE_AVERAGE_GOALS_AGAINST,
-        0.7,
-        1.4,
-      );
-      components.saves += weight * expectedFloorDivision(
-        rates.saves * minutesShare * savesEnvironment,
-        SAVES_PER_POINT,
-      );
+      const kappa = options.savePercentageKappa;
+      const leagueRate = options.leagueSavePercentage;
+      if (kappa !== undefined && leagueRate !== undefined) {
+        // Coherent arm: volume comes from the team model's lambda and skill
+        // from the keeper's save percentage, so both halves of shots faced
+        // descend from one number. savesEnvironment has nothing left to do.
+        const p = keeperSavePercentage(player, kappa, leagueRate);
+        components.saves += weight * expectedFloorDivision(
+          (adjustment.expectedGoalsAgainst * p) / (1 - p) * minutesShare,
+          SAVES_PER_POINT,
+        );
+      } else {
+        // Save volume follows the opponent's threat, not the team's own attack.
+        const savesEnvironment = clamp(
+          adjustment.expectedGoalsAgainst / LEAGUE_AVERAGE_GOALS_AGAINST,
+          0.7,
+          1.4,
+        );
+        components.saves += weight * expectedFloorDivision(
+          rates.saves * minutesShare * savesEnvironment,
+          SAVES_PER_POINT,
+        );
+      }
     }
     const threshold = DEFENSIVE_CONTRIBUTION_THRESHOLD[player.position];
     if (threshold > 0) {
@@ -602,7 +667,7 @@ export function projectPlayer(
   const rates = {
     xg: regressedFormRate(player, "expectedGoals", "goals", attackingPrior(player, options, "expectedGoals"), form, currentGameweek, ownTeam, options.teamStrengths, historicalTeam),
     xa: regressedFormRate(player, "expectedAssists", "assists", attackingPrior(player, options, "expectedAssists"), form, currentGameweek, ownTeam, options.teamStrengths, historicalTeam),
-    saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves, form),
+    saves: regressedPlayerRate(player, "saves", undefined, PRIOR_SAVES[player.position], currentGameweek, RATE_CEILING.saves, form, options.savesPriorWeight ?? PLAYER_FORM_PRIOR_WEIGHT_MATCHES),
     defensiveContribution: regressedPlayerRate(player, "defensiveContribution", undefined, PRIOR_DEFENSIVE_CONTRIBUTION[player.position], currentGameweek, RATE_CEILING.defensiveContribution, form),
     bonus: regressedPlayerRate(player, "bonus", undefined, PRIOR_BONUS[player.position], currentGameweek, RATE_CEILING.bonus, form),
     // Cards are rare enough that the previous season stays worth four times a

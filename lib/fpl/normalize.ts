@@ -13,6 +13,7 @@ import {
   type PlayerEnrichmentMetadata,
 } from "@/lib/historical/enrichPlayers";
 import { loadInSeasonPlayerRates, loadInSeasonStarts, loadInSeasonTeamXG } from "@/lib/historical/loadInSeasonForm";
+import { packComponents } from "@/lib/projections/breakdown";
 import { rotowireSnapshotAge } from "@/lib/availability/refreshLineups";
 import { historicalBundleGeneration } from "@/lib/historical/load";
 import type { FreshnessMetadata } from "./cache";
@@ -419,19 +420,19 @@ export interface EnrichProjectionsOptions {
 type EnrichedBootstrap = { bootstrap: NormalizedBootstrap; metadata: BootstrapProjectionMetadata };
 
 /**
- * Drops the per-fixture expected-points breakdown.
+ * Packs the per-fixture expected-points breakdown for the wire.
  *
- * It is an intermediate: `projectPlayer` sums it into `projection.components`
- * and nothing reads it again — not the pitch, not the optimizer, not the weekly
- * lineup. Shipped, it is 6.7MB of a 14.8MB bootstrap payload, so every browser
- * downloads and parses it to ignore it. `projectPlayer` still returns it, which
- * is what the backtests and projection tests read.
+ * The player profile explains a single gameweek by these numbers, so they have
+ * to reach the browser; as named keys and full-precision floats they were 6.7MB
+ * of a 14.8MB payload. Nine rounded numbers in a fixed order carry the same
+ * meaning for about a tenth of the bytes. `projectPlayer` still returns the
+ * named object, which is what the backtests and projection tests read.
  *
  * The fields are listed rather than spread so the wire shape is stated in one
  * place; a new required field on FixtureProjection will fail to compile here,
  * which is the right moment to decide whether the client needs it.
  */
-function withoutFixtureComponents(players: readonly Player[]): Player[] {
+function withPackedFixtureComponents(players: readonly Player[]): Player[] {
   return players.map((player) => {
     const projection = player.projection;
     if (!projection?.fixtures.length) return player;
@@ -444,6 +445,7 @@ function withoutFixtureComponents(players: readonly Player[]): Player[] {
           expectedPoints: entry.expectedPoints,
           expectedMinutes: entry.expectedMinutes,
           fixture: entry.fixture,
+          ...(entry.components ? { packedComponents: packComponents(entry.components) } : {}),
         })),
       },
     };
@@ -522,7 +524,7 @@ export async function enrichBootstrapWithProjections(
     bootstrap.liveGameweek,
   );
   const result: EnrichedBootstrap = {
-    bootstrap: { ...bootstrap, players: withoutFixtureComponents(enriched.players) },
+    bootstrap: { ...bootstrap, players: withPackedFixtureComponents(enriched.players) },
     metadata: { ...enriched.metadata, lineups, clubElo },
   };
   if (key) projectionCache = { key, result };

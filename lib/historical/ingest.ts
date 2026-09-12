@@ -80,6 +80,8 @@ interface PlayerAccumulator {
   assists: number;
   cleanSheets: number;
   saves: number;
+  goalsConceded: number;
+  expectedGoalsConceded: number;
   bonus: number;
   bps: number;
   influence: number;
@@ -120,6 +122,8 @@ export function aggregateHistoricalPlayers(
       assists: 0,
       cleanSheets: 0,
       saves: 0,
+      goalsConceded: 0,
+      expectedGoalsConceded: 0,
       bonus: 0,
       bps: 0,
       influence: 0,
@@ -138,6 +142,8 @@ export function aggregateHistoricalPlayers(
     current.assists += requiredNumber(row.assists);
     current.cleanSheets += requiredNumber(row.clean_sheets);
     current.saves += requiredNumber(row.saves);
+    current.goalsConceded += requiredNumber(row.goals_conceded);
+    current.expectedGoalsConceded += number(row.expected_goals_conceded) ?? 0;
     current.bonus += requiredNumber(row.bonus);
     current.bps += requiredNumber(row.bps);
     current.influence += requiredNumber(row.influence);
@@ -168,6 +174,8 @@ export function aggregateHistoricalPlayers(
         assists: value.assists,
         cleanSheets: value.cleanSheets,
         saves: value.saves,
+        goalsConceded: value.goalsConceded,
+        expectedGoalsConceded: value.expectedGoalsConceded,
         bonus: value.bonus,
         bps: value.bps,
         influence: value.influence,
@@ -206,6 +214,9 @@ export function normalizeHistoricalMatchStats(mergedText: string): HistoricalMat
         yellowCards: requiredNumber(row.yellow_cards),
         redCards: requiredNumber(row.red_cards),
         bps: requiredNumber(row.bps),
+        saves: requiredNumber(row.saves),
+        goalsConceded: number(row.goals_conceded),
+        expectedGoalsConceded: number(row.expected_goals_conceded),
         wasHome: row.was_home === "True" || row.was_home === "true",
       };
     })

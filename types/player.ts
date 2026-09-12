@@ -103,6 +103,9 @@ export interface HistoricalStats {
   assists?: number;
   cleanSheets?: number;
   saves?: number;
+  /** Goals conceded over the season; pairs with saves for keeper save percentage. */
+  goalsConceded?: number;
+  expectedGoalsConceded?: number;
   bonus?: number;
   bps?: number;
   influence?: number;
@@ -145,6 +148,12 @@ export interface FixtureProjection {
    * before the bootstrap response, so client code never sees it.
    */
   components?: import("./projection").ProjectionComponents;
+  /**
+   * The same breakdown as `components`, packed for the wire: one rounded number
+   * per key of `BREAKDOWN_COMPONENT_KEYS`, in that order. The bootstrap ships
+   * this instead of `components`, which costs roughly ten times as much.
+   */
+  packedComponents?: readonly number[];
 }
 
 export interface PlayerProjection {

@@ -1,45 +1,45 @@
-<!-- codex-workflow-bootstrap-template -->
 # Latest Session Work
 
-Deployment `backtest_remeasurement_20260909` completed on 2026-09-09.
+Deployment `fdr_sensitivity_20260910` completed on 2026-09-10.
 
-## Detailed Current State
+## Implemented
 
-The backtest harness reproduces `projectPlayer()` to 0.0e+0 on the legacy
-2025/26 corpus and the prepared 2022/23, 2023/24, 2024/25, and 2025/26 corpora.
-The new synthetic suite covers four position/evidence combinations and an easy
-versus hard fixture bonus assertion. Negative controls proved that reverting the
-historical xG fix breaks DEF/MID goal parity and reverting bonus fixture scaling
-breaks parity and bonus direction.
+Continuous ClubElo FDR now uses divisor 150, matching the integer display.
+`tests/data/club-elo.test.ts` covers fractional output, the wrapper path,
+clamps, and missing-input fallback. `calculations.md` states the shared scale.
 
-The authoritative numerical conclusions and corpus labels are in
-`scripts/backtest/README.md`. No production constants changed. The main flips are
-that forward fixture swing is too steep, not too flat, in all three full seasons;
-defensive-contribution dispersion has no stable cross-season optimum; and Elo is
-unresolved when tested at shipped scale even though Elo plus a widened strength
-level is rejected.
+## Sensitivity Handoff
 
-## Session Changes
+`scripts/experiments/fdr-sensitivity-gw4.ts` produces the companion Markdown
+report and JSON evidence for 24 isolated global variants plus baseline.
+The report is the canonical ranked result; the JSON holds raw components,
+configuration, coverage, fetch times, and 19 input hashes. Replay with
+`npx tsx scripts/experiments/fdr-sensitivity-gw4.ts`. Inputs are held fixed
+within a run; later replay can differ if the saved paths are refreshed.
 
-- Added `tests/core/backtest-parity.test.ts`.
-- Updated seven priority backtest scripts to supply team strengths to
-  `playerRates`, corrected the `run.ts` old-clamp comparison, and made shipped
-  labels match current constants and behavior.
-- Rewrote the top of `scripts/backtest/README.md` as the authoritative
-  remeasurement report while retaining older findings as explicitly unverified
-  history.
+The evaluator exactly matches production components and fixture adjustments
+for the five GW4 targets at continuous divisor 150. The independent verifier
+replayed it and checked deltas, desired-sign counts, ranking, and input hashes.
+The only 5/5 directional match was team prior weight 12→24; no hypothetical
+variant was applied to production. These are sensitivities, not accuracy tests.
+The team-history coverage limitation is recorded in the report and diary.
 
 ## Verification
 
-- `npm test`: 74 files, 600 tests passed.
-- `npm run typecheck`: passed.
-- Focused ESLint on every changed TypeScript file: passed.
-- `npm run lint`: blocked by 812 errors in pre-existing generated files under
-  `.claude/worktrees/**/.next`; no deployment file appears in the failure set.
-- `git diff --check`: passed.
+- Full unit/integration suite: 74 files, 601 tests passed.
+- Typechecking and production build passed; build retains five dynamic-file
+  tracing warnings outside this change.
+- Focused production/test ESLint passed. The last independent artifact lint
+  reported four unused-symbol warnings and zero errors. The experiment worker
+  hit a usage limit during final cleanup; those warnings are nonblocking.
+- Full lint retains 812 errors and 12,522 warnings from generated nested
+  worktree output and unrelated existing warnings.
+- Browser suite: 48 passed, two transfer-UI tests failed (EXACT label and
+  dismiss-suggestion behavior); no unrelated repair was made.
 
-## Verification
+## Continuation
 
-## Pending Work and Blockers
-
-## Next Entry Point
+User can choose a candidate for further outcome validation or explicitly
+request implementation. Keep the 2026-09-09 historical remeasurement in
+`scripts/backtest/README.md` as the accuracy evidence, separate from this
+five-player preference ranking. No commit was requested.

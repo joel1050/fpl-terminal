@@ -11,6 +11,8 @@ export const HistoricalStatsSchema = z.object({
   assists: nullableNumber,
   cleanSheets: nullableNumber,
   saves: nullableNumber,
+  goalsConceded: nullableNumber,
+  expectedGoalsConceded: nullableNumber,
   bonus: nullableNumber,
   bps: nullableNumber,
   influence: nullableNumber,
@@ -45,6 +47,9 @@ export const HistoricalMatchStatSchema = z.object({
   expectedAssists: z.number().optional(),
   bonus: z.number(),
   bps: z.number(),
+  saves: z.number().optional(),
+  goalsConceded: z.number().optional(),
+  expectedGoalsConceded: z.number().optional(),
   wasHome: z.boolean().optional(),
 });
 
