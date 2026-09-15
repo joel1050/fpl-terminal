@@ -1,455 +1,9 @@
 {
-  "sourceFetchedAt": "2026-09-14T16:08:11.570Z",
-  "mappedAt": "2026-09-14T16:08:11.622Z",
+  "sourceFetchedAt": "2026-09-15T16:04:45.199Z",
+  "mappedAt": "2026-09-15T16:04:45.246Z",
   "mappings": [
     {
       "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 34122,
-      "name": "James Trafford",
-      "position": "GK",
-      "profileUrl": "https://www.rotowire.com/soccer/player/james-trafford-34122",
-      "source": "STARTER",
-      "playerId": 385,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 43917,
-      "name": "Tarik Muharemovic",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/tarik-muharemovic-43917",
-      "source": "STARTER",
-      "playerId": 334,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 29155,
-      "name": "James Justin",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/james-justin-29155",
-      "source": "STARTER",
-      "playerId": 332,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 19409,
-      "name": "Nico Elvedi",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/nico-elvedi-19409",
-      "source": "STARTER",
-      "playerId": 598,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 35627,
-      "name": "Gabriel Gudmundsson",
-      "position": "ML",
-      "profileUrl": "https://www.rotowire.com/soccer/player/gabriel-gudmundsson-35627",
-      "source": "STARTER",
-      "playerId": 331,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 25447,
-      "name": "Ethan Ampadu",
-      "position": "MC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/ethan-ampadu-25447",
-      "source": "STARTER",
-      "playerId": 338,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 31344,
-      "name": "Jayden Bogle",
-      "position": "MR",
-      "profileUrl": "https://www.rotowire.com/soccer/player/jayden-bogle-31344",
-      "source": "STARTER",
-      "playerId": 330,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 30434,
-      "name": "Noah Okafor",
-      "position": "AMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/noah-okafor-30434",
-      "source": "STARTER",
-      "playerId": 336,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 35015,
-      "name": "Anton Stach",
-      "position": "AMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/anton-stach-35015",
-      "source": "STARTER",
-      "playerId": 335,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 23240,
-      "name": "Dominic Calvert-Lewin",
-      "position": "FW",
-      "profileUrl": "https://www.rotowire.com/soccer/player/dominic-calvert-lewin-23240",
-      "source": "STARTER",
-      "playerId": 346,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 36154,
-      "name": "Mateo Joseph",
-      "position": "F",
-      "profileUrl": "https://www.rotowire.com/soccer/player/mateo-joseph-36154",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 349,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "NEW",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 31396,
-      "name": "Joe Rodon",
-      "position": "D",
-      "profileUrl": "https://www.rotowire.com/soccer/player/joe-rodon-31396",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 329,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 33659,
-      "name": "Lukas Hornicek",
-      "position": "GK",
-      "profileUrl": "https://www.rotowire.com/soccer/player/lukas-hornicek-33659",
-      "source": "STARTER",
-      "playerId": 567,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 36145,
-      "name": "Lewis Hall",
-      "position": "DL",
-      "profileUrl": "https://www.rotowire.com/soccer/player/lewis-hall-36145",
-      "source": "STARTER",
-      "playerId": 449,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 31009,
-      "name": "Malick Thiaw",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/malick-thiaw-31009",
-      "source": "STARTER",
-      "playerId": 445,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 26857,
-      "name": "Sven Botman",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/sven-botman-26857",
-      "source": "STARTER",
-      "playerId": 447,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 34683,
-      "name": "Valentino Livramento",
-      "position": "DR",
-      "profileUrl": "https://www.rotowire.com/soccer/player/valentino-livramento-34683",
-      "source": "STARTER",
-      "playerId": 450,
-      "method": "CONFIRMED_MAPPING"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 38798,
-      "name": "Lewis Miley",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/lewis-miley-38798",
-      "source": "STARTER",
-      "playerId": 459,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 25787,
-      "name": "Harvey Barnes",
-      "position": "AML",
-      "profileUrl": "https://www.rotowire.com/soccer/player/harvey-barnes-25787",
-      "source": "STARTER",
-      "playerId": 453,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 26488,
-      "name": "Joe Willock",
-      "position": "AMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/joe-willock-26488",
-      "source": "STARTER",
-      "playerId": 460,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 34595,
-      "name": "Anthony Elanga",
-      "position": "AMR",
-      "profileUrl": "https://www.rotowire.com/soccer/player/anthony-elanga-34595",
-      "source": "STARTER",
-      "playerId": 454,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 21911,
-      "name": "Yoane Wissa",
-      "position": "FW",
-      "profileUrl": "https://www.rotowire.com/soccer/player/yoane-wissa-21911",
-      "source": "STARTER",
-      "playerId": 464,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 33528,
-      "name": "Amar Dedic",
-      "position": "D",
-      "profileUrl": "https://www.rotowire.com/soccer/player/amar-dedic-33528",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 593,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 43477,
-      "name": "Ewen Jaouen",
-      "position": "G",
-      "profileUrl": "https://www.rotowire.com/soccer/player/ewen-jaouen-43477",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 444,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 17416,
-      "name": "Dan Burn",
-      "position": "D",
-      "profileUrl": "https://www.rotowire.com/soccer/player/dan-burn-17416",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 448,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 19626,
-      "name": "Joelinton",
-      "position": "F/M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/joelinton-19626",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 458,
-      "method": "UNIQUE_FALLBACK"
-    },
-    {
-      "fixtureIndex": 0,
-      "kickoff": "September 14 3:00 PM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 34736,
-      "name": "Will Osula",
-      "position": "F",
-      "profileUrl": "https://www.rotowire.com/soccer/player/will-osula-34736",
-      "status": "OUT",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "OUT",
-      "playerId": 465,
-      "method": "CONFIRMED_MAPPING"
-    },
-    {
-      "fixtureIndex": 1,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -465,7 +19,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -481,7 +35,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -497,7 +51,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -513,7 +67,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -529,23 +83,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
-      "kickoff": "September 18 3:00 PM ET",
-      "opponentAbbreviation": "CHE",
-      "teamSide": "HOME",
-      "teamName": "Brentford",
-      "teamAbbreviation": "BRE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 46862,
-      "name": "Mamadou Sangare",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/mamadou-sangare-46862",
-      "source": "STARTER",
-      "playerId": 565,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -561,7 +99,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
+      "kickoff": "September 18 3:00 PM ET",
+      "opponentAbbreviation": "CHE",
+      "teamSide": "HOME",
+      "teamName": "Brentford",
+      "teamAbbreviation": "BRE",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 46862,
+      "name": "Mamadou Sangare",
+      "position": "DMC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/mamadou-sangare-46862",
+      "source": "STARTER",
+      "playerId": 565,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -577,7 +131,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -593,7 +147,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -609,7 +163,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -627,7 +181,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -645,7 +199,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -663,7 +217,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -681,7 +235,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "CHE",
       "teamSide": "HOME",
@@ -699,7 +253,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -715,7 +269,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -731,7 +285,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -747,7 +301,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -763,7 +317,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -779,7 +333,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -795,7 +349,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -811,7 +365,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -827,7 +381,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -843,7 +397,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -859,7 +413,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -875,7 +429,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -893,7 +447,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -911,7 +465,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -929,7 +483,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 1,
+      "fixtureIndex": 0,
       "kickoff": "September 18 3:00 PM ET",
       "opponentAbbreviation": "BRE",
       "teamSide": "AWAY",
@@ -947,7 +501,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -963,7 +517,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -979,7 +533,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -995,7 +549,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1011,7 +565,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1027,23 +581,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
-      "kickoff": "September 19 7:30 AM ET",
-      "opponentAbbreviation": "AVL",
-      "teamSide": "HOME",
-      "teamName": "Tottenham Hotspur",
-      "teamAbbreviation": "TOT",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 24952,
-      "name": "Rodrigo Bentancur",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/rodrigo-bentancur-24952",
-      "source": "STARTER",
-      "playerId": 516,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1059,7 +597,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
+      "kickoff": "September 19 7:30 AM ET",
+      "opponentAbbreviation": "AVL",
+      "teamSide": "HOME",
+      "teamName": "Tottenham Hotspur",
+      "teamAbbreviation": "TOT",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 24952,
+      "name": "Rodrigo Bentancur",
+      "position": "DMC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/rodrigo-bentancur-24952",
+      "source": "STARTER",
+      "playerId": 516,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1075,7 +629,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1091,7 +645,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1107,7 +661,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1123,7 +677,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1141,7 +695,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1159,7 +713,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1177,7 +731,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1195,7 +749,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1213,7 +767,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1231,7 +785,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1249,7 +803,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "AVL",
       "teamSide": "HOME",
@@ -1267,7 +821,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1283,7 +837,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1299,7 +853,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1315,7 +869,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1331,7 +885,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1347,7 +901,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1363,7 +917,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1379,7 +933,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1395,7 +949,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1411,7 +965,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1427,7 +981,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1443,7 +997,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1461,7 +1015,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1479,7 +1033,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1497,7 +1051,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1515,7 +1069,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1533,7 +1087,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 2,
+      "fixtureIndex": 1,
       "kickoff": "September 19 7:30 AM ET",
       "opponentAbbreviation": "TOT",
       "teamSide": "AWAY",
@@ -1551,7 +1105,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1567,7 +1121,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1583,7 +1137,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1599,7 +1153,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1615,7 +1169,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1631,7 +1185,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1647,7 +1201,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
+      "kickoff": "September 19 10:00 AM ET",
+      "opponentAbbreviation": "HUL",
+      "teamSide": "HOME",
+      "teamName": "Newcastle United",
+      "teamAbbreviation": "NEW",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 46000,
+      "name": "Sean Steur",
+      "position": "DMC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/sean-steur-46000",
+      "source": "STARTER",
+      "playerId": 462,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1663,39 +1233,39 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
       "lineupStatus": "PREDICTED",
-      "rotowireId": 26488,
-      "name": "Joe Willock",
+      "rotowireId": 44143,
+      "name": "Matias Fernandez-Pardo",
       "position": "AMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/joe-willock-26488",
+      "profileUrl": "https://www.rotowire.com/soccer/player/matias-fernandez-pardo-44143",
       "source": "STARTER",
-      "playerId": 460,
+      "playerId": 634,
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
       "teamName": "Newcastle United",
       "teamAbbreviation": "NEW",
       "lineupStatus": "PREDICTED",
-      "rotowireId": 34595,
-      "name": "Anthony Elanga",
+      "rotowireId": 19122,
+      "name": "Jacob Murphy",
       "position": "AMR",
-      "profileUrl": "https://www.rotowire.com/soccer/player/anthony-elanga-34595",
+      "profileUrl": "https://www.rotowire.com/soccer/player/jacob-murphy-19122",
       "source": "STARTER",
-      "playerId": 454,
+      "playerId": 457,
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1711,25 +1281,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
-      "kickoff": "September 19 10:00 AM ET",
-      "opponentAbbreviation": "HUL",
-      "teamSide": "HOME",
-      "teamName": "Newcastle United",
-      "teamAbbreviation": "NEW",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 33528,
-      "name": "Amar Dedic",
-      "position": "D",
-      "profileUrl": "https://www.rotowire.com/soccer/player/amar-dedic-33528",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 593,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1747,7 +1299,25 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
+      "kickoff": "September 19 10:00 AM ET",
+      "opponentAbbreviation": "HUL",
+      "teamSide": "HOME",
+      "teamName": "Newcastle United",
+      "teamAbbreviation": "NEW",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 28897,
+      "name": "Jacob Ramsey",
+      "position": "F/M",
+      "profileUrl": "https://www.rotowire.com/soccer/player/jacob-ramsey-28897",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 456,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1765,7 +1335,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1783,7 +1353,25 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
+      "kickoff": "September 19 10:00 AM ET",
+      "opponentAbbreviation": "HUL",
+      "teamSide": "HOME",
+      "teamName": "Newcastle United",
+      "teamAbbreviation": "NEW",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 34595,
+      "name": "Anthony Elanga",
+      "position": "F/M",
+      "profileUrl": "https://www.rotowire.com/soccer/player/anthony-elanga-34595",
+      "status": "OUT",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "OUT",
+      "playerId": 454,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "HUL",
       "teamSide": "HOME",
@@ -1801,7 +1389,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1817,7 +1405,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1833,7 +1421,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1849,7 +1437,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1865,7 +1453,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1881,7 +1469,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1897,7 +1485,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1913,7 +1501,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1929,7 +1517,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1945,7 +1533,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1961,7 +1549,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1977,7 +1565,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -1995,7 +1583,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -2013,7 +1601,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -2031,7 +1619,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -2049,7 +1637,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -2067,7 +1655,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -2085,7 +1673,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -2103,7 +1691,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 3,
+      "fixtureIndex": 2,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "NEW",
       "teamSide": "AWAY",
@@ -2121,7 +1709,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2137,7 +1725,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2153,23 +1741,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 4,
-      "kickoff": "September 19 10:00 AM ET",
-      "opponentAbbreviation": "IPS",
-      "teamSide": "HOME",
-      "teamName": "Everton",
-      "teamAbbreviation": "EVE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 30751,
-      "name": "Jarrad Branthwaite",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/jarrad-branthwaite-30751",
-      "source": "STARTER",
-      "playerId": 230,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2185,7 +1757,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
+      "kickoff": "September 19 10:00 AM ET",
+      "opponentAbbreviation": "IPS",
+      "teamSide": "HOME",
+      "teamName": "Everton",
+      "teamAbbreviation": "EVE",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 30751,
+      "name": "Jarrad Branthwaite",
+      "position": "DC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/jarrad-branthwaite-30751",
+      "source": "STARTER",
+      "playerId": 230,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2201,7 +1789,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2217,7 +1805,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2233,7 +1821,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2249,7 +1837,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2265,7 +1853,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2281,7 +1869,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2297,7 +1885,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2315,7 +1903,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "IPS",
       "teamSide": "HOME",
@@ -2333,7 +1921,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2349,7 +1937,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2365,23 +1953,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
-      "kickoff": "September 19 10:00 AM ET",
-      "opponentAbbreviation": "EVE",
-      "teamSide": "AWAY",
-      "teamName": "Ipswich Town",
-      "teamAbbreviation": "IPS",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 20797,
-      "name": "Issa Diop",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/issa-diop-20797",
-      "source": "STARTER",
-      "playerId": 259,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2397,7 +1969,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
+      "kickoff": "September 19 10:00 AM ET",
+      "opponentAbbreviation": "EVE",
+      "teamSide": "AWAY",
+      "teamName": "Ipswich Town",
+      "teamAbbreviation": "IPS",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 20797,
+      "name": "Issa Diop",
+      "position": "DC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/issa-diop-20797",
+      "source": "STARTER",
+      "playerId": 259,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2413,23 +2001,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
-      "kickoff": "September 19 10:00 AM ET",
-      "opponentAbbreviation": "EVE",
-      "teamSide": "AWAY",
-      "teamName": "Ipswich Town",
-      "teamAbbreviation": "IPS",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 30689,
-      "name": "Exequiel Palacios",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/exequiel-palacios-30689",
-      "source": "STARTER",
-      "playerId": 619,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2445,7 +2017,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
+      "kickoff": "September 19 10:00 AM ET",
+      "opponentAbbreviation": "EVE",
+      "teamSide": "AWAY",
+      "teamName": "Ipswich Town",
+      "teamAbbreviation": "IPS",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 30689,
+      "name": "Exequiel Palacios",
+      "position": "DMC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/exequiel-palacios-30689",
+      "source": "STARTER",
+      "playerId": 619,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2461,7 +2049,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2477,7 +2065,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2493,7 +2081,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2509,7 +2097,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2527,7 +2115,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2545,7 +2133,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 4,
+      "fixtureIndex": 3,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "EVE",
       "teamSide": "AWAY",
@@ -2563,7 +2151,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2579,7 +2167,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2595,7 +2183,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2611,7 +2199,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2627,7 +2215,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2643,7 +2231,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2659,7 +2247,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2675,7 +2263,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2691,7 +2279,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2707,7 +2295,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2723,7 +2311,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2739,7 +2327,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2757,7 +2345,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2775,7 +2363,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2793,7 +2381,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2811,7 +2399,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2829,7 +2417,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2847,7 +2435,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2865,7 +2453,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2883,7 +2471,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2901,7 +2489,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "ARS",
       "teamSide": "HOME",
@@ -2919,7 +2507,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -2935,7 +2523,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -2951,7 +2539,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -2967,7 +2555,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -2983,7 +2571,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -2999,7 +2587,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -3015,7 +2603,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -3031,7 +2619,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -3047,7 +2635,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -3063,7 +2651,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -3079,7 +2667,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -3095,7 +2683,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -3113,7 +2701,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -3131,7 +2719,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 5,
+      "fixtureIndex": 4,
       "kickoff": "September 19 10:00 AM ET",
       "opponentAbbreviation": "BHA",
       "teamSide": "AWAY",
@@ -3149,7 +2737,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3165,7 +2753,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3181,7 +2769,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3197,7 +2785,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3213,7 +2801,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3229,23 +2817,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
-      "kickoff": "September 19 12:30 PM ET",
-      "opponentAbbreviation": "COV",
-      "teamSide": "HOME",
-      "teamName": "Nottingham Forest",
-      "teamAbbreviation": "NOT",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 29096,
-      "name": "Xaver Schlager",
-      "position": "MC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/xaver-schlager-29096",
-      "source": "STARTER",
-      "playerId": 558,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3261,7 +2833,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
+      "kickoff": "September 19 12:30 PM ET",
+      "opponentAbbreviation": "COV",
+      "teamSide": "HOME",
+      "teamName": "Nottingham Forest",
+      "teamAbbreviation": "NOT",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 29096,
+      "name": "Xaver Schlager",
+      "position": "MC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/xaver-schlager-29096",
+      "source": "STARTER",
+      "playerId": 558,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3277,7 +2865,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3293,7 +2881,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3309,7 +2897,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3327,7 +2915,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3345,7 +2933,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "COV",
       "teamSide": "HOME",
@@ -3363,7 +2951,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3379,7 +2967,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3395,23 +2983,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
-      "kickoff": "September 19 12:30 PM ET",
-      "opponentAbbreviation": "NOT",
-      "teamSide": "AWAY",
-      "teamName": "Coventry City",
-      "teamAbbreviation": "COV",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 32466,
-      "name": "Bobby Thomas",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/bobby-thomas-32466",
-      "source": "STARTER",
-      "playerId": 173,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3427,7 +2999,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
+      "kickoff": "September 19 12:30 PM ET",
+      "opponentAbbreviation": "NOT",
+      "teamSide": "AWAY",
+      "teamName": "Coventry City",
+      "teamAbbreviation": "COV",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 32466,
+      "name": "Bobby Thomas",
+      "position": "DC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/bobby-thomas-32466",
+      "source": "STARTER",
+      "playerId": 173,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3443,7 +3031,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3459,7 +3047,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3475,7 +3063,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3491,7 +3079,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3507,7 +3095,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3523,7 +3111,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3539,7 +3127,25 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
+      "kickoff": "September 19 12:30 PM ET",
+      "opponentAbbreviation": "NOT",
+      "teamSide": "AWAY",
+      "teamName": "Coventry City",
+      "teamAbbreviation": "COV",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 33835,
+      "name": "Frank Onyeka",
+      "position": "M",
+      "profileUrl": "https://www.rotowire.com/soccer/player/frank-onyeka-33835",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 104,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3557,7 +3163,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3575,7 +3181,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3593,7 +3199,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3611,7 +3217,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3629,7 +3235,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 6,
+      "fixtureIndex": 5,
       "kickoff": "September 19 12:30 PM ET",
       "opponentAbbreviation": "NOT",
       "teamSide": "AWAY",
@@ -3647,7 +3253,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3663,7 +3269,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3679,7 +3285,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3695,7 +3301,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3711,7 +3317,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3727,7 +3333,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3743,7 +3349,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3759,7 +3365,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3775,7 +3381,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3791,7 +3397,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3807,7 +3413,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3823,7 +3429,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3841,7 +3447,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "SUN",
       "teamSide": "HOME",
@@ -3859,7 +3465,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -3875,39 +3481,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
       "teamName": "Sunderland",
       "teamAbbreviation": "SUN",
       "lineupStatus": "PREDICTED",
-      "rotowireId": 44080,
-      "name": "Dayann Methalie",
+      "rotowireId": 37455,
+      "name": "Trai Hume",
       "position": "DL",
-      "profileUrl": "https://www.rotowire.com/soccer/player/dayann-methalie-44080",
+      "profileUrl": "https://www.rotowire.com/soccer/player/trai-hume-37455",
       "source": "STARTER",
-      "playerId": 612,
+      "playerId": 534,
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
-      "kickoff": "September 20 9:00 AM ET",
-      "opponentAbbreviation": "MCI",
-      "teamSide": "AWAY",
-      "teamName": "Sunderland",
-      "teamAbbreviation": "SUN",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 29213,
-      "name": "Daniel Ballard",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/daniel-ballard-29213",
-      "source": "STARTER",
-      "playerId": 532,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -3923,7 +3513,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
+      "kickoff": "September 20 9:00 AM ET",
+      "opponentAbbreviation": "MCI",
+      "teamSide": "AWAY",
+      "teamName": "Sunderland",
+      "teamAbbreviation": "SUN",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 29213,
+      "name": "Daniel Ballard",
+      "position": "DC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/daniel-ballard-29213",
+      "source": "STARTER",
+      "playerId": 532,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -3939,23 +3545,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
-      "kickoff": "September 20 9:00 AM ET",
-      "opponentAbbreviation": "MCI",
-      "teamSide": "AWAY",
-      "teamName": "Sunderland",
-      "teamAbbreviation": "SUN",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 17705,
-      "name": "Granit Xhaka",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/granit-xhaka-17705",
-      "source": "STARTER",
-      "playerId": 544,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -3971,7 +3561,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
+      "kickoff": "September 20 9:00 AM ET",
+      "opponentAbbreviation": "MCI",
+      "teamSide": "AWAY",
+      "teamName": "Sunderland",
+      "teamAbbreviation": "SUN",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 17705,
+      "name": "Granit Xhaka",
+      "position": "DMC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/granit-xhaka-17705",
+      "source": "STARTER",
+      "playerId": 544,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -3987,7 +3593,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -4003,7 +3609,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -4019,7 +3625,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -4035,7 +3641,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -4053,7 +3659,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -4071,7 +3677,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 7,
+      "fixtureIndex": 6,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "MCI",
       "teamSide": "AWAY",
@@ -4089,7 +3695,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "CRY",
       "teamSide": "HOME",
@@ -4105,39 +3711,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
-      "kickoff": "September 20 9:00 AM ET",
-      "opponentAbbreviation": "CRY",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 43917,
-      "name": "Tarik Muharemovic",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/tarik-muharemovic-43917",
-      "source": "STARTER",
-      "playerId": 334,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 8,
-      "kickoff": "September 20 9:00 AM ET",
-      "opponentAbbreviation": "CRY",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 29155,
-      "name": "James Justin",
-      "position": "DC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/james-justin-29155",
-      "source": "STARTER",
-      "playerId": 332,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "CRY",
       "teamSide": "HOME",
@@ -4153,7 +3727,39 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
+      "kickoff": "September 20 9:00 AM ET",
+      "opponentAbbreviation": "CRY",
+      "teamSide": "HOME",
+      "teamName": "Leeds United",
+      "teamAbbreviation": "LEE",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 29155,
+      "name": "James Justin",
+      "position": "DC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/james-justin-29155",
+      "source": "STARTER",
+      "playerId": 332,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 7,
+      "kickoff": "September 20 9:00 AM ET",
+      "opponentAbbreviation": "CRY",
+      "teamSide": "HOME",
+      "teamName": "Leeds United",
+      "teamAbbreviation": "LEE",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 43917,
+      "name": "Tarik Muharemovic",
+      "position": "DC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/tarik-muharemovic-43917",
+      "source": "STARTER",
+      "playerId": 334,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "CRY",
       "teamSide": "HOME",
@@ -4169,7 +3775,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "CRY",
       "teamSide": "HOME",
@@ -4185,7 +3791,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "CRY",
       "teamSide": "HOME",
@@ -4201,23 +3807,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
-      "kickoff": "September 20 9:00 AM ET",
-      "opponentAbbreviation": "CRY",
-      "teamSide": "HOME",
-      "teamName": "Leeds United",
-      "teamAbbreviation": "LEE",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 30434,
-      "name": "Noah Okafor",
-      "position": "AMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/noah-okafor-30434",
-      "source": "STARTER",
-      "playerId": 336,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "CRY",
       "teamSide": "HOME",
@@ -4233,7 +3823,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
+      "kickoff": "September 20 9:00 AM ET",
+      "opponentAbbreviation": "CRY",
+      "teamSide": "HOME",
+      "teamName": "Leeds United",
+      "teamAbbreviation": "LEE",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 30434,
+      "name": "Noah Okafor",
+      "position": "AMC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/noah-okafor-30434",
+      "source": "STARTER",
+      "playerId": 336,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "CRY",
       "teamSide": "HOME",
@@ -4249,7 +3855,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "CRY",
       "teamSide": "HOME",
@@ -4267,7 +3873,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "CRY",
       "teamSide": "HOME",
@@ -4285,7 +3891,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4301,7 +3907,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4317,7 +3923,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4333,7 +3939,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4349,7 +3955,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4365,23 +3971,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
-      "kickoff": "September 20 9:00 AM ET",
-      "opponentAbbreviation": "LEE",
-      "teamSide": "AWAY",
-      "teamName": "Crystal Palace",
-      "teamAbbreviation": "CRY",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 37907,
-      "name": "Quinten Timber",
-      "position": "MC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/quinten-timber-37907",
-      "source": "STARTER",
-      "playerId": 644,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4397,7 +3987,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
+      "kickoff": "September 20 9:00 AM ET",
+      "opponentAbbreviation": "LEE",
+      "teamSide": "AWAY",
+      "teamName": "Crystal Palace",
+      "teamAbbreviation": "CRY",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 37907,
+      "name": "Quinten Timber",
+      "position": "MC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/quinten-timber-37907",
+      "source": "STARTER",
+      "playerId": 644,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4413,7 +4019,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4429,7 +4035,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4445,7 +4051,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4461,7 +4067,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4479,7 +4085,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4497,7 +4103,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4515,7 +4121,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4533,7 +4139,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4551,7 +4157,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4569,7 +4175,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 8,
+      "fixtureIndex": 7,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LEE",
       "teamSide": "AWAY",
@@ -4587,7 +4193,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4603,7 +4209,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4619,7 +4225,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4635,7 +4241,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4651,7 +4257,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4667,7 +4273,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4683,7 +4289,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4699,7 +4305,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4715,7 +4321,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4731,7 +4337,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4747,7 +4353,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4763,7 +4369,7 @@
       "method": "UNIQUE_FALLBACK"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4781,7 +4387,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4799,7 +4405,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4817,7 +4423,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "LIV",
       "teamSide": "HOME",
@@ -4835,7 +4441,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -4851,7 +4457,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -4867,7 +4473,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -4883,7 +4489,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -4899,7 +4505,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -4915,23 +4521,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
-      "kickoff": "September 20 9:00 AM ET",
-      "opponentAbbreviation": "BOU",
-      "teamSide": "AWAY",
-      "teamName": "Liverpool",
-      "teamAbbreviation": "LIV",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 29729,
-      "name": "Dominik Szoboszlai",
-      "position": "DMC",
-      "profileUrl": "https://www.rotowire.com/soccer/player/dominik-szoboszlai-29729",
-      "source": "STARTER",
-      "playerId": 368,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -4947,7 +4537,23 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
+      "kickoff": "September 20 9:00 AM ET",
+      "opponentAbbreviation": "BOU",
+      "teamSide": "AWAY",
+      "teamName": "Liverpool",
+      "teamAbbreviation": "LIV",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 29729,
+      "name": "Dominik Szoboszlai",
+      "position": "DMC",
+      "profileUrl": "https://www.rotowire.com/soccer/player/dominik-szoboszlai-29729",
+      "source": "STARTER",
+      "playerId": 368,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -4963,7 +4569,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -4979,7 +4585,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -4995,7 +4601,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -5011,7 +4617,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -5029,7 +4635,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -5047,7 +4653,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -5065,7 +4671,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -5083,7 +4689,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 9,
+      "fixtureIndex": 8,
       "kickoff": "September 20 9:00 AM ET",
       "opponentAbbreviation": "BOU",
       "teamSide": "AWAY",
@@ -5101,7 +4707,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5117,7 +4723,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5133,7 +4739,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5149,7 +4755,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5165,7 +4771,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5181,7 +4787,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5197,7 +4803,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5213,7 +4819,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5229,7 +4835,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5245,7 +4851,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5261,7 +4867,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5277,7 +4883,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5295,7 +4901,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "MUN",
       "teamSide": "HOME",
@@ -5313,7 +4919,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5329,7 +4935,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5345,7 +4951,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5361,7 +4967,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5377,7 +4983,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5393,7 +4999,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5409,7 +5015,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5425,7 +5031,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5441,7 +5047,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5457,7 +5063,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5473,7 +5079,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5489,61 +5095,7 @@
       "method": "CONFIRMED_MAPPING"
     },
     {
-      "fixtureIndex": 10,
-      "kickoff": "September 20 11:30 AM ET",
-      "opponentAbbreviation": "FUL",
-      "teamSide": "AWAY",
-      "teamName": "Manchester United",
-      "teamAbbreviation": "MUN",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 36612,
-      "name": "Carlos Baleba",
-      "position": "M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/carlos-baleba-36612",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 131,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 10,
-      "kickoff": "September 20 11:30 AM ET",
-      "opponentAbbreviation": "FUL",
-      "teamSide": "AWAY",
-      "teamName": "Manchester United",
-      "teamAbbreviation": "MUN",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 26851,
-      "name": "Matthijs De Ligt",
-      "position": "D",
-      "profileUrl": "https://www.rotowire.com/soccer/player/matthijs-de-ligt-26851",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 416,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 10,
-      "kickoff": "September 20 11:30 AM ET",
-      "opponentAbbreviation": "FUL",
-      "teamSide": "AWAY",
-      "teamName": "Manchester United",
-      "teamAbbreviation": "MUN",
-      "lineupStatus": "PREDICTED",
-      "rotowireId": 30618,
-      "name": "Amad Diallo",
-      "position": "F/M",
-      "profileUrl": "https://www.rotowire.com/soccer/player/amad-diallo-30618",
-      "status": "QUES",
-      "source": "UNAVAILABLE",
-      "availabilityStatus": "QUES",
-      "playerId": 431,
-      "method": "EXACT_NAME"
-    },
-    {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5561,7 +5113,61 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
+      "kickoff": "September 20 11:30 AM ET",
+      "opponentAbbreviation": "FUL",
+      "teamSide": "AWAY",
+      "teamName": "Manchester United",
+      "teamAbbreviation": "MUN",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 36612,
+      "name": "Carlos Baleba",
+      "position": "M",
+      "profileUrl": "https://www.rotowire.com/soccer/player/carlos-baleba-36612",
+      "status": "OUT",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "OUT",
+      "playerId": 131,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 9,
+      "kickoff": "September 20 11:30 AM ET",
+      "opponentAbbreviation": "FUL",
+      "teamSide": "AWAY",
+      "teamName": "Manchester United",
+      "teamAbbreviation": "MUN",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 26851,
+      "name": "Matthijs De Ligt",
+      "position": "D",
+      "profileUrl": "https://www.rotowire.com/soccer/player/matthijs-de-ligt-26851",
+      "status": "OUT",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "OUT",
+      "playerId": 416,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 9,
+      "kickoff": "September 20 11:30 AM ET",
+      "opponentAbbreviation": "FUL",
+      "teamSide": "AWAY",
+      "teamName": "Manchester United",
+      "teamAbbreviation": "MUN",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 30618,
+      "name": "Amad Diallo",
+      "position": "F/M",
+      "profileUrl": "https://www.rotowire.com/soccer/player/amad-diallo-30618",
+      "status": "OUT",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "OUT",
+      "playerId": 431,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
@@ -5579,7 +5185,7 @@
       "method": "EXACT_NAME"
     },
     {
-      "fixtureIndex": 10,
+      "fixtureIndex": 9,
       "kickoff": "September 20 11:30 AM ET",
       "opponentAbbreviation": "FUL",
       "teamSide": "AWAY",
