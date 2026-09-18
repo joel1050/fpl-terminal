@@ -66,7 +66,8 @@ export default function LiveSquad({
   loading: boolean;
 }) {
   if (loading || !calculation) {
-    return <div className="empty-state">{loading ? "SYNCING LIVE SQUAD…" : "LIVE SQUAD UNAVAILABLE"}</div>;
+    return <div className="empty-state">{loading ? "SYNCING LIVE SQUAD…"
+      : <><strong>NO LIVE SQUAD YET</strong><span>Picks appear once the Gameweek deadline passes.</span></>}</div>;
   }
   const starters = calculation.playerPoints.filter((player) => !player.onBench);
   const bench = calculation.playerPoints

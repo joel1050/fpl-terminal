@@ -245,7 +245,7 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("region", { name: /weakest links/i })).toHaveCount(0);
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
     await expect(replacements).toBeVisible();
-    await expect(replacements).toContainText(/EXACT/i);
+    await expect(replacements.locator(".panel-count")).toHaveText(/1 FOUND/);
     await expect(replacements).toContainText(/Rice\s*→\s*Saka/i);
 
     await clickButton(page, /^PICK TEAM$/i);
@@ -254,7 +254,7 @@ test.describe("FPL Terminal acceptance", () => {
     await replacements.getByRole("button", { name: /simulate/i }).first().click();
     await expect(page.getByText(/simulation|before|after|price effect|gw effect/i).first()).toBeVisible();
     await clickButton(page, /apply/i);
-    await expect(page.getByText(/cannot be applied while the outgoing player is locked/i)).toBeVisible();
+    await expect(page.getByText(/move cannot be applied while an outgoing player is locked/i)).toBeVisible();
     await page.getByRole("button", { name: /close simulation/i }).click();
     const rice = page.getByRole("article").filter({ hasText: "Rice" }).first();
     await rice.hover();
@@ -325,7 +325,8 @@ test.describe("FPL Terminal acceptance", () => {
     await chooseMode(page, IMPORT_MODE);
     await waitForMarket(page);
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
-    const dismiss = replacements.getByRole("button", { name: /dismiss rice to saka suggestion/i });
+    const sakaCard = replacements.locator(".replacement-row").filter({ hasText: /Rice\s*→\s*Saka/i }).first();
+    const dismiss = sakaCard.getByRole("button", { name: /dismiss suggestion/i });
     await expect(dismiss).toBeVisible();
     await expect.poll(() => suggestionRequests).toBe(1);
     await dismiss.click();

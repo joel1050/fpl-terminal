@@ -1,12 +1,20 @@
 import { getBootstrap, getFixtures } from "@/lib/fpl/client";
 import { loadHistoricalBundle } from "@/lib/historical/load";
+import { enforceComputeRateLimit } from "@/lib/http/computeRateLimit";
 import { FPL_HTTP_CACHE, fplJson, errorList, refreshRequested } from "@/lib/fpl/http";
 import { enrichBootstrapWithProjections, normalizeBootstrap, projectionCacheKey } from "@/lib/fpl/normalize";
 
 export const dynamic = "force-dynamic";
+// A refresh bypasses both caches and recomputes the full player universe: 3/min per client.
+const BOOTSTRAP_REFRESH_LIMIT = 3;
 
 export async function GET(request: Request): Promise<Response> {
-  const options = { forceRefresh: refreshRequested(request) };
+  const refresh = refreshRequested(request);
+  if (refresh) {
+    const rateLimited = enforceComputeRateLimit(request, "bootstrap-refresh", { limit: BOOTSTRAP_REFRESH_LIMIT });
+    if (rateLimited) return rateLimited;
+  }
+  const options = { forceRefresh: refresh };
   const [bootstrap, fixtures] = await Promise.all([getBootstrap(options), getFixtures(options)]);
   const errors = errorList(bootstrap.error, fixtures.error);
   if (!bootstrap.data) {
@@ -27,6 +35,6 @@ export async function GET(request: Request): Promise<Response> {
     errors,
     undefined,
     enriched.metadata,
-    { cacheControl: FPL_HTTP_CACHE.bootstrap, noStore: refreshRequested(request) },
+    { cacheControl: FPL_HTTP_CACHE.bootstrap, noStore: refresh },
   );
 }

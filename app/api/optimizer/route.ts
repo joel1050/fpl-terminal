@@ -10,6 +10,7 @@ import { exactCompletePartialSquad, exactOptimizeFullSquad } from "@/lib/optimiz
 import { enforceComputeRateLimit } from "@/lib/http/computeRateLimit";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 const requestSchema = z.object({
   mode: z.enum(["OPTIMIZE", "COMPLETE"]),

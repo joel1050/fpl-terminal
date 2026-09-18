@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import Link from "next/link";
 import WorkspaceSwitcher from "@/components/terminal/WorkspaceSwitcher";
 import type { NailedRating, Player, PlayerFixture, PlayerMatchPerformance, PlayerProfileData, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, TransferBaseline, WeeklyLineupPlan } from "@/types";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
@@ -16,7 +17,8 @@ import { BREAKDOWN_COMPONENT_KEYS, gameweekBreakdown } from "@/lib/projections/b
 import { cacheBootstrapData, peekBootstrapData, readBootstrapData } from "@/lib/fpl/browserBootstrapCache";
 import {
   exportTerminalState,
-  parseSavedState,
+  parseSavedStateResult,
+  savedStateRefusalNotice,
   deriveStartingXI,
   useTerminalStore,
   type ApplyLineupInput,
@@ -548,6 +550,7 @@ export default function TerminalApp() {
   const bootstrap = useBootstrap();
   const store = useTerminalStore();
   const [notice, setNoticeState] = useState<string | null>(null);
+  const savedStateNotice = useTerminalStore((state) => state.savedStateNotice);
   const [noticeMinimized, setNoticeMinimized] = useState(false);
 
   const setNotice = useCallback((text: string | null) => {
@@ -631,7 +634,11 @@ export default function TerminalApp() {
 
   useEffect(() => {
     const raw = window.localStorage.getItem("fpl-terminal-state");
-    useTerminalStore.getState().hydrate(raw ? parseSavedState(raw) : null);
+    const result = parseSavedStateResult(raw);
+    useTerminalStore.getState().hydrate(
+      result.status === "accepted" ? result.state : null,
+      { persistenceBlocked: result.status === "refused", savedStateNotice: result.status === "refused" ? savedStateRefusalNotice(result) : null },
+    );
   }, []);
 
   useEffect(() => {
@@ -641,9 +648,9 @@ export default function TerminalApp() {
 
   useEffect(() => {
     const state = useTerminalStore.getState();
-    if (!state.isHydrated) return;
+    if (!state.isHydrated || state.persistenceBlocked) return;
     window.localStorage.setItem("fpl-terminal-state", JSON.stringify(exportTerminalState(state)));
-  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.mode, store.entryId, store.budgetTenths, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.transferHorizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys, store.chip, store.plannedTransfers, store.permanentSquad, store.transferBaseline, store.usedChips]);
+  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.persistenceBlocked, store.mode, store.entryId, store.budgetTenths, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.transferHorizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys, store.chip, store.plannedTransfers, store.permanentSquad, store.transferBaseline, store.usedChips]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -1139,12 +1146,13 @@ export default function TerminalApp() {
 
   if (!store.isHydrated) return <main className="mode-screen" aria-busy="true" />;
   if (store.mode === null) {
-    return <ModeChooser status={status} message={message} gameweek={data.gameweek} onChoose={store.setMode} />;
+    return <ModeChooser status={status} message={message} gameweek={data.gameweek} notice={savedStateNotice} onChoose={store.setMode} />;
   }
   if (store.mode === "ANALYZE" && !store.entryId) {
     return <TeamImportScreen
       players={data.players}
       gameweek={liveCurrentGW}
+      notice={savedStateNotice}
       onBack={() => store.setMode(null)}
       onImport={(result) => {
         const importedPlayers = data.players.filter((player) => result.squad.playerIds.includes(player.id));
@@ -1232,8 +1240,9 @@ export default function TerminalApp() {
           <DeadlineStatus deadline={data.deadline} />
           <DataStatusCell status={status} ageAnchor={ageAnchor} fetchedAt={data.fetchedAt} />
         </div>
-        <div className="topbar-actions"><button className="text-button" onClick={refresh}>REFRESH</button><button className="text-button" onClick={() => exportState(store)}>EXPORT</button><button className="text-button" onClick={() => importRef.current?.click()}>IMPORT</button><button className="text-button danger-text" onClick={reset}>RESET</button><input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, store)} /></div>
+        <div className="topbar-actions"><button className="text-button" onClick={refresh}>REFRESH</button><button className="text-button" onClick={() => exportState(store)}>EXPORT</button><button className="text-button" onClick={() => importRef.current?.click()}>IMPORT</button><button className="text-button danger-text" onClick={reset}>RESET</button><input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, store, setNotice)} /></div>
       </header>
+      {savedStateNotice && <p className="live-notice" role="alert">{savedStateNotice}</p>}
 
       <nav className="mobile-tabs" aria-label="Terminal panels">{(["SQUAD", "MARKET"] as const).map((tab) => <button key={tab} className={store.activeMobileTab === tab ? "active" : ""} onClick={() => store.setMobileTab(tab)}>{tab}</button>)}</nav>
 
@@ -1281,13 +1290,13 @@ export default function TerminalApp() {
   );
 }
 
-function ModeChooser({ status, message, gameweek, onChoose }: { status: DataState; message?: string; gameweek: number | null; onChoose: (mode: TerminalMode) => void }) {
-  return <main className="mode-screen"><div className="mode-brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></div><p className="mode-tagline">QUANTITATIVE FPL SQUAD INTELLIGENCE</p><div className="mode-grid"><button className="mode-card" onClick={() => onChoose("BUILD")}><span className="mode-index">MODE A</span><strong>BUILD FROM SCRATCH</strong><span>Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.</span></button><button className="mode-card" onClick={() => onChoose("ANALYZE")}><span className="mode-index">MODE B</span><strong>IMPORT A TEAM <small>(RECOMMENDED)</small></strong><span>Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities.</span></button></div><div className="mode-footer"><span className={`status-pip ${status.toLowerCase()}`} />{status === "LIVE" ? `LIVE DATA · GAMEWEEK ${gameweek ?? "—"} · MODEL ESTIMATES · SQUAD RULES ENFORCED LOCALLY` : status === "SNAPSHOT" ? `SNAPSHOT DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "STALE" ? `STALE DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "SYNCING" ? "SYNCING FPL MARKET…" : message ?? "FPL data is unavailable."}</div><p className="mode-disclaimer">Not affiliated with, endorsed by, or connected to the Premier League or Fantasy Premier League. Player data comes from public FPL endpoints; projections are estimates, not advice.</p></main>;
+function ModeChooser({ status, message, gameweek, notice, onChoose }: { status: DataState; message?: string; gameweek: number | null; notice?: string | null; onChoose: (mode: TerminalMode) => void }) {
+  return <main className="mode-screen"><div className="mode-brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></div><p className="mode-tagline">QUANTITATIVE FPL SQUAD INTELLIGENCE</p>{notice && <p className="live-notice" role="alert">{notice}</p>}<div className="mode-grid"><button className="mode-card" onClick={() => onChoose("BUILD")}><span className="mode-index">MODE A</span><strong>BUILD FROM SCRATCH</strong><span>Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.</span></button><button className="mode-card" onClick={() => onChoose("ANALYZE")}><span className="mode-index">MODE B</span><strong>IMPORT A TEAM <small>(RECOMMENDED)</small></strong><span>Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities.</span></button></div><p className="mode-leagues-link"><Link href="/leagues" prefetch={false}>TRACK A MINI-LEAGUE LIVE →</Link></p><div className="mode-footer"><span className={`status-pip ${status.toLowerCase()}`} />{status === "LIVE" ? `LIVE DATA · GAMEWEEK ${gameweek ?? "—"} · MODEL ESTIMATES · SQUAD RULES ENFORCED LOCALLY` : status === "SNAPSHOT" ? `SNAPSHOT DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "STALE" ? `STALE DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "SYNCING" ? "SYNCING FPL MARKET…" : message ?? "FPL data is unavailable."}</div><p className="mode-disclaimer">Not affiliated with, endorsed by, or connected to the Premier League or Fantasy Premier League. Player data comes from public FPL endpoints; projections are estimates, not advice.</p></main>;
 }
 
 type ImportedTeam = { entryId: number; budgetTenths: number; teamName?: string; managerName?: string; squad: SquadState; lineup: Omit<ApplyLineupInput, "lineupProjectionFingerprint">; transferBaseline?: TransferBaseline | null; usedChips?: Array<{ kind: ChipKind; gameweek: number }>; financialConfidence?: "EXACT" | "ESTIMATED"; importWarnings?: string[]; chip?: ChipKind | null };
 
-function TeamImportScreen({ players, gameweek, onImport, onBack }: { players: TerminalPlayer[]; gameweek: number; onImport: (result: ImportedTeam) => boolean; onBack: () => void }) {
+function TeamImportScreen({ players, gameweek, notice, onImport, onBack }: { players: TerminalPlayer[]; gameweek: number; notice?: string | null; onImport: (result: ImportedTeam) => boolean; onBack: () => void }) {
   const [entryId, setEntryId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1310,7 +1319,7 @@ function TeamImportScreen({ players, gameweek, onImport, onBack }: { players: Te
       setBusy(false);
     }
   };
-  return <main className="mode-screen import-screen"><button type="button" className="import-back" onClick={onBack}>← BACK</button><div className="mode-brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></div><p className="mode-tagline">IMPORT YOUR OFFICIAL FPL TEAM</p><form className="import-card" onSubmit={submit}><label htmlFor="fpl-entry-id">ENTER FPL ID</label><div className="import-controls"><input id="fpl-entry-id" inputMode="numeric" pattern="[0-9]*" autoFocus value={entryId} onChange={(event) => setEntryId(event.target.value)} placeholder="4827193" /><button className="primary-button" type="submit" disabled={busy || !players.length}>{busy ? "IMPORTING…" : "IMPORT TEAM"}</button></div><p>We’ll load Gameweek {gameweek} picks from the official FPL API and fill all 15 squad positions.</p><details className="import-guide"><summary>Where do I get my Team ID?</summary><ol><li>Sign in at <a href="https://fantasy.premierleague.com/" target="_blank" rel="noreferrer">Fantasy Premier League</a>.</li><li>Open your Points page.</li><li>Find <code>/entry/1234567/event/3</code> in the address bar. Your Team ID is the number after <code>/entry/</code>.</li><li>Paste that number above and select Import Team.</li></ol></details>{!players.length && <span className="import-error" role="status">Waiting for the FPL player list…</span>}{error && <span className="import-error" role="alert">{error}</span>}</form></main>;
+  return <main className="mode-screen import-screen"><button type="button" className="import-back" onClick={onBack}>← BACK</button><div className="mode-brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></div><p className="mode-tagline">IMPORT YOUR OFFICIAL FPL TEAM</p>{notice && <p className="live-notice" role="alert">{notice}</p>}<form className="import-card" onSubmit={submit}><label htmlFor="fpl-entry-id">ENTER FPL ID</label><div className="import-controls"><input id="fpl-entry-id" inputMode="numeric" pattern="[0-9]*" autoFocus value={entryId} onChange={(event) => setEntryId(event.target.value)} placeholder="4827193" /><button className="primary-button" type="submit" disabled={busy || !players.length}>{busy ? "IMPORTING…" : "IMPORT TEAM"}</button></div><p>We’ll load Gameweek {gameweek} picks from the official FPL API and fill all 15 squad positions.</p><details className="import-guide"><summary>Where do I get my Team ID?</summary><ol><li>Sign in at <a href="https://fantasy.premierleague.com/" target="_blank" rel="noreferrer">Fantasy Premier League</a>.</li><li>Open your Points page.</li><li>Find <code>/entry/1234567/event/3</code> in the address bar. Your Team ID is the number after <code>/entry/</code>.</li><li>Paste that number above and select Import Team.</li></ol></details>{!players.length && <span className="import-error" role="status">Waiting for the FPL player list…</span>}{error && <span className="import-error" role="alert">{error}</span>}</form></main>;
 }
 
 function StatusCell({ label, value, tone }: { label: string; value: string; tone?: "amber" | "green" | "red" | "cyan" }) { return <div className="status-cell"><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
@@ -1954,6 +1963,6 @@ export function formatDeadlineCountdown(value: string, now = Date.now()): string
 
 function exportState(state: ReturnType<typeof useTerminalStore.getState>) { const blob = new Blob([JSON.stringify(exportTerminalState(state), null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "fpl-terminal-state.json"; anchor.click(); URL.revokeObjectURL(url); }
 
-function importState(event: React.ChangeEvent<HTMLInputElement>, state: ReturnType<typeof useTerminalStore.getState>) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { const parsed = typeof reader.result === "string" ? parseSavedState(reader.result) : null; if (parsed) state.hydrate(parsed); }; reader.readAsText(file); event.target.value = ""; }
+function importState(event: React.ChangeEvent<HTMLInputElement>, state: ReturnType<typeof useTerminalStore.getState>, onNotice: (message: string) => void) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { const result = typeof reader.result === "string" ? parseSavedStateResult(reader.result) : { status: "refused", reason: "malformed" } as const; if (result.status === "accepted") { state.hydrate(result.state); onNotice("Saved terminal state imported."); } else { onNotice(result.status === "refused" ? savedStateRefusalNotice(result) : "That save file is empty. Choose a compatible FPL Terminal export."); } }; reader.readAsText(file); event.target.value = ""; }
 
 export function ModeChooserPreview() { return null; }

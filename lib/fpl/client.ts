@@ -33,6 +33,7 @@ import {
 
 const FPL_BASE_URL = (process.env.FPL_API_BASE_URL ?? "https://fantasy.premierleague.com/api").replace(/\/$/, "");
 const REQUEST_TIMEOUT_MS = 12_000;
+const FPL_USER_AGENT = "FPL-Terminal/0.1 (+https://github.com/joel1050/fpl-terminal)";
 
 interface RequestOptions<T> extends FplRequestOptions {
   key: string;
@@ -67,7 +68,7 @@ async function requestJson<T>({
     let response: Response;
     try {
       response = await fetch(`${FPL_BASE_URL}/${endpoint.replace(/^\//, "")}`, {
-        headers: { Accept: "application/json" },
+        headers: { Accept: "application/json", "User-Agent": FPL_USER_AGENT },
         cache: "no-store",
         signal: controller.signal,
       });

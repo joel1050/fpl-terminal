@@ -44,3 +44,38 @@ session chronology, releases, commits, routine maintenance, or raw logs.
   snapshots lack opponent/venue fields, while GW3 has them. The presence of
   any complete fixture activates the joint fitter, so these inputs fit GW3
   only rather than falling back to an aggregate blend of all three rounds.
+
+## 2026-09-17 — Pre-launch A fixes
+
+- A permissive manifest range does not update an installed deployment by
+  itself. Keep the manifest when it already admits the patched release and move
+  only the lockfile; verify both the installed versions and a production-only
+  audit. `npm audit fix --omit=dev` can prune local development packages, so a
+  normal `npm install` may be needed before running the full toolchain.
+- Dynamic filesystem parameters can make output tracing include the repository.
+  Fix that at the deployment boundary with route-scoped includes and excludes,
+  then inspect every affected `.nft.json`: a successful build alone does not
+  prove required runtime data survived or junk disappeared.
+- Removing working artifacts from Git should use cached-only index deletion and
+  matching ignore rules. Verify the local directories still exist and that
+  canonical project documents and generated runtime data remain tracked.
+- Git ignore rules do not make a broad ESLint invocation safe when its flat
+  configuration still walks generated or nested-worktree paths. Keep scoped
+  runtime lint as the reliable gate until the lint configuration owns those
+  exclusions explicitly.
+
+## 2026-09-17 — Pre-traffic B fixes
+
+- Rate-limit the expensive cache-bypass path, not ordinary cached reads. An
+  in-memory per-client limiter is instance-local by design, so cap its bucket
+  Map and return non-cacheable 429 responses; add shared infrastructure only if
+  traffic proves instance-local protection insufficient.
+- A refused persisted save is different from no save. Preserve that distinction
+  through hydration, block automatic writeback, and keep the recovery notice in
+  ephemeral state until an explicit compatible import, replacement, or reset.
+- Bound process caches where keys include user-controlled IDs. A small LRU cap
+  preserves recent stale fallback while preventing manager, league, and player
+  lookups from growing for the lifetime of an instance.
+- Route duration exports are deployment hints, not application timeouts. Keep
+  request validation, solver error handling, and upstream aborts as the actual
+  runtime safeguards.

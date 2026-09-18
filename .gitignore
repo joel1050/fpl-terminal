@@ -20,6 +20,11 @@ data/snapshots/
 .DS_Store
 .vercel
 
+.claude/
+.playwright-cli/
+output/
+graphify-out/
+
 # codex-workflow-managed-start
 .codex_workflow_hidden_resources/
 AGENTS.md

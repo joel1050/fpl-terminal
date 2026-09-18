@@ -5,6 +5,8 @@ import {
   exportTerminalState,
   isLineupStale,
   parseSavedState,
+  parseSavedStateResult,
+  savedStateRefusalNotice,
   useTerminalStore,
 } from "@/store/terminalStore";
 
@@ -385,5 +387,26 @@ describe("saved state versioning", () => {
     const saved = exportTerminalState({ ...useTerminalStore.getState(), playerIds: squad.playerIds, byPosition: squad.byPosition });
     expect(parseSavedState(JSON.stringify({ ...saved, version: SAVED_STATE_VERSION + 1 }))).toBeNull();
     expect(parseSavedState(JSON.stringify({ ...saved, version: "next" }))).toBeNull();
+  });
+
+  it("distinguishes missing, accepted, and refused saves", () => {
+    const saved = exportTerminalState({ ...useTerminalStore.getState(), playerIds: squad.playerIds, byPosition: squad.byPosition });
+    expect(parseSavedStateResult(null)).toEqual({ status: "missing" });
+    expect(parseSavedStateResult(JSON.stringify(saved))).toMatchObject({ status: "accepted", state: { squad } });
+    expect(parseSavedStateResult("not json")).toEqual({ status: "refused", reason: "malformed" });
+    expect(parseSavedStateResult(JSON.stringify({ ...saved, version: SAVED_STATE_VERSION + 1 }))).toEqual({ status: "refused", reason: "newer" });
+    expect(savedStateRefusalNotice({ status: "refused", reason: "newer" })).toMatch(/kept untouched|newer/i);
+  });
+
+  it("blocks writeback only when hydration refuses a save", () => {
+    useTerminalStore.getState().hydrate(null, { persistenceBlocked: true });
+    expect(useTerminalStore.getState().persistenceBlocked).toBe(true);
+
+    useTerminalStore.getState().hydrate({ squad });
+    expect(useTerminalStore.getState().persistenceBlocked).toBe(false);
+
+    useTerminalStore.getState().hydrate(null, { persistenceBlocked: true });
+    useTerminalStore.getState().reset();
+    expect(useTerminalStore.getState().persistenceBlocked).toBe(false);
   });
 });

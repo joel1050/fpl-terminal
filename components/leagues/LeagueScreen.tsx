@@ -8,7 +8,7 @@ import { diffLiveSnapshots, type LiveExplainBlock } from "@/lib/leagues/diffLive
 import { LIVE_FEED_MAX_EVENTS, mergeFeedEvents } from "@/lib/leagues/feedEvents";
 import { buildLeagueOwnership } from "@/lib/leagues/leagueImpact";
 import { pickWeeklyTeam, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
-import { exportTerminalState, parseSavedState, useTerminalStore } from "@/store/terminalStore";
+import { exportTerminalState, parseSavedStateResult, savedStateRefusalNotice, useTerminalStore } from "@/store/terminalStore";
 import type { EntryHistoryRow, LiveFeedEvent, LiveStandingRow } from "@/types/leagues";
 import type { Player, Position } from "@/types/player";
 import LiveFeed from "./LiveFeed";
@@ -82,10 +82,12 @@ function TeamGate({
   gameweek,
   players,
   bootstrapReady,
+  savedStateNotice,
 }: {
   gameweek: number | null;
   players: Player[];
   bootstrapReady: boolean;
+  savedStateNotice?: string | null;
 }) {
   const replaceSquad = useTerminalStore((state) => state.replaceSquad);
   const riskMode = useTerminalStore((state) => state.riskMode);
@@ -132,6 +134,7 @@ function TeamGate({
       </header>
       <div className="mode-screen import-screen">
         <p className="mode-tagline">FPL TEAM REQUIRED</p>
+        {savedStateNotice && <p className="live-notice" role="alert">{savedStateNotice}</p>}
         <form className="import-card" onSubmit={submit}>
           <p>Import your FPL Team ID to unlock your live Gameweek, mini-leagues and squad tracker.</p>
           <div className="import-controls">
@@ -450,10 +453,16 @@ export default function LeagueScreen() {
   const savedLeagueKey = useTerminalStore((state) => state.selectedLeagueKey);
   const rememberLeague = useTerminalStore((state) => state.setSelectedLeagueKey);
   const initializeGameweek = useTerminalStore((state) => state.initializeGameweek);
+  const persistenceBlocked = useTerminalStore((state) => state.persistenceBlocked);
+  const savedStateNotice = useTerminalStore((state) => state.savedStateNotice);
 
   useEffect(() => {
     const raw = window.localStorage.getItem("fpl-terminal-state");
-    useTerminalStore.getState().hydrate(raw ? parseSavedState(raw) : null);
+    const result = parseSavedStateResult(raw);
+    useTerminalStore.getState().hydrate(
+      result.status === "accepted" ? result.state : null,
+      { persistenceBlocked: result.status === "refused", savedStateNotice: result.status === "refused" ? savedStateRefusalNotice(result) : null },
+    );
   }, []);
 
   const data = useLeaguesData(entryId, savedLeagueKey);
@@ -473,8 +482,9 @@ export default function LeagueScreen() {
   useEffect(() => {
     if (!isHydrated) return;
     const state = useTerminalStore.getState();
+    if (state.persistenceBlocked) return;
     window.localStorage.setItem("fpl-terminal-state", JSON.stringify(exportTerminalState(state)));
-  }, [entryId, isHydrated, savedLeagueKey]);
+  }, [entryId, isHydrated, persistenceBlocked, savedLeagueKey]);
 
   if (!isHydrated) return <main className="leagues-app" aria-busy="true" />;
 
@@ -484,6 +494,7 @@ export default function LeagueScreen() {
         gameweek={gameweek}
         players={data.bootstrap.data?.players ?? []}
         bootstrapReady={data.bootstrap.status === "READY"}
+        savedStateNotice={savedStateNotice}
       />
     );
   }
@@ -516,6 +527,7 @@ export default function LeagueScreen() {
           <button type="button" className="text-button" onClick={() => void data.refreshLive()} data-testid="live-refresh">REFRESH</button>
         </div>
       </header>
+      {savedStateNotice && <p className="live-notice" role="alert">{savedStateNotice}</p>}
       {liveDegraded && (
         <p className="live-notice" role="status">
           LIVE FPL DATA UNAVAILABLE · SHOWING THE LAST GOOD SNAPSHOT{liveNotice ? ` · ${liveNotice.toUpperCase()}` : ""}

@@ -10,6 +10,7 @@ import { legalSquad, playerMap } from "@/lib/analysis/context";
 import type { SingleTransferSuggestion } from "@/types/analysis";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 const requestSchema = z.object({
   squad: z.array(z.number().int().positive()).length(15),

@@ -53,6 +53,21 @@ export type ApplyLineupInput = {
   viceCaptainId?: number;
 };
 
+export type SavedStateReadResult =
+  | { status: "missing" }
+  | { status: "accepted"; state: Partial<PersistedTerminalState> }
+  | { status: "refused"; reason: "malformed" | "newer" };
+
+export type HydrateOptions = { persistenceBlocked?: boolean; savedStateNotice?: string | null };
+
+export const SAVED_STATE_REFUSAL_NOTICE = "Saved terminal state could not be loaded; the original save was kept. Import a compatible export or reset to start fresh.";
+
+export function savedStateRefusalNotice(result: Extract<SavedStateReadResult, { status: "refused" }>): string {
+  return result.reason === "newer"
+    ? "This save was created by a newer FPL Terminal build and was kept untouched. Open it with that build, import a compatible export, or reset to start fresh."
+    : SAVED_STATE_REFUSAL_NOTICE;
+}
+
 /**
  * The shape written to local storage and to a downloaded export.
  *
@@ -823,6 +838,10 @@ export type TerminalState = {
   panelRatios: Partial<Record<DesktopPanel, number>>;
   dismissedTransferKeys: string[];
   isHydrated: boolean;
+  /** Refused persisted data stays untouched until an explicit replacement/reset. */
+  persistenceBlocked: boolean;
+  /** Ephemeral recovery guidance for a refused persisted save. */
+  savedStateNotice: string | null;
   setMode: (mode: TerminalMode | null) => void;
   /** Market spend and the displayed bank let the store update either a hand-built budget or an imported baseline. */
   setBankTenths: (tenths: number, context: { spentTenths: number; priceById?: ReadonlyMap<number, number> }) => boolean;
@@ -855,7 +874,7 @@ export type TerminalState = {
   applyLineup: (input: ApplyLineupInput) => boolean;
   swapStarterBench: (starterId: number, benchId: number) => boolean;
   reorderBench: (order: number[]) => boolean;
-  hydrate: (state: Partial<PersistedTerminalState> | null) => void;
+  hydrate: (state: Partial<PersistedTerminalState> | null, options?: HydrateOptions) => void;
   reset: () => void;
 };
 
@@ -909,6 +928,8 @@ const initial = {
   panelRatios: {},
   dismissedTransferKeys: [],
   isHydrated: false,
+  persistenceBlocked: false,
+  savedStateNotice: null as string | null,
 };
 
 export const useTerminalStore = create<TerminalState>((set, get) => ({
@@ -1121,7 +1142,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     };
     const gameweek = lineup.gameweek;
     const nextState = { ...get(), ...next, planningGameweek: clampGameweek(gameweek, get().currentGameweek), gameweekPlans: {} };
-    set({ ...next, planningGameweek: nextState.planningGameweek, gameweekPlans: { [gameweek]: planFromState(nextState, gameweek) } });
+    set({ ...next, planningGameweek: nextState.planningGameweek, gameweekPlans: { [gameweek]: planFromState(nextState, gameweek) }, persistenceBlocked: false, savedStateNotice: null });
     return true;
   },
   setChip: (gameweek, chip) => {
@@ -1539,8 +1560,10 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     set(activePlanPatch(state, { benchOrder: [...order] }));
     return true;
   },
-  hydrate: (state) => {
-    if (!state) return set({ isHydrated: true });
+  hydrate: (state, options) => {
+    const persistenceBlocked = options?.persistenceBlocked ?? false;
+    const savedStateNotice = options?.savedStateNotice ?? null;
+    if (!state) return set({ isHydrated: true, persistenceBlocked, savedStateNotice });
     const current = get();
     const hasSquad = Object.prototype.hasOwnProperty.call(state, "squad");
     const incomingSquad = sanitizeSquad(state.squad);
@@ -1608,9 +1631,11 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       dismissedTransferKeys: [...new Set((Array.isArray(state.dismissedTransferKeys) ? state.dismissedTransferKeys : []).filter((key): key is string => typeof key === "string" && /^[1-9]\d*:[1-9]\d*$/.test(key)))].slice(0, 600),
       gameweekPlans: nextPlans,
       isHydrated: true,
+      persistenceBlocked,
+      savedStateNotice,
     });
   },
-  reset: () => set({ ...initial, isHydrated: true }),
+  reset: () => set({ ...initial, isHydrated: true, persistenceBlocked: false }),
 }));
 
 export function exportTerminalState(state: TerminalState): PersistedTerminalState {
@@ -1649,10 +1674,11 @@ export function exportTerminalState(state: TerminalState): PersistedTerminalStat
   };
 }
 
-export function parseSavedState(raw: string): Partial<PersistedTerminalState> | null {
+export function parseSavedStateResult(raw: string | null): SavedStateReadResult {
+  if (raw === null) return { status: "missing" };
   try {
     const value = JSON.parse(raw) as Partial<PersistedTerminalState>;
-    if (!value || typeof value !== "object" || Array.isArray(value) || !sanitizeSquad(value.squad)) return null;
+    if (!value || typeof value !== "object" || Array.isArray(value) || !sanitizeSquad(value.squad)) return { status: "refused", reason: "malformed" };
     // Unversioned saves predate the stamp and are read as version 0: their
     // fields go through the same sanitizers, so they load rather than vanish.
     // A save from a newer build is the one case worth refusing - this build
@@ -1660,7 +1686,8 @@ export function parseSavedState(raw: string): Partial<PersistedTerminalState> | 
     // that is still fine in the tab that wrote it. Refusing keeps that save
     // untouched on disk for the newer build to pick up again.
     const version = value.version ?? 0;
-    if (typeof version !== "number" || !Number.isFinite(version) || version > SAVED_STATE_VERSION) return null;
+    if (typeof version === "number" && Number.isFinite(version) && version > SAVED_STATE_VERSION) return { status: "refused", reason: "newer" };
+    if (typeof version !== "number" || !Number.isFinite(version)) return { status: "refused", reason: "malformed" };
     const parsed: Partial<PersistedTerminalState> = { ...value, squad: sanitizeSquad(value.squad) };
     if (Object.prototype.hasOwnProperty.call(value, "gameweekPlans")) parsed.gameweekPlans = sanitizePlans(value.gameweekPlans);
     else parsed.gameweekPlans = {};
@@ -1675,10 +1702,19 @@ export function parseSavedState(raw: string): Partial<PersistedTerminalState> | 
       else delete parsed.transferBaseline;
     }
     if (Object.prototype.hasOwnProperty.call(value, "usedChips")) parsed.usedChips = sanitizeUsedChips(value.usedChips);
-    return parsed;
+    return { status: "accepted", state: parsed };
   } catch {
-    return null;
+    return { status: "refused", reason: "malformed" };
   }
+}
+
+/** Reads local storage while preserving the distinction between no save and a refused save. */
+export const readSavedState = parseSavedStateResult;
+
+/** Backwards-compatible parser for callers that only need accepted state. */
+export function parseSavedState(raw: string): Partial<PersistedTerminalState> | null {
+  const result = parseSavedStateResult(raw);
+  return result.status === "accepted" ? result.state : null;
 }
 
 /** Migration helper used when no baseline was ever saved. */

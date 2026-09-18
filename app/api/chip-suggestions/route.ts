@@ -18,6 +18,7 @@ import type { ChipKind } from "@/types/chips";
 import type { Position } from "@/types/player";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 const chipSchema = z.enum(["wildcard", "freehit", "bboost", "3xc"]);
 

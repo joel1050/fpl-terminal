@@ -9,6 +9,7 @@ import { DEFAULT_BUDGET_TENTHS } from "@/lib/analysis/context";
 import { enforceComputeRateLimit } from "@/lib/http/computeRateLimit";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 const requestSchema = z.object({
   budgetTenths: z.number().int().nonnegative().optional(),

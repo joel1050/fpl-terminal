@@ -41,6 +41,8 @@ interface Snapshot<T> {
   data: T;
 }
 
+export const FPL_MEMORY_CACHE_MAX_ENTRIES = 1_000;
+
 const memory = new Map<string, MemoryEntry<unknown>>();
 
 export function clearFplCache(): void {
@@ -48,11 +50,26 @@ export function clearFplCache(): void {
 }
 
 export function getMemoryCache<T>(key: string): MemoryEntry<T> | undefined {
-  return memory.get(key) as MemoryEntry<T> | undefined;
+  const entry = memory.get(key) as MemoryEntry<T> | undefined;
+  if (entry) {
+    memory.delete(key);
+    memory.set(key, entry);
+  }
+  return entry;
 }
 
 export function setMemoryCache<T>(key: string, data: T, fetchedAt = Date.now()): void {
+  memory.delete(key);
   memory.set(key, { data, fetchedAt });
+  while (memory.size > FPL_MEMORY_CACHE_MAX_ENTRIES) {
+    const oldest = memory.keys().next().value;
+    if (oldest === undefined) return;
+    memory.delete(oldest);
+  }
+}
+
+export function getFplMemoryCacheSize(): number {
+  return memory.size;
 }
 
 export function getFreshness(

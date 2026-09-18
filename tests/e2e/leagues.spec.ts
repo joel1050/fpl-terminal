@@ -128,7 +128,8 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(summary.locator(".live-metrics strong")).toHaveText(["—", "—", "—", "—", "—", "—", "—"]);
 
     const squadPanel = page.getByRole("region", { name: "Live squad" });
-    await expect(squadPanel).toContainText("LIVE SQUAD UNAVAILABLE");
+    await expect(squadPanel).toContainText("NO LIVE SQUAD YET");
+    await expect(squadPanel).toContainText("Picks appear once the Gameweek deadline passes.");
     await expect(squadPanel.getByTestId("live-roster")).toHaveCount(0);
     await expect(squadPanel).not.toContainText("Saka");
     await expect(squadPanel).not.toContainText("Andersen");
