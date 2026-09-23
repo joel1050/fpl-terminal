@@ -14,7 +14,9 @@ vi.mock("@/lib/fpl/client", () => ({
   getFixtures: mocks.getFixtures,
 }));
 vi.mock("@/lib/historical/load", () => ({ loadHistoricalBundle: mocks.loadHistoricalBundle }));
-vi.mock("@/lib/fpl/normalize", () => ({
+// `toWireBootstrap` stays real: it is what the route ships, and it is pure.
+vi.mock("@/lib/fpl/normalize", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/fpl/normalize")>()),
   normalizeBootstrap: mocks.normalizeBootstrap,
   enrichBootstrapWithProjections: mocks.enrichBootstrapWithProjections,
   projectionCacheKey: mocks.projectionCacheKey,

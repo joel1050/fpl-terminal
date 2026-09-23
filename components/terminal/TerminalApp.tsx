@@ -229,28 +229,83 @@ function normalizePackedComponents(value: unknown): number[] | undefined {
   return packed.every((entry): entry is number => entry !== undefined) ? packed : undefined;
 }
 
-function normalizeProjectionFixtures(value: unknown): NonNullable<Player["projection"]>["fixtures"] {
+/** One fixture row, from a player, a team schedule, or a projection entry. */
+function normalizeFixtureRow(value: unknown): PlayerFixture | null {
+  const fixture = objectOf(value);
+  const gameweek = numberOf(readField(fixture, "gameweek", "event"));
+  const opponentTeamId = numberOf(readField(fixture, "opponentTeamId", "opponent_team_id"));
+  const opponentShortName = stringOf(readField(fixture, "opponentShortName", "opponent_short_name"));
+  const isHome = readField(fixture, "isHome", "is_home");
+  if (gameweek === undefined || opponentTeamId === undefined || !opponentShortName || typeof isHome !== "boolean") return null;
+  return {
+    fixtureId: numberOf(readField(fixture, "fixtureId", "fixture_id", "id")),
+    gameweek,
+    opponentTeamId,
+    opponentShortName,
+    isHome,
+    difficulty: numberOf(readField(fixture, "difficulty")),
+  };
+}
+
+/**
+ * The season's fixtures per team id. The bootstrap ships one schedule per team
+ * rather than a copy per player, and every player on a team reads the same rows
+ * back out of here.
+ */
+function parseTeamFixtures(value: unknown): Map<number, PlayerFixture[]> {
+  const record = objectOf(value);
+  const schedules = new Map<number, PlayerFixture[]>();
+  if (!record) return schedules;
+  for (const [key, rows] of Object.entries(record)) {
+    const teamId = numberOf(key);
+    if (teamId === undefined) continue;
+    schedules.set(teamId, arrayOf(rows).flatMap((row) => normalizeFixtureRow(row) ?? []));
+  }
+  return schedules;
+}
+
+/**
+ * Puts each projection entry back beside its fixture.
+ *
+ * The entry carries a `fixtureId` and the numbers; the opponent comes from the
+ * team's schedule. Matching by id rather than by gameweek is what keeps a
+ * double gameweek's two entries on the right fixtures. An older payload that
+ * still embeds `fixture` is read as it stands.
+ *
+ * An entry whose fixture cannot be found keeps its points: the expected points
+ * drive the squad's weekly total, while the fixture only labels the row.
+ */
+function normalizeProjectionFixtures(
+  value: unknown,
+  schedule: readonly PlayerFixture[] = [],
+): NonNullable<Player["projection"]>["fixtures"] {
+  const byFixtureId = new Map(schedule.flatMap((row) => (row.fixtureId === undefined ? [] : [[row.fixtureId, row] as const])));
   return arrayOf(value).flatMap((item) => {
     const projection = objectOf(item);
-    const fixture = objectOf(readField(projection, "fixture"));
-    const gameweek = numberOf(readField(projection, "gameweek", "event")) ?? numberOf(readField(fixture, "gameweek", "event"));
+    const embedded = normalizeFixtureRow(readField(projection, "fixture"));
+    const gameweek = numberOf(readField(projection, "gameweek", "event")) ?? embedded?.gameweek;
     const expectedPoints = numberOf(readField(projection, "expectedPoints", "expected_points"));
     const expectedMinutes = numberOf(readField(projection, "expectedMinutes", "expected_minutes"));
-    const opponentTeamId = numberOf(readField(fixture, "opponentTeamId", "opponent_team_id"));
-    const opponentShortName = stringOf(readField(fixture, "opponentShortName", "opponent_short_name"));
-    const isHome = readField(fixture, "isHome", "is_home");
-    if (gameweek === undefined || expectedPoints === undefined || expectedMinutes === undefined || opponentTeamId === undefined || !opponentShortName || typeof isHome !== "boolean") return [];
+    if (gameweek === undefined || expectedPoints === undefined || expectedMinutes === undefined) return [];
+    const fixtureId = numberOf(readField(projection, "fixtureId", "fixture_id"));
+    const matched = embedded
+      ?? (fixtureId === undefined ? undefined : byFixtureId.get(fixtureId))
+      ?? schedule.find((row) => row.gameweek === gameweek);
     return [{
       gameweek,
       expectedPoints,
       expectedMinutes,
-      fixture: { gameweek, opponentTeamId, opponentShortName, isHome, difficulty: numberOf(readField(fixture, "difficulty")) },
+      fixture: matched ?? { gameweek, opponentTeamId: 0, opponentShortName: "—", isHome: false },
       packedComponents: normalizePackedComponents(readField(projection, "packedComponents", "packed_components")),
     }];
   });
 }
 
-function normalizePlayer(value: unknown, index: number): TerminalPlayer | null {
+function normalizePlayer(
+  value: unknown,
+  index: number,
+  teamFixtures: Map<number, PlayerFixture[]> = new Map(),
+): TerminalPlayer | null {
   const raw = objectOf(value);
   if (!raw) return null;
   const id = numberOf(readField(raw, "id", "playerId"));
@@ -271,9 +326,11 @@ function normalizePlayer(value: unknown, index: number): TerminalPlayer | null {
   const historical = objectOf(readField(raw, "historical")) ?? undefined;
   const selection = parsePlayerSelection(readField(raw, "selection"));
   const projectionRaw = firstObject(readField(raw, "projection"), readField(raw, "projections"));
+  const teamId = numberOf(readField(raw, "teamId", "team", "team_id")) ?? numberOf(readField(team, "id")) ?? 0;
+  const schedule = teamFixtures.get(teamId) ?? [];
   const projection = {
     playerId: id,
-    fixtures: normalizeProjectionFixtures(readField(projectionRaw, "fixtures")),
+    fixtures: normalizeProjectionFixtures(readField(projectionRaw, "fixtures"), schedule),
     nextGW: numberOf(readField(projectionRaw, "nextGW", "next_gw", "gw1")) ?? numberOf(readField(raw, "nextGW", "expected_points_next")) ?? 0,
     next3: numberOf(readField(projectionRaw, "next3", "next_3")) ?? 0,
     next5: numberOf(readField(projectionRaw, "next5", "next_5")) ?? 0,
@@ -284,22 +341,16 @@ function normalizePlayer(value: unknown, index: number): TerminalPlayer | null {
     confidence: (String(readField(projectionRaw, "confidence") ?? "LOW").toUpperCase() === "HIGH" ? "HIGH" : String(readField(projectionRaw, "confidence") ?? "").toUpperCase() === "MEDIUM" ? "MEDIUM" : "LOW") as "HIGH" | "MEDIUM" | "LOW",
     factors: [],
   };
-  const fixtures: PlayerFixture[] = arrayOf(readField(raw, "fixtures")).flatMap((value) => {
-    const fixture = objectOf(value);
-    const gameweek = numberOf(readField(fixture, "gameweek", "event"));
-    const opponentTeamId = numberOf(readField(fixture, "opponentTeamId", "opponent_team_id"));
-    const opponentShortName = stringOf(readField(fixture, "opponentShortName", "opponent_short_name"));
-    const isHome = readField(fixture, "isHome", "is_home");
-    return gameweek !== undefined && opponentTeamId !== undefined && opponentShortName && typeof isHome === "boolean"
-      ? [{ gameweek, opponentTeamId, opponentShortName, isHome, difficulty: numberOf(readField(fixture, "difficulty")) }]
-      : [];
-  });
+  // The bootstrap sends the schedule once per team; an older payload, a saved
+  // squad or a test fixture may still carry a copy on the player.
+  const own = arrayOf(readField(raw, "fixtures")).flatMap((value) => normalizeFixtureRow(value) ?? []);
+  const fixtures: PlayerFixture[] = own.length ? own : [...schedule];
   return {
     id,
     firstName,
     lastName,
     displayName,
-    teamId: numberOf(readField(raw, "teamId", "team", "team_id")) ?? numberOf(readField(team, "id")) ?? 0,
+    teamId,
     teamName: stringOf(readField(raw, "teamName", "team_name")) ?? stringOf(readField(team, "name")) ?? "—",
     teamShortName: stringOf(readField(raw, "teamShortName", "team_short_name", "team_code")) ?? stringOf(readField(team, "shortName", "short_name")) ?? "—",
     position,
@@ -339,8 +390,9 @@ export function normalizeBootstrap(value: unknown): Bootstrap {
   const metadata = firstObject(root.metadata, data.metadata);
   const playersRaw = arrayOf(readField(root, "players", "elements"));
   const dataPlayers = arrayOf(readField(data, "players", "elements"));
+  const teamFixtures = parseTeamFixtures(readField(data, "teamFixtures", "team_fixtures") ?? readField(root, "teamFixtures", "team_fixtures"));
   const players = (playersRaw.length ? playersRaw : dataPlayers)
-    .map(normalizePlayer)
+    .map((player, index) => normalizePlayer(player, index, teamFixtures))
     .filter((player): player is TerminalPlayer => player !== null)
     .map((player) => ({ ...player, projection: player.projection && (player.projection.nextGW || player.projection.next3 || player.projection.next5 || player.projection.next10) ? player.projection : projectPlayer(player, { currentGameweek: 1, horizon: 5 }) }));
   const events = arrayOf(readField(root, "events", "event")).length ? arrayOf(readField(root, "events", "event")) : arrayOf(readField(data, "events", "event"));

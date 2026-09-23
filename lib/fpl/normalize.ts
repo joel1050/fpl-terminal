@@ -5,6 +5,7 @@ import type {
   PlayerFixture,
   PlayerPerformanceStats,
   PlayerProfileData,
+  PlayerProjection,
   Position,
 } from "@/types/player";
 import type { HistoricalBundle } from "@/lib/historical/types";
@@ -286,6 +287,7 @@ function playerFixtures(
       const isHome = fixture.teamHomeId === playerTeamId;
       const opponentTeamId = isHome ? fixture.teamAwayId : fixture.teamHomeId;
       return {
+        fixtureId: fixture.id,
         gameweek: fixture.gameweek as number,
         opponentTeamId,
         opponentShortName: teams.get(opponentTeamId)?.shortName ?? "UNK",
@@ -450,6 +452,76 @@ function withPackedFixtureComponents(players: readonly Player[]): Player[] {
       },
     };
   });
+}
+
+/**
+ * One fixture's projection as the bootstrap ships it: the numbers, and an id to
+ * find the fixture by. A double gameweek gives two entries under one gameweek,
+ * so the id is what tells them apart — matching on gameweek alone would pair
+ * half of them with the wrong opponent.
+ */
+export interface WireFixtureProjection {
+  gameweek: number;
+  fixtureId?: number;
+  expectedPoints: number;
+  expectedMinutes: number;
+  packedComponents?: readonly number[];
+}
+
+export interface WirePlayer extends Omit<Player, "fixtures" | "projection"> {
+  projection?: Omit<PlayerProjection, "fixtures"> & { fixtures: WireFixtureProjection[] };
+}
+
+export interface WireBootstrap extends Omit<NormalizedBootstrap, "players"> {
+  players: WirePlayer[];
+  /** One schedule per team id, in place of one copy per player. */
+  teamFixtures: Record<number, PlayerFixture[]>;
+}
+
+/**
+ * Drops the two arrays that were repetition rather than information.
+ *
+ * `Player.fixtures` is the team's season, not the player's, so 659 players
+ * carried 20 distinct schedules between them. `FixtureProjection.fixture`
+ * repeats the row the player already holds. Together they were 5.9MB of a
+ * 10.9MB response at Gameweek 4 — past the size Vercel's edge will cache, so
+ * every visitor paid for a fresh projection of all 659 players instead of
+ * reading one cached copy.
+ *
+ * What is left does not grow back: `teamFixtures` is 20 schedules whatever the
+ * gameweek, and a projection entry is four numbers.
+ *
+ * Server-side callers keep the full shape. Only the bootstrap route trims, and
+ * `normalizeBootstrap` in the terminal rebuilds both fields as it parses, so
+ * nothing downstream of that parser knows the difference.
+ */
+export function toWireBootstrap(bootstrap: NormalizedBootstrap): WireBootstrap {
+  const teamFixtures: Record<number, PlayerFixture[]> = {};
+  for (const player of bootstrap.players) {
+    // Every player on a team has the same rows, so the first stands for all.
+    if (player.fixtures.length && !teamFixtures[player.teamId]) teamFixtures[player.teamId] = player.fixtures;
+  }
+  return {
+    ...bootstrap,
+    teamFixtures,
+    players: bootstrap.players.map(({ fixtures, projection, ...player }) => {
+      void fixtures;
+      if (!projection) return player;
+      return {
+        ...player,
+        projection: {
+          ...projection,
+          fixtures: projection.fixtures.map((entry) => ({
+            gameweek: entry.gameweek,
+            ...(entry.fixture.fixtureId === undefined ? {} : { fixtureId: entry.fixture.fixtureId }),
+            expectedPoints: entry.expectedPoints,
+            expectedMinutes: entry.expectedMinutes,
+            ...(entry.packedComponents ? { packedComponents: entry.packedComponents } : {}),
+          })),
+        },
+      };
+    }),
+  };
 }
 
 /**

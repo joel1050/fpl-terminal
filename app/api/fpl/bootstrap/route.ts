@@ -2,7 +2,7 @@ import { getBootstrap, getFixtures } from "@/lib/fpl/client";
 import { loadHistoricalBundle } from "@/lib/historical/load";
 import { enforceComputeRateLimit } from "@/lib/http/computeRateLimit";
 import { FPL_HTTP_CACHE, fplJson, errorList, refreshRequested } from "@/lib/fpl/http";
-import { enrichBootstrapWithProjections, normalizeBootstrap, projectionCacheKey } from "@/lib/fpl/normalize";
+import { enrichBootstrapWithProjections, normalizeBootstrap, projectionCacheKey, toWireBootstrap } from "@/lib/fpl/normalize";
 
 export const dynamic = "force-dynamic";
 // A refresh bypasses both caches and recomputes the full player universe: 3/min per client.
@@ -30,7 +30,7 @@ export async function GET(request: Request): Promise<Response> {
     },
   );
   return fplJson(
-    enriched.bootstrap,
+    toWireBootstrap(enriched.bootstrap),
     { bootstrap: bootstrap.freshness, fixtures: fixtures.freshness },
     errors,
     undefined,

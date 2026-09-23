@@ -1,62 +1,62 @@
 {
   "source": "https://clubelo.com/ENG",
-  "fetchedAt": "2026-09-08T06:13:55.178Z",
-  "snapshotDate": "2026-09-06",
+  "fetchedAt": "2026-09-23T18:15:06.032Z",
+  "snapshotDate": "2026-09-21",
   "homeFieldAdvantage": 40,
   "clubs": [
     {
       "name": "Arsenal",
       "tlc": "ARS",
       "slug": "Arsenal",
-      "elo": 2034.1982070221597
+      "elo": 2032.561602254581
     },
     {
       "name": "Aston Villa",
       "tlc": "AVL",
       "slug": "AstonVilla",
-      "elo": 1884.3609356943095
+      "elo": 1894.6781006357405
     },
     {
       "name": "Birmingham",
       "tlc": "BIR",
       "slug": "Birmingham",
-      "elo": 1621
+      "elo": 1622
     },
     {
       "name": "Blackburn",
       "tlc": "BLA",
       "slug": "Blackburn",
-      "elo": 1572
+      "elo": 1576
     },
     {
       "name": "Bournemouth",
       "tlc": "BOU",
       "slug": "Bournemouth",
-      "elo": 1853.5927427479899
+      "elo": 1860.6845850607374
     },
     {
       "name": "Bristol City",
       "tlc": "BRC",
       "slug": "BristolCity",
-      "elo": 1589
+      "elo": 1582
     },
     {
       "name": "Brentford",
       "tlc": "BRE",
       "slug": "Brentford",
-      "elo": 1844.9809200280392
+      "elo": 1860.0357645881686
     },
     {
       "name": "Brighton",
       "tlc": "BRI",
       "slug": "Brighton",
-      "elo": 1860.6488744357755
+      "elo": 1890.6626730487435
     },
     {
       "name": "Burnley",
       "tlc": "BUR",
       "slug": "Burnley",
-      "elo": 1653.1320357886088
+      "elo": 1645.7008405494012
     },
     {
       "name": "Cardiff",
@@ -68,127 +68,127 @@
       "name": "Chelsea",
       "tlc": "CHE",
       "slug": "Chelsea",
-      "elo": 1885.2451929386536
+      "elo": 1880.976751820214
     },
     {
       "name": "Coventry",
       "tlc": "COV",
       "slug": "Coventry",
-      "elo": 1692.2966557156028
+      "elo": 1691.456153690362
     },
     {
       "name": "Crystal Palace",
       "tlc": "CRY",
       "slug": "CrystalPalace",
-      "elo": 1820.6844627832272
+      "elo": 1824.6211456575356
     },
     {
       "name": "Derby",
       "tlc": "DER",
       "slug": "Derby",
-      "elo": 1578
+      "elo": 1570
     },
     {
       "name": "Everton",
       "tlc": "EVE",
       "slug": "Everton",
-      "elo": 1817.1348881464803
+      "elo": 1827.1973846386177
     },
     {
       "name": "Forest",
       "tlc": "FOR",
       "slug": "Forest",
-      "elo": 1802.566869114777
+      "elo": 1805.1687007720184
     },
     {
       "name": "Fulham",
       "tlc": "FUL",
       "slug": "Fulham",
-      "elo": 1792.3112887235927
+      "elo": 1806.5395887897987
     },
     {
       "name": "Hull",
       "tlc": "HUL",
       "slug": "Hull",
-      "elo": 1633
+      "elo": 1634
     },
     {
       "name": "Ipswich",
       "tlc": "IPS",
       "slug": "Ipswich",
-      "elo": 1689.4467242660496
+      "elo": 1694.44574352767
     },
     {
       "name": "Leeds",
       "tlc": "LEE",
       "slug": "Leeds",
-      "elo": 1810.0927868576682
+      "elo": 1816.4931488782754
     },
     {
       "name": "Leicester",
       "tlc": "LEI",
       "slug": "Leicester",
-      "elo": 1575
+      "elo": 1580
     },
     {
       "name": "Lincoln City",
       "tlc": "LIN",
       "slug": "LincolnCity",
-      "elo": 1609
+      "elo": 1610
     },
     {
       "name": "Liverpool",
       "tlc": "LIV",
       "slug": "Liverpool",
-      "elo": 1925.4474486950573
+      "elo": 1937.0764838332236
     },
     {
       "name": "Luton",
       "tlc": "LUT",
       "slug": "Luton",
-      "elo": 1556
+      "elo": 1544
     },
     {
       "name": "Man City",
       "tlc": "MCI",
       "slug": "ManCity",
-      "elo": 2021.661842397073
+      "elo": 2036.052183330061
     },
     {
       "name": "Middlesbrough",
       "tlc": "MID",
       "slug": "Middlesbrough",
-      "elo": 1650.3101553211234
+      "elo": 1649.937260373295
     },
     {
       "name": "Millwall",
       "tlc": "MIL",
       "slug": "Millwall",
-      "elo": 1646.6630376747862
+      "elo": 1639.475924680471
     },
     {
       "name": "Man United",
       "tlc": "MNU",
       "slug": "ManUnited",
-      "elo": 1883.9456103565544
+      "elo": 1879.2308254659358
     },
     {
       "name": "Newcastle",
       "tlc": "NEW",
       "slug": "Newcastle",
-      "elo": 1881.5587717482454
+      "elo": 1879.510386901236
     },
     {
       "name": "Norwich",
       "tlc": "NOR",
       "slug": "Norwich",
-      "elo": 1620
+      "elo": 1612
     },
     {
       "name": "Portsmouth",
       "tlc": "POR",
       "slug": "Portsmouth",
-      "elo": 1554
+      "elo": 1555
     },
     {
       "name": "QPR",
@@ -200,49 +200,49 @@
       "name": "Sheffield United",
       "tlc": "SHU",
       "slug": "SheffieldUnited",
-      "elo": 1622
+      "elo": 1609
     },
     {
       "name": "Southampton",
       "tlc": "SOU",
       "slug": "Southampton",
-      "elo": 1695.0117601136633
+      "elo": 1699.4134398625017
     },
     {
       "name": "Sunderland",
       "tlc": "SUN",
       "slug": "Sunderland",
-      "elo": 1732.4239241210005
+      "elo": 1737.4191077118912
     },
     {
       "name": "Swansea",
       "tlc": "SWA",
       "slug": "Swansea",
-      "elo": 1605
+      "elo": 1614
     },
     {
       "name": "Tottenham",
       "tlc": "TOT",
       "slug": "Tottenham",
-      "elo": 1804.667286848122
+      "elo": 1797.6481716000656
     },
     {
       "name": "West Brom",
       "tlc": "WBA",
       "slug": "WestBrom",
-      "elo": 1589
+      "elo": 1591
     },
     {
       "name": "West Ham",
       "tlc": "WHU",
       "slug": "WestHam",
-      "elo": 1773.2037833286306
+      "elo": 1777.1635708127224
     },
     {
       "name": "Wolves",
       "tlc": "WOL",
       "slug": "Wolves",
-      "elo": 1718.6749699964878
+      "elo": 1726.0988766660817
     },
     {
       "name": "Wrexham",
