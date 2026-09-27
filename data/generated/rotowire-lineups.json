@@ -1,6 +1,6 @@
 {
   "source": "https://www.rotowire.com/soccer/lineups.php",
-  "fetchedAt": "2026-09-26T18:11:02.292Z",
+  "fetchedAt": "2026-09-27T22:44:47.084Z",
   "dateRange": "Starting lineups for October 10, 2026 - October 15, 2026",
   "fixtures": [
     {
@@ -1261,6 +1261,13 @@
             "status": "QUES"
           },
           {
+            "rotowireId": 39983,
+            "name": "Patrick Dorgu",
+            "position": "M/D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/patrick-dorgu-39983",
+            "status": "QUES"
+          },
+          {
             "rotowireId": 21086,
             "name": "Bruno Fernandes",
             "position": "F/M",
@@ -1940,6 +1947,20 @@
             "name": "Federico Chiesa",
             "position": "F/M",
             "profileUrl": "https://www.rotowire.com/soccer/player/federico-chiesa-22388",
+            "status": "QUES"
+          },
+          {
+            "rotowireId": 26727,
+            "name": "Cody Gakpo",
+            "position": "F/M",
+            "profileUrl": "https://www.rotowire.com/soccer/player/cody-gakpo-26727",
+            "status": "QUES"
+          },
+          {
+            "rotowireId": 23369,
+            "name": "Alexander Isak",
+            "position": "F",
+            "profileUrl": "https://www.rotowire.com/soccer/player/alexander-isak-23369",
             "status": "QUES"
           },
           {
