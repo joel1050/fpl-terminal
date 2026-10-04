@@ -1,6 +1,6 @@
 {
-  "sourceFetchedAt": "2026-10-03T16:09:39.420Z",
-  "mappedAt": "2026-10-03T16:09:39.635Z",
+  "sourceFetchedAt": "2026-10-04T16:01:07.347Z",
+  "mappedAt": "2026-10-04T16:01:07.629Z",
   "mappings": [
     {
       "fixtureIndex": 0,
@@ -194,6 +194,24 @@
       "source": "UNAVAILABLE",
       "availabilityStatus": "QUES",
       "playerId": 26,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 0,
+      "kickoff": "October 10 7:30 AM ET",
+      "opponentAbbreviation": "LEE",
+      "teamSide": "HOME",
+      "teamName": "Arsenal",
+      "teamAbbreviation": "ARS",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 35552,
+      "name": "Piero Hincapie",
+      "position": "D",
+      "profileUrl": "https://www.rotowire.com/soccer/player/piero-hincapie-35552",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 9,
       "method": "EXACT_NAME"
     },
     {
@@ -444,6 +462,24 @@
       "profileUrl": "https://www.rotowire.com/soccer/player/dominic-calvert-lewin-23240",
       "source": "STARTER",
       "playerId": 346,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 0,
+      "kickoff": "October 10 7:30 AM ET",
+      "opponentAbbreviation": "ARS",
+      "teamSide": "AWAY",
+      "teamName": "Leeds United",
+      "teamAbbreviation": "LEE",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 37006,
+      "name": "Jean-Matteo Bahoya",
+      "position": "F/M",
+      "profileUrl": "https://www.rotowire.com/soccer/player/jean-matteo-bahoya-37006",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 648,
       "method": "EXACT_NAME"
     },
     {
@@ -2574,6 +2610,24 @@
       "source": "UNAVAILABLE",
       "availabilityStatus": "QUES",
       "playerId": 84,
+      "method": "EXACT_NAME"
+    },
+    {
+      "fixtureIndex": 4,
+      "kickoff": "October 10 10:00 AM ET",
+      "opponentAbbreviation": "AVL",
+      "teamSide": "AWAY",
+      "teamName": "Brentford",
+      "teamAbbreviation": "BRE",
+      "lineupStatus": "PREDICTED",
+      "rotowireId": 32949,
+      "name": "Mikkel Damsgaard",
+      "position": "F/M",
+      "profileUrl": "https://www.rotowire.com/soccer/player/mikkel-damsgaard-32949",
+      "status": "QUES",
+      "source": "UNAVAILABLE",
+      "availabilityStatus": "QUES",
+      "playerId": 96,
       "method": "EXACT_NAME"
     },
     {

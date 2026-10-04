@@ -1,6 +1,6 @@
 {
   "source": "https://www.rotowire.com/soccer/lineups.php",
-  "fetchedAt": "2026-10-03T16:09:39.420Z",
+  "fetchedAt": "2026-10-04T16:01:07.347Z",
   "dateRange": "Starting lineups for October 10, 2026 - October 15, 2026",
   "fixtures": [
     {
@@ -84,6 +84,13 @@
             "name": "Kai Havertz",
             "position": "F/M",
             "profileUrl": "https://www.rotowire.com/soccer/player/kai-havertz-23157",
+            "status": "QUES"
+          },
+          {
+            "rotowireId": 35552,
+            "name": "Piero Hincapie",
+            "position": "D",
+            "profileUrl": "https://www.rotowire.com/soccer/player/piero-hincapie-35552",
             "status": "QUES"
           },
           {
@@ -197,6 +204,13 @@
           }
         ],
         "unavailable": [
+          {
+            "rotowireId": 37006,
+            "name": "Jean-Matteo Bahoya",
+            "position": "F/M",
+            "profileUrl": "https://www.rotowire.com/soccer/player/jean-matteo-bahoya-37006",
+            "status": "QUES"
+          },
           {
             "rotowireId": 23803,
             "name": "Harry Wilson",
@@ -1116,6 +1130,13 @@
             "name": "Nathan Collins",
             "position": "D",
             "profileUrl": "https://www.rotowire.com/soccer/player/nathan-collins-31313",
+            "status": "QUES"
+          },
+          {
+            "rotowireId": 32949,
+            "name": "Mikkel Damsgaard",
+            "position": "F/M",
+            "profileUrl": "https://www.rotowire.com/soccer/player/mikkel-damsgaard-32949",
             "status": "QUES"
           },
           {
