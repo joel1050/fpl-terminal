@@ -25,7 +25,15 @@ export function sanitizePanelRatios(ratios: Partial<Record<DesktopPanel, number>
 }
 
 export type TerminalMode = "BUILD" | "ANALYZE";
-export type SortKey = "name" | "price" | "nextGW" | "form" | "next5" | "value" | "next10" | "value10" | "xgi" | "ownership";
+export type PlayerColumnKey = "own" | "form" | "next3" | "next5" | "value5" | "next10" | "value10" | "xgi" | "start";
+export const PLAYER_COLUMN_KEYS: PlayerColumnKey[] = ["own", "form", "next3", "next5", "value5", "next10", "value10", "xgi", "start"];
+export const DEFAULT_PLAYER_COLUMNS: PlayerColumnKey[] = ["own", "form", "next3", "next5", "start"];
+export type SquadView = "PITCH" | "TABLE";
+function sanitizeColumns(value: unknown): PlayerColumnKey[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return PLAYER_COLUMN_KEYS.filter((key) => value.includes(key));
+}
+export type SortKey = "name" | "price" | "nextGW" | "form" | "next3" | "next5" | "value" | "next10" | "value10" | "xgi" | "ownership";
 
 export type TerminalFilters = {
   position: Position | "ALL";
@@ -89,6 +97,8 @@ export type PersistedTerminalState = PersistentFPLState & {
   lineupGameweek?: number;
   lineupProjectionFingerprint?: string;
   panelRatios?: Partial<Record<DesktopPanel, number>>;
+  squadView?: SquadView;
+  playerColumns?: PlayerColumnKey[];
   dismissedTransferKeys?: string[];
   currentGameweek?: number;
   planningGameweek?: number;
@@ -836,6 +846,8 @@ export type TerminalState = {
   riskMode: RiskMode;
   benchStrategy: BenchStrategy;
   panelRatios: Partial<Record<DesktopPanel, number>>;
+  squadView: SquadView;
+  playerColumns: PlayerColumnKey[];
   dismissedTransferKeys: string[];
   isHydrated: boolean;
   /** Refused persisted data stays untouched until an explicit replacement/reset. */
@@ -867,6 +879,8 @@ export type TerminalState = {
   setSelectedPlayer: (id?: number) => void;
   setStrategy: (strategy: Partial<Pick<TerminalState, "horizon" | "transferHorizon" | "riskMode" | "benchStrategy">>) => void;
   setPanelRatios: (ratios: Partial<Record<DesktopPanel, number>>) => void;
+  setSquadView: (view: SquadView) => void;
+  setPlayerColumns: (keys: PlayerColumnKey[]) => void;
   setSelectedLeagueKey: (key: string) => void;
   dismissTransferSuggestion: (outgoingId: number, incomingId: number) => void;
   setCaptain: (id?: number) => boolean;
@@ -926,6 +940,8 @@ const initial = {
   riskMode: "BALANCED" as const,
   benchStrategy: "BALANCED" as const,
   panelRatios: {},
+  squadView: "PITCH" as SquadView,
+  playerColumns: DEFAULT_PLAYER_COLUMNS,
   dismissedTransferKeys: [],
   isHydrated: false,
   persistenceBlocked: false,
@@ -1495,6 +1511,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     if (isLeagueKey(key)) set({ selectedLeagueKey: key });
   },
   setPanelRatios: (ratios) => set({ panelRatios: sanitizePanelRatios(ratios) }),
+  setSquadView: (squadView) => set({ squadView }),
+  setPlayerColumns: (keys) => set({ playerColumns: sanitizeColumns(keys) ?? DEFAULT_PLAYER_COLUMNS }),
   dismissTransferSuggestion: (outgoingId, incomingId) => {
     if (!Number.isSafeInteger(outgoingId) || outgoingId < 1 || !Number.isSafeInteger(incomingId) || incomingId < 1) return;
     const key = `${outgoingId}:${incomingId}`;
@@ -1628,6 +1646,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       riskMode: state.riskMode === "SAFE" || state.riskMode === "BALANCED" || state.riskMode === "AGGRESSIVE" ? state.riskMode : current.riskMode,
       benchStrategy: state.benchStrategy === "CHEAP" || state.benchStrategy === "BALANCED" || state.benchStrategy === "STRONG" ? state.benchStrategy : current.benchStrategy,
       panelRatios: sanitizePanelRatios(state.panelRatios),
+      squadView: state.squadView === "TABLE" ? "TABLE" : "PITCH",
+      playerColumns: sanitizeColumns(state.playerColumns) ?? DEFAULT_PLAYER_COLUMNS,
       dismissedTransferKeys: [...new Set((Array.isArray(state.dismissedTransferKeys) ? state.dismissedTransferKeys : []).filter((key): key is string => typeof key === "string" && /^[1-9]\d*:[1-9]\d*$/.test(key)))].slice(0, 600),
       gameweekPlans: nextPlans,
       isHydrated: true,
@@ -1664,6 +1684,8 @@ export function exportTerminalState(state: TerminalState): PersistedTerminalStat
     riskMode: state.riskMode,
     benchStrategy: state.benchStrategy,
     panelRatios: state.panelRatios,
+    squadView: state.squadView,
+    playerColumns: state.playerColumns,
     dismissedTransferKeys: state.dismissedTransferKeys,
     planningGameweek: state.planningGameweek,
     currentGameweek: state.currentGameweek,

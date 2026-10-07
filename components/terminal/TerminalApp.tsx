@@ -449,16 +449,18 @@ function FixtureRun({ player, gameweek }: { player: TerminalPlayer; gameweek: nu
   return <span className="fixture-run">{fixtures.map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>)}</span>;
 }
 
-type UniverseWeekMetrics = { xp: number; next5: number; next10: number; value: number; value10: number };
+type UniverseWeekMetrics = { xp: number; next3: number; next5: number; next10: number; value: number; value10: number };
 
 /** Market metrics for the planning gameweek, derived from the same weekly-lineup engine the squad uses. */
 function universeWeekFor(player: TerminalPlayer, gameweek: number): UniverseWeekMetrics {
   const week = weeklyPlayerMetrics(player, gameweek);
   const fixtures = player.projection?.fixtures ?? [];
+  const next3 = projectedPointsForGameweeks(fixtures, gameweek, 3);
   const next5 = projectedPointsForGameweeks(fixtures, gameweek, 5);
   const next10 = projectedPointsForGameweeks(fixtures, gameweek, 10);
   return {
     xp: week.points,
+    next3,
     next5,
     next10,
     value: valuePerMillion(next5, player.priceTenths),
@@ -695,7 +697,7 @@ export default function TerminalApp() {
     const state = useTerminalStore.getState();
     if (!state.isHydrated || state.persistenceBlocked) return;
     window.localStorage.setItem("fpl-terminal-state", JSON.stringify(exportTerminalState(state)));
-  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.persistenceBlocked, store.mode, store.entryId, store.budgetTenths, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.transferHorizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys, store.chip, store.plannedTransfers, store.permanentSquad, store.transferBaseline, store.usedChips]);
+  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.persistenceBlocked, store.mode, store.entryId, store.budgetTenths, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.transferHorizon, store.riskMode, store.benchStrategy, store.panelRatios, store.squadView, store.playerColumns, store.dismissedTransferKeys, store.chip, store.plannedTransfers, store.permanentSquad, store.transferBaseline, store.usedChips]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -887,6 +889,7 @@ export default function TerminalApp() {
         price: (player) => player.priceTenths,
         nextGW: (player) => week(player)?.xp ?? 0,
         form: (player) => player.current.form ?? 0,
+        next3: (player) => week(player)?.next3 ?? 0,
         next5: (player) => week(player)?.next5 ?? 0,
         value: (player) => week(player)?.value ?? 0,
         next10: (player) => week(player)?.next10 ?? 0,
