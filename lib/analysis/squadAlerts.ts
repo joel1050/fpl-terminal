@@ -25,7 +25,7 @@ export function squadAlerts(input: {
     const level = availabilityOf(player);
     if (level !== "AVAILABLE") {
       const week = weeklyPlayerMetrics(player, input.gameweek);
-      const chance = player.chanceOfPlaying === undefined ? "" : `, ${player.chanceOfPlaying}%`;
+      const chance = typeof player.chanceOfPlaying !== "number" ? "" : `, ${player.chanceOfPlaying}%`;
       (level === "UNAVAILABLE" ? unavailable : doubtful).push({
         kind: "AVAILABILITY",
         playerId: player.id,

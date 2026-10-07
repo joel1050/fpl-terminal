@@ -38,6 +38,15 @@ describe("squadAlerts", () => {
     expect(out[0].title).toContain("unavailable, 0%");
   });
 
+  it.each([["i", "unavailable"], ["d", "doubtful"]])("omits the chance when status %s has a null chance", (status, word) => {
+    const s = squad.map((x) => (x.id === 5 ? p(5, { status, chanceOfPlaying: null }) : x));
+    const out = squadAlerts(base(s));
+    expect(out).toHaveLength(1);
+    expect(out[0].title).toBe(`P5 ${word}`);
+    expect(out[0].title).not.toContain("null");
+    expect(out[0].title).not.toContain("%");
+  });
+
   it("says where a doubtful bench player sits", () => {
     const s = squad.map((x) => (x.id === 13 ? p(13, { status: "d", chanceOfPlaying: 75 }) : x));
     expect(squadAlerts(base(s))[0].detail).toContain("1st on bench");
