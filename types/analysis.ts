@@ -107,3 +107,10 @@ export interface SearchPlayersInput {
 }
 
 export type { SquadState };
+
+export interface SquadAlert {
+  kind: "AVAILABILITY" | "HARD_RUN" | "BLANK" | "DOUBLE";
+  playerId: number;
+  title: string;
+  detail: string;
+}
