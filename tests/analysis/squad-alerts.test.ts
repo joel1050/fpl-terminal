@@ -30,6 +30,14 @@ describe("squadAlerts", () => {
     expect(out[0].title).toContain("doubtful, 50%");
   });
 
+  it("flags a starter with a 0% chance as unavailable", () => {
+    const s = squad.map((x) => (x.id === 3 ? p(3, { status: "a", chanceOfPlaying: 0 }) : x));
+    const out = squadAlerts(base(s));
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ kind: "AVAILABILITY", playerId: 3 });
+    expect(out[0].title).toContain("unavailable, 0%");
+  });
+
   it("says where a doubtful bench player sits", () => {
     const s = squad.map((x) => (x.id === 13 ? p(13, { status: "d", chanceOfPlaying: 75 }) : x));
     expect(squadAlerts(base(s))[0].detail).toContain("1st on bench");

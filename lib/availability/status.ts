@@ -6,6 +6,7 @@ export type Availability = "AVAILABLE" | "DOUBTFUL" | "UNAVAILABLE";
 export function availabilityOf(player: Pick<Player, "status" | "chanceOfPlaying">): Availability {
   const status = player.status.trim().toLowerCase();
   if (["i", "u", "n", "s"].includes(status)) return "UNAVAILABLE";
+  if (player.chanceOfPlaying === 0) return "UNAVAILABLE";
   if (status === "d") return "DOUBTFUL";
   if (typeof player.chanceOfPlaying === "number" && player.chanceOfPlaying < 75) return "DOUBTFUL";
   return "AVAILABLE";
