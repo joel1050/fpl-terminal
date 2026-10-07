@@ -8,6 +8,7 @@ import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateCh
 import { effectiveBudgetTenths, explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
 import { pickWeeklyTeam, projectWeeklyLineupHorizons, scoreLineupWithChip, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import { ChipSelector, ChipStrategyPanel, usePlanningWeekFinance } from "@/components/terminal/ChipPanels";
+import { availabilityOf, type Availability } from "@/lib/availability/status";
 import { chipLabel } from "@/lib/chips/seasonPolicy";
 import type { ChipKind } from "@/types/chips";
 import type { OptimizerResult } from "@/lib/optimizer/optimizer";
@@ -412,14 +413,6 @@ function points(value: number | undefined): string {
 
 function metric(value: number | undefined, suffix = ""): string {
   return value === undefined || !Number.isFinite(value) || value === 0 ? "—" : `${value.toFixed(1)}${suffix}`;
-}
-
-function availabilityOf(player: TerminalPlayer): TerminalFilters["availability"] {
-  const status = player.status.trim().toLowerCase();
-  if (["i", "u", "n", "s"].includes(status)) return "UNAVAILABLE";
-  if (status === "d") return "DOUBTFUL";
-  if (typeof player.chanceOfPlaying === "number" && player.chanceOfPlaying < 75) return "DOUBTFUL";
-  return "AVAILABLE";
 }
 
 function confidenceOf(player: TerminalPlayer): TerminalFilters["confidence"] {
@@ -1981,7 +1974,7 @@ function profileXgi(stats: Player["current"]): number | undefined {
   if (stats.expectedGoals === undefined && stats.expectedAssists === undefined) return undefined;
   return (stats.expectedGoals ?? 0) + (stats.expectedAssists ?? 0);
 }
-function profileAvailabilityLabel(value: ReturnType<typeof availabilityOf>): string { return value === "AVAILABLE" ? "Available" : value === "DOUBTFUL" ? "Doubtful" : "Unavailable"; }
+function profileAvailabilityLabel(value: Availability): string { return value === "AVAILABLE" ? "Available" : value === "DOUBTFUL" ? "Doubtful" : "Unavailable"; }
 function formatProfileDate(value: string | undefined): string {
   if (!value) return "Date TBC";
   const date = new Date(value);
