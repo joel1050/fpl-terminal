@@ -298,8 +298,8 @@
 .fc.d5 { background: var(--fdr-5-bg); color: var(--fdr-5-text); }
 
 .fc.blank {
-  border: 1px dashed var(--muted);
   background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
 }
 
 /* A slot is 12px wide whatever the fixture count, so five slots fit a 76px phone token. */
