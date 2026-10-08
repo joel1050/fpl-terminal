@@ -1,3 +1,4 @@
+import { chipLabel, normalizeChipName } from "@/lib/chips/seasonPolicy";
 import type { LiveEntryPlayer, PlayerFixtureStatus } from "@/types/leagues";
 
 export type RoleMarker = "C" | "VC";
@@ -71,5 +72,23 @@ export function feedAgeLabel(event: { seeded: boolean; at: number }, now: number
   if (event.seeded) return null;
   const minutes = Math.floor((now - event.at) / 60_000);
   if (!Number.isFinite(minutes)) return null;
-  return minutes < 1 ? "<1M" : `${minutes}M`;
+  return minutes < 1 ? "<1m" : `${minutes}m`;
+}
+
+/** Model constants such as "BONUS CHANGE" read as plain words on screen: "Bonus change". */
+export function sentenceCase(label: string): string {
+  const lower = label.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+/** The FPL short name for a chip (WC, FH, BB, TC); a chip the app does not know reads in plain words. */
+export function activeChipLabel(chip: string | null | undefined): string {
+  if (!chip) return "—";
+  const kind = normalizeChipName(chip);
+  return kind ? chipLabel(kind) : sentenceCase(chip.replace(/_/g, " "));
+}
+
+/** League types as the FPL site writes them. */
+export function leagueTypeLabel(type: "OVERALL" | "CLASSIC" | "H2H"): string {
+  return type === "H2H" ? "H2H" : sentenceCase(type);
 }

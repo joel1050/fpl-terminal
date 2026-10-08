@@ -24,6 +24,7 @@ import LiveSquad from "./LiveSquad";
 import MatchCentre from "./MatchCentre";
 import MyLeaguesPanel, { buildLeagueRows } from "./MyLeaguesPanel";
 import { parseLeagueKey } from "@/lib/leagues/leagueKey";
+import { sentenceCase } from "@/lib/leagues/display";
 import { useLeaguesData } from "./useLeaguesData";
 
 const EMPTY_PLAYER_MAP = new Map<number, Player>();
@@ -135,17 +136,17 @@ function TeamGate({
   return (
     <main className="leagues-app">
       <header className="topbar">
-        <span className="brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></span>
+        <span className="brand"><span className="brand-mark">FPL</span><span className="brand-name">Terminal</span></span>
         <WorkspaceSwitcher />
       </header>
       <div className="mode-screen import-screen">
-        <p className="mode-tagline">FPL TEAM REQUIRED</p>
+        <p className="mode-tagline">FPL team required</p>
         {savedStateNotice && <p className="live-notice" role="alert">{savedStateNotice}</p>}
         <form className="import-card" onSubmit={submit}>
           <p>Import your FPL Team ID to unlock your live Gameweek, mini-leagues and squad tracker.</p>
           <div className="import-controls">
             <input
-              aria-label="FPL TEAM ID"
+              aria-label="FPL Team ID"
               inputMode="numeric"
               value={teamId}
               onChange={(event) => setTeamId(event.target.value)}
@@ -153,10 +154,10 @@ function TeamGate({
               data-testid="gate-team-id-input"
             />
             <button className="primary-button" type="submit" disabled={busy || !players.length}>
-              {busy ? "IMPORTING…" : "IMPORT"}
+              {busy ? "Importing…" : "Import"}
             </button>
           </div>
-          {!players.length && <span role="status">{bootstrapReady ? "FPL data is unavailable." : "SYNCING FPL DATA…"}</span>}
+          {!players.length && <span role="status">{bootstrapReady ? "FPL data is unavailable." : "Loading FPL data…"}</span>}
           {error && <span className="import-error" role="alert">{error}</span>}
         </form>
       </div>
@@ -388,7 +389,7 @@ function WorkspaceBody({
       <nav className="mobile-tabs leagues-mobile-tabs" aria-label="Leagues panels">
         {MOBILE_TABS.map((tab) => (
           <button key={tab} type="button" className={mobileTab === tab ? "active" : ""} onClick={() => setMobileTab(tab)}>
-            {tab}
+            {sentenceCase(tab)}
           </button>
         ))}
       </nav>
@@ -420,7 +421,7 @@ function WorkspaceBody({
           <section className="leagues-panel" aria-label="Live squad">
             <div className="panel-header">
               <div className="header-actions">
-                <span className="section-kicker">LIVE SQUAD</span>
+                <span className="section-kicker">Live squad</span>
                 {!selectedIsOwn && (
                   <button type="button" className="icon-button" onClick={() => selectEntry(entryId)} aria-label="Return to my team" title="Return to my team">
                     ↩
@@ -548,7 +549,7 @@ export default function LeagueScreen() {
   return (
     <main className="leagues-app">
       <header className="topbar leagues-topbar">
-        <span className="brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></span>
+        <span className="brand"><span className="brand-mark">FPL</span><span className="brand-name">Terminal</span></span>
         <WorkspaceSwitcher />
         {phone && (
           <button type="button" className="league-switch" aria-haspopup="dialog" aria-label={switchLabel} onClick={() => setLeagueSheetOpen(true)}>
@@ -560,9 +561,9 @@ export default function LeagueScreen() {
           <StatusCell label="GW" value={gameweek !== null ? String(gameweek) : "—"} />
           <StatusCell
             label="Matches"
-            value={liveDegraded ? "STALE"
-              : data.anyFixtureLive ? "LIVE"
-                : data.anyFixtureSettling ? "BONUS" : "IDLE"}
+            value={liveDegraded ? "Stale"
+              : data.anyFixtureLive ? "Live"
+                : data.anyFixtureSettling ? "Bonus" : "Idle"}
             tone={liveDegraded ? "red" : data.anyFixtureLive || data.anyFixtureSettling ? "green" : ""}
           />
           <StatusCell
@@ -578,7 +579,7 @@ export default function LeagueScreen() {
       {savedStateNotice && <p className="live-notice" role="alert">{savedStateNotice}</p>}
       {liveDegraded && (
         <p className="live-notice" role="status">
-          LIVE FPL DATA UNAVAILABLE · SHOWING THE LAST GOOD SNAPSHOT{liveNotice ? ` · ${liveNotice.toUpperCase()}` : ""}
+          Live FPL data unavailable. Showing the last good snapshot{liveNotice ? ` · ${liveNotice}` : ""}
         </p>
       )}
       <WorkspaceBody

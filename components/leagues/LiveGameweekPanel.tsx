@@ -1,10 +1,9 @@
 "use client";
 
+import { compactCount } from "@/lib/display/format";
+import { activeChipLabel } from "@/lib/leagues/display";
 import type { LiveEntryCalculation } from "@/types/leagues";
 
-function rankLabel(value: number | undefined): string {
-  return value === undefined ? "—" : value.toLocaleString();
-}
 
 export default function LiveGameweekPanel({
   gameweek,
@@ -28,19 +27,19 @@ export default function LiveGameweekPanel({
     <section className="leagues-panel" aria-label="Live Gameweek summary">
       <div className="panel-header">
         <div>
-          <span className="section-kicker">LIVE GAMEWEEK</span>
+          <span className="section-kicker">Live Gameweek</span>
           <span className="panel-count">{entryLabel}</span>
         </div>
         <span className={`data-badge ${live ? "live" : ""}`}>GW {gameweek ?? "—"}</span>
       </div>
       <div className="live-metrics">
-        <div><span>LIVE POINTS</span><strong className="cyan-text">{calculation ? calculation.netPoints : "—"}</strong></div>
-        <div><span>OFFICIAL RANK</span><strong>{rankLabel(overallRank)}</strong></div>
-        <div><span>GW RANK</span><strong>{rankLabel(gameweekRank)}</strong></div>
-        <div><span>DONE</span><strong className="green">{done || "—"}</strong></div>
-        <div><span>LIVE</span><strong className="amber">{liveCount || "—"}</strong></div>
-        <div><span>TO PLAY</span><strong>{toPlay || "—"}</strong></div>
-        <div><span>ACTIVE CHIP</span><strong>{calculation?.activeChip ? calculation.activeChip.replace(/_/g, " ").toUpperCase() : "—"}</strong></div>
+        <div><span>Live points</span><strong className="cyan-text">{calculation ? calculation.netPoints : "—"}</strong></div>
+        <div><span>Overall</span><strong title={overallRank?.toLocaleString()}>{compactCount(overallRank)}</strong></div>
+        <div><span>GW rank</span><strong title={gameweekRank?.toLocaleString()}>{compactCount(gameweekRank)}</strong></div>
+        <div><span>Done</span><strong className="green">{done || "—"}</strong></div>
+        <div><span>Live</span><strong className="amber">{liveCount || "—"}</strong></div>
+        <div><span>To play</span><strong>{toPlay || "—"}</strong></div>
+        <div><span>Chip</span><strong>{activeChipLabel(calculation?.activeChip)}</strong></div>
       </div>
     </section>
   );

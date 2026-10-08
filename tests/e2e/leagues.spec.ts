@@ -128,7 +128,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(summary.locator(".live-metrics strong")).toHaveText(["—", "—", "—", "—", "—", "—", "—"]);
 
     const squadPanel = page.getByRole("region", { name: "Live squad" });
-    await expect(squadPanel).toContainText("NO LIVE SQUAD YET");
+    await expect(squadPanel).toContainText("No live squad yet");
     await expect(squadPanel).toContainText("Picks appear once the Gameweek deadline passes.");
     await expect(squadPanel.getByTestId("live-roster")).toHaveCount(0);
     await expect(squadPanel).not.toContainText("Saka");
@@ -177,8 +177,8 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
     const notice = page.locator(".live-notice");
     await expect(notice).toBeVisible();
-    await expect(notice).toContainText("LAST GOOD SNAPSHOT");
-    await expect(page.locator(".topbar-stats")).toContainText("STALE");
+    await expect(notice).toContainText("last good snapshot");
+    await expect(page.locator(".topbar-stats")).toContainText("Stale");
     // The squad it already loaded stays on screen rather than blanking to zero.
     await expect(page.getByTestId("live-roster")).toBeVisible();
   });
@@ -253,8 +253,8 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(goalEvent.first()).toBeVisible();
     // The goal is worth five; the armband is what makes it ten to this manager.
     await expect(goalEvent.first().locator(".feed-delta")).toHaveText("+5");
-    await expect(goalEvent.first()).toContainText("YOU +10 · CAPTAIN");
-    await expect(goalEvent.first()).toContainText("LEAGUE IMPACT +6.3");
+    await expect(goalEvent.first()).toContainText("You +10 · captain");
+    await expect(goalEvent.first()).toContainText("League impact +6.3");
   });
 
   test("shows the Gameweek so far the moment the page opens", async ({ page }) => {
@@ -265,7 +265,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
     // scored before anyone opened the page is still on the feed.
     const goal = feed.locator('[data-testid="feed-event"]').filter({ hasText: "Mbeumo GOAL" });
     await expect(goal.first()).toBeVisible();
-    await expect(goal.first()).toContainText("YOU +5");
+    await expect(goal.first()).toContainText("You +5");
     // The row reports what the goal was worth, not everything the player has scored.
     await expect(goal.first().locator(".feed-delta")).toHaveText("+5");
     // FPL says a goal happened, never when, so a reconstructed row is left without
@@ -278,10 +278,10 @@ test.describe("FPL Terminal Leagues workspace", () => {
     const feed = page.getByRole("complementary", { name: "Live feed" });
     const appearances = feed.locator('[data-testid="feed-event"]').filter({ hasText: "APPEARANCE" });
 
-    await expect(feed.getByRole("button", { name: "FOCUS", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(feed.getByRole("button", { name: "Focus", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(appearances).toHaveCount(0);
 
-    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+    await feed.getByRole("button", { name: "All", exact: true }).click();
     await expect(appearances.first()).toBeVisible();
   });
 
@@ -289,7 +289,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await importTeam(page);
     const feed = page.getByRole("complementary", { name: "Live feed" });
     await page.getByTestId("live-refresh").click();
-    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+    await feed.getByRole("button", { name: "All", exact: true }).click();
 
     const rows = feed.locator('[data-testid="feed-event"]');
     // The captain's goal is worth double to this manager, so it reads as a gain.
@@ -303,7 +303,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
   test("offers a way back to the top when events land out of sight", async ({ page }) => {
     await importTeam(page);
     const feed = page.getByRole("complementary", { name: "Live feed" });
-    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+    await feed.getByRole("button", { name: "All", exact: true }).click();
     await expect(feed.locator('[data-testid="feed-event"]').first()).toBeVisible();
 
     // Nothing is unread while the newest row is already on screen.
@@ -323,7 +323,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await importTeam(page);
     const matchCentre = page.getByRole("region", { name: "Match centre" });
 
-    await matchCentre.getByRole("button", { name: "LIVE", exact: true }).click();
+    await matchCentre.getByRole("button", { name: "Live", exact: true }).click();
     const liveRow = matchCentre.getByTestId("match-row");
     await expect(liveRow).toHaveCount(1);
     await expect(liveRow).toContainText("TST");
@@ -331,34 +331,34 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
     // Every match starts collapsed, so the detail sections are out of the way
     // until the row is opened.
-    await expect(liveRow.getByText("GOALS", { exact: true })).toHaveCount(0);
-    await expect(liveRow).toContainText("YOU");
+    await expect(liveRow.getByText("Goals", { exact: true })).toHaveCount(0);
+    await expect(liveRow).toContainText("You");
 
     await liveRow.locator("summary").click();
-    await expect(liveRow.getByText("GOALS", { exact: true })).toBeVisible();
-    await expect(liveRow.getByText("ASSISTS", { exact: true })).toBeVisible();
+    await expect(liveRow.getByText("Goals", { exact: true })).toBeVisible();
+    await expect(liveRow.getByText("Assists", { exact: true })).toBeVisible();
     await expect(liveRow.getByText("BONUS POINTS · PROVISIONAL")).toBeVisible();
     await expect(liveRow).toContainText("Haaland");
 
     await liveRow.locator("summary").click();
-    await expect(liveRow.getByText("GOALS", { exact: true })).toHaveCount(0);
+    await expect(liveRow.getByText("Goals", { exact: true })).toHaveCount(0);
 
-    await matchCentre.getByRole("button", { name: "FINISHED", exact: true }).click();
+    await matchCentre.getByRole("button", { name: "Finished", exact: true }).click();
     const finishedRow = matchCentre.getByTestId("match-row");
     await expect(finishedRow).toHaveCount(1);
     await expect(finishedRow).toContainText("TRV");
 
     // A match FPL has settled shows its confirmed bonus, not a provisional read.
     await finishedRow.locator("summary").click();
-    await expect(finishedRow.getByText("BONUS POINTS", { exact: true })).toBeVisible();
+    await expect(finishedRow.getByText("Bonus points", { exact: true })).toBeVisible();
     await expect(finishedRow).toContainText("Mbeumo");
     await expect(finishedRow.locator(".match-bps li").first()).toContainText("+3");
 
-    await matchCentre.getByRole("button", { name: "UPCOMING", exact: true }).click();
+    await matchCentre.getByRole("button", { name: "Upcoming", exact: true }).click();
     await expect(matchCentre.getByTestId("match-row")).toHaveCount(1);
     await expect(matchCentre.getByTestId("match-row")).toContainText("TWA");
 
-    await matchCentre.getByRole("button", { name: "ALL", exact: true }).click();
+    await matchCentre.getByRole("button", { name: "All", exact: true }).click();
     await expect(matchCentre.getByTestId("match-row")).toHaveCount(3);
   });
 
@@ -471,7 +471,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.locator(".leagues-mobile-tabs").getByRole("button", { name: "FEED" }).click();
     const feed = page.getByRole("complementary", { name: "Live feed" });
-    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+    await feed.getByRole("button", { name: "All", exact: true }).click();
 
     // Haaland is in nobody's squad, so each of his events is worth 0.0 to the league.
     const haaland = feed.locator('[data-testid="feed-event"]').filter({ hasText: "Haaland" });

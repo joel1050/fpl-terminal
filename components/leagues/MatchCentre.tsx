@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { playerValueLabel } from "@/lib/leagues/display";
+import { playerValueLabel, sentenceCase } from "@/lib/leagues/display";
 import { buildMatchDetail, type MatchContributor, type MatchDetail } from "@/lib/leagues/matchDetail";
 import type { FixtureView, LiveEntryPlayer } from "@/types/leagues";
 import type { Player } from "@/types/player";
@@ -51,13 +51,13 @@ function MatchSection({
 
 function MatchBody({ fixture, detail }: { fixture: FixtureView; detail: MatchDetail }) {
   if (fixture.state === "UPCOMING") {
-    return <div className="match-detail"><p className="match-section-empty">MATCH NOT STARTED</p></div>;
+    return <div className="match-detail"><p className="match-section-empty">Not started</p></div>;
   }
-  const bonusTitle = detail.bonusConfirmed ? "BONUS POINTS" : "BONUS POINTS · PROVISIONAL";
+  const bonusTitle = detail.bonusConfirmed ? "Bonus points" : "Bonus points · provisional";
   return (
     <div className="match-detail">
-      <MatchSection title="GOALS" rows={detail.scorers} empty="NO GOALS" />
-      <MatchSection title="ASSISTS" rows={detail.assists} empty="NO ASSISTS" />
+      <MatchSection title="Goals" rows={detail.scorers} empty="No goals" />
+      <MatchSection title="Assists" rows={detail.assists} empty="No assists" />
       <div className="match-section">
         <span className="section-kicker small">{bonusTitle}</span>
         {detail.bonus.length ? (
@@ -72,7 +72,7 @@ function MatchBody({ fixture, detail }: { fixture: FixtureView; detail: MatchDet
             ))}
           </ul>
         ) : (
-          <p className="match-section-empty">NO BPS RECORDED</p>
+          <p className="match-section-empty">No BPS yet</p>
         )}
       </div>
     </div>
@@ -134,20 +134,20 @@ export default function MatchCentre({
   return (
     <section className="leagues-panel" aria-label="Gameweek fixtures">
       <div className="panel-header">
-        <div><span className="section-kicker">MATCH CENTRE</span></div>
+        <div><span className="section-kicker">Match centre</span></div>
         <div className="segmented" role="group" aria-label="Match filter">
           {FILTERS.map((value) => (
             <button key={value} type="button" className={filter === value ? "active" : ""} onClick={() => setFilter(value)}>
-              {value}
+              {sentenceCase(value)}
             </button>
           ))}
         </div>
       </div>
-      {status === "LOADING" && <div className="empty-state">SYNCING FIXTURES…</div>}
-      {status === "ERROR" && <div className="empty-state">FIXTURE DATA UNAVAILABLE</div>}
+      {status === "LOADING" && <div className="empty-state">Loading fixtures…</div>}
+      {status === "ERROR" && <div className="empty-state">Fixture data unavailable</div>}
       {(status === "READY" || status === "IDLE") && (
         <div className="match-list">
-          {!visible.length && <div className="empty-state">NO MATCHES IN THIS VIEW</div>}
+          {!visible.length && <div className="empty-state">No matches in this view</div>}
           {visible.map((fixture) => {
             const open = expanded.has(fixture.id);
             const detail = detailByFixture.get(fixture.id);
@@ -169,11 +169,11 @@ export default function MatchCentre({
                   </div>
                   {detail.owned.length > 0 && (
                     <p className="match-owned">
-                      YOU {detail.ownedPoints} PTS ·{" "}
+                      You {detail.ownedPoints} pts ·{" "}
                       {detail.owned.slice(0, 6).map((player) => {
                         const value = playerValueLabel(player);
                         const name = nameByElement.get(player.elementId) ?? `#${player.elementId}`;
-                        return `${name} ${value.value}${value.started ? " P" : " xP"}${player.multiplier === 0 ? " (B)" : ""}`;
+                        return `${name} ${value.value}${value.started ? "" : " xP"}${player.multiplier === 0 ? " (bench)" : ""}`;
                       }).join(" · ")}
                       {detail.owned.length > 6 ? ` · +${detail.owned.length - 6} more` : ""}
                     </p>

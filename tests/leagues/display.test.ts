@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { feedAgeLabel, fixtureTag, kickoffLabel, playerValueLabel, roleMarkerFor, shouldShowLeagueImpact } from "@/lib/leagues/display";
+import { activeChipLabel, feedAgeLabel, fixtureTag, kickoffLabel, leagueTypeLabel, playerValueLabel, roleMarkerFor, sentenceCase, shouldShowLeagueImpact } from "@/lib/leagues/display";
 import type { LiveEntryPlayer } from "@/types/leagues";
 
 const SHORT_NAMES = new Map([[7, "CHE"], [8, "BOU"]]);
@@ -112,12 +112,12 @@ describe("feedAgeLabel", () => {
   const NOW = 1_700_000_000_000;
 
   it("reads a fresh event as brand new even when the clock has not caught up", () => {
-    expect(feedAgeLabel({ seeded: false, at: NOW + 4_000 }, NOW)).toBe("<1M");
+    expect(feedAgeLabel({ seeded: false, at: NOW + 4_000 }, NOW)).toBe("<1m");
   });
 
   it("counts whole minutes once they have passed", () => {
-    expect(feedAgeLabel({ seeded: false, at: NOW - 30_000 }, NOW)).toBe("<1M");
-    expect(feedAgeLabel({ seeded: false, at: NOW - 8 * 60_000 }, NOW)).toBe("8M");
+    expect(feedAgeLabel({ seeded: false, at: NOW - 30_000 }, NOW)).toBe("<1m");
+    expect(feedAgeLabel({ seeded: false, at: NOW - 8 * 60_000 }, NOW)).toBe("8m");
   });
 
   it("gives a reconstructed event no age, since its timestamp is when it was read", () => {
@@ -137,5 +137,28 @@ describe("league impact line", () => {
     expect(shouldShowLeagueImpact(-0)).toBe(false);
     expect(shouldShowLeagueImpact(0.04)).toBe(false);
     expect(shouldShowLeagueImpact(-0.04)).toBe(false);
+  });
+});
+
+describe("screen labels for model constants", () => {
+  it("writes constants in plain words", () => {
+    expect(sentenceCase("BONUS CHANGE")).toBe("Bonus change");
+    expect(sentenceCase("MY TEAM")).toBe("My team");
+    expect(sentenceCase("")).toBe("");
+  });
+
+  it("names a chip by its FPL short name, and an unknown chip in plain words", () => {
+    expect(activeChipLabel("bboost")).toBe("BB");
+    expect(activeChipLabel("3xc")).toBe("TC");
+    expect(activeChipLabel("freehit")).toBe("FH");
+    expect(activeChipLabel("wildcard")).toBe("WC");
+    expect(activeChipLabel("assistant_manager")).toBe("Assistant manager");
+    expect(activeChipLabel(null)).toBe("—");
+  });
+
+  it("keeps H2H in capitals and writes the other league types as words", () => {
+    expect(leagueTypeLabel("H2H")).toBe("H2H");
+    expect(leagueTypeLabel("CLASSIC")).toBe("Classic");
+    expect(leagueTypeLabel("OVERALL")).toBe("Overall");
   });
 });

@@ -39,7 +39,7 @@ function LivePlayerCard({
                 {fixtureTag(fixture, shortNames)}
               </span>
             ))
-            : <span className="live-opponent blank">NO FIXTURE</span>}
+            : <span className="live-opponent blank">No fixture</span>}
         </span>
         <span className={`slot-value ${value.started ? "actual" : "projected"}`} data-testid="live-player-value">
           {value.value} <small>{value.unit}</small>
@@ -66,8 +66,8 @@ export default function LiveSquad({
   loading: boolean;
 }) {
   if (loading || !calculation) {
-    return <div className="empty-state">{loading ? "SYNCING LIVE SQUAD…"
-      : <><strong>NO LIVE SQUAD YET</strong><span>Picks appear once the Gameweek deadline passes.</span></>}</div>;
+    return <div className="empty-state">{loading ? "Loading live squad…"
+      : <><strong>No live squad yet</strong><span>Picks appear once the Gameweek deadline passes.</span></>}</div>;
   }
   const starters = calculation.playerPoints.filter((player) => !player.onBench);
   const bench = calculation.playerPoints
@@ -98,7 +98,7 @@ export default function LiveSquad({
         })}
       </section>
       <section className="bench-section" aria-label="Live bench">
-        <div className="lineup-roster-heading"><span>BENCH</span><span>{bench.length} PLAYERS</span></div>
+        <div className="lineup-roster-heading"><span>Bench</span><span>{bench.length} players</span></div>
         <div className="slot-grid bench-slot-grid">
           {bench.map((player) => (
             <LivePlayerCard
