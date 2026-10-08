@@ -1756,7 +1756,7 @@ function TransferSuggestionsPanel({
           <span className="panel-count">{suggestions.length ? `${suggestions.length} FOUND` : "EXACT"}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <label style={{ fontSize: "11px", color: "var(--muted)", display: "flex", alignItems: "center", gap: "4px" }}>
+          <label style={{ fontSize: "12px", color: "var(--muted)", display: "flex", alignItems: "center", gap: "4px" }}>
             <span>BANKED:</span>
             <select
               value={bankedTransfers}

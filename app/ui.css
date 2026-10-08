@@ -1,0 +1,10 @@
+/* Redesign layer. Loaded after globals.css (see app/layout.tsx) so its rules
+   win over the older ones at equal specificity. */
+
+@media (max-width: 900px) {
+  :root { --min-text: 12px; }
+  .terminal-app *, .leagues-app * { letter-spacing: normal; }
+  /* At 12px the header actions no longer fit beside the brand; let them wrap to their own row instead of overflowing the page. */
+  .terminal-app .topbar { flex-wrap: wrap; }
+  .terminal-app .topbar-actions { flex: 0 0 auto; }
+}
