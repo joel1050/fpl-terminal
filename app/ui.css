@@ -267,3 +267,68 @@
     box-shadow: inset 0 2px var(--accent);
   }
 }
+
+/* Fixture difficulty (Task 6). Green to red means difficulty only; a blank Gameweek stays neutral. */
+
+.fixture-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.fc {
+  display: inline-block;
+  min-width: 30px;
+  padding: 1px 3px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--font-num);
+  font-size: var(--min-text);
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.fc.d1 { background: var(--fdr-1-bg); color: var(--fdr-1-text); }
+.fc.d2 { background: var(--fdr-2-bg); color: var(--fdr-2-text); }
+.fc.d3 { background: var(--fdr-3-bg); color: var(--fdr-3-text); }
+.fc.d4 { background: var(--fdr-4-bg); color: var(--fdr-4-text); }
+.fc.d5 { background: var(--fdr-5-bg); color: var(--fdr-5-text); }
+
+.fc.blank {
+  border: 1px dashed var(--muted);
+  background: transparent;
+}
+
+/* A slot is 12px wide whatever the fixture count, so five slots fit a 76px phone token. */
+.run {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.run-slot {
+  display: inline-flex;
+  gap: 1px;
+  width: 12px;
+}
+
+.run-slot > i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fdr-3);
+}
+
+.run-slot > i.d1 { background: var(--fdr-1); }
+.run-slot > i.d2 { background: var(--fdr-2); }
+.run-slot > i.d3 { background: var(--fdr-3); }
+.run-slot > i.d4 { background: var(--fdr-4); }
+.run-slot > i.d5 { background: var(--fdr-5); }
+
+.run-slot > i.blank {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
