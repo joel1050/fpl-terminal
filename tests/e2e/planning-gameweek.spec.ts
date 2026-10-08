@@ -44,7 +44,7 @@ test.describe("persisted planning gameweeks", () => {
 
   test("switches card projections and badges, then reloads the selected plan without entry fetch", async ({ page }) => {
     const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    const selector = region.getByRole("group", { name: /select planning gameweek/i });
+    const selector = page.getByRole("group", { name: /select planning gameweek/i });
     const haaland = region.locator("article.squad-slot", { hasText: "Haaland" }).first();
     await expect(selector).toContainText("GW 1");
     await expect(haaland.locator(".slot-xp")).toHaveText("11.4 xP");
@@ -77,19 +77,18 @@ test.describe("persisted planning gameweeks", () => {
   });
 
   test("restores the official current-gameweek squad from Settings", async ({ page }) => {
-    const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    await region.getByRole("group", { name: /select planning gameweek/i }).getByRole("button", { name: /next planning gameweek/i }).click();
-    await expect(region.getByRole("group", { name: /select planning gameweek/i })).toContainText("GW 2");
+    await page.getByRole("group", { name: /select planning gameweek/i }).getByRole("button", { name: /next planning gameweek/i }).click();
+    await expect(page.getByRole("group", { name: /select planning gameweek/i })).toContainText("GW 2");
 
     const entryRequests: string[] = [];
     page.on("request", (request) => {
       if (new URL(request.url()).pathname.includes("/api/fpl/entry/")) entryRequests.push(request.url());
     });
-    await region.locator("summary.compact-action", { hasText: "SETTINGS" }).click();
+    await page.getByRole("button", { name: "More", exact: true }).click();
     const dialog = page.waitForEvent("dialog").then((event) => event.accept());
-    await region.getByRole("button", { name: /reverse all changes/i }).click();
+    await page.getByRole("dialog", { name: "More" }).getByRole("button", { name: /reverse all changes/i }).click();
     await dialog;
-    await expect(region.getByRole("group", { name: /select planning gameweek/i })).toContainText("GW 1");
+    await expect(page.getByRole("group", { name: /select planning gameweek/i })).toContainText("GW 1");
     expect(entryRequests.some((url) => url.includes("/api/fpl/entry/4827193?gameweek=1"))).toBe(true);
     await expect.poll(() => page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");
@@ -103,13 +102,15 @@ test.describe("persisted planning gameweeks", () => {
     const metrics = await region.locator(".metric-strip").boundingBox();
     expect(metrics?.height).toBeLessThan(50);
 
-    await region.locator("summary.compact-action", { hasText: "SETTINGS" }).click();
-    const settings = await region.locator(".strategy-popover").boundingBox();
+    // The phone tab bar has a second More; the top bar's is the one that sits beside the gameweek.
+    await page.locator(".shell-topbar").getByRole("button", { name: "More", exact: true }).click();
+    const sheet = page.getByRole("dialog", { name: "More" });
+    const settings = await sheet.boundingBox();
     expect(settings).not.toBeNull();
     expect(settings!.x).toBeGreaterThanOrEqual(0);
     expect(settings!.x + settings!.width).toBeLessThanOrEqual(390);
 
-    const settingLabels = await region.locator(".strategy-popover .segmented").locator("button").allInnerTexts();
+    const settingLabels = await sheet.locator(".segmented").locator("button").allInnerTexts();
     expect(settingLabels).toEqual(["GW", "3GW", "5GW", "10GW", "CHEAP", "BALANCED", "STRONG"]);
   });
 
@@ -124,7 +125,7 @@ test.describe("persisted planning gameweeks", () => {
     );
     expect(new Set(actionTops).size).toBe(1);
 
-    await page.locator(".mobile-tabs button", { hasText: "MARKET" }).click();
+    await page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: "Players" }).click();
     const table = await page.locator(".table-wrap").evaluate((wrap) => ({
       overflow: wrap.scrollWidth - wrap.clientWidth,
       textUnderAdd: Array.from(wrap.querySelectorAll("tbody tr")).slice(0, 10).reduce((total, row) => {
@@ -184,8 +185,8 @@ test.describe("persisted planning gameweeks", () => {
     for (const width of [320, 375, 390]) {
       await page.setViewportSize({ width, height: 844 });
       const header = await page.evaluate(() => {
-        const topbar = document.querySelector(".terminal-app .topbar")!;
-        const stats = document.querySelector(".terminal-app .topbar-stats");
+        const topbar = document.querySelector(".terminal-app .shell-topbar")!;
+        const readout = Array.from(topbar.querySelectorAll(".status-cell, .shell-live"));
         const bar = topbar.getBoundingClientRect();
         const offCentre = Array.from(topbar.children)
           .filter((child) => child.getBoundingClientRect().width > 0)
@@ -194,36 +195,35 @@ test.describe("persisted planning gameweeks", () => {
             return Math.abs((box.top + box.bottom) / 2 - (bar.top + bar.bottom) / 2);
           });
         return {
-          statsShown: !!stats && getComputedStyle(stats).display !== "none",
+          readoutShown: readout.some((el) => getComputedStyle(el).display !== "none"),
           height: Math.round(bar.height),
           worstOffCentre: Math.round(Math.max(...offCentre)),
           overflow: topbar.scrollWidth - topbar.clientWidth,
           documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-          actions: Array.from(topbar.querySelectorAll(".topbar-actions .text-button")).map((button) => button.textContent?.trim()),
+          actions: Array.from(topbar.querySelectorAll(".shell-actions button")).filter((button) => button.getBoundingClientRect().width > 0).map((button) => button.textContent?.trim()),
         };
       });
 
-      expect(header.statsShown, `gameweek readout hidden at ${width}`).toBe(false);
-      expect(header.height, `one header row at ${width}`).toBeLessThan(60);
+      expect(header.readoutShown, `gameweek readout hidden at ${width}`).toBe(false);
+      expect(header.height, `one header row at ${width}`).toBeLessThanOrEqual(56);
       expect(header.worstOffCentre, `every item on that row at ${width}`).toBeLessThan(8);
       expect(header.overflow, `header fits at ${width}`).toBeLessThanOrEqual(0);
       expect(header.documentOverflow, `page fits at ${width}`).toBeLessThanOrEqual(0);
-      expect(header.actions).toEqual(["REFRESH", "EXPORT", "IMPORT", "RESET"]);
+      expect(header.actions).toEqual(["Refresh", "More"]);
     }
   });
 
-  test("closes the optimizer settings popover from its own close button", async ({ page }) => {
+  test("closes the More sheet from its own close button", async ({ page }) => {
     for (const size of [{ width: 390, height: 844 }, { width: 1280, height: 720 }]) {
       await page.setViewportSize(size);
-      if (size.width < 901) await page.getByRole("button", { name: "SQUAD", exact: true }).click().catch(() => {});
-      await page.locator(".strategy-settings > summary").click();
-      const popover = page.locator(".strategy-popover");
+      await page.locator(".shell-topbar").getByRole("button", { name: "More", exact: true }).click();
+      const popover = page.getByRole("dialog", { name: "More" });
       await expect(popover).toBeVisible();
 
-      const close = page.locator(".strategy-close");
+      const close = popover.getByRole("button", { name: "Close More" });
       const box = (await close.boundingBox())!;
       const pop = (await popover.boundingBox())!;
-      const title = await popover.locator(".section-kicker").evaluate((el) => {
+      const title = await popover.locator(".sheet-head strong").evaluate((el) => {
         const range = document.createRange();
         range.selectNodeContents(el);
         const rect = range.getBoundingClientRect();

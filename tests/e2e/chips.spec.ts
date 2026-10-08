@@ -148,8 +148,8 @@ test.describe("chip planning", () => {
     const reloaded = page.getByRole("region", { name: /squad builder and analysis/i });
     await expect(reloaded.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" })).toHaveAttribute("aria-pressed", "true");
 
-    await reloaded.getByRole("group", { name: /select planning gameweek/i }).getByRole("button", { name: /next planning gameweek/i }).click();
-    await expect(reloaded.getByRole("group", { name: /select planning gameweek/i })).toContainText("GW 2");
+    await page.getByRole("group", { name: /select planning gameweek/i }).getByRole("button", { name: /next planning gameweek/i }).click();
+    await expect(page.getByRole("group", { name: /select planning gameweek/i })).toContainText("GW 2");
     await expect(reloaded.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "NONE" })).toHaveAttribute("aria-pressed", "true");
     // GW2 holds the permanent squad: player 21 is back, temp pick 2 is gone.
     await expect.poll(() => page.evaluate(() => {
@@ -199,7 +199,8 @@ test.describe("chip planning", () => {
     const region = page.getByRole("region", { name: /squad builder and analysis/i });
     for (const size of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(size);
-      if (size.width < 901) await page.getByRole("button", { name: "SQUAD", exact: true }).click().catch(() => {});
+      // A fresh store opens on the Squad tab. The dev indicator sits over that tab's corner, so assert it rather than click it.
+      if (size.width < 901) await expect(page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: "Squad" })).toHaveAttribute("aria-current", "page");
       await expect(region.getByRole("group", { name: /select chip/i })).toBeVisible();
       await expect(region.locator(".chip-strategy")).toBeVisible();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import WorkspaceSwitcher from "@/components/terminal/WorkspaceSwitcher";
+import { BottomTabBar } from "@/components/shell/BottomTabBar";
+import { MoreSheet } from "@/components/shell/MoreSheet";
+import { exportState, importState, resetTerminalState } from "@/components/shell/stateFile";
 import { calculateLiveEntry, type LiveStats } from "@/lib/leagues/calculateLiveEntry";
 import { calculateLiveStandings } from "@/lib/leagues/calculateLiveStandings";
 import { diffLiveSnapshots, type LiveExplainBlock } from "@/lib/leagues/diffLiveSnapshots";
@@ -486,6 +490,11 @@ export default function LeagueScreen() {
     window.localStorage.setItem("fpl-terminal-state", JSON.stringify(exportTerminalState(state)));
   }, [entryId, isHydrated, persistenceBlocked, savedLeagueKey]);
 
+  const router = useRouter();
+  const importRef = useRef<HTMLInputElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [shellNotice, setShellNotice] = useState<string | null>(null);
+
   if (!isHydrated) return <main className="leagues-app" aria-busy="true" />;
 
   if (entryId === undefined) {
@@ -534,6 +543,25 @@ export default function LeagueScreen() {
         </p>
       )}
       <WorkspaceBody data={data} entryId={entryId} onSelectLeague={selectLeague} />
+      {shellNotice && <p className="live-notice" role="status">{shellNotice}</p>}
+      <input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, useTerminalStore.getState(), setShellNotice)} />
+      <BottomTabBar active="LEAGUES" onMore={() => setMoreOpen(true)} />
+      <MoreSheet
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        onRefresh={() => void data.refreshLive()}
+        onExport={() => exportState(useTerminalStore.getState())}
+        onImportClick={() => importRef.current?.click()}
+        onReset={() => {
+          if (!window.confirm("Reset the current squad and saved terminal state?")) return;
+          resetTerminalState(useTerminalStore.getState());
+          setShellNotice("Terminal state reset.");
+        }}
+        onModeChooser={() => {
+          useTerminalStore.getState().setMode(null);
+          router.push("/");
+        }}
+      />
     </main>
   );
 }

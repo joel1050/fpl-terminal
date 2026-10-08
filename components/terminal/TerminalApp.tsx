@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
-import WorkspaceSwitcher from "@/components/terminal/WorkspaceSwitcher";
+import { BottomTabBar } from "@/components/shell/BottomTabBar";
+import { MoreSheet } from "@/components/shell/MoreSheet";
+import { TopBar } from "@/components/shell/TopBar";
+import { exportState, importState, resetTerminalState } from "@/components/shell/stateFile";
 import type { NailedRating, Player, PlayerFixture, PlayerMatchPerformance, PlayerProfileData, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, TransferBaseline, WeeklyLineupPlan } from "@/types";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
 import { effectiveBudgetTenths, explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
@@ -28,6 +31,9 @@ import {
   type TerminalMode,
   type SortKey,
 } from "@/store/terminalStore";
+
+// The deadline formatter moved with the top bar; the Planner's tests still import it from here.
+export { formatDeadlineCountdown } from "@/components/shell/deadline";
 
 type UnknownRecord = Record<string, unknown>;
 type DataState = "SYNCING" | "LIVE" | "SNAPSHOT" | "STALE" | "EMPTY" | "ERROR";
@@ -622,7 +628,7 @@ export default function TerminalApp() {
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<ResizeState | null>(null);
-  const settingsRef = useRef<HTMLDetailsElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false });
   const { data, status, message, refresh, ageAnchor } = bootstrap;
   const liveCurrentGW = clamp(Math.round(data.gameweek ?? store.currentGameweek ?? 1), 1, 38);
@@ -1186,8 +1192,7 @@ export default function TerminalApp() {
 
   const reset = () => {
     if (window.confirm("Reset the current squad and saved terminal state?")) {
-      store.reset();
-      window.localStorage.removeItem("fpl-terminal-state");
+      resetTerminalState(store);
       setNotice("Terminal state reset.");
     }
   };
@@ -1280,19 +1285,17 @@ export default function TerminalApp() {
   const allSquadPlayersLocked = store.playerIds.length > 0 && store.playerIds.every((id) => store.lockedPlayerIds.includes(id));
   return (
     <main className="terminal-app">
-      <header className="topbar">
-        <button className="brand" onClick={() => store.setMode(null)} aria-label="Return to mode chooser"><span className="brand-mark">FPL</span><span>TERMINAL</span></button>
-        <WorkspaceSwitcher />
-        <div className="topbar-stats" aria-label="Terminal status">
-          <StatusCell label="GW" value={data.gameweek ? String(data.gameweek) : "—"} />
-          <DeadlineStatus deadline={data.deadline} />
-          <DataStatusCell status={status} ageAnchor={ageAnchor} fetchedAt={data.fetchedAt} />
-        </div>
-        <div className="topbar-actions"><button className="text-button" onClick={refresh}>REFRESH</button><button className="text-button" onClick={() => exportState(store)}>EXPORT</button><button className="text-button" onClick={() => importRef.current?.click()}>IMPORT</button><button className="text-button danger-text" onClick={reset}>RESET</button><input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, store, setNotice)} /></div>
-      </header>
+      <TopBar
+        planningGameweek={planningGameweek}
+        liveGameweek={liveCurrentGW}
+        onGameweek={changePlanningGameweek}
+        deadline={data.deadline}
+        statusSlot={<DataStatusCell status={status} ageAnchor={ageAnchor} fetchedAt={data.fetchedAt} />}
+        onRefresh={refresh}
+        more={<button type="button" aria-haspopup="dialog" aria-expanded={moreOpen} onClick={() => setMoreOpen(true)}>More</button>}
+      />
+      <input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, store, setNotice)} />
       {savedStateNotice && <p className="live-notice" role="alert">{savedStateNotice}</p>}
-
-      <nav className="mobile-tabs" aria-label="Terminal panels">{(["SQUAD", "MARKET"] as const).map((tab) => <button key={tab} className={store.activeMobileTab === tab ? "active" : ""} onClick={() => store.setMobileTab(tab)}>{tab}</button>)}</nav>
 
       <div className="terminal-grid" style={gridStyle}>
         <section id="terminal-panel-market" data-panel="market" className={`market-column ${collapsedPanels.market ? "panel-collapsed" : ""} ${store.activeMobileTab === "MARKET" ? "mobile-visible" : ""}`} aria-label="Player universe">
@@ -1305,9 +1308,9 @@ export default function TerminalApp() {
         </section>
 
         <section id="terminal-panel-squad" data-panel="squad" className={`squad-column ${collapsedPanels.squad ? "panel-collapsed" : ""} ${store.activeMobileTab === "SQUAD" ? "mobile-visible" : ""}`} aria-label="Squad builder and analysis">
-          <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><details className="strategy-settings" ref={settingsRef}><summary className="compact-action">SETTINGS</summary><div className="strategy-popover"><button type="button" className="icon-button strategy-close" aria-label="Close optimizer settings" onClick={() => { if (settingsRef.current) settingsRef.current.open = false; }}>×</button><StrategyControls horizon={store.horizon} benchStrategy={store.benchStrategy} setStrategy={store.setStrategy} /><div className="settings-divider" /><button type="button" className="settings-danger" disabled={!store.entryId || reverseBusy} onClick={() => void reverseAllChanges()}>{reverseBusy ? "RESTORING…" : "REVERSE ALL CHANGES"}</button>{!store.entryId && <span className="settings-note">Import an FPL team to restore official picks.</span>}</div></details><button type="button" className="compact-action squad-lock-all" disabled={store.playerIds.length === 0} aria-label={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} aria-pressed={allSquadPlayersLocked} title={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} onClick={store.toggleAllLocks}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={allSquadPlayersLocked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M12 7V5a4 4 0 0 0-7.7-1.5"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button><button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button><button className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "PICK TEAM · OUTDATED" : "PICK TEAM"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
+          <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><button type="button" className="compact-action squad-lock-all" disabled={store.playerIds.length === 0} aria-label={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} aria-pressed={allSquadPlayersLocked} title={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} onClick={store.toggleAllLocks}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={allSquadPlayersLocked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M12 7V5a4 4 0 0 0-7.7-1.5"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button><button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button><button className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "PICK TEAM · OUTDATED" : "PICK TEAM"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
           <div className="planning-stack">
-          <div className="planning-toolbar" aria-label="Squad planning Gameweek"><span className="section-kicker">PLAN</span><div className="planning-switcher" role="group" aria-label="Select planning Gameweek"><button type="button" className="planning-arrow" disabled={planningGameweek <= liveCurrentGW} onClick={() => changePlanningGameweek(planningGameweek - 1)} aria-label="Previous planning Gameweek">←</button><span aria-live="polite">GW {planningGameweek}</span><button type="button" className="planning-arrow" disabled={planningGameweek >= 38} onClick={() => changePlanningGameweek(planningGameweek + 1)} aria-label="Next planning Gameweek">→</button></div><span className="planning-live">LIVE GW {liveCurrentGW}</span><ChipSelector gameweek={planningGameweek} onNotice={setNotice} /></div>
+          <div className="planning-toolbar" aria-label="Squad planning Gameweek"><span className="section-kicker">PLAN</span><ChipSelector gameweek={planningGameweek} onNotice={setNotice} /></div>
           {store.planNotice && <div className="plan-notice" role="status"><span>{store.planNotice}</span><button type="button" className="toast-button" aria-label="Dismiss plan notice" onClick={() => store.clearPlanNotice()}>×</button></div>}
           </div>
           <div className="squad-sections lineup-roster" data-testid="squad-roster">
@@ -1334,6 +1337,20 @@ export default function TerminalApp() {
       {notice && (noticeMinimized
         ? <button type="button" className="toast toast-pill" aria-label="Show notification" onClick={() => setNoticeMinimized(false)}>{notice}</button>
         : <div className="toast" role="status"><span className="toast-message">{notice}</span><span className="toast-actions"><button type="button" className="toast-button" aria-label="Minimize" onClick={() => setNoticeMinimized(true)}>–</button><button type="button" className="toast-button" aria-label="Dismiss" onClick={() => setNotice(null)}>×</button></span></div>)}
+      <BottomTabBar active={store.activeMobileTab === "MARKET" ? "PLAYERS" : "SQUAD"} onSquad={() => store.setMobileTab("SQUAD")} onPlayers={() => store.setMobileTab("MARKET")} onMore={() => setMoreOpen(true)} />
+      <MoreSheet
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        onRefresh={refresh}
+        onExport={() => exportState(store)}
+        onImportClick={() => importRef.current?.click()}
+        onReset={reset}
+        onReverse={() => void reverseAllChanges()}
+        reverseBusy={reverseBusy}
+        reverseDisabled={!store.entryId}
+        settings={<StrategyControls horizon={store.horizon} benchStrategy={store.benchStrategy} setStrategy={store.setStrategy} />}
+        onModeChooser={() => store.setMode(null)}
+      />
     </main>
   );
 }
@@ -1370,8 +1387,6 @@ function TeamImportScreen({ players, gameweek, notice, onImport, onBack }: { pla
   return <main className="mode-screen import-screen"><button type="button" className="import-back" onClick={onBack}>← BACK</button><div className="mode-brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></div><p className="mode-tagline">IMPORT YOUR OFFICIAL FPL TEAM</p>{notice && <p className="live-notice" role="alert">{notice}</p>}<form className="import-card" onSubmit={submit}><label htmlFor="fpl-entry-id">ENTER FPL ID</label><div className="import-controls"><input id="fpl-entry-id" inputMode="numeric" pattern="[0-9]*" autoFocus value={entryId} onChange={(event) => setEntryId(event.target.value)} placeholder="4827193" /><button className="primary-button" type="submit" disabled={busy || !players.length}>{busy ? "IMPORTING…" : "IMPORT TEAM"}</button></div><p>We’ll load Gameweek {gameweek} picks from the official FPL API and fill all 15 squad positions.</p><details className="import-guide"><summary>Where do I get my Team ID?</summary><ol><li>Sign in at <a href="https://fantasy.premierleague.com/" target="_blank" rel="noreferrer">Fantasy Premier League</a>.</li><li>Open your Points page.</li><li>Find <code>/entry/1234567/event/3</code> in the address bar. Your Team ID is the number after <code>/entry/</code>.</li><li>Paste that number above and select Import Team.</li></ol></details>{!players.length && <span className="import-error" role="status">Waiting for the FPL player list…</span>}{error && <span className="import-error" role="alert">{error}</span>}</form></main>;
 }
 
-function StatusCell({ label, value, tone }: { label: string; value: string; tone?: "amber" | "green" | "red" | "cyan" }) { return <div className="status-cell"><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
-
 function DataStatusCell({ status, ageAnchor, fetchedAt }: { status: DataState; ageAnchor: DataAgeAnchor | null; fetchedAt: string | null }) {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
@@ -1382,18 +1397,6 @@ function DataStatusCell({ status, ageAnchor, fetchedAt }: { status: DataState; a
   const ageMs = computeDataAgeMs(now, ageAnchor, fetchedAt);
   const ageText = ageMs !== null ? formatDataAge(ageMs) : "";
   return <div className="status-cell"><span>DATA</span><strong className={status === "LIVE" ? "green" : status === "ERROR" ? "red" : "amber"}>{value}{ageText ? ` · ${ageText}` : ""}</strong></div>;
-}
-
-function DeadlineStatus({ deadline }: { deadline: string | null }) {
-  const [countingDown, setCountingDown] = useState(true);
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    if (!countingDown) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
-    return () => window.clearInterval(timer);
-  }, [countingDown]);
-  if (!deadline) return <StatusCell label="DEADLINE" value="—" />;
-  return <button type="button" className="status-cell status-cell-button" aria-pressed={countingDown} title={countingDown ? "Show deadline date" : "Show deadline countdown"} onClick={() => { setNow(Date.now()); setCountingDown((value) => !value); }}><span>DEADLINE</span><strong>{countingDown ? formatDeadlineCountdown(deadline, now) : formatDeadline(deadline)}</strong></button>;
 }
 
 function PanelToggle({ panel, collapsed, onToggle }: { panel: DesktopPanel; collapsed: boolean; onToggle: () => void }) {
@@ -1994,22 +1997,5 @@ function matchScoreline(match: PlayerMatchPerformance, teamShortName: string): s
     ? `${teamShortName} ${match.teamHomeScore}–${match.teamAwayScore} ${match.opponentShortName}`
     : `${match.opponentShortName} ${match.teamHomeScore}–${match.teamAwayScore} ${teamShortName}`;
 }
-function formatDeadline(value: string): string { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); }
-export function formatDeadlineCountdown(value: string, now = Date.now()): string {
-  const deadline = Date.parse(value);
-  if (!Number.isFinite(deadline)) return "—";
-  const totalSeconds = Math.max(0, Math.ceil((deadline - now) / 1_000));
-  if (totalSeconds === 0) return "CLOSED";
-  const days = Math.floor(totalSeconds / 86_400);
-  const hours = Math.floor(totalSeconds % 86_400 / 3_600);
-  const minutes = Math.floor(totalSeconds % 3_600 / 60);
-  const seconds = totalSeconds % 60;
-  const clock = [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":");
-  return days ? `${days}d ${clock}` : clock;
-}
-
-function exportState(state: ReturnType<typeof useTerminalStore.getState>) { const blob = new Blob([JSON.stringify(exportTerminalState(state), null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "fpl-terminal-state.json"; anchor.click(); URL.revokeObjectURL(url); }
-
-function importState(event: React.ChangeEvent<HTMLInputElement>, state: ReturnType<typeof useTerminalStore.getState>, onNotice: (message: string) => void) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { const result = typeof reader.result === "string" ? parseSavedStateResult(reader.result) : { status: "refused", reason: "malformed" } as const; if (result.status === "accepted") { state.hydrate(result.state); onNotice("Saved terminal state imported."); } else { onNotice(result.status === "refused" ? savedStateRefusalNotice(result) : "That save file is empty. Choose a compatible FPL Terminal export."); } }; reader.readAsText(file); event.target.value = ""; }
 
 export function ModeChooserPreview() { return null; }

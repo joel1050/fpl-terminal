@@ -454,11 +454,10 @@ test.describe("FPL Terminal acceptance", () => {
   test("shows the xP horizon and bench strategy in optimizer Settings", async ({ page }) => {
     await chooseMode(page, /build from scratch/i);
     await waitForMarket(page);
-    const panel = page.getByRole("region", { name: /squad builder and analysis/i });
-    const settings = panel.getByText(/^SETTINGS$/i);
-    await settings.focus();
-    await settings.press("Enter");
-    const popover = panel.locator(".strategy-popover");
+    const more = page.getByRole("button", { name: "More", exact: true });
+    await more.focus();
+    await more.press("Enter");
+    const popover = page.getByRole("dialog", { name: "More" });
     await expect(popover.getByText(/optimizer settings/i)).toBeVisible();
     await expect(popover.getByText(/^HORIZON$/i)).toBeVisible();
     const tenGameweek = popover.getByRole("button", { name: "10GW", exact: true });

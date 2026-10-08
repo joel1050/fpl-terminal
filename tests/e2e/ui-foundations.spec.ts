@@ -100,7 +100,7 @@ test.describe("UI foundations", () => {
     await expect(page.locator(".simulation-move").first()).toBeVisible();
     expect(await textUnderFloor(page, 12), "simulated swap").toEqual([]);
 
-    await page.getByRole("navigation", { name: /terminal panels/i }).getByRole("button", { name: /market/i }).click();
+    await page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: "Players" }).click();
     await expect(page.getByPlaceholder(/search player, club/i)).toBeVisible();
     expect(await textUnderFloor(page, 12), "players tab").toEqual([]);
 

@@ -4,7 +4,266 @@
 @media (max-width: 900px) {
   :root { --min-text: 12px; }
   .terminal-app *, .leagues-app * { letter-spacing: normal; }
-  /* At 12px the header actions no longer fit beside the brand; let them wrap to their own row instead of overflowing the page. */
-  .terminal-app .topbar { flex-wrap: wrap; }
-  .terminal-app .topbar-actions { flex: 0 0 auto; }
+}
+
+/* Shell: the Planner top bar, the phone tab bar and the More sheet (Task 5). */
+
+.shell-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.shell-topbar .planning-switcher {
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.shell-topbar .planning-switcher > span {
+  min-width: 56px;
+  color: var(--text);
+  font-size: 13px;
+  text-align: center;
+}
+
+.shell-topbar .planning-arrow {
+  width: 28px;
+  height: 28px;
+  color: var(--text);
+}
+
+/* Groups the live readout, deadline and data status without adding a box. */
+.shell-status {
+  display: contents;
+}
+
+.shell-live {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.shell-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.shell-actions button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tab-bar {
+  display: none;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  background: rgb(0 0 0 / 0.5);
+}
+
+.sheet-backdrop.bottom {
+  align-items: flex-end;
+}
+
+.sheet-backdrop.popover {
+  justify-content: flex-end;
+  align-items: flex-start;
+  background: transparent;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  color: var(--text);
+  outline: none;
+}
+
+.sheet.bottom {
+  width: 100%;
+  max-height: 80dvh;
+  border-radius: 16px 16px 0 0;
+  background: var(--surface);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.sheet.popover {
+  align-self: flex-start;
+  width: 320px;
+  max-height: 70vh;
+  margin: 56px 18px 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 4px 0 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.sheet-close {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.sheet-body {
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+}
+
+.more-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.more-actions > button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+}
+
+.more-actions > button:disabled {
+  color: var(--muted);
+}
+
+.more-actions > .danger {
+  color: var(--bad);
+}
+
+.more-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.more-settings {
+  display: grid;
+  gap: 8px;
+  padding: 4px 0 8px;
+}
+
+.more-settings .section-kicker,
+.more-settings .strategy-label {
+  font-size: 12px;
+}
+
+.more-settings .segmented button {
+  min-height: 40px;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .shell-topbar {
+    height: 56px;
+    gap: 6px;
+    padding: 0 8px;
+  }
+
+  .shell-topbar .workspace-switcher,
+  .shell-topbar .shell-live,
+  .shell-topbar .status-cell {
+    display: none;
+  }
+
+  /* The FPL mark alone keeps the one-row header inside 320px. */
+  .shell-topbar .brand > span:last-child {
+    display: none;
+  }
+
+  .shell-topbar .planning-arrow {
+    width: 40px;
+    height: 40px;
+  }
+
+  .shell-topbar .planning-switcher > span {
+    min-width: 48px;
+    font-size: 12px;
+  }
+
+  .shell-actions button {
+    min-height: 40px;
+  }
+
+  /* Lifts the notice toast clear of the tab bar it would otherwise sit under. */
+  .toast {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Clears the fixed tab bar at the foot of the screen. */
+  .terminal-app,
+  .leagues-app {
+    padding-bottom: 64px;
+  }
+
+  /* The squad panel fills the screen between the 56px top bar and the tab bar. */
+  .terminal-app .squad-column.mobile-visible {
+    height: calc(100dvh - 120px);
+  }
+
+  .tab-bar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    height: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .tab-bar > * {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    text-decoration: none;
+  }
+
+  .tab-bar > [aria-current="page"] {
+    color: var(--accent);
+    box-shadow: inset 0 2px var(--accent);
+  }
 }
