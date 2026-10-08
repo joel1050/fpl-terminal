@@ -134,7 +134,7 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(haalandSheet.getByRole("button", { name: /make haaland captain/i })).toHaveAttribute("aria-pressed", "true");
     await page.keyboard.press("Escape");
     const haalandMarketRow = page.getByRole("row").filter({ hasText: "Haaland" }).first();
-    await expect(haalandMarketRow).toContainText(/£14\.0m/i);
+    await expect(haalandMarketRow.locator(".col-price")).toHaveText("14.0");
     await expect(haalandMarketRow).not.toContainText(/SELL/i);
     const watkinsSheet = await openSheet(page, "Watkins");
     await expect(watkinsSheet.getByRole("button", { name: /make watkins vice-captain/i })).toHaveAttribute("aria-pressed", "true");
@@ -143,7 +143,7 @@ test.describe("FPL Terminal acceptance", () => {
     const metrics = squad.getByLabel("Squad projection metrics");
     await expect(metrics).toContainText(/VALUE/i);
     await expect(metrics).not.toContainText(/SELL/i);
-    await expect(metrics).toContainText(/TEAM RATING/i);
+    await expect(metrics).toContainText(/Rating/);
     await expect(metrics).not.toContainText(/5GW/i);
     await expect(metrics.getByText(/^\d+%$/)).toBeVisible();
     await expect(bench.getByTestId("squad-token").nth(0)).toContainText(/Areola/i);
@@ -194,7 +194,7 @@ test.describe("FPL Terminal acceptance", () => {
     const haalandSheet = await openSheet(page, "Haaland");
     await expect(haalandSheet).toContainText(/£13\.5m/i);
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("row").filter({ hasText: "Haaland" }).first()).toContainText(/£14\.0m/i);
+    await expect(page.getByRole("row").filter({ hasText: "Haaland" }).first().locator(".col-price")).toHaveText("14.0");
     await expect(squadPanel.getByLabel("Cash in the bank in millions")).toHaveValue("9.0");
     await expect(squadPanel.getByLabel("Squad projection metrics")).toContainText(/VALUE£89\.1/i);
 
@@ -259,7 +259,7 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("region", { name: /weakest links/i })).toHaveCount(0);
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
     await expect(replacements).toBeVisible();
-    await expect(replacements.locator(".panel-count")).toHaveText(/1 FOUND/);
+    await expect(replacements.locator(".panel-count")).toHaveText(/1 found/);
     await expect(replacements).toContainText(/Rice\s*→\s*Saka/i);
 
     await clickButton(page, /^PICK TEAM$/i);
@@ -299,23 +299,23 @@ test.describe("FPL Terminal acceptance", () => {
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
     const toggles = replacements.getByRole("group", { name: /transfer suggestion horizon/i });
     await expect(toggles).toBeVisible();
-    for (const label of ["GW", "3GW", "5GW", "10GW"]) {
+    for (const label of ["1 GW", "3 GW", "5 GW", "10 GW"]) {
       await expect(toggles.getByRole("button", { name: label, exact: true })).toBeVisible();
     }
-    await expect(toggles.getByRole("button", { name: "5GW", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(toggles.getByRole("button", { name: "5 GW", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => horizons).toEqual([5]);
 
-    await toggles.getByRole("button", { name: "10GW", exact: true }).click();
-    await expect(toggles.getByRole("button", { name: "10GW", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await toggles.getByRole("button", { name: "10 GW", exact: true }).click();
+    await expect(toggles.getByRole("button", { name: "10 GW", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => horizons).toEqual([5, 10]);
 
-    await toggles.getByRole("button", { name: "GW", exact: true }).click();
+    await toggles.getByRole("button", { name: "1 GW", exact: true }).click();
     await expect.poll(() => horizons).toEqual([5, 10, 1]);
 
     await page.reload();
     await waitForMarket(page);
     const reloaded = page.getByRole("region", { name: /^transfer suggestions$/i }).getByRole("group", { name: /transfer suggestion horizon/i });
-    await expect(reloaded.getByRole("button", { name: "GW", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(reloaded.getByRole("button", { name: "1 GW", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => horizons.at(-1)).toBe(1);
   });
 
@@ -330,7 +330,7 @@ test.describe("FPL Terminal acceptance", () => {
     expect(box).not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(390);
-    await expect(toggles.getByRole("button", { name: "10GW", exact: true })).toBeVisible();
+    await expect(toggles.getByRole("button", { name: "10 GW", exact: true })).toBeVisible();
   });
 
   test("dismisses a transfer suggestion across reloads", async ({ page }) => {
@@ -480,13 +480,13 @@ test.describe("FPL Terminal acceptance", () => {
     const popover = page.getByRole("dialog", { name: "More" });
     await expect(popover.getByText(/optimizer settings/i)).toBeVisible();
     await expect(popover.getByText(/^HORIZON$/i)).toBeVisible();
-    const tenGameweek = popover.getByRole("button", { name: "10GW", exact: true });
+    const tenGameweek = popover.getByRole("button", { name: "10 GW", exact: true });
     await expect(tenGameweek).toBeVisible();
     await expect(popover.getByText(/^RISK$/i)).toHaveCount(0);
     await expect(popover.getByText(/^BENCH$/i)).toBeVisible();
-    await expect(popover.getByRole("button", { name: "CHEAP", exact: true })).toBeVisible();
-    await expect(popover.getByRole("button", { name: "BALANCED", exact: true })).toBeVisible();
-    await expect(popover.getByRole("button", { name: "STRONG", exact: true })).toBeVisible();
+    await expect(popover.getByRole("button", { name: "Cheap", exact: true })).toBeVisible();
+    await expect(popover.getByRole("button", { name: "Balanced", exact: true })).toBeVisible();
+    await expect(popover.getByRole("button", { name: "Strong", exact: true })).toBeVisible();
   });
 
   test("minimizes and restores Player Universe, then resizes it by dragging", async ({ page }) => {

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { FixtureChip, RunStrip } from "@/components/terminal/fixtures/FixtureChips";
 import { availabilityOf } from "@/lib/availability/status";
 import { clubColour, shirtTextColour } from "@/lib/display/clubColours";
@@ -58,17 +59,19 @@ export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, 
       aria-label={`${player.displayName}, ${player.teamShortName}`}
       onClick={onOpen}
     >
-      <span className="token-shirt" style={{ background: shirtColour, color: shirtTextColour(shirtColour) }} aria-hidden="true">
-        {player.teamShortName}
+      <span className="token-shirt" style={{ "--shirt": shirtColour, color: shirtTextColour(shirtColour) } as CSSProperties} aria-hidden="true">
+        <span className="token-club">{player.teamShortName}</span>
         {roleText && <span className={`token-role ${captain ? "captain" : "vice"}`} data-testid="token-role">{roleText}</span>}
         {availability !== "AVAILABLE" && <span className={`token-flag ${availability === "UNAVAILABLE" ? "bad" : "warn"}`} data-testid="token-flag" data-availability={availability}>!</span>}
         {locked && <svg className="token-lock lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d="M4 7V5a4 4 0 0 1 8 0v2" /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg>}
       </span>
       <span className="token-name">{player.displayName}</span>
-      <span className="token-fixture" data-testid="token-fixture">
-        {fixtures.length ? fixtures.map((fixture, index) => <FixtureChip key={index} fixture={fixture} />) : <span className="token-blank">BLANK</span>}
+      <span className="token-line">
+        <span className="token-fixture" data-testid="token-fixture">
+          {fixtures.length ? fixtures.map((fixture, index) => <FixtureChip key={index} fixture={fixture} />) : <span className="token-blank">Blank</span>}
+        </span>
+        <b className="token-xp" data-testid="token-xp">{points(pitchXp(player, gameweek, captain, chip))} <small>xP</small></b>
       </span>
-      <b className="token-xp" data-testid="token-xp">{points(pitchXp(player, gameweek, captain, chip))} xP</b>
       {role === "bench" && benchLabel && <span className="token-bench" data-testid="token-bench">{benchLabel}{benchCounting ? " · Counts" : ""}</span>}
       {showRun && <RunStrip fixtures={player.fixtures} fromGameweek={gameweek} count={5} />}
     </button>

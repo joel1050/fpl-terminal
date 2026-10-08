@@ -31,7 +31,7 @@ import {
   type TerminalMode,
   type SortKey,
 } from "@/store/terminalStore";
-import { PitchToken } from "@/components/terminal/squad/PitchToken";
+import { PitchToken, captainMultiplier, pitchXp } from "@/components/terminal/squad/PitchToken";
 import { PlayerActions } from "@/components/terminal/squad/PlayerActions";
 import { SquadKpis } from "@/components/terminal/squad/SquadKpis";
 import { SquadPitch } from "@/components/terminal/squad/SquadPitch";
@@ -1224,13 +1224,13 @@ export default function TerminalApp() {
     searchRef.current?.focus();
   };
   const draftBenchSlots: Array<{ id?: number; position: Position; label: string }> = [
-    { id: store.byPosition.GK[1], position: "GK", label: "BGK" },
+    { id: store.byPosition.GK[1], position: "GK", label: "GK" },
     { id: store.byPosition.DEF[3], position: "DEF", label: "B1" },
     { id: store.byPosition.DEF[4], position: "DEF", label: "B2" },
     { id: store.byPosition.MID[4], position: "MID", label: "B3" },
   ];
   const benchSlots = currentGWPlan
-    ? [currentGWPlan.benchGoalkeeperId, ...currentGWPlan.benchOrder].map((id, index) => ({ id, position: playerById.get(id)?.position ?? (index === 0 ? "GK" : "DEF"), label: index === 0 ? "BGK" : `B${index}` } as const))
+    ? [currentGWPlan.benchGoalkeeperId, ...currentGWPlan.benchOrder].map((id, index) => ({ id, position: playerById.get(id)?.position ?? (index === 0 ? "GK" : "DEF"), label: index === 0 ? "GK" : `B${index}` } as const))
     : draftBenchSlots;
   const draftStarterCount = POSITIONS.reduce((sum, position) => sum + Math.min(store.byPosition[position].length, DRAFT_XI_COUNTS[position]), 0);
   const actionPlayer = actionPlayerId === null ? undefined : playerById.get(actionPlayerId);
@@ -1245,6 +1245,10 @@ export default function TerminalApp() {
       : store.byPosition[position].slice(0, DRAFT_XI_COUNTS[position]).map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => Boolean(player));
     return { position, players, slotCount: currentGWPlan ? players.length : DRAFT_XI_COUNTS[position] };
   });
+  const pitchCaptain = playerById.get((lineupApplied ? store.captainId : currentGWPlan?.captainId) ?? -1);
+  const captainCaption = pitchCaptain
+    ? `Captain counts ${captainMultiplier(true, store.chip) === 3 ? "triple" : "double"}: ${pitchCaptain.displayName} ${points(pitchXp(pitchCaptain, planningGameweek, false))} → ${points(pitchXp(pitchCaptain, planningGameweek, true, store.chip))}`
+    : undefined;
   const allSquadPlayersLocked = store.playerIds.length > 0 && store.playerIds.every((id) => store.lockedPlayerIds.includes(id));
   return (
     <main className="terminal-app">
@@ -1262,7 +1266,7 @@ export default function TerminalApp() {
 
       <div className="terminal-grid" style={gridStyle}>
         <section id="terminal-panel-market" data-panel="market" className={`market-column ${collapsedPanels.market ? "panel-collapsed" : ""} ${store.activeMobileTab === "MARKET" ? "mobile-visible" : ""}`} aria-label="Player universe">
-          <div className="panel-header"><div><span className="section-kicker">PLAYER UNIVERSE</span><span className="panel-count">{data.players.length || "—"} records</span></div><div className="header-actions"><ColumnsMenu columns={store.playerColumns} onChange={store.setPlayerColumns} /><span className={`data-badge ${status.toLowerCase()}`}>{status === "LIVE" ? "LIVE FPL" : status === "SYNCING" ? "SYNCING" : "NO LIVE DATA"}</span><PanelToggle panel="market" collapsed={collapsedPanels.market} onToggle={() => togglePanel("market")} /></div></div>
+          <div className="panel-header"><div><span className="panel-title">Players</span><span className="panel-count">{data.players.length || "—"} records</span></div><div className="header-actions"><ColumnsMenu columns={store.playerColumns} onChange={store.setPlayerColumns} />{status !== "LIVE" && <span className={`data-badge ${status.toLowerCase()}`}>{status === "SYNCING" ? "Syncing" : "No live data"}</span>}<PanelToggle panel="market" collapsed={collapsedPanels.market} onToggle={() => togglePanel("market")} /></div></div>
           <div className="market-filters">
             <div className="market-search-row">
               <div className="search-wrap"><span aria-hidden="true">/</span><input ref={searchRef} value={store.search} onChange={(event) => store.setSearch(event.target.value)} placeholder="Search player, club..." aria-label="Search players" /><kbd>/</kbd></div>
@@ -1290,7 +1294,7 @@ export default function TerminalApp() {
 
         <div className="squad-stack">
           <section id="terminal-panel-squad" data-panel="squad" className={`squad-column ${collapsedPanels.squad ? "panel-collapsed" : ""} ${store.activeMobileTab === "SQUAD" ? "mobile-visible" : ""}`} aria-label="Squad builder and analysis">
-            <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><div className="squad-view-switch" role="group" aria-label="Squad view"><button type="button" aria-pressed={store.squadView === "PITCH"} onClick={() => store.setSquadView("PITCH")}>Pitch</button><button type="button" aria-pressed={store.squadView === "TABLE"} onClick={() => store.setSquadView("TABLE")}>Table</button></div><button type="button" className="compact-action squad-lock-all" disabled={store.playerIds.length === 0} aria-label={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} aria-pressed={allSquadPlayersLocked} title={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} onClick={store.toggleAllLocks}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={allSquadPlayersLocked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M12 7V5a4 4 0 0 0-7.7-1.5"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button><button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button><button className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "PICK TEAM · OUTDATED" : "PICK TEAM"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
+            <div className="panel-header"><div><span className="panel-title">Squad</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><div className="squad-view-switch" role="group" aria-label="Squad view"><button type="button" aria-pressed={store.squadView === "PITCH"} onClick={() => store.setSquadView("PITCH")}>Pitch</button><button type="button" aria-pressed={store.squadView === "TABLE"} onClick={() => store.setSquadView("TABLE")}>Table</button></div><button type="button" className="compact-action squad-lock-all" disabled={store.playerIds.length === 0} aria-label={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} aria-pressed={allSquadPlayersLocked} title={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} onClick={store.toggleAllLocks}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={allSquadPlayersLocked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M12 7V5a4 4 0 0 0-7.7-1.5"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button><button type="button" className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "Pick team · outdated" : "Pick team"}</button><button type="button" className="compact-action primary-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "Optimizing…" : selected.length < 15 ? "Complete squad" : "Optimize"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
             <div className="squad-body">
               <SquadKpis
                 projected={chipNetXp ?? projected.nextGW}
@@ -1315,6 +1319,7 @@ export default function TerminalApp() {
                 />
               </> : <SquadPitch
                 startingMeta={`${currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · ${currentGWPlan ? 11 : draftStarterCount}/11`}
+                captainCaption={captainCaption}
                 rows={pitchRows}
                 bench={benchSlots.map((slot) => ({ player: slot.id ? playerById.get(slot.id) : undefined, position: slot.position, label: slot.label }))}
                 hint={swapHint}
@@ -1426,10 +1431,11 @@ function DataStatusCell({ status, ageAnchor, fetchedAt }: { status: DataState; a
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, []);
-  const value = status === "LIVE" ? "● LIVE" : status === "SNAPSHOT" ? "● SNAPSHOT" : status === "STALE" ? "● STALE" : status === "SYNCING" ? "● SYNC" : "● OFFLINE";
+  const value = status === "LIVE" ? "Live data" : status === "SNAPSHOT" ? "Snapshot data" : status === "STALE" ? "Stale data" : status === "SYNCING" ? "Syncing" : "Offline";
   const ageMs = computeDataAgeMs(now, ageAnchor, fetchedAt);
   const ageText = ageMs !== null ? formatDataAge(ageMs) : "";
-  return <div className="status-cell"><span>DATA</span><strong className={status === "LIVE" ? "green" : status === "ERROR" ? "red" : "amber"}>{value}{ageText ? ` · ${ageText}` : ""}</strong></div>;
+  const tone = status === "LIVE" ? "live" : status === "ERROR" ? "error" : "stale";
+  return <div className={`status-cell data-status ${tone}`}><i aria-hidden="true" /><strong>{value}</strong>{ageText && <span>· {ageText}</span>}</div>;
 }
 
 function PanelToggle({ panel, collapsed, onToggle }: { panel: DesktopPanel; collapsed: boolean; onToggle: () => void }) {
@@ -1706,7 +1712,9 @@ function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankT
   </div>;
 }
 
-function StrategyControls({ horizon, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value}</button>)}</div></div></div>; }
+const BENCH_STRATEGY_LABELS = { CHEAP: "Cheap", BALANCED: "Balanced", STRONG: "Strong" } as const;
+
+function StrategyControls({ horizon, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="strategy-title">Optimizer settings</span><div><span className="strategy-label">Horizon</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button type="button" key={value} className={horizon === value ? "active" : ""} aria-pressed={horizon === value} onClick={() => setStrategy({ horizon: value })}>{value} GW</button>)}</div></div><div><span className="strategy-label">Bench</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button type="button" key={value} className={benchStrategy === value ? "active" : ""} aria-pressed={benchStrategy === value} onClick={() => setStrategy({ benchStrategy: value })}>{BENCH_STRATEGY_LABELS[value]}</button>)}</div></div></div>; }
 
 function TransferSuggestionsPanel({
   suggestions,
@@ -1731,141 +1739,86 @@ function TransferSuggestionsPanel({
   onSimulate: (suggestion: SingleTransferSuggestion) => void;
   onDismiss: (suggestion: SingleTransferSuggestion) => void;
 }) {
+  const name = (id: number) => playerById.get(id)?.displayName ?? `Player ${id}`;
+  const signedMoney = (tenths: number) => `${tenths >= 0 ? "+" : "−"}${money(Math.abs(tenths))}`;
   return (
     <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions">
-      <div className="subsection-head">
-        <div>
-          <span className="section-kicker">TRANSFER SUGGESTIONS</span>
-          <span className="panel-count">{suggestions.length ? `${suggestions.length} FOUND` : "EXACT"}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <label style={{ fontSize: "12px", color: "var(--muted)", display: "flex", alignItems: "center", gap: "4px" }}>
-            <span>BANKED:</span>
-            <select
-              value={bankedTransfers}
-              onChange={(e) => onBankedTransfers(Number(e.target.value))}
-              aria-label="Banked transfers"
-              className="banked-transfers-select fs-small"
-              style={{
-                background: "rgba(0, 0, 0, 0.4)",
-                border: "1px solid var(--border)",
-                color: "var(--text)",
-                padding: "2px 6px",
-                borderRadius: "3px",
-                cursor: "pointer",
-              }}
+      <div className="rail-head">
+        <h2>Transfers</h2>
+        <span className="panel-count">{suggestions.length ? `${suggestions.length} found` : "Exact search"}</span>
+      </div>
+      <div className="transfer-controls">
+        <label className="banked-transfers">
+          <span>Free transfers</span>
+          <select value={bankedTransfers} onChange={(e) => onBankedTransfers(Number(e.target.value))} aria-label="Banked transfers">
+            {[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+        <div className="segmented transfer-horizon" role="group" aria-label="Transfer suggestion horizon">
+          {([1, 3, 5, 10] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={horizon === value ? "active" : ""}
+              aria-pressed={horizon === value}
+              onClick={() => onHorizon(value)}
             >
-              <option value={1}>1 Transfer</option>
-              <option value={2}>2 Transfers</option>
-              <option value={3}>3 Transfers</option>
-              <option value={4}>4 Transfers</option>
-              <option value={5}>5 Transfers</option>
-            </select>
-          </label>
-          <div className="segmented transfer-horizon" role="group" aria-label="Transfer suggestion horizon">
-            {([1, 3, 5, 10] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={horizon === value ? "active" : ""}
-                aria-pressed={horizon === value}
-                onClick={() => onHorizon(value)}
-              >
-                {value === 1 ? "GW" : `${value}GW`}
-              </button>
-            ))}
-          </div>
+              {value} GW
+            </button>
+          ))}
         </div>
       </div>
       <div className="replacement-scroll">
         {suggestions.length ? (
           suggestions.map((suggestion, sIdx) => {
-            const isMulti = suggestion.moves && suggestion.moves.length > 1;
-            const kind = suggestion.kind === "BOTH" ? "xP + CASH" : "xP UPGRADE";
-            const rowKey = isMulti
-              ? suggestion.moves!.map((m) => `${m.outgoingPlayerId}-${m.incomingPlayerId}`).join("_")
+            const moves = suggestion.moves && suggestion.moves.length > 1 ? suggestion.moves : undefined;
+            const kind = suggestion.kind === "BOTH" ? "More xP and cash" : "More xP";
+            const rowKey = moves
+              ? moves.map((m) => `${m.outgoingPlayerId}-${m.incomingPlayerId}`).join("_")
               : `${suggestion.outgoingPlayerId}-${suggestion.incomingPlayerId}`;
-
+            const incoming = playerById.get(suggestion.incomingPlayerId);
             return (
               <div className="replacement-row" key={`${rowKey}-${sIdx}`}>
-                <div>
-                  {isMulti ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                      {suggestion.moves!.map((m, mIdx) => {
-                        const outP = playerById.get(m.outgoingPlayerId);
-                        const inP = playerById.get(m.incomingPlayerId);
-                        const stepCash = m.cashReleasedTenths;
-                        return (
-                          <div key={mIdx} style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <span className="fs-small" style={{ color: "var(--muted)", minWidth: "14px" }}>{mIdx + 1}.</span>
-                            <strong>
-                              {outP?.displayName ?? `Player ${m.outgoingPlayerId}`} → {inP?.displayName ?? `Player ${m.incomingPlayerId}`}
-                            </strong>
-                            <small style={{ color: "var(--muted)" }}>
-                              ({inP?.position} · {inP ? money(inP.priceTenths) : "—"}
-                              {stepCash !== undefined && ` · ${stepCash >= 0 ? `+${money(stepCash)}` : `−${money(Math.abs(stepCash))}`}`})
-                            </small>
-                          </div>
-                        );
-                      })}
-                      <small style={{ color: "var(--accent-glow)", marginTop: "2px" }}>
-                        {suggestion.transfersCount ?? suggestion.moves!.length} TRANSFERS · {kind}
-                      </small>
-                    </div>
+                <div className="transfer-moves">
+                  {moves ? (
+                    <>
+                      {moves.map((m, mIdx) => (
+                        <div key={mIdx} className="transfer-step">
+                          <span className="transfer-step-index">{mIdx + 1}</span>
+                          <strong>{name(m.outgoingPlayerId)} → {name(m.incomingPlayerId)}</strong>
+                          {m.cashReleasedTenths !== undefined && <small>{signedMoney(m.cashReleasedTenths)}</small>}
+                        </div>
+                      ))}
+                      <small>{suggestion.transfersCount ?? moves.length} transfers · {kind}</small>
+                    </>
                   ) : (
                     <>
-                      {(() => {
-                        const outgoing = playerById.get(suggestion.outgoingPlayerId);
-                        const incoming = playerById.get(suggestion.incomingPlayerId);
-                        const outgoingName = outgoing?.displayName ?? `Player ${suggestion.outgoingPlayerId}`;
-                        const incomingName = incoming?.displayName ?? `Player ${suggestion.incomingPlayerId}`;
-                        return (
-                          <>
-                            <strong>
-                              {outgoingName} → {incomingName}
-                            </strong>
-                            <small>
-                              {kind} · {incoming?.teamShortName ?? "—"} · {incoming ? money(incoming.priceTenths) : "—"}
-                            </small>
-                          </>
-                        );
-                      })()}
+                      <strong>{name(suggestion.outgoingPlayerId)} → {name(suggestion.incomingPlayerId)}</strong>
+                      <small>{kind} · {incoming?.teamShortName ?? "—"} · {incoming ? money(incoming.priceTenths) : "—"}</small>
                     </>
                   )}
                 </div>
                 <div className="transfer-effects">
                   <span className="green">+{suggestion.projectedDelta.toFixed(1)} xP</span>
-                  <span>
-                    {suggestion.cashReleasedTenths >= 0 ? "+" : "−"}
-                    {money(Math.abs(suggestion.cashReleasedTenths))} ITB
-                  </span>
+                  <span>{signedMoney(suggestion.cashReleasedTenths)} bank</span>
                 </div>
                 <div className="transfer-actions">
-                  <button className="compact-action" onClick={() => onSimulate(suggestion)}>
-                    SIMULATE
-                  </button>
-                  <button
-                    className="transfer-dismiss"
-                    aria-label="Dismiss suggestion"
-                    title="Dismiss suggestion"
-                    onClick={() => onDismiss(suggestion)}
-                  >
-                    ×
-                  </button>
+                  <button type="button" className="compact-action" onClick={() => onSimulate(suggestion)}>Simulate</button>
+                  <button type="button" className="transfer-dismiss" aria-label="Dismiss suggestion" title="Dismiss suggestion" onClick={() => onDismiss(suggestion)}>×</button>
                 </div>
               </div>
             );
           })
         ) : (
-          <div className="empty-copy">
+          <p className="rail-empty">
             {state === "LOADING"
-              ? "CALCULATING LEGAL xP-INCREASING TRANSFERS…"
+              ? "Searching for legal transfers that raise xP…"
               : state === "INCOMPLETE"
-              ? "Complete a legal 15-player squad to calculate exact transfers."
+              ? "Complete a legal 15-player squad to see exact transfers."
               : state === "ERROR"
               ? message ?? "Exact transfer search is unavailable."
-              : `No legal ${bankedTransfers > 1 ? `${bankedTransfers}-transfer chain` : "single transfer"} increases optimized lineup xP.`}
-          </div>
+              : `No legal ${bankedTransfers > 1 ? `${bankedTransfers}-transfer chain` : "single transfer"} raises your best lineup's xP.`}
+          </p>
         )}
       </div>
     </section>
@@ -1889,8 +1842,8 @@ function SimulationPanel({
     <section className="panel simulation-panel">
       <div className="panel-header">
         <div>
-          <span className="section-kicker">SIMULATION</span>
-          <span className="panel-count">{result.legal ? "LEGAL" : "CHECK REQUIRED"}</span>
+          <span className="panel-title">Simulation</span>
+          <span className="panel-count">{result.legal ? "Legal squad" : "Check squad rules"}</span>
         </div>
         <button className="icon-button" onClick={onDiscard} aria-label="Close simulation">
           ×
@@ -1913,22 +1866,22 @@ function SimulationPanel({
       </div>
       <div className="simulation-grid">
         <div>
-          <span>CURRENT {result.horizon}GW xP</span>
+          <span>Now, {result.horizon} GW xP</span>
           <strong>{points(result.optimizedBeforeXp)}</strong>
         </div>
         <div>
-          <span>SIMULATED {result.horizon}GW xP</span>
+          <span>After, {result.horizon} GW xP</span>
           <strong>{points(result.optimizedAfterXp)}</strong>
         </div>
         <div>
-          <span>BANK EFFECT</span>
+          <span>Bank</span>
           <strong className={(result.cashReleasedTenths ?? -result.priceDeltaTenths) >= 0 ? "green" : ""}>
             {(result.cashReleasedTenths ?? -result.priceDeltaTenths) >= 0 ? "+" : "−"}
-            {money(Math.abs(result.cashReleasedTenths ?? -result.priceDeltaTenths))} ITB
+            {money(Math.abs(result.cashReleasedTenths ?? -result.priceDeltaTenths))}
           </strong>
         </div>
         <div>
-          <span>xP EFFECT</span>
+          <span>xP change</span>
           <strong className={result.projectedDelta >= 0 ? "green" : "red"}>
             {result.projectedDelta >= 0 ? "+" : ""}
             {result.projectedDelta.toFixed(1)} xP
@@ -1940,11 +1893,11 @@ function SimulationPanel({
         {!result.legal && " The current selection still has a squad-rules issue."}
       </p>
       <div className="simulation-actions">
-        <button className="primary-button" onClick={onApply}>
-          APPLY CHANGES
+        <button type="button" className="primary-button" onClick={onApply}>
+          Apply changes
         </button>
-        <button className="secondary-button" onClick={onDiscard}>
-          DISCARD
+        <button type="button" className="secondary-button" onClick={onDiscard}>
+          Discard
         </button>
       </div>
     </section>

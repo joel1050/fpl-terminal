@@ -14,20 +14,21 @@ export interface SquadKpisProps {
   rating: number | undefined;
 }
 
+/** Green from 80%, plain from 70%, orange below: a low rating should not read as good news. */
 function ratingTone(rating: number): string {
-  return rating >= 90 ? "green" : rating >= 80 ? "bright-green" : rating >= 70 ? "yellow" : "red";
+  return rating >= 80 ? "good" : rating >= 70 ? "" : "warn";
 }
 
-/** The squad's headline numbers in one strip under the pitch. */
+/** The squad's headline numbers in one strip above the pitch. */
 export function SquadKpis({ projected, gameweek, value, valueLabel, bankSlot, freeTransfers, rating }: SquadKpisProps) {
   return (
     <div className="squad-kpis" role="group" aria-label="Squad projection metrics">
       <div className="kpi kpi-proj">
         <span>Proj. GW {gameweek}</span>
-        <strong className="cyan">{points(projected)}</strong>
+        <strong>{points(projected)}</strong>
       </div>
       <div className="kpi">
-        <span>{valueLabel}</span>
+        <span>{valueLabel === "COST" ? "Cost" : "Value"}</span>
         <strong>{money(value)}</strong>
       </div>
       <div className="kpi kpi-bank">{bankSlot}</div>
@@ -35,10 +36,10 @@ export function SquadKpis({ projected, gameweek, value, valueLabel, bankSlot, fr
         <span>Transfers</span>
         <strong>{freeTransfers === undefined ? "—" : `${freeTransfers} FT`}</strong>
       </div>
-      <div className="kpi" title={rating === undefined ? "Team rating needs a picked squad and live market data." : "Starting XI plus captain xP as a share of the best legal XI the market can field for the same budget."}>
-        <span>Team rating</span>
+      <div className="kpi kpi-rating" title={rating === undefined ? "Team rating needs a picked squad and live market data." : "Starting XI plus captain xP as a share of the best legal XI the market can field for the same budget."}>
+        <span>Rating</span>
         <strong className={rating === undefined ? "" : ratingTone(rating)}>{rating === undefined ? "—" : `${rating}%`}</strong>
-        {rating !== undefined && <span className="kpi-meter" aria-hidden="true"><i style={{ width: `${Math.min(100, Math.max(0, rating))}%` }} /></span>}
+        {rating !== undefined && <span className={`kpi-meter ${ratingTone(rating)}`} aria-hidden="true"><i style={{ width: `${Math.min(100, Math.max(0, rating))}%` }} /></span>}
       </div>
     </div>
   );

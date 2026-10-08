@@ -6,6 +6,9 @@
   --surface: #131519;
   --surface-2: #16181c;
   --line: #1b1e22;
+  /* Control outlines and the pressed segment: one step above the surfaces so buttons read as buttons. */
+  --line-strong: #2a2e34;
+  --pitch: #153823;
   --text: #e9ebee;
   --muted: #8b929a;
   --accent: #f5b301;

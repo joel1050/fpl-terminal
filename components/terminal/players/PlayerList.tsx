@@ -1,6 +1,6 @@
 import { FixtureRun } from "@/components/terminal/fixtures/FixtureChips";
 import { universeWeekFor, type UniverseWeekMetrics } from "@/lib/analysis/universeWeek";
-import { money, points } from "@/lib/display/format";
+import { money, ownershipPercent, points } from "@/lib/display/format";
 import type { SortKey } from "@/store/terminalStore";
 import type { TerminalPlayer } from "./PlayersTable";
 
@@ -67,7 +67,7 @@ export function PlayerList({ rows, weeks, gameweek, inSquadIds, onOpen, onAdd }:
           <li key={player.id} className={`player-row${inSquad ? " in" : ""}`} data-testid="player-row">
             <button type="button" className="player-row-main" onClick={() => onOpen(player.id)}>
               <strong>{player.displayName}</strong>
-              <small>{`${player.position} · ${player.teamShortName} · ${money(player.priceTenths)} · ${player.ownership.toFixed(1)}% owned`}</small>
+              <small>{`${player.position} · ${player.teamShortName} · ${money(player.priceTenths)} · ${ownershipPercent(player.ownership)} owned`}</small>
             </button>
             <span className="player-row-fixtures">
               <FixtureRun fixtures={player.fixtures} fromGameweek={gameweek} count={LIST_FIXTURE_COUNT} />

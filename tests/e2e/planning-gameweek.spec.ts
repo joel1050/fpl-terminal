@@ -56,7 +56,7 @@ test.describe("persisted planning gameweeks", () => {
     await expect(selector).toContainText("GW 2");
     await expect(haaland.locator(".fc.d5")).toHaveAttribute("title", /^Away/);
     await expect(haaland.getByTestId("token-xp")).not.toHaveText(gameweekOneXp);
-    await expect(region.locator('[data-testid="squad-token"][data-player="Rogers"] .token-blank')).toHaveText("BLANK");
+    await expect(region.locator('[data-testid="squad-token"][data-player="Rogers"] .token-blank')).toHaveText("Blank");
 
     const entryRequests: string[] = [];
     const listener = (request: { url: () => string }) => {
@@ -96,8 +96,8 @@ test.describe("persisted planning gameweeks", () => {
     const metrics = await region.getByLabel("Squad projection metrics").boundingBox();
     expect(metrics?.height).toBeLessThan(50);
 
-    // The phone tab bar has a second More; the top bar's is the one that sits beside the gameweek.
-    await page.locator(".shell-topbar").getByRole("button", { name: "More", exact: true }).click();
+    // On phones the top bar holds only the title and the stepper; More lives in the tab bar.
+    await page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: "More", exact: true }).click();
     const sheet = page.getByRole("dialog", { name: "More" });
     const settings = await sheet.boundingBox();
     expect(settings).not.toBeNull();
@@ -105,7 +105,7 @@ test.describe("persisted planning gameweeks", () => {
     expect(settings!.x + settings!.width).toBeLessThanOrEqual(390);
 
     const settingLabels = await sheet.locator(".segmented").locator("button").allInnerTexts();
-    expect(settingLabels).toEqual(["GW", "3GW", "5GW", "10GW", "CHEAP", "BALANCED", "STRONG"]);
+    expect(settingLabels).toEqual(["1 GW", "3 GW", "5 GW", "10 GW", "Cheap", "Balanced", "Strong"]);
   });
 
   test("keeps the squad header on two lines and the market table inside its pane", async ({ page }) => {
@@ -175,7 +175,7 @@ test.describe("persisted planning gameweeks", () => {
     expect(desktop.buttons).toBe(0);
   });
 
-  test("puts the planner header on one line without the gameweek readout", async ({ page }) => {
+  test("puts the phone planner header on one row: title, deadline and stepper, no desktop readout", async ({ page }) => {
     for (const width of [320, 375, 390]) {
       await page.setViewportSize({ width, height: 844 });
       const header = await page.evaluate(() => {
@@ -188,8 +188,10 @@ test.describe("persisted planning gameweeks", () => {
             const box = child.getBoundingClientRect();
             return Math.abs((box.top + box.bottom) / 2 - (bar.top + bar.bottom) / 2);
           });
+        const title = topbar.querySelector(".shell-title");
         return {
-          readoutShown: readout.some((el) => getComputedStyle(el).display !== "none"),
+          readoutShown: readout.some((el) => el.getBoundingClientRect().width > 0),
+          title: title && title.getBoundingClientRect().width > 0 ? title.textContent?.trim() : null,
           height: Math.round(bar.height),
           worstOffCentre: Math.round(Math.max(...offCentre)),
           overflow: topbar.scrollWidth - topbar.clientWidth,
@@ -203,14 +205,18 @@ test.describe("persisted planning gameweeks", () => {
       expect(header.worstOffCentre, `every item on that row at ${width}`).toBeLessThan(8);
       expect(header.overflow, `header fits at ${width}`).toBeLessThanOrEqual(0);
       expect(header.documentOverflow, `page fits at ${width}`).toBeLessThanOrEqual(0);
-      expect(header.actions).toEqual(["Refresh", "More"]);
+      expect(header.title, `title shown at ${width}`).toMatch(/^Gameweek 1\s*(Deadline in |Deadline passed|No deadline yet)/);
+      expect(header.actions, `no top-bar actions at ${width}; they live in the tab bar's More`).toEqual([]);
     }
   });
 
   test("closes the More sheet from its own close button", async ({ page }) => {
     for (const size of [{ width: 390, height: 844 }, { width: 1280, height: 720 }]) {
       await page.setViewportSize(size);
-      await page.locator(".shell-topbar").getByRole("button", { name: "More", exact: true }).click();
+      const opener = size.width < 901
+        ? page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: "More", exact: true })
+        : page.locator(".shell-topbar").getByRole("button", { name: "More", exact: true });
+      await opener.click();
       const popover = page.getByRole("dialog", { name: "More" });
       await expect(popover).toBeVisible();
 

@@ -23,7 +23,7 @@ export type ChipSuggestion = {
 };
 
 const CHIP_OPTIONS: Array<{ kind: ChipKind | null; label: string }> = [
-  { kind: null, label: "NONE" },
+  { kind: null, label: "None" },
   { kind: "wildcard", label: "WC" },
   { kind: "freehit", label: "FH" },
   { kind: "bboost", label: "BB" },
@@ -288,35 +288,35 @@ export function ChipStrategyPanel({
 
   if (!open) {
     return (
-      <section className="panel chip-strategy" aria-label="Chip strategy">
-      <div className="subsection-head">
-        <div><span className="section-kicker">CHIP STRATEGY</span><span className="panel-count">GW{planningGameweek}–{windowEnd}</span></div>
-          <button type="button" className="compact-action" onClick={() => { setOpen(true); void refresh(); }}>ANALYZE CHIPS</button>
+      <section className="chip-strategy" aria-label="Chip strategy">
+        <div className="chip-strategy-head">
+          <p>Best week for each chip, GW{planningGameweek}–{windowEnd}</p>
+          <button type="button" className="compact-action" onClick={() => { setOpen(true); void refresh(); }}>Analyze chips</button>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="panel chip-strategy" aria-label="Chip strategy">
-      <div className="subsection-head">
-        <div><span className="section-kicker">CHIP STRATEGY</span><span className="panel-count">GW{planningGameweek}–{windowEnd} · {suggestions.length} SUGGESTIONS</span></div>
+    <section className="chip-strategy" aria-label="Chip strategy">
+      <div className="chip-strategy-head">
+        <p>GW{planningGameweek}–{windowEnd} · {suggestions.length} {suggestions.length === 1 ? "idea" : "ideas"}</p>
         <div className="header-actions">
-          <button type="button" className="compact-action" onClick={() => void refresh()}>{state === "LOADING" ? "ANALYZING…" : "REFRESH"}</button>
-          <button type="button" className="compact-action" onClick={() => setOpen(false)}>CLOSE</button>
-          {preApplySnapshot && <button type="button" className="compact-action" onClick={() => { if (undoChipApply()) onNotice("Chip advice undone."); }}>UNDO</button>}
+          <button type="button" className="compact-action" onClick={() => void refresh()}>{state === "LOADING" ? "Analyzing…" : "Refresh"}</button>
+          <button type="button" className="compact-action" onClick={() => setOpen(false)}>Close</button>
+          {preApplySnapshot && <button type="button" className="compact-action" onClick={() => { if (undoChipApply()) onNotice("Chip advice undone."); }}>Undo</button>}
         </div>
       </div>
       <div className="replacement-scroll">
-        {state === "LOADING" && <div className="empty-copy">SOLVING CHIP PLANS (GW{planningGameweek}–{windowEnd})…</div>}
-        {state === "ERROR" && <div className="empty-copy">{message ?? "Chip advice is unavailable."}</div>}
-        {state === "READY" && !suggestions.length && <div className="empty-copy">No chips remain in this window.</div>}
+        {state === "LOADING" && <p className="rail-empty">Solving chip plans for GW{planningGameweek}–{windowEnd}…</p>}
+        {state === "ERROR" && <p className="rail-empty">{message ?? "Chip advice is unavailable."}</p>}
+        {state === "READY" && !suggestions.length && <p className="rail-empty">No chips remain in this window.</p>}
         {state === "READY" && suggestions.map((suggestion) => (
           <div className="replacement-row" key={`${suggestion.chip}-${suggestion.gameweek}`}>
             <div>
               <strong>{chipLabel(suggestion.chip)} · GW{suggestion.gameweek}</strong>
               <small>
-                {suggestion.incrementalXp > 0 ? `+${suggestion.incrementalXp.toFixed(1)} xP vs saved plan` : "no projected edge"}
+                {suggestion.incrementalXp > 0 ? `+${suggestion.incrementalXp.toFixed(1)} xP on your saved plan` : "No projected gain"}
               </small>
             </div>
             <div className="transfer-effects">
@@ -325,7 +325,7 @@ export function ChipStrategyPanel({
               </span>
             </div>
             <div className="transfer-actions">
-              <button type="button" className="compact-action" onClick={() => apply(suggestion)}>APPLY</button>
+              <button type="button" className="compact-action" onClick={() => apply(suggestion)}>Apply</button>
             </div>
             {!!suggestion.reasons.length && <small className="chip-reason">{suggestion.reasons[0]}</small>}
           </div>

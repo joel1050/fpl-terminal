@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const WORKSPACES = [
-  { href: "/", label: "PLANNER" },
-  { href: "/leagues", label: "LEAGUES" },
+  { href: "/", label: "Planner" },
+  { href: "/leagues", label: "Leagues" },
 ];
 
 export default function WorkspaceSwitcher() {

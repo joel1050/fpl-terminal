@@ -80,7 +80,7 @@ test.describe("chip planning", () => {
   test("selects each chip in the decision rail", async ({ page }) => {
     const region = page.getByRole("region", { name: /squad builder and analysis/i });
     const chips = railOf(page).getByRole("group", { name: /select chip/i });
-    await expect(chips.getByRole("button", { name: "NONE" })).toHaveAttribute("aria-pressed", "true");
+    await expect(chips.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
 
     await chips.getByRole("button", { name: "WC" }).click();
     await expect(chips.getByRole("button", { name: "WC" })).toHaveAttribute("aria-pressed", "true");
@@ -100,8 +100,8 @@ test.describe("chip planning", () => {
     );
     expect(captainMarker).toContain("3×");
 
-    await chips.getByRole("button", { name: "NONE" }).click();
-    await expect(chips.getByRole("button", { name: "NONE" })).toHaveAttribute("aria-pressed", "true");
+    await chips.getByRole("button", { name: "None" }).click();
+    await expect(chips.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
   });
 
   test("applies chip advice and undoes it in one click", async ({ page }) => {
@@ -109,15 +109,15 @@ test.describe("chip planning", () => {
     await rail.getByRole("button", { name: /analyze chips/i }).click();
     const panel = rail.getByRole("region", { name: /chip strategy/i }).or(rail.locator(".chip-strategy"));
     await expect(panel.getByText("BB · GW1")).toBeVisible();
-    await expect(panel.getByText("no projected edge")).toBeVisible();
+    await expect(panel.getByText("No projected gain")).toBeVisible();
 
-    await panel.getByRole("button", { name: "APPLY" }).first().click();
+    await panel.getByRole("button", { name: "Apply" }).first().click();
     const chips = rail.getByRole("group", { name: /select chip/i });
     await expect(chips.getByRole("button", { name: "BB" })).toHaveAttribute("aria-pressed", "true");
-    await expect(panel.getByRole("button", { name: "UNDO" })).toBeVisible();
+    await expect(panel.getByRole("button", { name: "Undo" })).toBeVisible();
 
-    await panel.getByRole("button", { name: "UNDO" }).click();
-    await expect(chips.getByRole("button", { name: "NONE" })).toHaveAttribute("aria-pressed", "true");
+    await panel.getByRole("button", { name: "Undo" }).click();
+    await expect(chips.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
   });
 
   test("restores the permanent squad beyond a free hit and reloads persisted plans", async ({ page }) => {
@@ -155,7 +155,7 @@ test.describe("chip planning", () => {
 
     await page.getByRole("group", { name: /select planning gameweek/i }).getByRole("button", { name: /next planning gameweek/i }).click();
     await expect(page.getByRole("group", { name: /select planning gameweek/i })).toContainText("GW 2");
-    await expect(reloaded.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "NONE" })).toHaveAttribute("aria-pressed", "true");
+    await expect(reloaded.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
     // GW2 holds the permanent squad: player 21 is back, temp pick 2 is gone.
     await expect.poll(() => page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");

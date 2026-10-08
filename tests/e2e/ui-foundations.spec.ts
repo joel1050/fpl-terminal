@@ -93,7 +93,7 @@ test.describe("UI foundations", () => {
     expect(await textUnderFloor(page, 12), "squad tab").toEqual([]);
 
     await page.getByLabel("Banked transfers").selectOption("2");
-    await expect(transfers.locator(".replacement-row").first()).toContainText("2 TRANSFERS");
+    await expect(transfers.locator(".replacement-row").first()).toContainText("2 transfers");
     expect(await textUnderFloor(page, 12), "chain suggestion").toEqual([]);
 
     await transfers.getByRole("button", { name: /^simulate$/i }).first().click();

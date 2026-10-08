@@ -2,7 +2,7 @@ import { FixtureRun } from "@/components/terminal/fixtures/FixtureChips";
 import { expectedInvolvementPer90 } from "@/lib/analysis/expectedInvolvement";
 import { universeWeekFor, type UniverseWeekMetrics } from "@/lib/analysis/universeWeek";
 import { startChanceOf } from "@/lib/availability/startChance";
-import { money, points } from "@/lib/display/format";
+import { millions, ownershipPercent, points } from "@/lib/display/format";
 import type { PlayerColumnKey, SortKey } from "@/store/terminalStore";
 import type { Player } from "@/types/player";
 import { COLUMNS_AFTER_GW, COLUMNS_BEFORE_GW, PLAYER_COLUMN_LABELS, PLAYER_COLUMN_SORT } from "./columns";
@@ -52,7 +52,7 @@ function SortableHead({ label, sortKey, active, direction, onSort, className }: 
 function optionalValue(column: Exclude<PlayerColumnKey, "start">, player: TerminalPlayer, week: UniverseWeekMetrics): string {
   switch (column) {
     case "own":
-      return player.ownership > 0 ? `${player.ownership.toFixed(1)}%` : "—";
+      return ownershipPercent(player.ownership);
     case "form":
       return player.current.form === undefined ? "—" : player.current.form.toFixed(1);
     case "next3":
@@ -113,7 +113,7 @@ export function PlayersTable({ rows, weeks, gameweek, columns, sortKey, sortDire
                   <small>{player.teamShortName} · {player.position}</small>
                 </button>
               </td>
-              <td className="num col-price">{player.priceTenths > 0 ? `${money(player.priceTenths)}m` : "—"}</td>
+              <td className="num col-price">{millions(player.priceTenths)}</td>
               {before.map((key) => <OptionalCell key={key} column={key} player={player} week={week} />)}
               <td className="num col-gw">{points(week.xp)}</td>
               {after.map((key) => <OptionalCell key={key} column={key} player={player} week={week} />)}
