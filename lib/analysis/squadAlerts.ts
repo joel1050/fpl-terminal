@@ -4,13 +4,14 @@ import type { Player, SquadAlert } from "@/types";
 
 const MAX_ALERTS = 5;
 const HARD_RUN_AVERAGE = 3.6;
+const RUN_GAMEWEEKS = 5;
 const ORDINAL = ["1st", "2nd", "3rd"];
 
 function slotLabel(id: number, input: { starterIds: number[]; benchOrder: number[]; benchGoalkeeperId: number }): string {
   if (input.starterIds.includes(id)) return "starter";
   if (id === input.benchGoalkeeperId) return "bench GK";
   const index = input.benchOrder.indexOf(id);
-  return index >= 0 ? `${ORDINAL[index]} on bench` : "squad";
+  return index >= 0 ? `${ORDINAL[index]} on bench` : "in squad";
 }
 
 export function squadAlerts(input: {
@@ -35,15 +36,20 @@ export function squadAlerts(input: {
       });
     }
 
-    const upcoming = player.fixtures.filter((f) => f.gameweek >= input.gameweek).slice(0, 5);
-    if (input.starterIds.includes(player.id) && upcoming.length === 5) {
-      const average = upcoming.reduce((sum, f) => sum + (f.difficulty ?? 3), 0) / 5;
+    // The run is the next five Gameweeks, not the next five fixture rows, so a
+    // double counts both games and a blank counts none.
+    const lastRunWeek = input.gameweek + RUN_GAMEWEEKS - 1;
+    const upcoming = player.fixtures.filter((f) => f.gameweek >= input.gameweek && f.gameweek <= lastRunWeek);
+    const covered = player.fixtures.some((f) => f.gameweek >= lastRunWeek);
+    if (input.starterIds.includes(player.id) && covered && upcoming.length > 0) {
+      const average = upcoming.reduce((sum, f) => sum + (f.difficulty ?? 3), 0) / upcoming.length;
       if (average >= HARD_RUN_AVERAGE) {
-        const runXp = [0, 1, 2, 3, 4].reduce((sum, i) => sum + weeklyPlayerMetrics(player, input.gameweek + i).points, 0);
+        const runXp = Array.from({ length: RUN_GAMEWEEKS }, (_, i) => input.gameweek + i)
+          .reduce((sum, gw) => sum + weeklyPlayerMetrics(player, gw).points, 0);
         hardRun.push({
           kind: "HARD_RUN", severity: "INFO", playerId: player.id,
           title: `${player.displayName} has a hard run`,
-          detail: `${upcoming.map((f) => f.opponentShortName).join(" · ")} → ${runXp.toFixed(1)} xP over 5 GWs`,
+          detail: `${upcoming.map((f) => f.opponentShortName).join(" · ")} → ${runXp.toFixed(1)} xP over ${RUN_GAMEWEEKS} GWs`,
         });
       }
     }

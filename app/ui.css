@@ -1435,6 +1435,43 @@
   }
 }
 
+/* The mode chooser and the import screen: the brand, one line on what the app
+   does, two cards. Shared with the Leagues team gate. */
+.mode-screen { width: min(100%, 640px); padding: 32px 20px; background: var(--bg); }
+.mode-brand { justify-content: center; gap: 10px; color: var(--text); font: 600 24px/1 var(--font-ui); letter-spacing: 0; }
+.mode-brand .brand-mark { height: 26px; padding: 0 6px; font-size: 14px; line-height: 23px; }
+.mode-tagline { margin: 12px 0 28px; color: var(--muted); font: 15px/1.4 var(--font-ui); letter-spacing: 0; text-align: center; }
+.mode-grid { gap: 12px; }
+.mode-card { gap: 10px; min-height: 0; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-align: left; transition: border-color 120ms; }
+.mode-card:hover { border-color: var(--line-strong); background: var(--surface); }
+.mode-card:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.mode-card:nth-child(2) { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.mode-card .mode-index { color: var(--muted); font: 500 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.mode-card:nth-child(2) .mode-index { color: var(--accent); }
+.mode-card strong { color: var(--text); font: 600 17px/1.25 var(--font-ui); letter-spacing: 0; }
+.mode-card span:not(.mode-index) { color: var(--muted); font: 13px/1.5 var(--font-ui); letter-spacing: 0; }
+.mode-leagues-link { margin: 16px 0 0; }
+.mode-leagues-link a { min-height: 40px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--text); font: 500 13px/1 var(--font-ui); letter-spacing: 0; text-decoration: none; }
+.mode-leagues-link a:hover { border-color: var(--line-strong); background: var(--surface-2); color: var(--text); }
+.mode-footer { margin-top: 24px; color: var(--muted); font: 12px/1.4 var(--font-ui); letter-spacing: 0; }
+.mode-disclaimer { color: var(--muted); font: 12px/1.5 var(--font-ui); letter-spacing: 0; }
+.import-back { padding: 6px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: 500 13px/1 var(--font-ui); letter-spacing: 0; }
+.import-back:hover { background: var(--surface-2); color: var(--text); }
+.mode-screen .import-card { gap: 12px; padding: 20px; border: 0; border-radius: 12px; background: var(--surface); }
+.mode-screen .import-card label { color: var(--text); font: 600 13px/1.2 var(--font-ui); letter-spacing: 0; }
+.mode-screen .import-card p { color: var(--muted); font: 13px/1.5 var(--font-ui); }
+.mode-screen .import-controls { gap: 8px; }
+.mode-screen .import-controls input { height: 40px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--bg); color: var(--text); font: 15px/1 var(--font-num); }
+.mode-screen .import-controls input:focus { border-color: var(--text); outline: none; }
+.mode-screen .import-controls .primary-button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--accent); color: #111; font: 600 13px/1 var(--font-ui); letter-spacing: 0; }
+.mode-screen .import-controls .primary-button:disabled { opacity: .5; }
+.mode-screen .import-guide summary { color: var(--text); font: 500 13px/1.4 var(--font-ui); letter-spacing: 0; }
+.mode-screen .import-guide ol { color: var(--muted); font: 13px/1.5 var(--font-ui); }
+.mode-screen .import-guide a, .mode-screen .import-guide code { color: var(--text); }
+.mode-screen .import-guide > summary::after { color: var(--muted); }
+.mode-screen .import-guide[open] > summary::after { color: var(--text); }
+.mode-screen .import-error { font: 13px/1.4 var(--font-ui); letter-spacing: 0; }
+
 /* Leagues on every screen: the Planner's tokens and type. Headings are 15px
    words, labels muted, numbers in the number font; amber marks only your row,
    the captain and the active selection. Desktop keeps its three-column layout. */

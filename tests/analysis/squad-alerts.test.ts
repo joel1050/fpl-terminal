@@ -65,6 +65,25 @@ describe("squadAlerts", () => {
     expect(squadAlerts(base(at35))).toEqual([]);
   });
 
+  it("measures the run over five Gameweeks, not five fixture rows", () => {
+    // Old rule took rows 1, 2, 2, 3, 4 (average 3.8). Over Gameweeks 1-5 the six games average 3.5.
+    const withDouble = [5, 5, 5, 2, 2, 2].map((difficulty, i) => ({ gameweek: [1, 2, 2, 3, 4, 5][i], difficulty }));
+    const s = squad.map((x) => (x.id === 4 ? p(4, { rows: withDouble }) : x));
+    expect(squadAlerts(base(s)).filter((a) => a.kind === "HARD_RUN")).toEqual([]);
+  });
+
+  it("does not judge a run whose fixtures stop before the fifth Gameweek", () => {
+    const short = [1, 1, 2, 2, 3].map((gameweek) => ({ gameweek, difficulty: 5 }));
+    const s = squad.map((x) => (x.id === 4 ? p(4, { rows: short }) : x));
+    expect(squadAlerts(base(s)).filter((a) => a.kind === "HARD_RUN")).toEqual([]);
+  });
+
+  it("names a squad player outside the lineup as in squad", () => {
+    const s = squad.map((x) => (x.id === 3 ? p(3, { status: "d", chanceOfPlaying: 50 }) : x));
+    const out = squadAlerts({ squad: s, starterIds: [], benchOrder: [], benchGoalkeeperId: 0, gameweek: 1 });
+    expect(out[0].detail.startsWith("in squad ·")).toBe(true);
+  });
+
   it("flags a blank and a double gameweek", () => {
     const s = squad.map((x) =>
       x.id === 6 ? p(6, { rows: [{ gameweek: 2 }] }) :
