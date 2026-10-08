@@ -1762,14 +1762,13 @@ function TransferSuggestionsPanel({
               value={bankedTransfers}
               onChange={(e) => onBankedTransfers(Number(e.target.value))}
               aria-label="Banked transfers"
-              className="banked-transfers-select"
+              className="banked-transfers-select fs-small"
               style={{
                 background: "rgba(0, 0, 0, 0.4)",
                 border: "1px solid var(--border)",
                 color: "var(--text)",
                 padding: "2px 6px",
                 borderRadius: "3px",
-                fontSize: "11px",
                 cursor: "pointer",
               }}
             >
@@ -1815,7 +1814,7 @@ function TransferSuggestionsPanel({
                         const stepCash = m.cashReleasedTenths;
                         return (
                           <div key={mIdx} style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <span style={{ color: "var(--muted)", fontSize: "11px", minWidth: "14px" }}>{mIdx + 1}.</span>
+                            <span className="fs-small" style={{ color: "var(--muted)", minWidth: "14px" }}>{mIdx + 1}.</span>
                             <strong>
                               {outP?.displayName ?? `Player ${m.outgoingPlayerId}`} → {inP?.displayName ?? `Player ${m.incomingPlayerId}`}
                             </strong>
@@ -1917,12 +1916,12 @@ function SimulationPanel({
       <div className="simulation-move" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
         {moves.map((m, idx) => (
           <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ color: "var(--muted)", fontSize: "11px", minWidth: "14px" }}>{idx + 1}.</span>
+            <span className="fs-small" style={{ color: "var(--muted)", minWidth: "14px" }}>{idx + 1}.</span>
             <span>{playerById.get(m.outId)?.displayName ?? "Outgoing"}</span>
             <span>→</span>
             <span>{playerById.get(m.inId)?.displayName ?? "Incoming"}</span>
             {m.cashReleasedTenths !== undefined && (
-              <small style={{ color: "var(--muted)", fontSize: "11px" }}>
+              <small className="fs-small" style={{ color: "var(--muted)" }}>
                 ({m.cashReleasedTenths >= 0 ? `+${money(m.cashReleasedTenths)}` : `−${money(Math.abs(m.cashReleasedTenths))}`})
               </small>
             )}
