@@ -46,7 +46,11 @@ export function Sheet({ open, onClose, title, variant = "bottom", anchor, childr
     };
     place();
     window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
+    return () => {
+      window.removeEventListener("resize", place);
+      // The same panel may come back as a bottom sheet, so it must not keep the popover's place.
+      for (const property of ["position", "margin", "top", "left", "maxHeight"] as const) sheet.style[property] = "";
+    };
   }, [open, variant, anchor]);
   if (!open) return null;
   return (
