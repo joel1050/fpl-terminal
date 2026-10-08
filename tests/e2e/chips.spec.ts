@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { bootstrapStaticFixture } from "../fixtures/fpl";
 import { interceptFplData } from "../fixtures/network";
 
@@ -8,6 +8,11 @@ import { interceptFplData } from "../fixtures/network";
  * which mode a test picks is not what the test is about.
  */
 const IMPORT_MODE = /mode b/i;
+
+/** Chip choice and chip strategy live in the decision rail, beside the squad. */
+function railOf(page: Page) {
+  return page.getByRole("complementary", { name: "Decision rail" });
+}
 
 const chipSuggestions = {
   gameweek: 1,
@@ -64,17 +69,17 @@ test.describe("chip planning", () => {
       requestBody = route.request().postDataJSON() as { gameweek?: number; horizon?: number };
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(chipSuggestions) });
     });
-    const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    await expect(region.getByText("GW1–19", { exact: false }).first()).toBeVisible();
-    await region.getByRole("button", { name: /analyze chips/i }).click();
-    await expect(region.getByText("BB · GW1")).toBeVisible();
+    const rail = railOf(page);
+    await expect(rail.getByText("GW1–19", { exact: false }).first()).toBeVisible();
+    await rail.getByRole("button", { name: /analyze chips/i }).click();
+    await expect(rail.getByText("BB · GW1")).toBeVisible();
     // First-window chips expire at GW19, so GW1 plans a 19-gameweek horizon.
     await expect.poll(() => requestBody).toMatchObject({ gameweek: 1, horizon: 19 });
   });
 
-  test("selects each chip beside the gameweek switcher", async ({ page }) => {
+  test("selects each chip in the decision rail", async ({ page }) => {
     const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    const chips = region.getByRole("group", { name: /select chip/i });
+    const chips = railOf(page).getByRole("group", { name: /select chip/i });
     await expect(chips.getByRole("button", { name: "NONE" })).toHaveAttribute("aria-pressed", "true");
 
     await chips.getByRole("button", { name: "WC" }).click();
@@ -100,14 +105,14 @@ test.describe("chip planning", () => {
   });
 
   test("applies chip advice and undoes it in one click", async ({ page }) => {
-    const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    await region.getByRole("button", { name: /analyze chips/i }).click();
-    const panel = region.getByRole("region", { name: /chip strategy/i }).or(region.locator(".chip-strategy"));
+    const rail = railOf(page);
+    await rail.getByRole("button", { name: /analyze chips/i }).click();
+    const panel = rail.getByRole("region", { name: /chip strategy/i }).or(rail.locator(".chip-strategy"));
     await expect(panel.getByText("BB · GW1")).toBeVisible();
     await expect(panel.getByText("no projected edge")).toBeVisible();
 
     await panel.getByRole("button", { name: "APPLY" }).first().click();
-    const chips = region.getByRole("group", { name: /select chip/i });
+    const chips = rail.getByRole("group", { name: /select chip/i });
     await expect(chips.getByRole("button", { name: "BB" })).toHaveAttribute("aria-pressed", "true");
     await expect(panel.getByRole("button", { name: "UNDO" })).toBeVisible();
 
@@ -116,9 +121,9 @@ test.describe("chip planning", () => {
   });
 
   test("restores the permanent squad beyond a free hit and reloads persisted plans", async ({ page }) => {
-    const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    await region.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" }).click();
-    await expect(region.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" })).toHaveAttribute("aria-pressed", "true");
+    const rail = railOf(page);
+    await rail.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" }).click();
+    await expect(rail.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" })).toHaveAttribute("aria-pressed", "true");
     // Wait for the chip choice to reach persisted storage before seeding.
     await expect.poll(() => page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");
@@ -145,7 +150,7 @@ test.describe("chip planning", () => {
     });
     await page.reload();
     await expect(page.getByPlaceholder(/search player, club/i)).toBeVisible();
-    const reloaded = page.getByRole("region", { name: /squad builder and analysis/i });
+    const reloaded = railOf(page);
     await expect(reloaded.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" })).toHaveAttribute("aria-pressed", "true");
 
     await page.getByRole("group", { name: /select planning gameweek/i }).getByRole("button", { name: /next planning gameweek/i }).click();
@@ -197,13 +202,13 @@ test.describe("chip planning", () => {
   });
 
   test("renders chip controls on desktop and mobile viewports", async ({ page }) => {
-    const region = page.getByRole("region", { name: /squad builder and analysis/i });
+    const rail = railOf(page);
     for (const size of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(size);
       // A fresh store opens on the Squad tab. The dev indicator sits over that tab's corner, so assert it rather than click it.
       if (size.width < 901) await expect(page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: "Squad" })).toHaveAttribute("aria-current", "page");
-      await expect(region.getByRole("group", { name: /select chip/i })).toBeVisible();
-      await expect(region.locator(".chip-strategy")).toBeVisible();
+      await expect(rail.getByRole("group", { name: /select chip/i })).toBeVisible();
+      await expect(rail.locator(".chip-strategy")).toBeVisible();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);
     }

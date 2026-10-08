@@ -180,7 +180,6 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .panel-collapse:active, .filter-reset:active { transform: scale(.96); }
 .panel-resizer { position: absolute; z-index: 5; top: 0; right: 0; bottom: 0; width: 8px; padding: 0; border: 0; background: transparent; cursor: col-resize; }
 .panel-resizer:hover, .panel-resizer:focus-visible { background: color-mix(in srgb, var(--amber) 22%, transparent); }
-.planning-toolbar { display: flex; align-items: center; gap: 8px; min-height: 24px; margin: -1px 0 4px; padding: 2px 0 4px; border-bottom: 1px solid var(--border-soft); }
 .planning-switcher { display: inline-flex; align-items: center; border: 1px solid var(--border); background: var(--panel-alt); }
 .planning-switcher > span { min-width: 48px; color: var(--text); font-size: 9px; letter-spacing: .08em; text-align: center; }
 .planning-arrow { display: inline-grid; place-items: center; width: 24px; height: 22px; padding: 0; border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--amber); font-size: 13px; line-height: 1; }
@@ -365,7 +364,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 
 @media (min-width: 901px) { .panel-collapsed { min-width: 0; padding: 8px; }.panel-collapsed > :not(.panel-header):not(.panel-resizer) { display: none; }.panel-collapsed > .panel-header { flex-direction: column; align-items: center; justify-content: flex-start; gap: 9px; margin: 0; }.panel-collapsed > .panel-header > div:first-child { writing-mode: vertical-rl; }.panel-collapsed > .panel-header .panel-count, .panel-collapsed > .panel-header .data-badge, .panel-collapsed > .panel-header .header-actions > :not(.panel-collapse) { display: none; } }
 @media (max-width: 1300px) { .terminal-grid { grid-template-columns: var(--market-column, minmax(0, 1.15fr)) var(--squad-column, minmax(0, 1fr)); }.replacement-row { grid-template-columns: minmax(0, 1fr) auto; }.replacement-row > .transfer-actions { grid-column: 1 / -1; }.replacement-row .compact-action { width: 100%; } }
-@media (max-width: 900px) { .topbar { gap: 10px; padding-inline: 12px; }.topbar-stats { order: 3; flex-basis: 100%; }.topbar { flex-wrap: wrap; padding-block: 8px; }.topbar-actions { margin-left: auto; }.status-cell { min-width: 66px; padding-inline: 8px; }.terminal-grid { display: block; background: var(--background); }.market-column, .squad-column { display: none; min-height: auto; overflow: visible; padding: 12px; }.market-column.mobile-visible { display: block; }.squad-column.mobile-visible { display: grid; grid-template-rows: auto auto minmax(220px, 1fr) auto minmax(90px, .35fr); height: calc(100dvh - 137px); min-height: 560px; overflow: hidden; }.squad-column.mobile-visible .squad-sections { min-height: 0; overflow-y: auto; }.planning-toolbar { min-height: 40px; margin: 0 0 4px; padding: 0 0 5px; }.planning-arrow { width: 40px; height: 40px; font-size: 15px; }.planning-switcher > span { min-width: 54px; font-size: 12px; }.planning-live { font-size: 12px; }.slot-flags { opacity: 1; pointer-events: auto; }.squad-fixture-badges { right: auto; left: 4px; }.strategy-popover { position: fixed; top: 145px; right: 12px; left: 12px; width: auto; max-height: calc(100dvh - 157px); overflow-y: auto; }.settings-danger { min-height: 44px; }.unified-replacements .compact-action, .transfer-dismiss { min-height: 44px; }.transfer-dismiss { width: 44px; }.panel-resizer, .panel-collapse { display: none; }.mobile-tabs { position: sticky; z-index: 15; top: 97px; display: grid; grid-template-columns: repeat(2, 1fr); border-bottom: 1px solid var(--border-soft); background: var(--panel); }.mobile-tabs button { min-height: 40px; border: 0; border-right: 1px solid var(--border-soft); background: transparent; color: var(--muted); font-size: 12px; letter-spacing: .08em; }.mobile-tabs button.active { color: var(--amber); box-shadow: inset 0 -2px var(--amber); }.table-wrap { max-height: 65vh; }.detail-panel { top: 60px; right: 12px; left: 12px; max-height: calc(100vh - 150px); }.detail-panel .icon-button, .detail-actions button { min-height: 44px; }.detail-panel .icon-button { width: 44px; }.role-button { min-width: 44px; height: 44px; font-size: 12px; }.squad-slot, .empty-slot { min-height: 96px; }.panel-header { align-items: flex-start; }.header-actions { flex-wrap: wrap; justify-content: flex-end; }.slot-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }.slot-gk { max-width: 100%; }.slot-fwd { max-width: 100%; } }
+@media (max-width: 900px) { .topbar { gap: 10px; padding-inline: 12px; }.topbar-stats { order: 3; flex-basis: 100%; }.topbar { flex-wrap: wrap; padding-block: 8px; }.topbar-actions { margin-left: auto; }.status-cell { min-width: 66px; padding-inline: 8px; }.terminal-grid { display: block; background: var(--background); }.market-column, .squad-column { display: none; min-height: auto; overflow: visible; padding: 12px; }.market-column.mobile-visible { display: block; }.squad-column.mobile-visible { display: grid; grid-template-rows: auto auto minmax(220px, 1fr) auto minmax(90px, .35fr); height: calc(100dvh - 137px); min-height: 560px; overflow: hidden; }.squad-column.mobile-visible .squad-sections { min-height: 0; overflow-y: auto; }.planning-arrow { width: 40px; height: 40px; font-size: 15px; }.planning-switcher > span { min-width: 54px; font-size: 12px; }.planning-live { font-size: 12px; }.slot-flags { opacity: 1; pointer-events: auto; }.squad-fixture-badges { right: auto; left: 4px; }.strategy-popover { position: fixed; top: 145px; right: 12px; left: 12px; width: auto; max-height: calc(100dvh - 157px); overflow-y: auto; }.settings-danger { min-height: 44px; }.unified-replacements .compact-action, .transfer-dismiss { min-height: 44px; }.transfer-dismiss { width: 44px; }.panel-resizer, .panel-collapse { display: none; }.mobile-tabs { position: sticky; z-index: 15; top: 97px; display: grid; grid-template-columns: repeat(2, 1fr); border-bottom: 1px solid var(--border-soft); background: var(--panel); }.mobile-tabs button { min-height: 40px; border: 0; border-right: 1px solid var(--border-soft); background: transparent; color: var(--muted); font-size: 12px; letter-spacing: .08em; }.mobile-tabs button.active { color: var(--amber); box-shadow: inset 0 -2px var(--amber); }.table-wrap { max-height: 65vh; }.detail-panel { top: 60px; right: 12px; left: 12px; max-height: calc(100vh - 150px); }.detail-panel .icon-button, .detail-actions button { min-height: 44px; }.detail-panel .icon-button { width: 44px; }.role-button { min-width: 44px; height: 44px; font-size: 12px; }.squad-slot, .empty-slot { min-height: 96px; }.panel-header { align-items: flex-start; }.header-actions { flex-wrap: wrap; justify-content: flex-end; }.slot-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }.slot-gk { max-width: 100%; }.slot-fwd { max-width: 100%; } }
 @media (max-width: 560px) { body { font-size: 12px; }.brand { font-size: 12px; }.topbar-actions .text-button { padding-inline: 4px; font-size: 12px; }.status-cell { min-width: 62px; }.status-cell:nth-child(2), .status-cell:nth-child(6) { display: none; }.market-column, .squad-column { padding: 10px; }.slot-grid, .slot-grid.starting-slot-grid, .slot-grid.bench-slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 100%; }.slot-gk, .slot-fwd { grid-template-columns: repeat(2, minmax(0, 1fr)); }.metric-strip > div { padding-inline: 3px; }.metric-strip > div span { font-size: 12px; }.metric-strip strong { font-size: 12px; }.selection-metrics { grid-template-columns: repeat(2, 1fr); }.strategy-panel { grid-template-columns: 1fr; }.strategy-panel > .section-kicker { grid-column: auto; }.mode-screen { padding: 28px 18px; }.mode-brand { margin-bottom: 52px; }.mode-grid { grid-template-columns: 1fr; margin-top: 40px; }.mode-card { min-height: 165px; }.mode-footer { align-items: start; flex-wrap: wrap; }.footer-hint { width: 100%; margin-left: 15px; }.detail-actions { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 @media (max-width: 900px) {
@@ -478,7 +477,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .text-button { min-height: 26px; padding: 0 5px; font-size: 8px; }
 
   .terminal-grid {
-    grid-template-columns: var(--market-column, minmax(0, 1.15fr)) var(--squad-column, minmax(0, 1fr)) !important;
+    grid-template-columns: var(--market-column, minmax(0, 1.15fr)) var(--squad-column, minmax(0, 1fr));
     grid-template-rows: minmax(0, 1fr);
     align-items: stretch;
     gap: 4px;
@@ -838,15 +837,8 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
    line. The boxed FPL mark carries the branding on its own; the word goes. */
 @media (max-width: 384px) { .terminal-app .topbar { padding-inline: 6px; } .terminal-app .topbar .brand > span:last-child { display: none; } .terminal-app .topbar-actions .text-button { padding-inline: 2px; } }
 
-/* Chip planning: selector, finance strip, strategy panel. */
-.chip-selector { display: inline-flex; align-items: center; gap: 2px; margin-left: 8px; border: 1px solid var(--border); background: var(--panel-alt); padding: 1px; }
-.chip-option { min-width: 30px; height: 20px; padding: 0 5px; border: 0; background: transparent; color: var(--muted); font-size: 8px; letter-spacing: .06em; }
-.chip-option:hover:not(:disabled) { color: var(--text); background: color-mix(in srgb, var(--amber) 10%, transparent); }
-.chip-option.active { color: var(--amber); box-shadow: inset 0 -2px var(--amber); }
-.chip-option:disabled { opacity: .32; cursor: not-allowed; }
+/* Chip planning styles live in the decision rail section of ui.css. */
 .plan-notice { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 4px; padding: 4px 8px; border: 1px solid var(--amber); color: var(--amber); font-size: 9px; letter-spacing: .04em; }
-.chip-strategy { border-top: 1px solid var(--border); }
-.chip-reason { grid-column: 1 / -1; }
 
 /* ── Mobile fixes: stop the squad column clipping its own right edge ──
    `.squad-column.mobile-visible` is a grid with no explicit column, so its
@@ -861,13 +853,6 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
    order otherwise. */
 @media (max-width: 900px) {
   .squad-column.mobile-visible { grid-template-columns: minmax(0, 1fr); }
-
-  /* The gameweek stepper and the chip row cannot share a line on a phone:
-     PLAN + arrows + GW + LIVE GW + five chips needs ~400px. The chips take
-     their own full-width line, which also buys them a real touch target. */
-  .planning-toolbar { flex-wrap: wrap; row-gap: 6px; }
-  .planning-toolbar .chip-selector { flex: 1 1 100%; margin-left: 0; justify-content: space-between; }
-  .planning-toolbar .chip-option { flex: 1 1 0; min-width: 0; height: 32px; }
 
   /* Seven metrics in an even grid left the last cell empty, showing the
      grid's border colour as a stray shaded box. ACTIVE CHIP spans instead. */
@@ -1022,7 +1007,6 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .feed-title,
   .feed-sub,
   .feed-new,
-  .chip-option,
   .plan-notice,
   .mode-leagues-link a,
   .empty-state > strong { font-size: var(--min-text); }

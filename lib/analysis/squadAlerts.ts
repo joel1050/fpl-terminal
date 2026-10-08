@@ -28,6 +28,7 @@ export function squadAlerts(input: {
       const chance = typeof player.chanceOfPlaying !== "number" ? "" : `, ${player.chanceOfPlaying}%`;
       (level === "UNAVAILABLE" ? unavailable : doubtful).push({
         kind: "AVAILABILITY",
+        severity: level === "UNAVAILABLE" ? "BAD" : "WARN",
         playerId: player.id,
         title: `${player.displayName} ${level === "UNAVAILABLE" ? "unavailable" : "doubtful"}${chance}`,
         detail: `${slotLabel(player.id, input)} · ${Math.round(week.minutes)} min expected · ${week.points.toFixed(1)} xP`,
@@ -40,7 +41,7 @@ export function squadAlerts(input: {
       if (average >= HARD_RUN_AVERAGE) {
         const runXp = [0, 1, 2, 3, 4].reduce((sum, i) => sum + weeklyPlayerMetrics(player, input.gameweek + i).points, 0);
         hardRun.push({
-          kind: "HARD_RUN", playerId: player.id,
+          kind: "HARD_RUN", severity: "INFO", playerId: player.id,
           title: `${player.displayName} has a hard run`,
           detail: `${upcoming.map((f) => f.opponentShortName).join(" · ")} → ${runXp.toFixed(1)} xP over 5 GWs`,
         });
@@ -48,8 +49,8 @@ export function squadAlerts(input: {
     }
 
     const count = player.fixtures.filter((f) => f.gameweek === input.gameweek).length;
-    if (count === 0) schedule.push({ kind: "BLANK", playerId: player.id, title: `${player.displayName} has no fixture`, detail: `Blank gameweek ${input.gameweek}` });
-    if (count > 1) schedule.push({ kind: "DOUBLE", playerId: player.id, title: `${player.displayName} plays twice`, detail: `Double gameweek ${input.gameweek}` });
+    if (count === 0) schedule.push({ kind: "BLANK", severity: "INFO", playerId: player.id, title: `${player.displayName} has no fixture`, detail: `Blank gameweek ${input.gameweek}` });
+    if (count > 1) schedule.push({ kind: "DOUBLE", severity: "INFO", playerId: player.id, title: `${player.displayName} plays twice`, detail: `Double gameweek ${input.gameweek}` });
   }
 
   return [...unavailable, ...doubtful, ...hardRun, ...schedule].slice(0, MAX_ALERTS);

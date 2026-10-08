@@ -289,7 +289,8 @@ test.describe("squad pitch", () => {
 
   test("on desktop the table shows all ten columns, with headers at least 11.5px", async ({ page }) => {
     await importTeam(page);
-    await page.setViewportSize({ width: 1440, height: 900 });
+    // 1920 wide: at 1440 the decision rail sits beside the squad, which leaves too little width for Form and Run (see decision-rail.spec.ts).
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await showTable(page);
 
     const table = squadTable(page);

@@ -36,6 +36,10 @@ import { PlayerActions } from "@/components/terminal/squad/PlayerActions";
 import { SquadKpis } from "@/components/terminal/squad/SquadKpis";
 import { SquadPitch } from "@/components/terminal/squad/SquadPitch";
 import { SquadTable } from "@/components/terminal/squad/SquadTable";
+import { AlertsSection } from "@/components/terminal/rail/AlertsSection";
+import { CaptainSection } from "@/components/terminal/rail/CaptainSection";
+import { DecisionRail, RailSection } from "@/components/terminal/rail/DecisionRail";
+import { squadAlerts } from "@/lib/analysis/squadAlerts";
 import { money, points } from "@/lib/display/format";
 
 // The deadline formatter moved with the top bar; the Planner's tests still import it from here.
@@ -606,6 +610,11 @@ export default function TerminalApp() {
   const [transferSearch, setTransferSearch] = useState<{ key: string; suggestions: SingleTransferSuggestion[]; state: "READY" | "ERROR"; message: string | null }>({ key: "", suggestions: [], state: "READY", message: null });
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
   const [simulationMoves, setSimulationMoves] = useState<Array<{ outId: number; inId: number; cashReleasedTenths?: number }> | null>(null);
+  // The result sits over the squad column, which may be above the rail the user opened it from.
+  const simulationRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (simulation) simulationRef.current?.scrollIntoView({ block: "nearest" });
+  }, [simulation]);
   const simulationMove = simulationMoves?.[0] ?? null;
   const [gwSwapSelection, setGWSwapSelection] = useState<{ starterId?: number; benchId?: number }>({});
   const [actionPlayerId, setActionPlayerId] = useState<number | null>(null);
@@ -634,8 +643,9 @@ export default function TerminalApp() {
     if (!section || !grid || !neighbor || collapsedPanels[neighbor]) return;
     const neighborSection = grid.querySelector<HTMLElement>(`[data-panel="${neighbor}"]`);
     if (!neighborSection) return;
-    const availableWidth = grid.getBoundingClientRect().width - (DESKTOP_PANELS.length - 1);
     const widths = DESKTOP_PANELS.map((name) => grid.querySelector<HTMLElement>(`[data-panel="${name}"]`)?.getBoundingClientRect().width ?? 0);
+    // The divider shares the market and squad widths only. The rail is a third column and is not part of the split.
+    const availableWidth = widths.reduce((sum, width) => sum + width, 0);
     if (availableWidth <= 0 || widths.some((width) => width <= 0)) return;
     const ratios = Object.fromEntries(DESKTOP_PANELS.map((name, index) => [name, ratioPercent(widths[index], availableWidth)])) as Record<DesktopPanel, number>;
     resizeRef.current = { panel, neighbor, direction: panelIndex === DESKTOP_PANELS.length - 1 ? -1 : 1, startX: event.clientX, currentWidth: widths[panelIndex], neighborWidth: widths[neighborIndex], availableWidth, ratios };
@@ -741,6 +751,10 @@ export default function TerminalApp() {
     if (!currentGWPlan) return undefined;
     return currentGWPlan.projectedTotal;
   }, [currentGWPlan]);
+  // Alerts follow the same lineup the pitch shows, so a benched player is listed with the bench slot the pitch shows.
+  const planAlerts = useMemo(() => currentGWPlan
+    ? squadAlerts({ squad: selected, starterIds: currentGWPlan.starterIds, benchOrder: [...currentGWPlan.benchOrder], benchGoalkeeperId: currentGWPlan.benchGoalkeeperId, gameweek: planningGameweek })
+    : [], [currentGWPlan, planningGameweek, selected]);
   const projected = useMemo<{ nextGW?: number; next3?: number; next5?: number; next10?: number }>(() => {
     if (!selected.length) return {};
     if (weeklyEnginePlan.starterIds.length !== 11) return aggregateWeeklyProjection(selected, planningGameweek);
@@ -1291,10 +1305,16 @@ export default function TerminalApp() {
 
         <section id="terminal-panel-squad" data-panel="squad" className={`squad-column ${collapsedPanels.squad ? "panel-collapsed" : ""} ${store.activeMobileTab === "SQUAD" ? "mobile-visible" : ""}`} aria-label="Squad builder and analysis">
           <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><div className="squad-view-switch" role="group" aria-label="Squad view"><button type="button" aria-pressed={store.squadView === "PITCH"} onClick={() => store.setSquadView("PITCH")}>Pitch</button><button type="button" aria-pressed={store.squadView === "TABLE"} onClick={() => store.setSquadView("TABLE")}>Table</button></div><button type="button" className="compact-action squad-lock-all" disabled={store.playerIds.length === 0} aria-label={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} aria-pressed={allSquadPlayersLocked} title={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} onClick={store.toggleAllLocks}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={allSquadPlayersLocked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M12 7V5a4 4 0 0 0-7.7-1.5"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button><button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button><button className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "PICK TEAM · OUTDATED" : "PICK TEAM"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
-          <div className="planning-stack">
-          <div className="planning-toolbar" aria-label="Squad planning Gameweek"><span className="section-kicker">PLAN</span><ChipSelector gameweek={planningGameweek} onNotice={setNotice} /></div>
+          <SquadKpis
+            projected={chipNetXp ?? projected.nextGW}
+            gameweek={planningGameweek}
+            value={(store.entryId === undefined ? undefined : weekFinance?.squadSellingValueTenths) ?? spent}
+            valueLabel={store.entryId === undefined ? "COST" : "VALUE"}
+            bankSlot={<BankMetric bankTenths={bankTenths} confidence={weekFinance?.confidence ?? "ESTIMATED"} handBuilt={store.entryId === undefined} onBankChange={(tenths) => store.setBankTenths(tenths, { spentTenths: spent, priceById: marketPriceById })} />}
+            freeTransfers={weekFinance?.freeTransfersBefore}
+            rating={teamRating}
+          />
           {store.planNotice && <div className="plan-notice" role="status"><span>{store.planNotice}</span><button type="button" className="toast-button" aria-label="Dismiss plan notice" onClick={() => store.clearPlanNotice()}>×</button></div>}
-          </div>
           {store.squadView === "TABLE" ? <>
             {swapHint && <p className="swap-hint">{swapHint}</p>}
             <SquadTable
@@ -1314,20 +1334,26 @@ export default function TerminalApp() {
             renderPlayer={renderSquadPlayer}
             renderEmpty={(position, key) => <EmptySlot key={key} position={position} maxPriceTenths={slotMaxPrices[position]} onChoose={() => choosePlayer(position)} />}
           />}
-          <SquadKpis
-            projected={chipNetXp ?? projected.nextGW}
-            gameweek={planningGameweek}
-            value={(store.entryId === undefined ? undefined : weekFinance?.squadSellingValueTenths) ?? spent}
-            valueLabel={store.entryId === undefined ? "COST" : "VALUE"}
-            bankSlot={<BankMetric bankTenths={bankTenths} confidence={weekFinance?.confidence ?? "ESTIMATED"} handBuilt={store.entryId === undefined} onBankChange={(tenths) => store.setBankTenths(tenths, { spentTenths: spent, priceById: marketPriceById })} />}
-            freeTransfers={weekFinance?.freeTransfersBefore}
-            rating={teamRating}
-          />
-          <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />
-          <ChipStrategyPanel players={data.players} planningGameweek={planningGameweek} onNotice={setNotice} />
-          {simulation && simulationMoves && simulationMoves.length > 0 && <div className="squad-overlay"><SimulationPanel result={simulation} moves={simulationMoves} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMoves(null); }} /></div>}
+          {simulation && simulationMoves && simulationMoves.length > 0 && <div className="squad-overlay" ref={simulationRef}><SimulationPanel result={simulation} moves={simulationMoves} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMoves(null); }} /></div>}
           <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
         </section>
+
+        <DecisionRail
+          mobileVisible={store.activeMobileTab === "SQUAD"}
+          captain={<CaptainSection
+            starters={pitchRows.flatMap((row) => row.players)}
+            gameweek={planningGameweek}
+            captainId={lineupApplied ? store.captainId : currentGWPlan?.captainId}
+            viceCaptainId={lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId}
+            onOpen={(playerId) => setActionPlayerId(playerId)}
+          />}
+          alerts={<AlertsSection alerts={planAlerts} onOpen={(playerId) => setActionPlayerId(playerId)} />}
+          transfers={<TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />}
+          chips={<RailSection title="Chips">
+            <ChipSelector gameweek={planningGameweek} onNotice={setNotice} />
+            <ChipStrategyPanel players={data.players} planningGameweek={planningGameweek} onNotice={setNotice} />
+          </RailSection>}
+        />
 
       </div>
       {notice && (noticeMinimized

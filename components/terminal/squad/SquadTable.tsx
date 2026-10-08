@@ -61,8 +61,8 @@ function SquadTableRow({ player, gameweek, captain, vice, benchLabel, onOpen }: 
       <td className="num wide-only">{points(projectedPointsForGameweeks(projectedFixtures, gameweek, 3))}</td>
       <td className="num wide-only">{points(projectedPointsForGameweeks(projectedFixtures, gameweek, 5))}</td>
       <td className={`num sq-start ${startPercent !== undefined && startPercent < START_WARN_BELOW ? "warn" : ""}`}>{startPercent === undefined ? "—" : `${startPercent}%`}</td>
-      <td className="num wide-only">{player.current.form === undefined ? "—" : player.current.form.toFixed(1)}</td>
-      <td className="wide-only"><RunStrip fixtures={player.fixtures} fromGameweek={gameweek} count={5} /></td>
+      <td className="num wide-only roomy">{player.current.form === undefined ? "—" : player.current.form.toFixed(1)}</td>
+      <td className="wide-only roomy"><RunStrip fixtures={player.fixtures} fromGameweek={gameweek} count={5} /></td>
     </tr>
   );
 }
@@ -82,8 +82,8 @@ export function SquadTable({ starters, bench, gameweek, captainId, viceCaptainId
           <th scope="col" className="num wide-only">3GW</th>
           <th scope="col" className="num wide-only">5GW</th>
           <th scope="col" className="num sq-start">Start</th>
-          <th scope="col" className="num wide-only">Form</th>
-          <th scope="col" className="wide-only">Run</th>
+          <th scope="col" className="num wide-only roomy">Form</th>
+          <th scope="col" className="wide-only roomy">Run</th>
         </tr>
       </thead>
       <tbody>

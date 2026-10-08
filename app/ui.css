@@ -412,7 +412,6 @@
   .squad-column .pitch-row { gap: 0; }
   .squad-column .pitch-row .position-heading,
   .squad-column .lineup-roster-heading { line-height: 14px; }
-  .squad-column .planning-toolbar { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 8px; }
   .pitch-token { gap: 1px; padding: 2px; }
   .pitch-token .run { display: none; }
   .token-shirt { height: 28px; }
@@ -482,4 +481,124 @@
   .squad-table .sq-pos { font-size: 12px; }
   .squad-table .sq-name { font-size: 13px; }
   .squad-table tr.squad-table-divider td { padding-left: 4px; }
+}
+
+/* Desktop layout (Task 9). Market and squad share the top row. The decision rail is a third
+   column from 1400px, and sits under the squad from 901px to 1399px. Phones stack it below the squad. */
+@media (min-width: 901px) {
+  .terminal-grid {
+    grid-template-columns: var(--market-column, minmax(0, 1.15fr)) var(--squad-column, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+  }
+  .market-column { grid-row: 1 / span 2; }
+  .squad-column { container: squad-panel / inline-size; }
+  .decision-rail { grid-column: 2; grid-row: 2; }
+}
+/* A collapsed squad is a 52px strip. The rail cannot sit in that track, so it steps aside until the squad opens. */
+@media (min-width: 901px) and (max-width: 1399px) {
+  .terminal-grid:has(> .squad-column.panel-collapsed) .decision-rail { display: none; }
+}
+@media (min-width: 1400px) {
+  .terminal-grid {
+    grid-template-columns: var(--market-column, minmax(0, 1.15fr)) var(--squad-column, minmax(0, 1fr)) 296px;
+    grid-template-rows: auto;
+  }
+  .market-column { grid-row: 1; }
+  .decision-rail { grid-column: 3; grid-row: 1; }
+}
+/* Table view in a narrow squad column drops Form and Run, which need about 110px between them. */
+@container squad-panel (max-width: 560px) {
+  .squad-table .roomy { display: none; }
+}
+
+/* Decision rail. Amber marks the captain, the active state and the primary action. Orange marks doubt. Red marks unavailable and errors. */
+.decision-rail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+}
+.decision-rail .rail-section,
+.decision-rail .unified-replacements,
+.decision-rail .chip-strategy {
+  padding: 12px 14px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  box-shadow: none;
+}
+.decision-rail .rail-section:last-child { border-bottom: 0; }
+.decision-rail small { font-size: 12px; }
+.decision-rail .section-kicker { font-size: 12px; letter-spacing: .08em; color: var(--muted); }
+.decision-rail .panel-count { margin-left: 6px; font-size: 12px; }
+.decision-rail .compact-action { min-height: 28px; padding: 0 8px; font-size: 12px; }
+.decision-rail .empty-copy { padding: 6px 0; font-size: 12px; }
+.decision-rail .unified-replacements { display: block; min-height: 0; overflow: visible; }
+.decision-rail .replacement-scroll { min-height: 0; overflow: visible; }
+.decision-rail .subsection-head { flex-wrap: wrap; min-height: 28px; margin-bottom: 8px; row-gap: 6px; }
+/* The Transfers controls (Banked, horizon) are an inline flex row that needs about 310px. In the 296px rail they wrap. */
+.decision-rail .subsection-head > div:last-child { flex-wrap: wrap; min-width: 0; row-gap: 6px; }
+
+.rail-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; margin-bottom: 6px; }
+.rail-head h2 { margin: 0; color: var(--muted); font: 600 13px/1.2 var(--font-ui); }
+.rail-count { color: var(--muted); font: 600 12px/1 var(--font-num); }
+.rail-action { min-height: 28px; padding: 0 6px; border: 0; background: transparent; color: var(--accent); font: 500 12px/1 var(--font-ui); }
+.rail-action:disabled { color: var(--muted); }
+.rail-empty { margin: 0; padding: 9px 11px; border-radius: 8px; background: var(--surface-2); color: var(--muted); font-size: 13px; line-height: 1.4; }
+
+/* Captain: four bars, drawn from the same Gameweek xP as the table, before the captain's double. */
+.captain-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.captain-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px 40px; gap: 8px; align-items: center; width: 100%; min-height: 30px; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; }
+.captain-row:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.captain-name { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; font: 600 13px/1.2 var(--font-ui); text-overflow: ellipsis; white-space: nowrap; }
+.captain-role { display: inline-grid; place-items: center; flex: none; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; color: #111; font: 700 12px/1 var(--font-num); }
+.captain-role.captain { background: var(--accent); }
+.captain-role.vice { background: var(--text); }
+.captain-bar { height: 6px; overflow: hidden; border-radius: 3px; background: var(--line); }
+.captain-bar i { display: block; height: 100%; border-radius: 3px; background: var(--muted); }
+.captain-row.is-captain .captain-bar i { background: var(--accent); }
+.captain-xp { color: var(--text); font: 600 13px/1 var(--font-num); text-align: right; }
+
+/* Needs a look: the glyph carries the severity, and the row opens the player's action sheet. */
+.alert-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.alert-row { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; align-items: start; width: 100%; min-height: 40px; padding: 6px 0; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; }
+.alert-row:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.alert-glyph { display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font: 800 12px/1 var(--font-num); }
+.alert-row.bad .alert-glyph { background: var(--bad); color: #111; }
+.alert-row.warn .alert-glyph { background: var(--warn); color: #111; }
+.alert-text { display: grid; gap: 2px; min-width: 0; }
+.alert-text strong { font: 600 13px/1.25 var(--font-ui); }
+.alert-text small { color: var(--muted); line-height: 1.35; }
+
+/* Transfers: the existing panel, restyled. Its horizon buttons and select keep 40px tap areas on phones. */
+.decision-rail .transfer-horizon button { min-width: 28px; font-size: 12px; }
+.decision-rail .replacement-row { gap: 6px; }
+
+/* Chips: one row of five, each a button with its label and, for a used chip, "Used GW n" as text. */
+.decision-rail .chip-selector { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0 0 8px; }
+.chip-option { display: grid; justify-items: center; align-content: center; gap: 2px; min-width: 0; min-height: 40px; padding: 4px 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--muted); font: inherit; font-size: 12px; }
+.chip-option:hover:not(:disabled) { border-color: var(--muted); color: var(--text); }
+.chip-option.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.chip-option:disabled { cursor: not-allowed; }
+.chip-option .chip-name { font: 600 13px/1 var(--font-num); letter-spacing: .04em; }
+.chip-option.used .chip-name { color: var(--muted); text-decoration: line-through; }
+.chip-used { display: block; color: var(--muted); font-size: 12px; line-height: 1.15; text-align: center; }
+.chip-used > span { display: block; }
+.plan-notice { font-size: 12px; }
+
+@media (max-width: 900px) {
+  .decision-rail { display: none; }
+  .decision-rail.mobile-visible { display: flex; }
+  .decision-rail .rail-section,
+  .decision-rail .unified-replacements,
+  .decision-rail .chip-strategy { padding: 12px 12px 14px; }
+  /* Every control in the rail keeps a 40px tap area. */
+  .decision-rail button,
+  .decision-rail select { min-height: 40px; }
+  .decision-rail .transfer-horizon button { min-width: 40px; }
+  .decision-rail .compact-action,
+  .decision-rail .rail-action { min-height: 40px; }
+  .chip-option { min-height: 40px; }
 }

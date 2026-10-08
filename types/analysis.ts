@@ -110,6 +110,8 @@ export type { SquadState };
 
 export interface SquadAlert {
   kind: "AVAILABILITY" | "HARD_RUN" | "BLANK" | "DOUBLE";
+  /** BAD: unavailable. WARN: doubtful. INFO: fixture schedule or form. */
+  severity: "BAD" | "WARN" | "INFO";
   playerId: number;
   title: string;
   detail: string;

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { Player, Position } from "@/types";
 import type { ChipKind } from "@/types/chips";
 import { baselineWithMigrationFallback, useTerminalStore } from "@/store/terminalStore";
-import { chipLabel, validateChipSelection } from "@/lib/chips/seasonPolicy";
+import { chipLabel, validateChipSelection, windowForGameweek } from "@/lib/chips/seasonPolicy";
 import { replayTimeline } from "@/lib/chips/timeline";
 import { squadFinanceSnapshot } from "@/lib/chips/finance";
 import { pickWeeklyTeam } from "@/lib/squad/weeklyLineup";
@@ -30,7 +30,7 @@ const CHIP_OPTIONS: Array<{ kind: ChipKind | null; label: string }> = [
   { kind: "3xc", label: "TC" },
 ];
 
-/** Compact chip selector beside the Gameweek switcher. */
+/** Chip choice for one Gameweek. A used chip says which Gameweek it went in, as text. */
 export function ChipSelector({ gameweek, onNotice }: { gameweek: number; onNotice: (text: string) => void }) {
   const chip = useTerminalStore((state) => state.chip);
   const gameweekPlans = useTerminalStore((state) => state.gameweekPlans);
@@ -58,14 +58,19 @@ export function ChipSelector({ gameweek, onNotice }: { gameweek: number; onNotic
               Object.fromEntries(Object.entries(planned).filter(([key]) => Number(key) !== gameweek)),
               currentGameweek,
             );
+        const legal = validation.legal;
+        // The chip's official use in this chip window, shown as text so it does not depend on a tooltip.
+        const used = option.kind === null
+          ? undefined
+          : usedChips.find((entry) => entry.kind === option.kind && windowForGameweek(entry.gameweek) === windowForGameweek(gameweek));
         return (
           <button
             key={option.label}
             type="button"
-            className={`chip-option ${active ? "active" : ""}`}
-            aria-pressed={active}
-            disabled={!validation.legal}
-            title={validation.legal ? `${option.label} for GW${gameweek}` : ("reason" in validation ? validation.reason : "")}
+            className={`chip-option ${active && legal ? "active" : ""} ${used ? "used" : ""}`}
+            aria-pressed={active && legal}
+            disabled={!legal}
+            title={!legal && !used && "reason" in validation ? validation.reason : undefined}
             onClick={() => {
               if (option.kind === chip) return;
               if (!setChip(gameweek, option.kind)) {
@@ -75,7 +80,8 @@ export function ChipSelector({ gameweek, onNotice }: { gameweek: number; onNotic
               onNotice(option.kind ? `${chipLabel(option.kind)} planned for GW${gameweek}.` : `Chip cleared for GW${gameweek}.`);
             }}
           >
-            {option.label}
+            <span className="chip-name">{option.label}</span>
+            {used && <span className="chip-used"><span>Used</span> <span>GW {used.gameweek}</span></span>}
           </button>
         );
       })}

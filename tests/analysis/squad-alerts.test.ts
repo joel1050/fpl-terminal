@@ -73,6 +73,15 @@ describe("squadAlerts", () => {
     expect(kinds).toEqual(["BLANK", "DOUBLE"]);
   });
 
+  it("grades each alert: unavailable BAD, doubtful WARN, schedule and form INFO", () => {
+    const s = squad.map((x) =>
+      x.id === 2 ? p(2, { status: "d", chanceOfPlaying: 50 }) :
+      x.id === 5 ? p(5, { status: "i" }) :
+      x.id === 6 ? p(6, { rows: [{ gameweek: 2 }] }) : x);
+    const severity = Object.fromEntries(squadAlerts(base(s)).map((a) => [a.playerId, a.severity]));
+    expect(severity).toEqual({ 5: "BAD", 2: "WARN", 6: "INFO" });
+  });
+
   it("caps the list at five", () => {
     const s = squad.map((x) => p(x.id, { status: "i" }));
     expect(squadAlerts(base(s))).toHaveLength(5);
