@@ -180,8 +180,6 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .panel-collapse:active, .filter-reset:active { transform: scale(.96); }
 .panel-resizer { position: absolute; z-index: 5; top: 0; right: 0; bottom: 0; width: 8px; padding: 0; border: 0; background: transparent; cursor: col-resize; }
 .panel-resizer:hover, .panel-resizer:focus-visible { background: color-mix(in srgb, var(--amber) 22%, transparent); }
-
-.squad-sections { display: grid; gap: 7px; }
 .planning-toolbar { display: flex; align-items: center; gap: 8px; min-height: 24px; margin: -1px 0 4px; padding: 2px 0 4px; border-bottom: 1px solid var(--border-soft); }
 .planning-switcher { display: inline-flex; align-items: center; border: 1px solid var(--border); background: var(--panel-alt); }
 .planning-switcher > span { min-width: 48px; color: var(--text); font-size: 9px; letter-spacing: .08em; text-align: center; }
@@ -192,42 +190,20 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .lineup-roster { gap: 5px; }.starting-xi { display: grid; gap: 5px; }.lineup-roster-heading { display: flex; align-items: center; justify-content: space-between; min-height: 16px; color: var(--muted); font-size: 9px; letter-spacing: .1em; }.lineup-roster-heading > span:first-child { color: var(--amber); }.slot-grid.starting-slot-grid { grid-template-columns: repeat(var(--slot-count), minmax(0, 1fr)); width: 100%; max-width: calc(var(--slot-count) * 160px); margin-inline: auto; }.bench-section { display: grid; gap: 3px; padding-top: 4px; border-top: 1px solid var(--border); }.slot-grid.bench-slot-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); width: min(100%, 640px); margin-inline: auto; }
 .position-heading { margin-bottom: 6px; color: var(--muted); font-size: 10px; letter-spacing: .13em; }
 .position-heading > span:first-child { color: var(--text); }
-.slot-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
-.slot-gk { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 50%; }
-.slot-fwd { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 70%; }
-.squad-slot { position: relative; display: grid; min-height: 75px; padding: 8px; border: .5px solid var(--border); background: var(--panel-alt); text-align: left; }
+.slot-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }.squad-slot { position: relative; display: grid; min-height: 75px; padding: 8px; border: .5px solid var(--border); background: var(--panel-alt); text-align: left; }
 .squad-slot.filled { border-color: color-mix(in srgb, var(--cyan) 24%, var(--border)); }
 .squad-slot.filled.locked { border-color: var(--amber); }
 .squad-slot.filled:hover { border-color: var(--amber); }
-.squad-slot.benched { border-color: var(--border); background: color-mix(in srgb, var(--background) 50%, var(--panel-alt)); }.squad-slot.benched .slot-main { opacity: .58; }.squad-slot.lineup-selected { border-color: var(--cyan); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cyan) 45%, transparent); }
-.squad-fixture-badges { position: absolute; z-index: 1; top: 4px; right: 4px; display: inline-flex; max-width: calc(100% - 8px); gap: 2px; overflow: hidden; opacity: 1; pointer-events: none; transition-property: opacity; transition-duration: 120ms; }
-.squad-fixture-badges > span { overflow: hidden; max-width: 54px; padding: 2px 3px; border: 1px solid var(--border); color: var(--muted); font-size: 7px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
-.squad-fixture-badges .easy { border-color: color-mix(in srgb, var(--green) 50%, var(--border)); color: var(--green); }
-.squad-fixture-badges .hard { border-color: color-mix(in srgb, var(--amber) 55%, var(--border)); color: var(--amber); }
-.squad-fixture-badges .blank { border-color: var(--border); color: var(--dim); }
+.squad-slot.benched { border-color: var(--border); background: color-mix(in srgb, var(--background) 50%, var(--panel-alt)); }.squad-slot.benched .slot-main { opacity: .58; }
 .slot-main { display: grid; gap: 4px; border: 0; background: transparent; text-align: left; }
 .slot-player { overflow: hidden; color: var(--text); font-size: 10px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .slot-sub { overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .slot-xp { align-self: end; margin-top: 6px; color: var(--cyan); font-size: 13px; }
-.slot-xp small { color: var(--muted); font-size: 8px; }
-.slot-flags { position: absolute; top: 4px; right: 4px; display: flex; flex-direction: row-reverse; gap: 2px; opacity: 0; pointer-events: none; transition-property: opacity; transition-duration: 120ms; }.squad-slot:hover .slot-flags, .squad-slot:focus-within .slot-flags { opacity: 1; pointer-events: auto; }.squad-slot:hover .squad-fixture-badges, .squad-slot:focus-within .squad-fixture-badges { opacity: 0; }
-.slot-flags button { display: inline-grid; place-items: center; width: 16px; height: 16px; padding: 0; border: 0; background: transparent; color: var(--dim); font-size: 9px; }
-.slot-flags button:hover { color: var(--amber); }
-.lock-icon { width: 11px; height: 11px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.4; }.lock-body { fill: transparent; transition-property: fill; transition-duration: 120ms; }.lock-flag.on { color: var(--amber) !important; }.lock-flag.on .lock-body { fill: currentColor; }.lock-flag:active, .remove-flag:active { transform: scale(.96); }.remove-flag:hover { color: var(--red) !important; }
-.lineup-controls { position: absolute; right: 3px; bottom: 3px; display: flex; gap: 1px; }.role-button { display: inline-grid; place-items: center; min-width: 19px; height: 18px; padding: 0 3px; border: 1px solid var(--border); background: color-mix(in srgb, var(--panel) 92%, transparent); color: var(--dim); font-size: 7px; line-height: 1; }.role-button:hover:not(:disabled), .role-button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }.role-button.captain.active { border-color: var(--amber); background: var(--amber); color: var(--background); }.role-button.vice.active { border-color: var(--cyan); background: var(--cyan); color: var(--background); }.role-button.bench-toggle.active { border-color: var(--dim); color: var(--text); }.role-button.bench-order { min-width: 17px; padding: 0; }
-/* The C/VC and bench-order labels exist for touch, where the per-card role
-   buttons are hidden. On desktop those buttons are on the card and already
-   lit, so the labels only repeat them and cost a row. */
-@media (min-width: 901px) { .slot-role, .slot-bench-tag { display: none; } }
-.empty-slot { align-content: center; justify-items: start; min-height: 75px; border-style: dashed; color: var(--muted); }
-.empty-slot:hover { border-color: var(--amber); color: var(--text); }
+.slot-xp small { color: var(--muted); font-size: 8px; }.lock-icon { width: 11px; height: 11px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.4; }.lock-body { fill: transparent; transition-property: fill; transition-duration: 120ms; }.lock-flag.on { color: var(--amber) !important; }.lock-flag.on .lock-body { fill: currentColor; }.lock-flag:active, .remove-flag:active { transform: scale(.96); }.remove-flag:hover { color: var(--red) !important; }
 .empty-plus { position: absolute; top: 5px; right: 7px; color: var(--amber); font-size: 18px; font-weight: 300; }
 .suggest-label { margin-top: 6px; color: var(--amber); font-size: 8px; letter-spacing: .08em; }
-.metric-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; margin-top: 6px; border: 1px solid var(--border); background: var(--border); }
-.metric-strip > div { display: grid; gap: 2px; min-width: 0; padding: 4px 6px; background: var(--panel-alt); }
-.metric-strip strong { overflow: hidden; font-size: 11px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-.metric-strip .metric-money { display: flex; align-items: baseline; gap: 1px; min-width: 0; }
-.metric-strip .metric-money > span { color: var(--text); font-size: 11px; letter-spacing: 0; }
+.metric-money { display: flex; align-items: baseline; gap: 1px; min-width: 0; }
+.metric-money > span { color: var(--text); font-size: 12px; letter-spacing: 0; }
 .metric-input { width: 100%; min-width: 0; padding: 0; border: 0; border-bottom: 1px dotted var(--border); background: transparent; color: inherit; font: inherit; font-size: 11px; font-weight: 500; }
 .metric-input:focus { border-bottom-color: var(--cyan); outline: none; }
 .metric-steppers { display: flex; flex: none; gap: 2px; }
@@ -871,8 +847,6 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 .plan-notice { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 4px; padding: 4px 8px; border: 1px solid var(--amber); color: var(--amber); font-size: 9px; letter-spacing: .04em; }
 .chip-strategy { border-top: 1px solid var(--border); }
 .chip-reason { grid-column: 1 / -1; }
-.squad-slot.bench-counting { border-color: color-mix(in srgb, var(--amber) 55%, transparent); }
-.squad-slot.bench-counting .slot-bench-tag { color: var(--amber); }
 
 /* ── Mobile fixes: stop the squad column clipping its own right edge ──
    `.squad-column.mobile-visible` is a grid with no explicit column, so its

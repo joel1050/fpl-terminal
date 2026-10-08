@@ -85,13 +85,13 @@ test.describe("chip planning", () => {
 
     await chips.getByRole("button", { name: "BB" }).click();
     const benchTags = await region.evaluate(() =>
-      Array.from(document.querySelectorAll(".slot-bench-tag")).map((el) => el.textContent?.trim()),
+      Array.from(document.querySelectorAll('[data-testid="token-bench"]')).map((el) => el.textContent?.trim()),
     );
-    expect(benchTags.filter((tag) => tag?.includes("COUNTS"))).toHaveLength(4);
+    expect(benchTags.filter((tag) => tag?.includes("Counts"))).toHaveLength(4);
 
     await chips.getByRole("button", { name: "TC" }).click();
     const captainMarker = await region.evaluate(() =>
-      Array.from(document.querySelectorAll(".slot-role")).map((el) => el.textContent?.trim()),
+      Array.from(document.querySelectorAll('[data-testid="token-role"]')).map((el) => el.textContent?.trim()),
     );
     expect(captainMarker).toContain("3×");
 
@@ -187,11 +187,12 @@ test.describe("chip planning", () => {
     await page.reload();
     await expect(page.getByPlaceholder(/search player, club/i)).toBeVisible();
     const reloaded = page.getByRole("region", { name: /squad builder and analysis/i });
-    const slot = reloaded.locator("article.squad-slot", { hasText: "Rogers" }).first();
-    await slot.hover();
-    await slot.getByRole("button", { name: /unlock rogers/i }).click();
-    await slot.hover();
-    await slot.getByRole("button", { name: /remove rogers/i }).click();
+    await reloaded.locator('[data-testid="squad-token"][data-player="Rogers"]').click();
+    const sheet = page.getByRole("dialog", { name: "Rogers", exact: true });
+    await expect(sheet).toBeVisible();
+    await sheet.getByRole("button", { name: /unlock rogers/i }).click();
+    await sheet.getByRole("button", { name: /remove rogers/i }).click();
+    await expect(sheet).toBeHidden();
     await expect(reloaded.getByText(/14\s*\/\s*15 selected/i).first()).toBeVisible();
   });
 

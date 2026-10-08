@@ -31,6 +31,11 @@ import {
   type TerminalMode,
   type SortKey,
 } from "@/store/terminalStore";
+import { PitchToken } from "@/components/terminal/squad/PitchToken";
+import { PlayerActions } from "@/components/terminal/squad/PlayerActions";
+import { SquadKpis } from "@/components/terminal/squad/SquadKpis";
+import { SquadPitch } from "@/components/terminal/squad/SquadPitch";
+import { money, points } from "@/lib/display/format";
 
 // The deadline formatter moved with the top bar; the Planner's tests still import it from here.
 export { formatDeadlineCountdown } from "@/components/shell/deadline";
@@ -409,14 +414,6 @@ export function normalizeBootstrap(value: unknown): Bootstrap {
   return { players, gameweek, deadline, source: stringOf(readField(root, "source", "dataSource")) ?? stringOf(readField(data, "source")) ?? null, freshness: "LIVE", fetchedAt: null };
 }
 
-function money(tenths: number | undefined): string {
-  return tenths === undefined || !Number.isFinite(tenths) ? "—" : `£${(tenths / 10).toFixed(1)}`;
-}
-
-function points(value: number | undefined): string {
-  return value === undefined || !Number.isFinite(value) || value === 0 ? "—" : value.toFixed(1);
-}
-
 function metric(value: number | undefined, suffix = ""): string {
   return value === undefined || !Number.isFinite(value) || value === 0 ? "—" : `${value.toFixed(1)}${suffix}`;
 }
@@ -472,19 +469,6 @@ function universeWeekFor(player: TerminalPlayer, gameweek: number): UniverseWeek
     value: valuePerMillion(next5, player.priceTenths),
     value10: valuePerMillion(next10, player.priceTenths),
   };
-}
-
-function squadFixturesForGameweek(player: TerminalPlayer, gameweek: number): PlayerFixture[] {
-  const projectedFixtures = player.projection?.fixtures ?? [];
-  if (projectedFixtures.length) return projectedFixtures.filter((fixture) => fixture.gameweek === gameweek).map((fixture) => fixture.fixture);
-  return player.fixtures.filter((fixture) => fixture.gameweek === gameweek);
-}
-
-function SquadFixtureBadges({ player, gameweek }: { player: TerminalPlayer; gameweek: number }) {
-  const fixtures = squadFixturesForGameweek(player, gameweek);
-  return <span className="squad-fixture-badges" aria-label={`Gameweek ${gameweek} fixtures`}>
-    {fixtures.length ? fixtures.map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>) : <span className="blank">BLANK</span>}
-  </span>;
 }
 
 function aggregateWeeklyProjection(players: readonly TerminalPlayer[], gameweek: number): { nextGW: number; next3: number; next5: number; next10: number } {
@@ -623,7 +607,7 @@ export default function TerminalApp() {
   const [simulationMoves, setSimulationMoves] = useState<Array<{ outId: number; inId: number; cashReleasedTenths?: number }> | null>(null);
   const simulationMove = simulationMoves?.[0] ?? null;
   const [gwSwapSelection, setGWSwapSelection] = useState<{ starterId?: number; benchId?: number }>({});
-  const [mobilePickedId, setMobilePickedId] = useState<number | null>(null);
+  const [actionPlayerId, setActionPlayerId] = useState<number | null>(null);
   const isMobileLineup = useMatchMedia("(max-width: 900px)");
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
@@ -765,11 +749,6 @@ export default function TerminalApp() {
       riskMode: store.riskMode,
     }, !lineupStale ? currentGWPlan ?? undefined : undefined);
   }, [currentGWPlan, lineupStale, planningGameweek, selected, store.riskMode, weeklyEnginePlan.starterIds.length]);
-  const risk = useMemo(() => {
-    if (!selected.length) return undefined;
-    const values = selected.map((player) => weeklyPlayerMetrics(player, planningGameweek).pDNP);
-    return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 100) : undefined;
-  }, [planningGameweek, selected]);
   const bestXIKey = `${planningGameweek}|${store.budgetTenths}`;
   const [bestPossibleXI, setBestPossibleXI] = useState<{ key: string; projectedTotal: number } | null>(null);
   useEffect(() => {
@@ -1231,25 +1210,6 @@ export default function TerminalApp() {
     store.setMobileTab("MARKET");
     store.setSelectedPlayer(playerId);
   };
-  const activateSquadSlot = (player: TerminalPlayer, starter: boolean) => {
-    if (!isMobileLineup) {
-      openPlayer(player.id);
-      return;
-    }
-    if (currentGWPlan) {
-      if (starter && gwSwapSelection.benchId !== undefined && gwSwapSelection.starterId === undefined) {
-        selectGWSwapPlayer("starter", player.id);
-        setMobilePickedId(null);
-        return;
-      }
-      if (!starter && gwSwapSelection.starterId !== undefined && gwSwapSelection.benchId === undefined) {
-        selectGWSwapPlayer("bench", player.id);
-        setMobilePickedId(null);
-        return;
-      }
-    }
-    setMobilePickedId((current) => (current === player.id ? null : player.id));
-  };
   const removeSquadPlayer = (player: TerminalPlayer) => {
     if (store.lockedPlayerIds.includes(player.id)) {
       setNotice(`${player.displayName} is locked. Unlock them before removing.`);
@@ -1257,11 +1217,24 @@ export default function TerminalApp() {
     }
     return store.removePlayer(player.id);
   };
-  const renderSquadPlayer = (player: TerminalPlayer, starter: boolean, benchLabel?: string) => {
-    const benchIndex = (lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(player.id);
-    const swapSelected = benchLabel ? gwSwapSelection.benchId === player.id : gwSwapSelection.starterId === player.id;
-    return <SquadSlot key={player.id} player={player} gameweek={planningGameweek} locked={store.lockedPlayerIds.includes(player.id)} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === player.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === player.id} starter={starter} benchLabel={benchLabel} benchIndex={benchIndex} lineupActive={Boolean(currentGWPlan)} swapSelected={swapSelected} picked={mobilePickedId === player.id} chip={store.chip} sellingPriceTenths={store.entryId !== undefined ? weekFinance?.sellingPricesTenths[player.id] : undefined} onRemove={() => removeSquadPlayer(player)} onToggleLock={() => store.toggleLock(player.id)} onActivate={() => activateSquadSlot(player, starter)} onSwap={() => selectGWSwapPlayer(benchLabel ? "bench" : "starter", player.id)} onCaptain={() => makeGWCaptain(player.id)} onViceCaptain={() => makeGWViceCaptain(player.id)} onMoveBench={(direction) => moveGWBench(player.id, direction)} />;
-  };
+  // A pending swap holds one side; the next tap on the other side completes it from that side's sheet.
+  const pendingStarterId = gwSwapSelection.starterId !== undefined && gwSwapSelection.benchId === undefined ? gwSwapSelection.starterId : undefined;
+  const pendingBenchId = gwSwapSelection.benchId !== undefined && gwSwapSelection.starterId === undefined ? gwSwapSelection.benchId : undefined;
+  const renderSquadPlayer = (player: Player, role: "starter" | "bench", benchLabel?: string) => <PitchToken
+    key={player.id}
+    player={player}
+    gameweek={planningGameweek}
+    role={role}
+    benchLabel={benchLabel}
+    captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === player.id}
+    vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === player.id}
+    locked={store.lockedPlayerIds.includes(player.id)}
+    chip={store.chip}
+    selected={actionPlayerId === player.id || gwSwapSelection.starterId === player.id || gwSwapSelection.benchId === player.id}
+    swapTarget={Boolean(currentGWPlan) && (pendingStarterId !== undefined ? role === "bench" : pendingBenchId !== undefined && role === "starter")}
+    showRun
+    onOpen={() => setActionPlayerId(player.id)}
+  />;
   const choosePlayer = (position: Position) => {
     const maxPriceTenths = slotMaxPrices[position];
     store.setFilters({ position, maxPrice: (maxPriceTenths / 10).toFixed(1) });
@@ -1278,10 +1251,18 @@ export default function TerminalApp() {
     ? [currentGWPlan.benchGoalkeeperId, ...currentGWPlan.benchOrder].map((id, index) => ({ id, position: playerById.get(id)?.position ?? (index === 0 ? "GK" : "DEF"), label: index === 0 ? "BGK" : `B${index}` } as const))
     : draftBenchSlots;
   const draftStarterCount = POSITIONS.reduce((sum, position) => sum + Math.min(store.byPosition[position].length, DRAFT_XI_COUNTS[position]), 0);
-  const mobilePickedPlayer = mobilePickedId === null ? undefined : playerById.get(mobilePickedId);
-  const mobilePickedBenchSlot = mobilePickedPlayer ? benchSlots.find((slot) => slot.id === mobilePickedPlayer.id) : undefined;
-  const mobilePickedStarter = mobilePickedPlayer ? !mobilePickedBenchSlot && (currentGWPlan ? currentGWPlan.starterIds.includes(mobilePickedPlayer.id) : true) : false;
-  const mobilePickedBenchIndex = mobilePickedPlayer ? (lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(mobilePickedPlayer.id) : -1;
+  const actionPlayer = actionPlayerId === null ? undefined : playerById.get(actionPlayerId);
+  const actionBenchSlot = actionPlayer ? benchSlots.find((slot) => slot.id === actionPlayer.id) : undefined;
+  const actionStarter = actionPlayer ? !actionBenchSlot && (currentGWPlan ? currentGWPlan.starterIds.includes(actionPlayer.id) : true) : false;
+  const actionBenchIndex = actionPlayer ? (lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(actionPlayer.id) : -1;
+  const pendingSwapPlayer = playerById.get(pendingStarterId ?? pendingBenchId ?? -1);
+  const swapHint = pendingSwapPlayer && currentGWPlan ? `Tap a ${pendingStarterId !== undefined ? "bench player" : "starter"} to swap with ${pendingSwapPlayer.displayName}` : undefined;
+  const pitchRows = POSITIONS.map((position) => {
+    const players = currentGWPlan
+      ? currentGWPlan.starterIds.map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => player?.position === position)
+      : store.byPosition[position].slice(0, DRAFT_XI_COUNTS[position]).map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => Boolean(player));
+    return { position, players, slotCount: currentGWPlan ? players.length : DRAFT_XI_COUNTS[position] };
+  });
   const allSquadPlayersLocked = store.playerIds.length > 0 && store.playerIds.every((id) => store.lockedPlayerIds.includes(id));
   return (
     <main className="terminal-app">
@@ -1313,22 +1294,25 @@ export default function TerminalApp() {
           <div className="planning-toolbar" aria-label="Squad planning Gameweek"><span className="section-kicker">PLAN</span><ChipSelector gameweek={planningGameweek} onNotice={setNotice} /></div>
           {store.planNotice && <div className="plan-notice" role="status"><span>{store.planNotice}</span><button type="button" className="toast-button" aria-label="Dismiss plan notice" onClick={() => store.clearPlanNotice()}>×</button></div>}
           </div>
-          <div className="squad-sections lineup-roster" data-testid="squad-roster">
-            <section className="starting-xi" aria-label="Starting XI"><div className="lineup-roster-heading"><span>STARTING XI</span><span>{currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · {currentGWPlan ? 11 : draftStarterCount}/11</span></div>
-              {POSITIONS.map((position) => {
-                const players = currentGWPlan
-                  ? currentGWPlan.starterIds.map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => player?.position === position)
-                  : store.byPosition[position].slice(0, DRAFT_XI_COUNTS[position]).map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => Boolean(player));
-                const slotCount = currentGWPlan ? players.length : DRAFT_XI_COUNTS[position];
-                return <div className="position-section starting-position" key={position}><div className="position-heading"><span>{position}</span><span>{players.length}/{slotCount}</span></div><div className="slot-grid starting-slot-grid" style={{ "--slot-count": slotCount } as CSSProperties}>{Array.from({ length: slotCount }, (_, index) => players[index] ? renderSquadPlayer(players[index], true) : <EmptySlot key={`${position}-${index}`} position={position} maxPriceTenths={slotMaxPrices[position]} onChoose={() => choosePlayer(position)} />)}</div></div>;
-              })}
-            </section>
-            <section className="bench-section" aria-label="Bench"><div className="lineup-roster-heading"><span>BENCH</span><span>BGK · B1 · B2 · B3</span></div><div className="slot-grid bench-slot-grid">{benchSlots.map((slot) => { const player = slot.id ? playerById.get(slot.id) : undefined; return player ? renderSquadPlayer(player, false, slot.label) : <EmptySlot key={slot.label} position={slot.position} maxPriceTenths={slotMaxPrices[slot.position]} onChoose={() => choosePlayer(slot.position)} />; })}</div></section>
-          </div>
-          <MetricStrip spent={spent} bankTenths={bankTenths} sellingValue={store.entryId === undefined ? undefined : weekFinance?.squadSellingValueTenths} costLabel={store.entryId === undefined ? "COST" : "VALUE"} confidence={weekFinance?.confidence ?? "ESTIMATED"} handBuilt={store.entryId === undefined} onBankChange={(tenths) => store.setBankTenths(tenths, { spentTenths: spent, priceById: marketPriceById })} projected={{ ...projected, nextGW: chipNetXp ?? projected.nextGW }} risk={risk} teamRating={teamRating} />
+          <SquadPitch
+            startingMeta={`${currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · ${currentGWPlan ? 11 : draftStarterCount}/11`}
+            rows={pitchRows}
+            bench={benchSlots.map((slot) => ({ player: slot.id ? playerById.get(slot.id) : undefined, position: slot.position, label: slot.label }))}
+            hint={swapHint}
+            renderPlayer={renderSquadPlayer}
+            renderEmpty={(position, key) => <EmptySlot key={key} position={position} maxPriceTenths={slotMaxPrices[position]} onChoose={() => choosePlayer(position)} />}
+          />
+          <SquadKpis
+            projected={chipNetXp ?? projected.nextGW}
+            gameweek={planningGameweek}
+            value={(store.entryId === undefined ? undefined : weekFinance?.squadSellingValueTenths) ?? spent}
+            valueLabel={store.entryId === undefined ? "COST" : "VALUE"}
+            bankSlot={<BankMetric bankTenths={bankTenths} confidence={weekFinance?.confidence ?? "ESTIMATED"} handBuilt={store.entryId === undefined} onBankChange={(tenths) => store.setBankTenths(tenths, { spentTenths: spent, priceById: marketPriceById })} />}
+            freeTransfers={weekFinance?.freeTransfersBefore}
+            rating={teamRating}
+          />
           <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />
           <ChipStrategyPanel players={data.players} planningGameweek={planningGameweek} onNotice={setNotice} />
-          {isMobileLineup && mobilePickedPlayer && <MobileLineupBar player={mobilePickedPlayer} starter={mobilePickedStarter} benchLabel={mobilePickedBenchSlot?.label} benchIndex={mobilePickedBenchIndex} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === mobilePickedPlayer.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === mobilePickedPlayer.id} locked={store.lockedPlayerIds.includes(mobilePickedPlayer.id)} lineupActive={Boolean(currentGWPlan)} onClose={() => setMobilePickedId(null)} onInfo={() => openPlayer(mobilePickedPlayer.id)} onCaptain={() => makeGWCaptain(mobilePickedPlayer.id)} onViceCaptain={() => makeGWViceCaptain(mobilePickedPlayer.id)} onSwap={() => selectGWSwapPlayer(mobilePickedStarter ? "starter" : "bench", mobilePickedPlayer.id)} onMoveBench={(direction) => moveGWBench(mobilePickedPlayer.id, direction)} onToggleLock={() => store.toggleLock(mobilePickedPlayer.id)} onRemove={() => { if (removeSquadPlayer(mobilePickedPlayer)) setMobilePickedId(null); }} />}
           {simulation && simulationMoves && simulationMoves.length > 0 && <div className="squad-overlay"><SimulationPanel result={simulation} moves={simulationMoves} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMoves(null); }} /></div>}
           <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
         </section>
@@ -1337,6 +1321,28 @@ export default function TerminalApp() {
       {notice && (noticeMinimized
         ? <button type="button" className="toast toast-pill" aria-label="Show notification" onClick={() => setNoticeMinimized(false)}>{notice}</button>
         : <div className="toast" role="status"><span className="toast-message">{notice}</span><span className="toast-actions"><button type="button" className="toast-button" aria-label="Minimize" onClick={() => setNoticeMinimized(true)}>–</button><button type="button" className="toast-button" aria-label="Dismiss" onClick={() => setNotice(null)}>×</button></span></div>)}
+      {actionPlayer && <PlayerActions
+        player={actionPlayer}
+        starter={actionStarter}
+        benchLabel={actionBenchSlot?.label}
+        benchIndex={actionBenchIndex}
+        captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === actionPlayer.id}
+        vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === actionPlayer.id}
+        locked={store.lockedPlayerIds.includes(actionPlayer.id)}
+        lineupActive={Boolean(currentGWPlan)}
+        sellingPriceTenths={store.entryId !== undefined ? weekFinance?.sellingPricesTenths[actionPlayer.id] : undefined}
+        gameweek={planningGameweek}
+        chip={store.chip}
+        variant={isMobileLineup ? "bottom" : "popover"}
+        onClose={() => setActionPlayerId(null)}
+        onInfo={() => openPlayer(actionPlayer.id)}
+        onCaptain={() => makeGWCaptain(actionPlayer.id)}
+        onViceCaptain={() => makeGWViceCaptain(actionPlayer.id)}
+        onSwap={() => selectGWSwapPlayer(actionStarter ? "starter" : "bench", actionPlayer.id)}
+        onMoveBench={(direction) => moveGWBench(actionPlayer.id, direction)}
+        onToggleLock={() => store.toggleLock(actionPlayer.id)}
+        onRemove={() => removeSquadPlayer(actionPlayer)}
+      />}
       <BottomTabBar active={store.activeMobileTab === "MARKET" ? "PLAYERS" : "SQUAD"} onSquad={() => store.setMobileTab("SQUAD")} onPlayers={() => store.setMobileTab("MARKET")} onMore={() => setMoreOpen(true)} />
       <MoreSheet
         open={moreOpen}
@@ -1620,44 +1626,7 @@ function PreviousSeasonsTable({ seasons }: { seasons: PlayerProfileData["history
 
 function Metric({ label, value, tone, title }: { label: string; value: string; tone?: string; title?: string }) { return <div title={title}><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
 
-function MobileLineupBar({ player, starter, benchLabel, benchIndex, captain, vice, locked, lineupActive, onClose, onInfo, onCaptain, onViceCaptain, onSwap, onMoveBench, onToggleLock, onRemove }: { player: TerminalPlayer; starter: boolean; benchLabel?: string; benchIndex: number; captain: boolean; vice: boolean; locked: boolean; lineupActive: boolean; onClose: () => void; onInfo: () => void; onCaptain: () => void; onViceCaptain: () => void; onSwap: () => void; onMoveBench: (direction: -1 | 1) => void; onToggleLock: () => void; onRemove: () => void }) {
-  return <div className="mobile-lineup-bar" role="toolbar" aria-label={`Lineup actions for ${player.displayName}`}>
-    <div className="mobile-bar-head"><span>{player.displayName} · {player.teamShortName}{starter ? "" : ` · ${benchLabel ?? "BENCH"}`}{captain ? " · ©" : vice ? " · VC" : ""}</span><button type="button" className="bar-close" onClick={onClose} aria-label={`Close actions for ${player.displayName}`}>×</button></div>
-    <div className="mobile-bar-actions">
-      {lineupActive && starter && <>
-        <button type="button" className={`bar-action ${captain ? "active-captain" : ""}`} onClick={onCaptain} aria-label={`Make ${player.displayName} captain`} aria-pressed={captain}>C</button>
-        <button type="button" className={`bar-action ${vice ? "active-vice" : ""}`} onClick={onViceCaptain} aria-label={`Make ${player.displayName} vice-captain`} aria-pressed={vice}>VC</button>
-        <button type="button" className="bar-action" onClick={onSwap} aria-label={`Select ${player.displayName} to move to bench`}>BENCH</button>
-      </>}
-      {lineupActive && !starter && <>
-        <button type="button" className="bar-action" onClick={onSwap} aria-label={`Select ${player.displayName} to move into the starting XI`}>START</button>
-        {benchIndex >= 0 && <>
-          <button type="button" className="bar-action" disabled={benchIndex === 0} onClick={() => onMoveBench(-1)} aria-label={`Move ${player.displayName} up the bench order`}>↑</button>
-          <button type="button" className="bar-action" disabled={benchIndex === 2} onClick={() => onMoveBench(1)} aria-label={`Move ${player.displayName} down the bench order`}>↓</button>
-        </>}
-      </>}
-      <button type="button" className="bar-action" onClick={onInfo} aria-label={`Open ${player.displayName} details`}>INFO</button>
-      <button type="button" className="bar-action" onClick={onToggleLock} aria-label={`${locked ? "Unlock" : "Lock"} ${player.displayName}`} aria-pressed={locked}>{locked ? "UNLOCK" : "LOCK"}</button>
-      <button type="button" className="bar-action bar-danger" onClick={onRemove} aria-label={`Remove ${player.displayName}`}>DROP</button>
-    </div>
-  </div>;
-}
-
-function SquadSlot({ player, gameweek, locked, captain, vice, starter, benchLabel, benchIndex, lineupActive, swapSelected, picked, chip, sellingPriceTenths, onRemove, onToggleLock, onActivate, onSwap, onCaptain, onViceCaptain, onMoveBench }: { player: TerminalPlayer; gameweek: number; locked: boolean; captain: boolean; vice: boolean; starter: boolean; benchLabel?: string; benchIndex: number; lineupActive: boolean; swapSelected: boolean; picked: boolean; chip?: ChipKind | null; sellingPriceTenths?: number; onRemove: () => void; onToggleLock: () => void; onActivate: () => void; onSwap: () => void; onCaptain: () => void; onViceCaptain: () => void; onMoveBench: (direction: -1 | 1) => void }) {
-  const benched = Boolean(benchLabel);
-  const benchCounting = chip === "bboost" && benched;
-  const captainMultiplier = captain ? (chip === "3xc" ? 3 : 2) : 1;
-  return <article className={`squad-slot filled ${locked ? "locked" : ""} ${benched ? "benched" : ""} ${swapSelected ? "lineup-selected" : ""} ${picked ? "picked" : ""} ${benchCounting ? "bench-counting" : ""}`}>
-    <SquadFixtureBadges player={player} gameweek={gameweek} />
-    {(captain || vice) && <span className={`slot-role ${captain ? "captain" : "vice"}`} aria-hidden="true">{captain ? (chip === "3xc" ? "3×" : "C") : "VC"}</span>}
-    {benched && benchLabel && <span className="slot-bench-tag" aria-hidden="true">{benchLabel}{benchCounting ? " · COUNTS" : ""}</span>}
-    <button className="slot-main" onClick={onActivate} aria-pressed={picked}><span className="slot-player">{player.displayName}</span><span className="slot-sub">{player.teamShortName} · {money(sellingPriceTenths ?? player.priceTenths)}m</span><span className="slot-xp">{points(weeklyPlayerMetrics(player, gameweek).points * captainMultiplier)} <small>xP</small></span></button>
-    <div className="slot-flags"><button className={`lock-flag ${locked ? "on" : ""}`} onClick={onToggleLock} aria-label={`${locked ? "Unlock" : "Lock"} ${player.displayName}`} aria-pressed={locked}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d="M4 7V5a4 4 0 0 1 8 0v2" /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button>{!locked && <button className="remove-flag" onClick={onRemove} aria-label={`Remove ${player.displayName}`}>×</button>}</div>
-    {lineupActive && <div className="lineup-controls">{starter ? <><button className={`role-button captain ${captain ? "active" : ""}`} onClick={onCaptain} aria-label={`Make ${player.displayName} captain`} aria-pressed={captain}>C</button><button className={`role-button vice ${vice ? "active" : ""}`} onClick={onViceCaptain} aria-label={`Make ${player.displayName} vice-captain`} aria-pressed={vice}>VC</button><button className="role-button bench-toggle" onClick={onSwap} aria-label={`Select ${player.displayName} to move to bench`} aria-pressed={swapSelected}>B</button></> : <><button className="role-button bench-toggle active" onClick={onSwap} aria-label={`Select ${player.displayName} to move into the starting XI`} aria-pressed={swapSelected}>{benchLabel}</button>{benchIndex >= 0 && <><button className="role-button bench-order" disabled={benchIndex === 0} onClick={() => onMoveBench(-1)} aria-label={`Move ${player.displayName} up the bench order`}>↑</button><button className="role-button bench-order" disabled={benchIndex === 2} onClick={() => onMoveBench(1)} aria-label={`Move ${player.displayName} down the bench order`}>↓</button></>}</>}</div>}
-  </article>;
-}
-
-function EmptySlot({ position, maxPriceTenths, onChoose }: { position: Position; maxPriceTenths: number; onChoose: () => void }) { return <button className="squad-slot empty-slot" onClick={onChoose}><span className="empty-plus">+</span><span className="slot-player">Open {position}</span><span className="slot-sub">Max {money(maxPriceTenths)}</span><span className="suggest-label">SUGGEST →</span></button>; }
+function EmptySlot({ position, maxPriceTenths, onChoose }: { position: Position; maxPriceTenths: number; onChoose: () => void }) { return <button type="button" className="pitch-empty" onClick={onChoose}><span className="empty-plus" aria-hidden="true">+</span><span className="token-name">Open {position}</span><span className="empty-max">Max {money(maxPriceTenths)}</span><span className="suggest-label">SUGGEST →</span></button>; }
 
 /**
  * Cash in the bank, editable.
@@ -1692,7 +1661,7 @@ function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankT
     onClick={() => step(deltaTenths)}
   >{glyph}</button>;
   return <div className={editing ? "metric-editable editing" : "metric-editable"}>
-    <span>ITB</span>
+    <span>Bank</span>
     <span className="metric-money">
       <span aria-hidden="true">£</span>
       <input
@@ -1723,8 +1692,6 @@ function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankT
     </span>
   </div>;
 }
-
-function MetricStrip({ spent, bankTenths, sellingValue, costLabel, confidence, handBuilt, onBankChange, projected, risk, teamRating }: { spent: number; bankTenths: number; sellingValue?: number; costLabel: "COST" | "VALUE"; confidence: "EXACT" | "ESTIMATED"; handBuilt: boolean; onBankChange: (tenths: number) => boolean; projected: { nextGW?: number }; risk?: number; teamRating?: number }) { return <div className="metric-strip" aria-label="Squad projection metrics"><Metric label={costLabel} value={sellingValue !== undefined ? money(sellingValue) : money(spent)} /><BankMetric bankTenths={bankTenths} confidence={confidence} handBuilt={handBuilt} onBankChange={onBankChange} /><Metric label="TEAM RATING" value={teamRating === undefined ? "—" : `${teamRating}%`} title={teamRating === undefined ? "Team rating needs a picked squad and live market data." : "Starting XI plus captain xP as a share of the best legal XI the market can field for the same budget."} tone={teamRating === undefined ? undefined : teamRating >= 90 ? "green" : teamRating >= 80 ? "bright-green" : teamRating >= 70 ? "yellow" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" title="Projected starting XI plus captain xP." /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} tone={risk === undefined ? undefined : risk < 30 ? "green" : risk < 60 ? "yellow" : "red"} /></div>; }
 
 function StrategyControls({ horizon, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value}</button>)}</div></div></div>; }
 

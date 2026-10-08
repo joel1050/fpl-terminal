@@ -45,24 +45,18 @@ test.describe("persisted planning gameweeks", () => {
   test("switches card projections and badges, then reloads the selected plan without entry fetch", async ({ page }) => {
     const region = page.getByRole("region", { name: /squad builder and analysis/i });
     const selector = page.getByRole("group", { name: /select planning gameweek/i });
-    const haaland = region.locator("article.squad-slot", { hasText: "Haaland" }).first();
+    const haaland = region.locator('[data-testid="squad-token"][data-player="Haaland"]');
     await expect(selector).toContainText("GW 1");
-    await expect(haaland.locator(".slot-xp")).toHaveText("11.4 xP");
-    await expect(haaland.locator(".squad-fixture-badges")).toContainText("EASY(H)");
-    await expect(haaland.locator(".squad-fixture-badges .easy")).toBeVisible();
-    await haaland.hover();
-    await expect(haaland.locator(".squad-fixture-badges")).toHaveCSS("opacity", "0");
-    const cardBox = await haaland.boundingBox();
-    const lockBox = await haaland.getByRole("button", { name: /lock .*haaland/i }).boundingBox();
-    expect(cardBox && lockBox && Math.abs(cardBox.x + cardBox.width - 4 - lockBox.x - lockBox.width)).toBeLessThan(2);
-    const gameweekOneXp = await haaland.locator(".slot-xp").innerText();
+    await expect(haaland.getByTestId("token-xp")).toHaveText("11.4 xP");
+    // Easy and at home: the difficulty class and the venue live on the fixture chip's title.
+    await expect(haaland.locator(".fc.d2")).toHaveAttribute("title", /^Home/);
+    const gameweekOneXp = await haaland.getByTestId("token-xp").innerText();
 
     await selector.getByRole("button", { name: /next planning gameweek/i }).click();
     await expect(selector).toContainText("GW 2");
-    await expect(haaland.locator(".squad-fixture-badges")).toContainText("HARD(A)");
-    await expect(haaland.locator(".squad-fixture-badges .hard")).toBeVisible();
-    await expect(haaland.locator(".slot-xp")).not.toHaveText(gameweekOneXp);
-    await expect(region.locator("article.squad-slot", { hasText: "Rogers" }).first().locator(".squad-fixture-badges .blank")).toHaveText("BLANK");
+    await expect(haaland.locator(".fc.d5")).toHaveAttribute("title", /^Away/);
+    await expect(haaland.getByTestId("token-xp")).not.toHaveText(gameweekOneXp);
+    await expect(region.locator('[data-testid="squad-token"][data-player="Rogers"] .token-blank')).toHaveText("BLANK");
 
     const entryRequests: string[] = [];
     const listener = (request: { url: () => string }) => {
@@ -99,7 +93,7 @@ test.describe("persisted planning gameweeks", () => {
   test("keeps the metrics compact and Settings on-screen on mobile", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    const metrics = await region.locator(".metric-strip").boundingBox();
+    const metrics = await region.getByLabel("Squad projection metrics").boundingBox();
     expect(metrics?.height).toBeLessThan(50);
 
     // The phone tab bar has a second More; the top bar's is the one that sits beside the gameweek.
@@ -143,14 +137,14 @@ test.describe("persisted planning gameweeks", () => {
     expect(table.textUnderAdd).toBe(0);
   });
 
-  test("keeps the captain marker clear of the fixture badge on a phone", async ({ page }) => {
+  test("keeps the captain marker clear of the fixture chips on a phone", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const markers = await page.evaluate(() => {
       const intersects = (a: DOMRect, b: DOMRect) =>
         Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top) && Math.min(a.right, b.right) > Math.max(a.left, b.left);
-      return Array.from(document.querySelectorAll(".squad-slot")).flatMap((slot) => {
-        const role = slot.querySelector(".slot-role");
-        const badge = slot.querySelector(".squad-fixture-badges");
+      return Array.from(document.querySelectorAll('[data-testid="squad-token"]')).flatMap((token) => {
+        const role = token.querySelector('[data-testid="token-role"]');
+        const badge = token.querySelector('[data-testid="token-fixture"]');
         if (!role || !badge) return [];
         return [{
           role: role.textContent?.trim() ?? "",
@@ -159,15 +153,15 @@ test.describe("persisted planning gameweeks", () => {
       });
     });
 
-    expect(markers.map((marker) => marker.role).sort()).toEqual(["C", "VC"]);
+    expect(markers.map((marker) => marker.role).sort()).toEqual(["C", "V"]);
     expect(markers.filter((marker) => marker.collides)).toEqual([]);
   });
 
-  test("shows the C/VC and bench labels only where the role buttons are hidden", async ({ page }) => {
+  test("shows the C/VC and bench labels on tokens, with no per-player role buttons on any screen", async ({ page }) => {
     const countVisible = () => page.evaluate(() => {
       const visible = (selector: string) =>
         Array.from(document.querySelectorAll(selector)).filter((el) => el.getBoundingClientRect().width > 0).length;
-      return { labels: visible(".slot-role") + visible(".slot-bench-tag"), buttons: visible(".role-button") };
+      return { labels: visible('[data-testid="token-role"]') + visible('[data-testid="token-bench"]'), buttons: visible(".role-button") };
     });
 
     await page.setViewportSize({ width: 390, height: 844 });
@@ -177,8 +171,8 @@ test.describe("persisted planning gameweeks", () => {
 
     await page.setViewportSize({ width: 1280, height: 720 });
     const desktop = await countVisible();
-    expect(desktop.labels).toBe(0);
-    expect(desktop.buttons).toBeGreaterThan(0);
+    expect(desktop.labels).toBeGreaterThan(0);
+    expect(desktop.buttons).toBe(0);
   });
 
   test("puts the planner header on one line without the gameweek readout", async ({ page }) => {

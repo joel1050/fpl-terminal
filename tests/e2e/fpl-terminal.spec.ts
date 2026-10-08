@@ -61,9 +61,18 @@ test.describe("FPL Terminal acceptance", () => {
       return;
     }
 
-    const card = page.getByRole("article").filter({ hasText: name }).first();
-    await card.hover();
-    await card.getByRole("button", { name: new RegExp(`lock.*${name}|${name}.*lock`, "i") }).click();
+    const dialog = await openSheet(page, name);
+    await dialog.getByRole("button", { name: new RegExp(`^Lock ${name}$`, "i") }).click();
+    await page.keyboard.press("Escape");
+  }
+
+  /** Opens a squad token's action sheet. Escape first, so an open sheet's backdrop does not take the tap. */
+  async function openSheet(page: Page, name: string) {
+    await page.keyboard.press("Escape");
+    await page.getByRole("region", { name: /squad builder and analysis/i }).locator(`[data-testid="squad-token"][data-player="${name}"]`).click();
+    const dialog = page.getByRole("dialog", { name, exact: true });
+    await expect(dialog).toBeVisible();
+    return dialog;
   }
 
   async function waitForMarket(page: Page) {
@@ -119,14 +128,17 @@ test.describe("FPL Terminal acceptance", () => {
     const squad = page.getByRole("region", { name: /squad builder and analysis/i });
     await expect(squad).toContainText(/15\/15 selected/i);
     await expect(squad.getByTestId("squad-roster")).toContainText(/Haaland/i);
-    const haalandCard = squad.getByRole("article").filter({ hasText: "Haaland" });
-    await expect(haalandCard).toContainText(/£14\.0m/i);
-    await expect(haalandCard).not.toContainText(/SELL/i);
-    await expect(haalandCard.getByRole("button", { name: /make haaland captain/i })).toHaveAttribute("aria-pressed", "true");
+    const haalandSheet = await openSheet(page, "Haaland");
+    await expect(haalandSheet).toContainText(/£14\.0m/i);
+    await expect(haalandSheet).not.toContainText(/SELL/i);
+    await expect(haalandSheet.getByRole("button", { name: /make haaland captain/i })).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
     const haalandMarketRow = page.getByRole("row").filter({ hasText: "Haaland" }).first();
     await expect(haalandMarketRow).toContainText(/£14\.0m/i);
     await expect(haalandMarketRow).not.toContainText(/SELL/i);
-    await expect(squad.getByRole("article").filter({ hasText: "Watkins" }).getByRole("button", { name: /make watkins vice-captain/i })).toHaveAttribute("aria-pressed", "true");
+    const watkinsSheet = await openSheet(page, "Watkins");
+    await expect(watkinsSheet.getByRole("button", { name: /make watkins vice-captain/i })).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
     const bench = squad.getByRole("region", { name: /^bench$/i });
     const metrics = squad.getByLabel("Squad projection metrics");
     await expect(metrics).toContainText(/VALUE/i);
@@ -134,10 +146,10 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(metrics).toContainText(/TEAM RATING/i);
     await expect(metrics).not.toContainText(/5GW/i);
     await expect(metrics.getByText(/^\d+%$/)).toBeVisible();
-    await expect(bench.getByRole("article").nth(0)).toContainText(/Areola/i);
-    await expect(bench.getByRole("article").nth(1)).toContainText(/Faes/i);
-    await expect(bench.getByRole("article").nth(2)).toContainText(/Konsa/i);
-    await expect(bench.getByRole("article").nth(3)).toContainText(/Solanke/i);
+    await expect(bench.getByTestId("squad-token").nth(0)).toContainText(/Areola/i);
+    await expect(bench.getByTestId("squad-token").nth(1)).toContainText(/Faes/i);
+    await expect(bench.getByTestId("squad-token").nth(2)).toContainText(/Konsa/i);
+    await expect(bench.getByTestId("squad-token").nth(3)).toContainText(/Solanke/i);
     await expect(page.getByText(/imported test xi/i)).toBeVisible();
     await expect.poll(() => importRequests).toBe(1);
     await page.reload();
@@ -179,14 +191,16 @@ test.describe("FPL Terminal acceptance", () => {
     await chooseMode(page, IMPORT_MODE);
     await waitForMarket(page);
     const squadPanel = page.getByRole("region", { name: /squad builder and analysis/i });
-    await expect(squadPanel.getByRole("article").filter({ hasText: "Haaland" })).toContainText(/£13\.5m/i);
+    const haalandSheet = await openSheet(page, "Haaland");
+    await expect(haalandSheet).toContainText(/£13\.5m/i);
+    await page.keyboard.press("Escape");
     await expect(page.getByRole("row").filter({ hasText: "Haaland" }).first()).toContainText(/£14\.0m/i);
     await expect(squadPanel.getByLabel("Cash in the bank in millions")).toHaveValue("9.0");
     await expect(squadPanel.getByLabel("Squad projection metrics")).toContainText(/VALUE£89\.1/i);
 
-    const rice = squadPanel.getByRole("article").filter({ hasText: "Rice" });
-    await rice.hover();
-    await rice.getByRole("button", { name: /unlock rice/i }).click();
+    const riceSheet = await openSheet(page, "Rice");
+    await riceSheet.getByRole("button", { name: /unlock rice/i }).click();
+    await page.keyboard.press("Escape");
     await clickButton(page, /^OPTIMIZE$/i);
 
     await expect(squadPanel.getByTestId("squad-roster")).toContainText(/Saka/i);
@@ -230,10 +244,10 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByText(/15\s*(?:players|\/\s*15)|squad complete|legal/i).first()).toBeVisible();
     for (const name of ["Haaland", "Saka", "Palmer"]) {
       await expect(page.getByText(new RegExp(`\\b${name}\\b`, "i")).first()).toBeVisible();
-      const card = page.getByRole("article").filter({ hasText: name }).first();
-      await card.hover();
-      await expect(card.getByRole("button", { name: new RegExp(`Unlock ${name}`, "i") })).toBeVisible();
-      await expect(card.getByRole("button", { name: new RegExp(`Remove ${name}`, "i") })).toHaveCount(0);
+      const dialog = await openSheet(page, name);
+      await expect(dialog.getByRole("button", { name: new RegExp(`Unlock ${name}`, "i") })).toBeVisible();
+      await expect(dialog.getByRole("button", { name: new RegExp(`Remove ${name}`, "i") })).toBeDisabled();
+      await page.keyboard.press("Escape");
     }
     await expect(page.getByText(/£?100(?:\.0)?m|budget|bank|remaining/i).first()).toBeVisible();
   });
@@ -256,9 +270,9 @@ test.describe("FPL Terminal acceptance", () => {
     await clickButton(page, /apply/i);
     await expect(page.getByText(/move cannot be applied while an outgoing player is locked/i)).toBeVisible();
     await page.getByRole("button", { name: /close simulation/i }).click();
-    const rice = page.getByRole("article").filter({ hasText: "Rice" }).first();
-    await rice.hover();
-    await rice.getByRole("button", { name: /unlock rice/i }).click();
+    const riceSheet = await openSheet(page, "Rice");
+    await riceSheet.getByRole("button", { name: /unlock rice/i }).click();
+    await page.keyboard.press("Escape");
     await replacements.getByRole("button", { name: /simulate/i }).first().click();
     await expect(page.getByText(/simulation|before|after|price effect|gw effect/i).first()).toBeVisible();
     await clickButton(page, /apply/i);
@@ -428,14 +442,14 @@ test.describe("FPL Terminal acceptance", () => {
       await page.setViewportSize(viewport);
       const panel = page.getByRole("region", { name: /squad builder and analysis/i });
       const roster = panel.getByTestId("squad-roster");
-      const cards = roster.getByRole("article");
+      const cards = roster.getByTestId("squad-token");
       await expect(cards).toHaveCount(15);
       await expect(cards.last()).toBeVisible();
 
       const layout = await panel.evaluate((element) => {
         const rosterElement = element.querySelector<HTMLElement>('[data-testid="squad-roster"]')!;
         const panelRect = element.getBoundingClientRect();
-        const cardRects = [...rosterElement.querySelectorAll<HTMLElement>('article')].map((card) => card.getBoundingClientRect());
+        const cardRects = [...rosterElement.querySelectorAll<HTMLElement>('[data-testid="squad-token"]')].map((card) => card.getBoundingClientRect());
         return {
           panelOverflowY: getComputedStyle(element).overflowY,
           rosterOverflowY: getComputedStyle(rosterElement).overflowY,

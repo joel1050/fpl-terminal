@@ -28,3 +28,20 @@ const CLUB_COLOURS: Record<string, string> = {
 export function clubColour(shortName: string): string {
   return Object.hasOwn(CLUB_COLOURS, shortName) ? CLUB_COLOURS[shortName] : UNKNOWN_CLUB_COLOUR;
 }
+
+const DARK_SHIRT_TEXT = "#111418";
+const LIGHT_SHIRT_TEXT = "#ffffff";
+
+/**
+ * Text for a shirt of the given #rrggbb colour. Dark on light shirts (Fulham's
+ * white, Hull's amber), white on dark ones. The 0.2 cut-off sits near the
+ * relative luminance where the two text colours give equal contrast.
+ */
+export function shirtTextColour(background: string): string {
+  const channel = (offset: number) => {
+    const value = parseInt(background.slice(offset, offset + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+  return luminance > 0.2 ? DARK_SHIRT_TEXT : LIGHT_SHIRT_TEXT;
+}
