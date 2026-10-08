@@ -441,8 +441,8 @@
 .pitch-empty .suggest-label { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: 0; }
 
 /* KPI strip: one card of five cells above the pitch. The projection is the headline. */
-.squad-kpis { display: grid; grid-template-columns: minmax(0, 1.35fr) repeat(4, minmax(0, 1fr)); margin: 0 0 12px; padding: 10px 0; border: 0; border-radius: 12px; background: var(--surface); }
-.kpi { display: grid; align-content: center; gap: 4px; min-width: 0; padding: 0 12px; }
+.squad-kpis { display: grid; grid-template-columns: minmax(0, 1.2fr) repeat(4, minmax(0, 1fr)); margin: 0 0 12px; padding: 10px 0; border: 0; border-radius: 12px; background: var(--surface); }
+.kpi { display: grid; align-content: center; gap: 4px; min-width: 0; padding: 0 10px; }
 .kpi + .kpi { border-left: 1px solid var(--line-strong); }
 .kpi > span { overflow: hidden; color: var(--muted); font: 12px/1.2 var(--font-ui); letter-spacing: 0; text-overflow: ellipsis; white-space: nowrap; }
 .kpi strong { color: var(--text); font: 600 17px/1.15 var(--font-num); white-space: nowrap; }
@@ -502,10 +502,16 @@
   .squad-view-switch button::before { content: ""; position: absolute; inset: -7px 0; }
 }
 
-/* The narrowest phones: the squad actions still fit one row. */
+/* The narrowest phones: the squad actions still fit one row, and a £100.0 bank fits its cell. */
 @media (max-width: 360px) {
   .squad-view-switch button { min-width: 0; padding: 0 8px; }
   .terminal-app .squad-column .header-actions .compact-action:not(.squad-lock-all) { padding: 0 8px; }
+  .squad-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .kpi { padding: 0 5px; }
+  .kpi strong,
+  .kpi-bank .metric-money > span,
+  .kpi-bank .metric-input { font-size: 13px; }
+  .kpi-proj strong { font-size: 18px; }
 }
 
 /* Squad table: starters in pitch order, then a dimmed bench. On phones five columns fit the panel with no scroll. */
@@ -518,6 +524,7 @@
 .squad-table .sq-pos { color: var(--muted); font-size: 11.5px; }
 .squad-table th.sq-player, .squad-table td.sq-player { padding-left: 14px; }
 .squad-table tr.bench-row td { color: var(--muted); }
+.squad-table tr.squad-table-empty td { height: 64px; color: var(--muted); font: 13px/1.4 var(--font-ui); text-align: center; }
 .squad-table tr.squad-table-divider td { height: 26px; padding-left: 14px; background: var(--surface); color: var(--muted); font: 500 12px/1.2 var(--font-ui); text-align: left; }
 .squad-table .sq-row-button { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; min-height: 36px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
 .squad-table .sq-row-button:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }

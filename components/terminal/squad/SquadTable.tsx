@@ -87,6 +87,7 @@ export function SquadTable({ starters, bench, gameweek, captainId, viceCaptainId
         </tr>
       </thead>
       <tbody>
+        {starters.length + benchPlayers.length === 0 && <tr className="squad-table-empty"><td colSpan={10}>No players yet. Add them from the Players list.</td></tr>}
         {starters.map((player) => <SquadTableRow key={player.id} player={player} gameweek={gameweek} captain={player.id === captainId} vice={player.id === viceCaptainId} onOpen={onOpen} />)}
         {benchPlayers.length > 0 && <tr className="squad-table-divider"><td colSpan={10}><span>Bench</span>{chip === "bboost" && <span> · Counts</span>}</td></tr>}
         {benchPlayers.map(({ player, label }) => <SquadTableRow key={player.id} player={player} gameweek={gameweek} captain={player.id === captainId} vice={player.id === viceCaptainId} benchLabel={label} onOpen={onOpen} />)}
