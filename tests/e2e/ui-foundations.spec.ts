@@ -113,4 +113,15 @@ test.describe("UI foundations", () => {
     await expect(detail.locator("details.advanced-stat-disclosure")).toHaveAttribute("open", "");
     expect(await textUnderFloor(page, 12), "player detail").toEqual([]);
   });
+
+  test("the phone Players list keeps text at 12px and puts its first row above the tab bar", async ({ page }) => {
+    await importTeam(page);
+    await page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: "Players" }).click();
+    const firstRow = page.getByTestId("player-row").first();
+    await expect(firstRow).toBeVisible();
+    expect(await textUnderFloor(page, 12), "players list").toEqual([]);
+    const box = await firstRow.boundingBox();
+    expect(box, "first player row box").not.toBeNull();
+    expect(box!.y, "first row top").toBeLessThan(844 - 56);
+  });
 });

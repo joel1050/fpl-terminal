@@ -43,6 +43,10 @@ import { squadAlerts } from "@/lib/analysis/squadAlerts";
 import { money, points } from "@/lib/display/format";
 import { ColumnsMenu } from "@/components/terminal/players/ColumnsMenu";
 import { PlayersTable, type TerminalPlayer } from "@/components/terminal/players/PlayersTable";
+import { PlayerList, PlayerSortLine } from "@/components/terminal/players/PlayerList";
+import { FilterSheet } from "@/components/terminal/players/FilterSheet";
+import { ActiveFilters } from "@/components/terminal/players/ActiveFilters";
+import { countActiveFilters } from "@/lib/display/filterCount";
 import { expectedInvolvementPer90 } from "@/lib/analysis/expectedInvolvement";
 import { universeWeekFor, type UniverseWeekMetrics } from "@/lib/analysis/universeWeek";
 import { startChanceOf } from "@/lib/availability/startChance";
@@ -578,6 +582,7 @@ export default function TerminalApp() {
   const importRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<ResizeState | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false });
   const { data, status, message, refresh, ageAnchor } = bootstrap;
   const liveCurrentGW = clamp(Math.round(data.gameweek ?? store.currentGameweek ?? 1), 1, 38);
@@ -810,6 +815,8 @@ export default function TerminalApp() {
   }, [data.players, planningGameweek]);
 
   const inSquadIds = useMemo(() => new Set(store.playerIds), [store.playerIds]);
+  const clubs = useMemo(() => [...new Set(data.players.map((player) => player.teamShortName).filter((club) => club !== "—"))].sort(), [data.players]);
+  const activeFilterCount = countActiveFilters(store.filters);
 
   const filteredPlayers = useMemo(() => {
     const query = normalizeName(store.search);
@@ -1177,8 +1184,8 @@ export default function TerminalApp() {
     const value = collapsedPanels[panel] ? "52px" : store.panelRatios[panel] ? `${store.panelRatios[panel]}fr` : undefined;
     return value ? [[`--${panel}-column`, value]] : [];
   })) as CSSProperties;
+  // Search is not a filter here: it stays in the search box, so resetting the filters leaves it alone.
   const resetFilters = () => {
-    store.setSearch("");
     store.setFilters({ position: "ALL", club: "", minPrice: "", maxPrice: "", minOwnership: "", maxOwnership: "", availability: "ALL", confidence: "ALL", risk: "ALL", affordableOnly: false, excludeSelected: false, quick: "ALL" });
   };
   const openPlayer = (playerId: number) => {
@@ -1256,9 +1263,27 @@ export default function TerminalApp() {
       <div className="terminal-grid" style={gridStyle}>
         <section id="terminal-panel-market" data-panel="market" className={`market-column ${collapsedPanels.market ? "panel-collapsed" : ""} ${store.activeMobileTab === "MARKET" ? "mobile-visible" : ""}`} aria-label="Player universe">
           <div className="panel-header"><div><span className="section-kicker">PLAYER UNIVERSE</span><span className="panel-count">{data.players.length || "—"} records</span></div><div className="header-actions"><ColumnsMenu columns={store.playerColumns} onChange={store.setPlayerColumns} /><span className={`data-badge ${status.toLowerCase()}`}>{status === "LIVE" ? "LIVE FPL" : status === "SYNCING" ? "SYNCING" : "NO LIVE DATA"}</span><PanelToggle panel="market" collapsed={collapsedPanels.market} onToggle={() => togglePanel("market")} /></div></div>
-          <div className="search-wrap"><span aria-hidden="true">/</span><input ref={searchRef} value={store.search} onChange={(event) => store.setSearch(event.target.value)} placeholder="Search player, club..." aria-label="Search players" /><kbd>/</kbd></div>
-          <FilterBar filters={store.filters} setFilters={store.setFilters} players={data.players} onReset={resetFilters} />
-          <div className="table-wrap"><PlayersTable rows={filteredPlayers.slice(0, 250)} weeks={universeWeeks} gameweek={planningGameweek} columns={store.playerColumns} sortKey={store.sortKey} sortDirection={store.sortDirection} onSort={store.setSort} inSquadIds={inSquadIds} onOpen={openPlayer} onAdd={addPlayer} />{status === "SYNCING" && <div className="empty-state">SYNCING FPL MARKET…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>
+          <div className="market-filters">
+            <div className="market-search-row">
+              <div className="search-wrap"><span aria-hidden="true">/</span><input ref={searchRef} value={store.search} onChange={(event) => store.setSearch(event.target.value)} placeholder="Search player, club..." aria-label="Search players" /><kbd>/</kbd></div>
+              <button type="button" className="filters-button" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(true)}>Filters · {activeFilterCount}</button>
+            </div>
+            <div className="market-filter-row">
+              <div className="position-filter" role="group" aria-label="Filter by position">
+                {(["ALL", ...POSITIONS] as const).map((position) => <button type="button" key={position} aria-pressed={store.filters.position === position} onClick={() => store.setFilters({ position })}>{position === "ALL" ? "All" : position}</button>)}
+              </div>
+              {!isMobileLineup && <div className="filter-desktop">
+                <select className="filter-control" value={store.filters.club} onChange={(event) => store.setFilters({ club: event.target.value })} aria-label="Filter by club"><option value="">All clubs</option>{clubs.map((club) => <option value={club} key={club}>{club}</option>)}</select>
+                <input className="filter-control" inputMode="decimal" value={store.filters.maxPrice} onChange={(event) => store.setFilters({ maxPrice: event.target.value })} placeholder="Max £" aria-label="Maximum price" />
+              </div>}
+            </div>
+            <ActiveFilters filters={store.filters} setFilters={store.setFilters} />
+            {isMobileLineup && <PlayerSortLine sortKey={store.sortKey} sortDirection={store.sortDirection} onSort={store.setSort} />}
+          </div>
+          <FilterSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} variant={isMobileLineup ? "bottom" : "popover"} rowHoldsClubAndMaxPrice={!isMobileLineup} filters={store.filters} setFilters={store.setFilters} clubs={clubs} onReset={resetFilters} />
+          <div className="table-wrap">{isMobileLineup
+            ? <PlayerList rows={filteredPlayers.slice(0, 250)} weeks={universeWeeks} gameweek={planningGameweek} inSquadIds={inSquadIds} onOpen={openPlayer} onAdd={addPlayer} />
+            : <PlayersTable rows={filteredPlayers.slice(0, 250)} weeks={universeWeeks} gameweek={planningGameweek} columns={store.playerColumns} sortKey={store.sortKey} sortDirection={store.sortDirection} onSort={store.setSort} inSquadIds={inSquadIds} onOpen={openPlayer} onAdd={addPlayer} />}{status === "SYNCING" && <div className="empty-state">SYNCING FPL MARKET…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>
           {selectedPlayer && <PlayerDetail key={selectedPlayer.id} player={selectedPlayer} gameweek={planningGameweek} inSquad={store.playerIds.includes(selectedPlayer.id)} locked={store.lockedPlayerIds.includes(selectedPlayer.id)} onClose={() => store.setSelectedPlayer(undefined)} onAdd={() => addPlayer(selectedPlayer)} onToggleLock={() => store.toggleLock(selectedPlayer.id)} />}
           <PanelResizer panel="market" onResizeStart={beginPanelResize} />
         </section>
@@ -1413,16 +1438,6 @@ function PanelToggle({ panel, collapsed, onToggle }: { panel: DesktopPanel; coll
 
 function PanelResizer({ panel, onResizeStart }: { panel: DesktopPanel; onResizeStart: (panel: DesktopPanel, event: ReactPointerEvent<HTMLButtonElement>) => void }) {
   return <button type="button" className="panel-resizer" role="separator" aria-orientation="vertical" aria-label={`Resize ${PANEL_LABELS[panel]}`} onPointerDown={(event) => onResizeStart(panel, event)} />;
-}
-
-function FilterBar({ filters, setFilters, players, onReset }: { filters: TerminalFilters; setFilters: (filters: Partial<TerminalFilters>) => void; players: TerminalPlayer[]; onReset: () => void }) {
-  const clubs = [...new Set(players.map((player) => player.teamShortName).filter((club) => club !== "—"))].sort();
-  return <div className="filters">
-    <div className="filter-row"><select value={filters.position} onChange={(event) => setFilters({ position: event.target.value as TerminalFilters["position"] })} aria-label="Filter by position"><option value="ALL">ALL POS</option>{POSITIONS.map((position) => <option value={position} key={position}>{position}</option>)}</select><select value={filters.club} onChange={(event) => setFilters({ club: event.target.value })} aria-label="Filter by club"><option value="">ALL CLUBS</option>{clubs.map((club) => <option value={club} key={club}>{club}</option>)}</select><input inputMode="decimal" value={filters.minPrice} onChange={(event) => setFilters({ minPrice: event.target.value })} placeholder="MIN £" aria-label="Minimum price" /><input inputMode="decimal" value={filters.maxPrice} onChange={(event) => setFilters({ maxPrice: event.target.value })} placeholder="MAX £" aria-label="Maximum price" /></div>
-    <div className="filter-row"><input inputMode="decimal" value={filters.minOwnership} onChange={(event) => setFilters({ minOwnership: event.target.value })} placeholder="MIN OWN%" aria-label="Minimum ownership" /><input inputMode="decimal" value={filters.maxOwnership} onChange={(event) => setFilters({ maxOwnership: event.target.value })} placeholder="MAX OWN%" aria-label="Maximum ownership" /><select value={filters.availability} onChange={(event) => setFilters({ availability: event.target.value as TerminalFilters["availability"] })} aria-label="Filter by availability"><option value="ALL">ALL STATUS</option><option value="AVAILABLE">AVAILABLE</option><option value="DOUBTFUL">DOUBTFUL</option><option value="UNAVAILABLE">UNAVAILABLE</option></select><select value={filters.confidence} onChange={(event) => setFilters({ confidence: event.target.value as TerminalFilters["confidence"] })} aria-label="Filter by confidence"><option value="ALL">ALL CONFIDENCE</option><option value="HIGH">HIGH CONF</option><option value="MEDIUM">MED CONF</option><option value="LOW">LOW CONF</option></select></div>
-    <div className="filter-row filter-row-last"><select value={filters.risk} onChange={(event) => setFilters({ risk: event.target.value as TerminalFilters["risk"] })} aria-label="Filter by risk"><option value="ALL">ALL RISK</option><option value="LOW">LOW RISK</option><option value="MEDIUM">MED RISK</option><option value="HIGH">HIGH RISK</option></select><div className="quick-filters">{(["ALL", "VALUE", "PREMIUM", "DIFFERENTIAL", "NAILED", "CHEAP"] as const).map((quick) => <button type="button" key={quick} className={filters.quick === quick ? "active" : ""} onClick={() => setFilters({ quick })}>{quick}</button>)}</div></div>
-    <div className="filter-actions"><label className="check-label"><input type="checkbox" checked={filters.affordableOnly} onChange={(event) => setFilters({ affordableOnly: event.target.checked })} /> affordable only</label><label className="check-label"><input type="checkbox" checked={filters.excludeSelected} onChange={(event) => setFilters({ excludeSelected: event.target.checked })} /> hide selected</label><button type="button" className="filter-reset" onClick={onReset}>RESET</button></div>
-  </div>;
 }
 
 function PlayerDetail({ player, gameweek, inSquad, locked, onClose, onAdd, onToggleLock }: { player: TerminalPlayer; gameweek: number; inSquad: boolean; locked: boolean; onClose: () => void; onAdd: () => void; onToggleLock: () => void }) {

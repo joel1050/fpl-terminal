@@ -119,19 +119,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .search-wrap input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 12px; }
 .search-wrap input::placeholder, textarea::placeholder, input::placeholder { color: var(--dim); }
 kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); font-size: 9px; }
-.filters { display: grid; gap: 6px; padding: 8px 0 10px; border-bottom: 1px solid var(--border-soft); }
-.filter-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-.filter-row input, .filter-row select { width: 100%; height: 27px; min-width: 0; padding: 0 6px; border: 1px solid var(--border); border-radius: 0; outline: 0; background: var(--panel-alt); color: var(--muted); font-size: 9px; }
-.filter-row select { appearance: auto; }
-.filter-row-last { grid-template-columns: minmax(90px, .7fr) minmax(0, 3.3fr); }
-.quick-filters { display: flex; gap: 3px; min-width: 0; flex-wrap: wrap; }
-.quick-filters button, .segmented button { min-height: 25px; padding: 0 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 8px; letter-spacing: .04em; }
-.quick-filters button:hover, .quick-filters button.active, .segmented button.active { border-color: var(--amber); color: var(--amber); background: color-mix(in srgb, var(--amber) 9%, transparent); }
-.check-label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; }
-.check-label input { accent-color: var(--amber); }
-.filter-actions { display: flex; align-items: center; gap: 10px; min-height: 28px; }
-.filter-reset { min-height: 28px; margin-left: auto; padding: 0 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 9px; letter-spacing: .06em; }
-.filter-reset:hover { border-color: var(--amber); color: var(--amber); }
+.segmented button { min-height: 25px; padding: 0 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 8px; letter-spacing: .04em; }
+.segmented button.active { border-color: var(--amber); color: var(--amber); background: color-mix(in srgb, var(--amber) 9%, transparent); }
 
 .table-wrap { overflow: auto; max-height: calc(100vh - 230px); }
 .sort-button { padding: 0; border: 0; background: transparent; color: inherit; font-size: inherit; letter-spacing: inherit; }
@@ -144,7 +133,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 
 .panel-collapse { display: inline-grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; padding: 0; border: 1px solid var(--border); background: transparent; color: var(--amber); font-size: 17px; line-height: 1; transition-property: transform, border-color, background-color; transition-duration: 120ms; }
 .panel-collapse:hover { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 10%, transparent); }
-.panel-collapse:active, .filter-reset:active { transform: scale(.96); }
+.panel-collapse:active { transform: scale(.96); }
 .panel-resizer { position: absolute; z-index: 5; top: 0; right: 0; bottom: 0; width: 8px; padding: 0; border: 0; background: transparent; cursor: col-resize; }
 .panel-resizer:hover, .panel-resizer:focus-visible { background: color-mix(in srgb, var(--amber) 22%, transparent); }
 .planning-switcher { display: inline-flex; align-items: center; border: 1px solid var(--border); background: var(--panel-alt); }
@@ -467,14 +456,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .search-wrap { height: 25px; gap: 6px; padding: 0 7px; }
   .search-wrap > span { font-size: 13px; }
   .search-wrap input { font-size: 10px; }
-  .filters { gap: 4px; padding: 4px 0 5px; }
-  .filter-row { gap: 3px; }
-  .filter-row input, .filter-row select { height: 23px; padding: 0 4px; font-size: 8px; }
-  .quick-filters { gap: 2px; }
-  .quick-filters button, .segmented button { min-height: 22px; padding: 0 4px; font-size: 7px; }
-  .filter-actions { min-height: 22px; gap: 8px; }
-  .check-label { gap: 4px; font-size: 8px; }
-  .filter-reset { min-height: 22px; font-size: 8px; }
+  .segmented button { min-height: 22px; padding: 0 4px; font-size: 7px; }
   .table-wrap { max-height: none; height: calc(100dvh - 157px); }
 
   .squad-sections { gap: 5px; overflow: visible; }
@@ -695,8 +677,6 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .table-wrap:focus-within { scroll-behavior: smooth; }
 
   /* Touch targets: 40px+ for filters, add buttons, transfers. */
-  .filter-row input, .filter-row select { height: 40px; font-size: 12px; }
-  .quick-filters button { min-height: 36px; padding: 0 10px; font-size: 12px; }
   .search-wrap { height: 44px; }
   .add-button, .icon-button { width: 36px; height: 36px; }
   .slot-flags { opacity: 1; pointer-events: auto; }
@@ -766,8 +746,6 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .mobile-tabs, .leagues-mobile-tabs { top: 0; }
 
 
-  .filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .filter-row-last { grid-template-columns: minmax(0, 1fr); }
   .metric-strip > div span { font-size: 12px; }
   .live-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
@@ -843,12 +821,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .mode-pill,
   .pos-tag,
   kbd,
-  .filter-row input,
-  .filter-row select,
-  .quick-filters button,
   .segmented button,
-  .check-label,
-  .filter-reset,
   .planning-switcher > span,
   .planning-live,
   .lineup-roster-heading,
