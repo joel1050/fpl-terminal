@@ -1209,10 +1209,17 @@
   position: absolute;
   width: 1px;
   height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* The old phone rule made line headings sticky with padding and a fill, which
+   left a dark tick on the pitch's edge. A hidden heading stays hidden. */
+.squad-column.mobile-visible .position-heading.visually-hidden { position: absolute; padding: 0; background: none; }
 
 /* Leagues on a phone (Task 12): one slim header with the league drop-down and
    Refresh, the four views as a segmented control, and the shared tab bar. Text
