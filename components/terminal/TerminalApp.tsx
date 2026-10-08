@@ -583,6 +583,7 @@ export default function TerminalApp() {
   const resizeRef = useRef<ResizeState | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersButton = useRef<HTMLButtonElement>(null);
   const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false });
   const { data, status, message, refresh, ageAnchor } = bootstrap;
   const liveCurrentGW = clamp(Math.round(data.gameweek ?? store.currentGameweek ?? 1), 1, 38);
@@ -1270,7 +1271,7 @@ export default function TerminalApp() {
           <div className="market-filters">
             <div className="market-search-row">
               <div className="search-wrap"><span aria-hidden="true">/</span><input ref={searchRef} value={store.search} onChange={(event) => store.setSearch(event.target.value)} placeholder="Search player, club..." aria-label="Search players" /><kbd>/</kbd></div>
-              <button type="button" className="filters-button" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(true)}>Filters · {activeFilterCount}</button>
+              <button ref={filtersButton} type="button" className="filters-button" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(true)}>Filters · {activeFilterCount}</button>
             </div>
             <div className="market-filter-row">
               <div className="position-filter" role="group" aria-label="Filter by position">
@@ -1284,7 +1285,7 @@ export default function TerminalApp() {
             <ActiveFilters filters={store.filters} setFilters={store.setFilters} />
             {isMobileLineup && <PlayerSortLine sortKey={store.sortKey} sortDirection={store.sortDirection} onSort={store.setSort} />}
           </div>
-          <FilterSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} variant={isMobileLineup ? "bottom" : "popover"} rowHoldsClubAndMaxPrice={!isMobileLineup} filters={store.filters} setFilters={store.setFilters} clubs={clubs} onReset={resetFilters} />
+          <FilterSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} variant={isMobileLineup ? "bottom" : "popover"} anchor={filtersButton} rowHoldsClubAndMaxPrice={!isMobileLineup} filters={store.filters} setFilters={store.setFilters} clubs={clubs} onReset={resetFilters} />
           <div className="table-wrap">{isMobileLineup
             ? <PlayerList rows={filteredPlayers.slice(0, 250)} weeks={universeWeeks} gameweek={planningGameweek} inSquadIds={inSquadIds} onOpen={openPlayer} onAdd={addPlayer} />
             : <PlayersTable rows={filteredPlayers.slice(0, 250)} weeks={universeWeeks} gameweek={planningGameweek} columns={store.playerColumns} sortKey={store.sortKey} sortDirection={store.sortDirection} onSort={store.setSort} inSquadIds={inSquadIds} onOpen={openPlayer} onAdd={addPlayer} />}{status === "SYNCING" && <div className="empty-state">Loading players…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>

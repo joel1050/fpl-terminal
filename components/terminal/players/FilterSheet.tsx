@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import { Sheet } from "@/components/shell/Sheet";
 import { QUICK_LABELS } from "@/lib/display/filterCount";
 import type { TerminalFilters } from "@/store/terminalStore";
@@ -8,6 +9,8 @@ export interface FilterSheetProps {
   open: boolean;
   onClose: () => void;
   variant: "bottom" | "popover";
+  /** The button that opened the sheet; a popover opens under it. */
+  anchor?: RefObject<HTMLElement | null>;
   filters: TerminalFilters;
   setFilters: (filters: Partial<TerminalFilters>) => void;
   clubs: string[];
@@ -17,9 +20,9 @@ export interface FilterSheetProps {
 }
 
 /** Every filter that is not in the filter row, in one sheet. Position and search stay on the row. */
-export function FilterSheet({ open, onClose, variant, filters, setFilters, clubs, onReset, rowHoldsClubAndMaxPrice }: FilterSheetProps) {
+export function FilterSheet({ open, onClose, variant, anchor, filters, setFilters, clubs, onReset, rowHoldsClubAndMaxPrice }: FilterSheetProps) {
   return (
-    <Sheet open={open} onClose={onClose} title="Filters" variant={variant}>
+    <Sheet open={open} onClose={onClose} title="Filters" variant={variant} anchor={anchor}>
       <div className="filter-sheet">
         <fieldset className="filter-group">
           <legend>Price, £m</legend>
