@@ -41,6 +41,11 @@ import { CaptainSection } from "@/components/terminal/rail/CaptainSection";
 import { DecisionRail, RailSection } from "@/components/terminal/rail/DecisionRail";
 import { squadAlerts } from "@/lib/analysis/squadAlerts";
 import { money, points } from "@/lib/display/format";
+import { ColumnsMenu } from "@/components/terminal/players/ColumnsMenu";
+import { PlayersTable, type TerminalPlayer } from "@/components/terminal/players/PlayersTable";
+import { expectedInvolvementPer90 } from "@/lib/analysis/expectedInvolvement";
+import { universeWeekFor, type UniverseWeekMetrics } from "@/lib/analysis/universeWeek";
+import { startChanceOf } from "@/lib/availability/startChance";
 
 // The deadline formatter moved with the top bar; the Planner's tests still import it from here.
 export { formatDeadlineCountdown } from "@/components/shell/deadline";
@@ -62,10 +67,6 @@ type ResizeState = {
   neighborWidth: number;
   availableWidth: number;
   ratios: Record<DesktopPanel, number>;
-};
-
-type TerminalPlayer = Player & {
-  projection: NonNullable<Player["projection"]>;
 };
 
 type Bootstrap = {
@@ -419,10 +420,6 @@ export function normalizeBootstrap(value: unknown): Bootstrap {
   return { players, gameweek, deadline, source: stringOf(readField(root, "source", "dataSource")) ?? stringOf(readField(data, "source")) ?? null, freshness: "LIVE", fetchedAt: null };
 }
 
-function metric(value: number | undefined, suffix = ""): string {
-  return value === undefined || !Number.isFinite(value) || value === 0 ? "—" : `${value.toFixed(1)}${suffix}`;
-}
-
 function confidenceOf(player: TerminalPlayer): TerminalFilters["confidence"] {
   const confidence = player.selection?.confidence ?? player.projection?.confidence;
   return confidence === "HIGH" || confidence === "MEDIUM" || confidence === "LOW" ? confidence : "LOW";
@@ -432,48 +429,6 @@ function riskBandOf(player: TerminalPlayer): Exclude<TerminalFilters["risk"], "A
   const score = player.projection?.riskScore;
   if (score === undefined || !Number.isFinite(score)) return undefined;
   return score >= 60 ? "HIGH" : score >= 30 ? "MEDIUM" : "LOW";
-}
-
-/** In-season xGI per 90, falling back to the prior season when this one has no minutes yet. */
-function expectedInvolvementPer90Value(player: TerminalPlayer): number | undefined {
-  const minutes = player.current.minutes;
-  const expectedGoals = player.current.expectedGoals;
-  const expectedAssists = player.current.expectedAssists;
-  if (minutes <= 0 || expectedGoals === undefined || expectedAssists === undefined || !Number.isFinite(expectedGoals + expectedAssists)) {
-    const historical = player.historical?.xGIPer90;
-    return historical !== undefined && Number.isFinite(historical) ? historical : undefined;
-  }
-  return (expectedGoals + expectedAssists) / minutes * 90;
-}
-
-function expectedInvolvementPer90(player: TerminalPlayer): string {
-  const value = expectedInvolvementPer90Value(player);
-  return value === undefined ? "—" : value.toFixed(2);
-}
-
-function FixtureRun({ player, gameweek }: { player: TerminalPlayer; gameweek: number }) {
-  const fixtures = player.fixtures.filter((fixture) => fixture.gameweek >= gameweek).slice(0, 12);
-  if (!fixtures.length) return <>—</>;
-  return <span className="fixture-run">{fixtures.map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>)}</span>;
-}
-
-type UniverseWeekMetrics = { xp: number; next3: number; next5: number; next10: number; value: number; value10: number };
-
-/** Market metrics for the planning gameweek, derived from the same weekly-lineup engine the squad uses. */
-function universeWeekFor(player: TerminalPlayer, gameweek: number): UniverseWeekMetrics {
-  const week = weeklyPlayerMetrics(player, gameweek);
-  const fixtures = player.projection?.fixtures ?? [];
-  const next3 = projectedPointsForGameweeks(fixtures, gameweek, 3);
-  const next5 = projectedPointsForGameweeks(fixtures, gameweek, 5);
-  const next10 = projectedPointsForGameweeks(fixtures, gameweek, 10);
-  return {
-    xp: week.points,
-    next3,
-    next5,
-    next10,
-    value: valuePerMillion(next5, player.priceTenths),
-    value10: valuePerMillion(next10, player.priceTenths),
-  };
 }
 
 function aggregateWeeklyProjection(players: readonly TerminalPlayer[], gameweek: number): { nextGW: number; next3: number; next5: number; next10: number } {
@@ -854,6 +809,8 @@ export default function TerminalApp() {
     return byId;
   }, [data.players, planningGameweek]);
 
+  const inSquadIds = useMemo(() => new Set(store.playerIds), [store.playerIds]);
+
   const filteredPlayers = useMemo(() => {
     const query = normalizeName(store.search);
     const filters = store.filters;
@@ -896,7 +853,8 @@ export default function TerminalApp() {
         value: (player) => week(player)?.value ?? 0,
         next10: (player) => week(player)?.next10 ?? 0,
         value10: (player) => week(player)?.value10 ?? 0,
-        xgi: (player) => expectedInvolvementPer90Value(player) ?? 0,
+        xgi: (player) => expectedInvolvementPer90(player) ?? 0,
+        start: (player) => startChanceOf(player) ?? 0,
         ownership: (player) => player.ownership,
       };
       const left = values[store.sortKey](a);
@@ -1297,10 +1255,10 @@ export default function TerminalApp() {
 
       <div className="terminal-grid" style={gridStyle}>
         <section id="terminal-panel-market" data-panel="market" className={`market-column ${collapsedPanels.market ? "panel-collapsed" : ""} ${store.activeMobileTab === "MARKET" ? "mobile-visible" : ""}`} aria-label="Player universe">
-          <div className="panel-header"><div><span className="section-kicker">PLAYER UNIVERSE</span><span className="panel-count">{data.players.length || "—"} records</span></div><div className="header-actions"><span className={`data-badge ${status.toLowerCase()}`}>{status === "LIVE" ? "LIVE FPL" : status === "SYNCING" ? "SYNCING" : "NO LIVE DATA"}</span><PanelToggle panel="market" collapsed={collapsedPanels.market} onToggle={() => togglePanel("market")} /></div></div>
+          <div className="panel-header"><div><span className="section-kicker">PLAYER UNIVERSE</span><span className="panel-count">{data.players.length || "—"} records</span></div><div className="header-actions"><ColumnsMenu columns={store.playerColumns} onChange={store.setPlayerColumns} /><span className={`data-badge ${status.toLowerCase()}`}>{status === "LIVE" ? "LIVE FPL" : status === "SYNCING" ? "SYNCING" : "NO LIVE DATA"}</span><PanelToggle panel="market" collapsed={collapsedPanels.market} onToggle={() => togglePanel("market")} /></div></div>
           <div className="search-wrap"><span aria-hidden="true">/</span><input ref={searchRef} value={store.search} onChange={(event) => store.setSearch(event.target.value)} placeholder="Search player, club..." aria-label="Search players" /><kbd>/</kbd></div>
           <FilterBar filters={store.filters} setFilters={store.setFilters} players={data.players} onReset={resetFilters} />
-          <div className="table-wrap"><table className="player-table"><thead><tr><SortableHead label="PLAYER" sortKey="name" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>POS</th><SortableHead label="PRICE" sortKey="price" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="OWN%" sortKey="ownership" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="FORM" sortKey="form" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP GW" sortKey="nextGW" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP5" sortKey="next5" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP5/£" sortKey="value" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP10" sortKey="next10" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP10/£" sortKey="value10" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XGI/90" sortKey="xgi" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>FIXTURES</th><th>ADD</th></tr></thead><tbody>{filteredPlayers.slice(0, 250).map((player) => <PlayerRow key={player.id} player={player} week={universeWeeks.get(player.id) ?? universeWeekFor(player, planningGameweek)} gameweek={planningGameweek} selected={store.playerIds.includes(player.id)} onSelect={() => openPlayer(player.id)} onAdd={() => addPlayer(player)} />)}</tbody></table>{status === "SYNCING" && <div className="empty-state">SYNCING FPL MARKET…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>
+          <div className="table-wrap"><PlayersTable rows={filteredPlayers.slice(0, 250)} weeks={universeWeeks} gameweek={planningGameweek} columns={store.playerColumns} sortKey={store.sortKey} sortDirection={store.sortDirection} onSort={store.setSort} inSquadIds={inSquadIds} onOpen={openPlayer} onAdd={addPlayer} />{status === "SYNCING" && <div className="empty-state">SYNCING FPL MARKET…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>
           {selectedPlayer && <PlayerDetail key={selectedPlayer.id} player={selectedPlayer} gameweek={planningGameweek} inSquad={store.playerIds.includes(selectedPlayer.id)} locked={store.lockedPlayerIds.includes(selectedPlayer.id)} onClose={() => store.setSelectedPlayer(undefined)} onAdd={() => addPlayer(selectedPlayer)} onToggleLock={() => store.toggleLock(selectedPlayer.id)} />}
           <PanelResizer panel="market" onResizeStart={beginPanelResize} />
         </section>
@@ -1466,10 +1424,6 @@ function FilterBar({ filters, setFilters, players, onReset }: { filters: Termina
     <div className="filter-actions"><label className="check-label"><input type="checkbox" checked={filters.affordableOnly} onChange={(event) => setFilters({ affordableOnly: event.target.checked })} /> affordable only</label><label className="check-label"><input type="checkbox" checked={filters.excludeSelected} onChange={(event) => setFilters({ excludeSelected: event.target.checked })} /> hide selected</label><button type="button" className="filter-reset" onClick={onReset}>RESET</button></div>
   </div>;
 }
-
-function SortableHead({ label, sortKey, active, direction, onSort }: { label: string; sortKey: SortKey; active: SortKey; direction: "asc" | "desc"; onSort: (key: SortKey) => void }) { return <th><button className={`sort-button ${active === sortKey ? "active" : ""}`} onClick={() => onSort(sortKey)}>{label}{active === sortKey && <span>{direction === "asc" ? " ↑" : " ↓"}</span>}</button></th>; }
-
-function PlayerRow({ player, week, gameweek, selected, onSelect, onAdd }: { player: TerminalPlayer; week: UniverseWeekMetrics; gameweek: number; selected: boolean; onSelect: () => void; onAdd: () => void }) { return <tr className={selected ? "selected" : ""}><td><button className="player-name-button" onClick={onSelect}><strong>{player.displayName}</strong><small>· {player.teamShortName}</small></button></td><td><span className={`pos-tag ${player.position.toLowerCase()}`}>{player.position}</span></td><td>{player.priceTenths > 0 ? `${money(player.priceTenths)}m` : "—"}</td><td>{player.ownership > 0 ? `${player.ownership.toFixed(1)}%` : "—"}</td><td>{player.current.form === undefined ? "—" : player.current.form.toFixed(1)}</td><td className="cyan-text">{points(week.xp)}</td><td>{points(week.next5)}</td><td>{metric(week.value)}</td><td>{points(week.next10)}</td><td>{metric(week.value10)}</td><td>{expectedInvolvementPer90(player)}</td><td className="fixture-cell"><FixtureRun player={player} gameweek={gameweek} /></td><td><button className="add-button" onClick={onAdd} disabled={selected} aria-label={`Add ${player.displayName}`}>{selected ? "IN" : "+"}</button></td></tr>; }
 
 function PlayerDetail({ player, gameweek, inSquad, locked, onClose, onAdd, onToggleLock }: { player: TerminalPlayer; gameweek: number; inSquad: boolean; locked: boolean; onClose: () => void; onAdd: () => void; onToggleLock: () => void }) {
   const profile = usePlayerProfile(player.id);

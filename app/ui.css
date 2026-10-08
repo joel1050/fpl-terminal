@@ -498,7 +498,7 @@
   .squad-column.panel-collapsed { height: 100%; }
 }
 @media (min-width: 1400px) {
-  .terminal-grid { grid-template-columns: var(--market-column, minmax(0, 1.15fr)) var(--squad-column, minmax(0, 1fr)) 296px; }
+  .terminal-grid { grid-template-columns: var(--market-column, 668px) var(--squad-column, minmax(0, 1fr)) 296px; }
   .squad-column { display: flex; flex-direction: column; }
   .squad-body { display: block; flex: 1 1 0; min-height: 0; overflow-x: hidden; overflow-y: auto; }
   .decision-rail { grid-column: 3; grid-row: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; }
@@ -598,4 +598,163 @@
   .decision-rail .compact-action,
   .decision-rail .rail-action { min-height: 40px; }
   .chip-option { min-height: 40px; }
+}
+
+/* Players table (Task 10). Fixed columns: Player, £m, GW xP, Next 5 and Add. The rest come from the Columns menu.
+   Numbers use the tabular mono face. The active sort is amber, a start chance under 80% is orange, and squad members are dimmed. */
+.players-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--text);
+  font-family: var(--font-num);
+  font-size: 13px;
+}
+
+.players-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font: 500 11.5px/1.2 var(--font-ui);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.players-table td {
+  height: 34px;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.players-table .col-player,
+.players-table .col-fixtures { text-align: left; }
+.players-table th.col-player { padding-left: 10px; }
+.players-table td.col-player { width: 100%; max-width: 0; padding-left: 10px; overflow: hidden; }
+.players-table td.col-fixtures { padding-left: 8px; }
+.players-table .fixture-chips { flex-wrap: nowrap; gap: 1px; }
+.players-table .fc { min-width: 26px; padding: 1px 2px; }
+.players-table td.col-gw { color: var(--text); font-weight: 600; }
+.players-table td.col-start.warn { color: var(--warn-text); }
+.players-table .col-add { padding-right: 6px; }
+.players-table tbody tr:hover td { background: var(--surface-2); }
+.players-table tbody tr.in > td:not(.col-add) { color: var(--muted); }
+
+.players-table .sort-button { font: inherit; letter-spacing: inherit; }
+
+.players-table .player-name-button {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.players-table .player-name-button strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font: 600 13.5px/1.2 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.players-table .player-name-button small {
+  flex: none;
+  color: var(--muted);
+  font: 12px/1.2 var(--font-ui);
+}
+.players-table tbody tr.in .player-name-button strong { color: var(--muted); }
+
+.players-table .add-button {
+  width: 28px;
+  height: 28px;
+  font: 600 14px/1 var(--font-ui);
+}
+.players-table .add-button:disabled,
+.players-table .add-button:disabled:hover {
+  width: auto;
+  min-width: 34px;
+  padding: 0 6px;
+  border-color: var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: 500 12px/1 var(--font-ui);
+}
+
+/* Below 1180px the table drops Own and Form. */
+@media (max-width: 1179px) {
+  .players-table .col-own,
+  .players-table .col-form { display: none; }
+}
+
+/* Phone: the list is replaced in Task 11. Until then it shows Player, £m, GW xP, 5GW and Add, with 12px text and 40px taps. */
+@media (max-width: 900px) {
+  .players-table th,
+  .players-table td { font-size: 12px; }
+  .players-table th { padding: 4px 4px; }
+  .players-table td { height: 48px; padding: 0 4px; font-size: 13px; }
+  .players-table th.col-player,
+  .players-table td.col-player { padding-left: 6px; }
+  .players-table .player-name-button { min-height: 40px; }
+  .players-table .player-name-button small { font-size: 12px; }
+  .players-table .add-button,
+  .players-table .add-button:disabled { width: 40px; height: 40px; }
+  .players-table .add-button:disabled { min-width: 40px; }
+  .players-table .col-own,
+  .players-table .col-form,
+  .players-table .col-next3,
+  .players-table .col-value5,
+  .players-table .col-next10,
+  .players-table .col-value10,
+  .players-table .col-xgi,
+  .players-table .col-start,
+  .players-table .col-fixtures { display: none; }
+  .players-columns-button { display: none; }
+}
+
+/* Columns menu: a popover of checkboxes. Each row is a 40px tap target. */
+.players-columns-button {
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: 500 12px/1 var(--font-ui);
+}
+.players-columns-button[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.columns-options { display: grid; gap: 2px; padding: 8px; }
+.columns-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--text);
+  font: 13px/1.2 var(--font-ui);
+  cursor: pointer;
+}
+.columns-option:hover { background: var(--surface-2); }
+.columns-option input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+
+/* Hidden from view but still read by screen readers. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

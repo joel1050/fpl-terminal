@@ -33,7 +33,7 @@ function sanitizeColumns(value: unknown): PlayerColumnKey[] | undefined {
   if (!Array.isArray(value)) return undefined;
   return PLAYER_COLUMN_KEYS.filter((key) => value.includes(key));
 }
-export type SortKey = "name" | "price" | "nextGW" | "form" | "next3" | "next5" | "value" | "next10" | "value10" | "xgi" | "ownership";
+export type SortKey = "name" | "price" | "nextGW" | "form" | "next3" | "next5" | "value" | "next10" | "value10" | "xgi" | "ownership" | "start";
 
 export type TerminalFilters = {
   position: Position | "ALL";
