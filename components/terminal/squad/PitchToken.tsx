@@ -54,6 +54,7 @@ export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, 
       className={["pitch-token", role === "bench" ? "benched" : "", selected ? "selected" : "", swapTarget ? "swap-target" : ""].join(" ")}
       data-testid="squad-token"
       data-player={player.displayName}
+      data-player-id={player.id}
       aria-pressed={selected}
       aria-haspopup="dialog"
       aria-label={`${player.displayName}, ${player.teamShortName}`}

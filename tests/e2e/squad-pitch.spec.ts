@@ -302,6 +302,163 @@ test.describe("squad pitch", () => {
     for (const size of sizes) expect(size).toBeGreaterThanOrEqual(11.5);
   });
 
+  /** Press on one token, move in steps (past the drag threshold), and release over another. */
+  async function dragToken(page: Page, from: string, to: string, release = true) {
+    const a = (await token(page, from).boundingBox())!;
+    const b = (await token(page, to).boundingBox())!;
+    await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(a.x + a.width / 2 + 12, a.y + a.height / 2 + 12, { steps: 3 });
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 10 });
+    if (release) await page.mouse.up();
+  }
+
+  const startingXi = (page: Page) => page.getByRole("region", { name: /^starting xi$/i });
+  const benchStrip = (page: Page) => page.getByRole("region", { name: /^bench$/i });
+
+  test("drags a bench defender onto a starting defender to swap them", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    await dragToken(page, "Faes", "Pau");
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Faes"]')).toHaveCount(1);
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(0);
+    await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(1);
+    await expect(page.getByText(/faes moved into the starting xi/i)).toBeVisible();
+    // The click that follows a drag must not open the action sheet.
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("drags a starter onto the bench to swap, and a press without movement still opens the sheet", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    await dragToken(page, "Pau", "Konsa");
+    await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(1);
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Konsa"]')).toHaveCount(1);
+
+    await token(page, "Gordon").click();
+    await expect(page.getByRole("dialog", { name: "Gordon", exact: true })).toBeVisible();
+  });
+
+  test("drags one bench substitute onto another to change the bench order", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const labels = () => benchStrip(page).getByTestId("squad-token").evaluateAll((items) => items.map((item) => `${item.getAttribute("data-player")}:${item.querySelector('[data-testid="token-bench"]')?.textContent ?? ""}`));
+    expect(await labels()).toEqual(["Areola:GK", "Faes:B1", "Konsa:B2", "Solanke:B3"]);
+
+    await dragToken(page, "Faes", "Solanke");
+    await expect(page.getByText(/bench order updated/i)).toBeVisible();
+    expect(await labels()).toEqual(["Areola:GK", "Solanke:B1", "Konsa:B2", "Faes:B3"]);
+  });
+
+  test("refuses a goalkeeper dropped on an outfield starter and says why", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    await dragToken(page, "Areola", "Gordon");
+    await expect(page.getByText(/a goalkeeper can only swap with a goalkeeper/i)).toBeVisible();
+    await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Areola"]')).toHaveCount(1);
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Gordon"]')).toHaveCount(1);
+  });
+
+  test("refuses a drop that breaks the formation or benches the captain, and swaps the goalkeepers", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    await dragToken(page, "Solanke", "Pau");
+    await expect(page.getByText(/invalid starting formation/i)).toBeVisible();
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(1);
+
+    await dragToken(page, "Solanke", "Haaland");
+    await expect(page.getByText(/choose a different captain or vice-captain/i)).toBeVisible();
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Haaland"]')).toHaveCount(1);
+
+    await dragToken(page, "Areola", "Raya");
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Areola"]')).toHaveCount(1);
+    await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Raya"]')).toHaveCount(1);
+  });
+
+  test("Escape cancels a drag, and marks legal and illegal targets while it runs", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    await dragToken(page, "Faes", "Pau", false);
+    await expect(token(page, "Pau")).toHaveAttribute("data-drop", "legal");
+    await expect(token(page, "Haaland")).toHaveAttribute("data-drop", "illegal");
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(1);
+    await expect(token(page, "Pau")).not.toHaveAttribute("data-drop", /.*/);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("dropping on empty space cancels without a notice", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    const a = (await token(page, "Faes").boundingBox())!;
+    await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(4, 400, { steps: 10 });
+    await page.mouse.up();
+    await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Faes"]')).toHaveCount(1);
+    await expect(page.getByText(/moved into the starting xi|bench order updated|invalid starting formation/i)).toHaveCount(0);
+  });
+
+  test.describe("touch", () => {
+    test.use({ hasTouch: true });
+
+    /** Drives raw touch events through the browser: Playwright's touchscreen can only tap. */
+    async function touchSequence(page: Page, from: string, to: string, holdMs: number) {
+      const a = (await token(page, from).boundingBox())!;
+      const b = (await token(page, to).boundingBox())!;
+      const start = { x: a.x + a.width / 2, y: a.y + a.height / 2 };
+      const end = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [start] });
+      await page.waitForTimeout(holdMs);
+      for (let step = 1; step <= 8; step += 1) {
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: start.x + ((end.x - start.x) * step) / 8, y: start.y + ((end.y - start.y) * step) / 8 }] });
+      }
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    }
+
+    test("a long press then a drag swaps players", async ({ page }) => {
+      await importTeam(page);
+      await page.setViewportSize({ width: 1280, height: 900 });
+
+      await touchSequence(page, "Faes", "Pau", 450);
+      await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Faes"]')).toHaveCount(1);
+      await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(1);
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    });
+
+    test("a quick swipe from a token swaps nothing", async ({ page }) => {
+      await importTeam(page);
+      await page.setViewportSize({ width: 1280, height: 900 });
+
+      await touchSequence(page, "Faes", "Pau", 50);
+      await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(1);
+      await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Faes"]')).toHaveCount(1);
+    });
+  });
+
+  test("a table row is not draggable", async ({ page }) => {
+    await importTeam(page);
+    await showTable(page);
+    await expect(squadPanel(page).locator('[data-player-id]')).toHaveCount(0);
+  });
+
+  test("a draft squad with no weekly plan does not drag", async ({ page }) => {
+    await importTeam(page);
+    const dialog = await openActions(page, "Rogers");
+    await dialog.getByRole("button", { name: "Unlock Rogers" }).click();
+    await dialog.getByRole("button", { name: "Remove Rogers" }).click();
+    await page.keyboard.press("Escape");
+    await expect(squadPanel(page).locator('[data-testid="squad-roster"]')).not.toHaveAttribute("data-draggable", "true");
+  });
+
   test("a draft squad renders the table without the removed player and without crashing", async ({ page }) => {
     await importTeam(page);
 

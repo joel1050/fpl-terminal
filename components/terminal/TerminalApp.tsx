@@ -9,6 +9,7 @@ import { exportState, importState, resetTerminalState } from "@/components/shell
 import type { NailedRating, Player, PlayerFixture, PlayerMatchPerformance, PlayerProfileData, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, TransferBaseline, WeeklyLineupPlan } from "@/types";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
 import { effectiveBudgetTenths, explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
+import { CAPTAIN_BENCH_REASON, checkLineupMove, FORMATION_REASON } from "@/lib/squad/lineupMoves";
 import { pickWeeklyTeam, projectWeeklyLineupHorizons, scoreLineupWithChip, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import { ChipSelector, ChipStrategyPanel, usePlanningWeekFinance } from "@/components/terminal/ChipPanels";
 import { availabilityOf, type Availability } from "@/lib/availability/status";
@@ -973,13 +974,18 @@ export default function TerminalApp() {
       setNotice(`Select a ${role === "starter" ? "substitute" : "starter"} to complete the swap.`);
       return;
     }
-    if (store.captainId === starterId || store.viceCaptainId === starterId) {
-      setNotice("Choose a different captain or vice-captain before moving that starter to the bench.");
+    swapGW(starterId, benchId);
+  };
+
+  /** Swap a starter with a bench player through the store, with a notice. Shared by tap and drag. */
+  const swapGW = (starterId: number, benchId: number) => {
+    if (currentGWPlan?.captainId === starterId || currentGWPlan?.viceCaptainId === starterId) {
+      setNotice(CAPTAIN_BENCH_REASON);
       setGWSwapSelection({});
       return;
     }
     if (!store.swapStarterBench(starterId, benchId)) {
-      setNotice("That swap would leave an invalid starting formation. Pick a compatible player.");
+      setNotice(FORMATION_REASON);
       setGWSwapSelection({});
       return;
     }
@@ -998,6 +1004,38 @@ export default function TerminalApp() {
     [bench[index], bench[nextIndex]] = [bench[nextIndex], bench[index]];
     if (store.reorderBench(bench)) setNotice("Bench order updated.");
   };
+
+  /** Swap two outfield substitutes' places in the bench order. */
+  const swapBenchPlaces = (aId: number, bId: number) => {
+    if (!currentGWPlan) return;
+    const currentOrder = lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan.benchOrder;
+    const order = [...currentOrder];
+    const a = order.indexOf(aId);
+    const b = order.indexOf(bId);
+    if (a < 0 || b < 0) return;
+    if (!lineupApplied && !applyWeeklyPlan(currentGWPlan)) return;
+    [order[a], order[b]] = [order[b], order[a]];
+    if (store.reorderBench(order)) setNotice("Bench order updated.");
+  };
+
+  const dragLineup = currentGWPlan
+    ? { starterIds: currentGWPlan.starterIds, benchGoalkeeperId: currentGWPlan.benchGoalkeeperId, benchOrder: currentGWPlan.benchOrder, captainId: currentGWPlan.captainId, viceCaptainId: currentGWPlan.viceCaptainId }
+    : null;
+  const positionOfPlayer = (id: number) => playerById.get(id)?.position;
+  const pitchDrag = dragLineup ? {
+    canDrop: (sourceId: number, targetId: number) => {
+      const move = checkLineupMove(dragLineup, sourceId, targetId, positionOfPlayer);
+      return { legal: move.legal, reason: move.legal ? null : move.reason };
+    },
+    onDrop: (sourceId: number, targetId: number) => {
+      const move = checkLineupMove(dragLineup, sourceId, targetId, positionOfPlayer);
+      if (!move.legal || !currentGWPlan) return;
+      if (!lineupApplied && !applyWeeklyPlan(currentGWPlan)) return;
+      if (move.kind === "swap") swapGW(move.starterId, move.benchId);
+      else swapBenchPlaces(sourceId, targetId);
+    },
+    onReject: (reason: string) => setNotice(reason),
+  } : undefined;
 
   const applyCaptaincy = (captainId: number, viceCaptainId: number) => {
     if (!currentGWPlan || captainId === viceCaptainId) return false;
@@ -1325,6 +1363,7 @@ export default function TerminalApp() {
                 bench={benchSlots.map((slot) => ({ player: slot.id ? playerById.get(slot.id) : undefined, position: slot.position, label: slot.label }))}
                 hint={swapHint}
                 renderPlayer={renderSquadPlayer}
+                drag={pitchDrag}
                 renderEmpty={(position, key) => <EmptySlot key={key} position={position} maxPriceTenths={slotMaxPrices[position]} onChoose={() => choosePlayer(position)} />}
               />}
             </div>

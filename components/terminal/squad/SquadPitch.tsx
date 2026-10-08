@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Player, Position } from "@/types";
+import { usePitchDrag, type PitchDragOptions } from "./usePitchDrag";
 
 export interface PitchRow {
   position: Position;
@@ -24,12 +25,16 @@ export interface SquadPitchProps {
   hint?: string;
   renderPlayer: (player: Player, role: "starter" | "bench", benchLabel?: string) => ReactNode;
   renderEmpty: (position: Position, key: string) => ReactNode;
+  /** Drag-to-swap. Leave out while there is no weekly plan to change. */
+  drag?: Omit<PitchDragOptions, "enabled">;
 }
 
 /** The squad laid out as a pitch (starters by line) with a bench strip below. Both sections sit in one roster. */
-export function SquadPitch({ startingMeta, captainCaption, rows, bench, hint, renderPlayer, renderEmpty }: SquadPitchProps) {
+export function SquadPitch({ startingMeta, captainCaption, rows, bench, hint, renderPlayer, renderEmpty, drag }: SquadPitchProps) {
+  const noDrag = { canDrop: () => ({ legal: false, reason: null }), onDrop: () => {}, onReject: () => {} };
+  const { rootRef, rootProps } = usePitchDrag({ enabled: Boolean(drag), ...(drag ?? noDrag) });
   return (
-    <div className="squad-roster" data-testid="squad-roster">
+    <div className="squad-roster" data-testid="squad-roster" data-draggable={drag ? "true" : undefined} ref={rootRef} {...rootProps}>
       {hint && <p className="swap-hint">{hint}</p>}
       <div className="pitch-head">
         <h3>Starting XI <span>{startingMeta}</span></h3>
