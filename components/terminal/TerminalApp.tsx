@@ -35,6 +35,7 @@ import { PitchToken } from "@/components/terminal/squad/PitchToken";
 import { PlayerActions } from "@/components/terminal/squad/PlayerActions";
 import { SquadKpis } from "@/components/terminal/squad/SquadKpis";
 import { SquadPitch } from "@/components/terminal/squad/SquadPitch";
+import { SquadTable } from "@/components/terminal/squad/SquadTable";
 import { money, points } from "@/lib/display/format";
 
 // The deadline formatter moved with the top bar; the Planner's tests still import it from here.
@@ -1289,19 +1290,30 @@ export default function TerminalApp() {
         </section>
 
         <section id="terminal-panel-squad" data-panel="squad" className={`squad-column ${collapsedPanels.squad ? "panel-collapsed" : ""} ${store.activeMobileTab === "SQUAD" ? "mobile-visible" : ""}`} aria-label="Squad builder and analysis">
-          <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><button type="button" className="compact-action squad-lock-all" disabled={store.playerIds.length === 0} aria-label={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} aria-pressed={allSquadPlayersLocked} title={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} onClick={store.toggleAllLocks}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={allSquadPlayersLocked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M12 7V5a4 4 0 0 0-7.7-1.5"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button><button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button><button className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "PICK TEAM · OUTDATED" : "PICK TEAM"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
+          <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><div className="squad-view-switch" role="group" aria-label="Squad view"><button type="button" aria-pressed={store.squadView === "PITCH"} onClick={() => store.setSquadView("PITCH")}>Pitch</button><button type="button" aria-pressed={store.squadView === "TABLE"} onClick={() => store.setSquadView("TABLE")}>Table</button></div><button type="button" className="compact-action squad-lock-all" disabled={store.playerIds.length === 0} aria-label={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} aria-pressed={allSquadPlayersLocked} title={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} onClick={store.toggleAllLocks}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={allSquadPlayersLocked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M12 7V5a4 4 0 0 0-7.7-1.5"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button><button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button><button className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "PICK TEAM · OUTDATED" : "PICK TEAM"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
           <div className="planning-stack">
           <div className="planning-toolbar" aria-label="Squad planning Gameweek"><span className="section-kicker">PLAN</span><ChipSelector gameweek={planningGameweek} onNotice={setNotice} /></div>
           {store.planNotice && <div className="plan-notice" role="status"><span>{store.planNotice}</span><button type="button" className="toast-button" aria-label="Dismiss plan notice" onClick={() => store.clearPlanNotice()}>×</button></div>}
           </div>
-          <SquadPitch
+          {store.squadView === "TABLE" ? <>
+            {swapHint && <p className="swap-hint">{swapHint}</p>}
+            <SquadTable
+              starters={pitchRows.flatMap((row) => row.players)}
+              bench={benchSlots.map((slot) => ({ player: slot.id ? playerById.get(slot.id) : undefined, label: slot.label }))}
+              gameweek={planningGameweek}
+              captainId={lineupApplied ? store.captainId : currentGWPlan?.captainId}
+              viceCaptainId={lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId}
+              chip={store.chip}
+              onOpen={(player) => setActionPlayerId(player.id)}
+            />
+          </> : <SquadPitch
             startingMeta={`${currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · ${currentGWPlan ? 11 : draftStarterCount}/11`}
             rows={pitchRows}
             bench={benchSlots.map((slot) => ({ player: slot.id ? playerById.get(slot.id) : undefined, position: slot.position, label: slot.label }))}
             hint={swapHint}
             renderPlayer={renderSquadPlayer}
             renderEmpty={(position, key) => <EmptySlot key={key} position={position} maxPriceTenths={slotMaxPrices[position]} onChoose={() => choosePlayer(position)} />}
-          />
+          />}
           <SquadKpis
             projected={chipNetXp ?? projected.nextGW}
             gameweek={planningGameweek}

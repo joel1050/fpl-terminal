@@ -427,3 +427,59 @@
 .action-button.on { border-color: var(--accent); color: var(--accent); }
 .action-button.danger { color: var(--bad); }
 .action-button:disabled { color: var(--dim); }
+
+/* Pitch/Table switch in the squad header. Amber marks the pressed button only. The visible
+   button is 24px, the height of the header's compact actions, so the header row keeps its height;
+   ::before widens the tap area to 40px on phones. */
+.squad-view-switch { display: inline-flex; flex: none; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.squad-view-switch button { position: relative; min-width: 56px; min-height: 24px; padding: 0 10px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; }
+.squad-view-switch button:first-child { border-radius: 7px 0 0 7px; }
+.squad-view-switch button:last-child { border-radius: 0 7px 7px 0; }
+.squad-view-switch button + button { border-left: 1px solid var(--line); }
+.squad-view-switch button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.squad-view-switch button:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+@media (max-width: 900px) {
+  .squad-view-switch button { min-width: 64px; }
+  .squad-view-switch button::before { content: ""; position: absolute; inset: -7px 0; }
+}
+
+/* Squad table: starters in pitch order, then a dimmed bench. On phones five columns fit the panel with no scroll. */
+.squad-table { width: 100%; border-collapse: collapse; color: var(--text); font-family: var(--font-num); font-size: 13px; }
+.squad-table th { padding: 6px 5px; border-bottom: 1px solid var(--line); color: var(--muted); font: 500 11.5px/1.2 var(--font-ui); text-align: left; white-space: nowrap; }
+.squad-table td { height: 36px; padding: 0 5px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+.squad-table .num { text-align: right; }
+.squad-table td.sq-gw { color: var(--text); font-weight: 600; }
+.squad-table .sq-start.warn { color: var(--warn-text); }
+.squad-table .sq-pos { color: var(--muted); font-size: 11.5px; }
+.squad-table th.sq-player, .squad-table td.sq-player { padding-left: 14px; }
+.squad-table tr.bench-row td { color: var(--muted); }
+.squad-table tr.squad-table-divider td { height: 26px; padding-left: 14px; background: var(--surface); color: var(--muted); font: 500 12px/1.2 var(--font-ui); text-align: left; }
+.squad-table .sq-row-button { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; min-height: 36px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
+.squad-table .sq-row-button:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+.squad-table .sq-name { min-width: 0; overflow: hidden; color: var(--text); font: 600 13px/1.2 var(--font-ui); text-overflow: ellipsis; white-space: nowrap; }
+.squad-table tr.bench-row .sq-name { color: var(--muted); }
+.squad-table .sq-team { flex: none; color: var(--muted); font: 12px/1.2 var(--font-ui); }
+.squad-table .sq-fixtures { display: inline-flex; gap: 2px; }
+.squad-table .sq-badge { flex: none; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; font: 700 12px/18px var(--font-num); text-align: center; }
+.squad-table .sq-badge.captain { background: var(--accent); color: #111; }
+.squad-table .sq-badge.vice { background: var(--text); color: #111; }
+.squad-table .sq-flag { flex: none; width: 16px; height: 16px; border-radius: 50%; color: #111; font: 700 12px/16px var(--font-num); text-align: center; }
+.squad-table .sq-flag.warn { background: var(--warn); }
+.squad-table .sq-flag.bad { background: var(--bad); }
+@media (max-width: 900px) {
+  .squad-table { table-layout: auto; }
+  .squad-table th { padding: 6px 4px; font-size: 12px; }
+  .squad-table td { height: 40px; padding: 0 4px; }
+  .squad-table .wide-only { display: none; }
+  .squad-table .sq-row-button { min-height: 40px; }
+  .squad-table th.sq-pos, .squad-table td.sq-pos { width: 38px; }
+  .squad-table th.sq-next, .squad-table td.sq-next { width: 88px; }
+  .squad-table th.sq-gw, .squad-table td.sq-gw { width: 40px; }
+  .squad-table th.sq-start, .squad-table td.sq-start { width: 46px; }
+  /* Player takes the width the four fixed columns leave. max-width 0 keeps a long name from widening the table. */
+  .squad-table th.sq-player, .squad-table td.sq-player { max-width: 0; padding-left: 4px; }
+  .squad-table td.sq-player { overflow: hidden; }
+  .squad-table .sq-pos { font-size: 12px; }
+  .squad-table .sq-name { font-size: 13px; }
+  .squad-table tr.squad-table-divider td { padding-left: 4px; }
+}

@@ -40,6 +40,19 @@ test.describe("squad pitch", () => {
     return squadPanel(page).locator(`[data-testid="squad-token"][data-player="${name}"]`);
   }
 
+  function viewSwitch(page: Page) {
+    return squadPanel(page).getByRole("group", { name: "Squad view" });
+  }
+
+  function squadTable(page: Page) {
+    return squadPanel(page).getByRole("table", { name: "Squad table" });
+  }
+
+  async function showTable(page: Page) {
+    await viewSwitch(page).getByRole("button", { name: "Table", exact: true }).click();
+    await expect(squadTable(page)).toBeVisible();
+  }
+
   /** Escape first: an open sheet's backdrop would otherwise take the tap. */
   async function openActions(page: Page, name: string): Promise<Locator> {
     await page.keyboard.press("Escape");
@@ -191,5 +204,112 @@ test.describe("squad pitch", () => {
     await expect(token(page, "Gordon").getByTestId("token-flag")).toHaveAttribute("data-availability", "UNAVAILABLE");
     await expect(token(page, "Rogers").getByTestId("token-flag")).toHaveAttribute("data-availability", "DOUBTFUL");
     await expect(token(page, "Pau").getByTestId("token-flag")).toHaveCount(0);
+  });
+
+  test("the Pitch/Table switch flips views, and the table has 15 player rows under a Bench divider", async ({ page }) => {
+    await importTeam(page);
+    const pitchButton = viewSwitch(page).getByRole("button", { name: "Pitch", exact: true });
+    await expect(pitchButton).toHaveAttribute("aria-pressed", "true");
+    await expect(squadPanel(page).getByTestId("squad-token")).toHaveCount(15);
+
+    await showTable(page);
+    await expect(viewSwitch(page).getByRole("button", { name: "Table", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(pitchButton).toHaveAttribute("aria-pressed", "false");
+    await expect(squadPanel(page).getByTestId("squad-token")).toHaveCount(0);
+    await expect(squadTable(page).locator("tbody tr[data-player]")).toHaveCount(15);
+    await expect(squadTable(page).locator("tbody tr")).toHaveCount(16);
+    await expect(squadTable(page).getByText("Bench", { exact: true })).toHaveCount(1);
+
+    await pitchButton.click();
+    await expect(pitchButton).toHaveAttribute("aria-pressed", "true");
+    await expect(squadPanel(page).getByTestId("squad-token")).toHaveCount(15);
+    await expect(squadTable(page)).toHaveCount(0);
+  });
+
+  test("the table choice survives a reload", async ({ page }) => {
+    await importTeam(page);
+    await showTable(page);
+
+    await page.reload();
+    await expect(page.getByPlaceholder(/search player, club/i)).toBeVisible();
+    await expect(viewSwitch(page).getByRole("button", { name: "Table", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(squadTable(page)).toBeVisible();
+  });
+
+  test("a table row opens the same action sheet as a token, and a captain set there shows in the table", async ({ page }) => {
+    await importTeam(page);
+    await showTable(page);
+
+    await squadTable(page).getByRole("button", { name: /^Mbeumo,/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Mbeumo", exact: true });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Make Mbeumo captain" }).click();
+    await page.keyboard.press("Escape");
+    await expect(squadTable(page).locator('tr[data-player="Mbeumo"]').getByTestId("table-role")).toHaveText("C");
+    await expect(squadTable(page).locator('tr[data-player="Haaland"]').getByTestId("table-role")).toHaveCount(0);
+  });
+
+  test("the swap hint shows above the table in Table view", async ({ page }) => {
+    await importTeam(page);
+    await showTable(page);
+
+    const starter = page.getByRole("dialog", { name: "Pau", exact: true });
+    await squadTable(page).getByRole("button", { name: /^Pau,/ }).click();
+    await expect(starter).toBeVisible();
+    await starter.getByRole("button", { name: "Select Pau to move to bench" }).click();
+    await expect(page.getByText(/tap a bench player to swap with pau/i)).toBeVisible();
+
+    const bench = page.getByRole("dialog", { name: "Faes", exact: true });
+    await squadTable(page).getByRole("button", { name: /^Faes,/ }).click();
+    await bench.getByRole("button", { name: "Select Faes to move into the starting XI" }).click();
+    await expect(bench).toBeHidden();
+    await expect(page.getByText(/tap a bench player to swap with pau/i)).toHaveCount(0);
+  });
+
+  test("on a phone the table fits the panel with no horizontal overflow, and keeps Pos, Player, Next, GW and Start", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await showTable(page);
+
+    const table = squadTable(page);
+    for (const name of ["Pos", "Player", "Next", "GW", "Start"]) {
+      await expect(table.getByRole("columnheader", { name, exact: true })).toBeVisible();
+    }
+    for (const name of ["£m", "3GW", "5GW", "Form", "Run"]) {
+      await expect(table.getByRole("columnheader", { name, exact: true })).toBeHidden();
+    }
+    const overflow = await squadPanel(page).evaluate((panel) => ({ panel: panel.scrollWidth - panel.clientWidth, page: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
+    expect(overflow).toEqual({ panel: 0, page: 0 });
+
+    for (const box of await boxesOf(table.locator("tbody tr[data-player] button"))) {
+      expect(box, "every table row has a box").not.toBeNull();
+      expect(box!.height).toBeGreaterThanOrEqual(40);
+    }
+  });
+
+  test("on desktop the table shows all ten columns, with headers at least 11.5px", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await showTable(page);
+
+    const table = squadTable(page);
+    for (const name of ["Pos", "Player", "£m", "Next", "GW", "3GW", "5GW", "Start", "Form", "Run"]) {
+      await expect(table.getByRole("columnheader", { name, exact: true })).toBeVisible();
+    }
+    const sizes = await table.locator("thead th").evaluateAll((cells) => cells.map((cell) => parseFloat(getComputedStyle(cell).fontSize)));
+    expect(sizes.length).toBe(10);
+    for (const size of sizes) expect(size).toBeGreaterThanOrEqual(11.5);
+  });
+
+  test("a draft squad renders the table without the removed player and without crashing", async ({ page }) => {
+    await importTeam(page);
+
+    const dialog = await openActions(page, "Rogers");
+    await dialog.getByRole("button", { name: "Unlock Rogers" }).click();
+    await dialog.getByRole("button", { name: "Remove Rogers" }).click();
+    await showTable(page);
+
+    await expect(squadTable(page).locator("tbody tr[data-player]")).toHaveCount(14);
+    await expect(squadTable(page).locator('tr[data-player="Rogers"]')).toHaveCount(0);
   });
 });
