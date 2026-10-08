@@ -15,6 +15,15 @@ function rail(page: Page) {
   return page.getByRole("complementary", { name: "Decision rail" });
 }
 
+/** The squad column's scroll container: the nearest ancestor of the squad region that scrolls on Y. It is the root when none does. */
+async function squadColumn(page: Page) {
+  return squadPanel(page).evaluateHandle((panel) => {
+    let el: Element = panel;
+    while (el.parentElement && !["auto", "scroll"].includes(getComputedStyle(el).overflowY)) el = el.parentElement;
+    return el as HTMLElement;
+  });
+}
+
 async function boxOf(locator: Locator): Promise<Box> {
   const box = await locator.boundingBox();
   if (!box) throw new Error("expected a rendered box");
@@ -103,6 +112,67 @@ test.describe("decision rail", () => {
     const box = await boxOf(chips);
     expect(box.y, "Chips heading starts inside the viewport").toBeGreaterThanOrEqual(0);
     expect(box.y + box.height, "Chips heading ends inside the viewport").toBeLessThanOrEqual(720);
+  });
+
+  for (const size of [{ width: 1280, height: 720 }, { width: 1440, height: 900 }]) {
+    test(`at ${size.width}x${size.height} the page itself does not scroll`, async ({ page }) => {
+      await page.setViewportSize(size);
+      await page.goto("/");
+      await importTeam(page);
+
+      const { scrollHeight, innerHeight } = await page.evaluate(() => ({ scrollHeight: document.documentElement.scrollHeight, innerHeight: window.innerHeight }));
+      expect(scrollHeight, "document height fits the viewport").toBeLessThanOrEqual(innerHeight + 1);
+    });
+  }
+
+  test("at 1280x720 the squad column is one scroll container that holds the rail", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/");
+    await importTeam(page);
+
+    const column = await squadColumn(page);
+    expect(await column.evaluate((el) => getComputedStyle(el).overflowY), "the squad column scrolls on its own").toMatch(/^(auto|scroll)$/);
+    expect(await column.evaluate((el) => el.querySelector('aside[aria-label="Decision rail"]') !== null), "the rail is inside the squad column").toBe(true);
+
+    await column.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    await expect(rail(page).getByRole("heading", { name: "Chips" }), "Chips heading scrolls into view").toBeInViewport();
+    expect(await page.evaluate(() => window.scrollY), "the page itself stays at the top").toBe(0);
+  });
+
+  test("at 1280x720 nothing else in the squad column scrolls on its own", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/");
+    await importTeam(page);
+
+    const column = await squadColumn(page);
+    expect(await column.evaluate((el) => getComputedStyle(el).overflowY), "the squad column scrolls on its own").toMatch(/^(auto|scroll)$/);
+    const nested = await column.evaluate((el) => Array.from(el.querySelectorAll<HTMLElement>("*")).filter((node) => {
+      const overflow = getComputedStyle(node).overflowY;
+      return (overflow === "auto" || overflow === "scroll") && node.scrollHeight > node.clientHeight + 1;
+    }).map((node) => node.className));
+    expect(nested).toEqual([]);
+  });
+
+  test("at 1280x720 the players table body scrolls under its sticky header", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/");
+    await importTeam(page);
+
+    const market = page.getByRole("region", { name: /player universe/i });
+    const wrap = market.locator(".table-wrap");
+    const head = wrap.locator("thead th").first();
+    expect(await wrap.evaluate((el) => getComputedStyle(el).overflowY)).toBe("auto");
+    expect(await wrap.evaluate((el) => el.scrollHeight > el.clientHeight + 1), "the table has rows beyond its height").toBe(true);
+
+    await wrap.evaluate((el) => { el.scrollTop = 200; });
+    expect(await wrap.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    const wrapBox = await boxOf(wrap);
+    const headBox = await boxOf(head);
+    expect(Math.abs(headBox.y - wrapBox.y), "the header stays at the top of the body").toBeLessThanOrEqual(1);
+
+    const marketBox = await boxOf(market);
+    expect(wrapBox.y + wrapBox.height, "the table ends inside the players column").toBeLessThanOrEqual(marketBox.y + marketBox.height + 1);
+    expect(wrapBox.y + wrapBox.height, "the table ends inside the viewport").toBeLessThanOrEqual(720 + 1);
   });
 
   test("at 1440 with saved panel ratios the rail stays inside the viewport", async ({ page }) => {
