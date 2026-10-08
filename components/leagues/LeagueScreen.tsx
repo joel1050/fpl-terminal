@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import WorkspaceSwitcher from "@/components/terminal/WorkspaceSwitcher";
 import { BottomTabBar } from "@/components/shell/BottomTabBar";
 import { MoreSheet } from "@/components/shell/MoreSheet";
+import { Sheet } from "@/components/shell/Sheet";
+import { usePhoneLayout } from "@/components/shell/usePhoneLayout";
 import { exportState, importState, resetTerminalState } from "@/components/shell/stateFile";
 import { calculateLiveEntry, type LiveStats } from "@/lib/leagues/calculateLiveEntry";
 import { calculateLiveStandings } from "@/lib/leagues/calculateLiveStandings";
@@ -20,7 +22,7 @@ import LeagueStandings, { type StandingsMode } from "./LeagueStandings";
 import LiveGameweekPanel from "./LiveGameweekPanel";
 import LiveSquad from "./LiveSquad";
 import MatchCentre from "./MatchCentre";
-import MyLeaguesPanel from "./MyLeaguesPanel";
+import MyLeaguesPanel, { buildLeagueRows } from "./MyLeaguesPanel";
 import { parseLeagueKey } from "@/lib/leagues/leagueKey";
 import { useLeaguesData } from "./useLeaguesData";
 
@@ -166,10 +168,16 @@ function WorkspaceBody({
   data,
   entryId,
   onSelectLeague,
+  phone,
+  leagueSheetOpen,
+  onCloseLeagueSheet,
 }: {
   data: ReturnType<typeof useLeaguesData>;
   entryId: number;
   onSelectLeague: (key: string) => void;
+  phone: boolean;
+  leagueSheetOpen: boolean;
+  onCloseLeagueSheet: () => void;
 }) {
   const gameweek = data.gameweek;
   const playersById = data.bootstrap.data?.playersById ?? EMPTY_PLAYER_MAP;
@@ -360,6 +368,21 @@ function WorkspaceBody({
     [playersById],
   );
 
+  // On a phone the league list lives in a sheet behind the header drop-down, so
+  // it is only in the page while that sheet is open.
+  const leaguesPanel = (
+    <MyLeaguesPanel
+      profile={data.profile.status === "READY" ? data.profile.data : null}
+      history={data.history.status === "READY" ? data.history.data : null}
+      selectedLeagueKey={data.selectedLeagueKey}
+      onSelect={(key) => {
+        selectLeague(key);
+        onCloseLeagueSheet();
+      }}
+      status={data.profile.status}
+    />
+  );
+
   return (
     <>
       <nav className="mobile-tabs leagues-mobile-tabs" aria-label="Leagues panels">
@@ -371,13 +394,7 @@ function WorkspaceBody({
       </nav>
       <div className="leagues-grid">
         <aside className={`leagues-column leagues-left ${mobileTab === "LEAGUE" ? "mobile-visible" : ""}`} aria-label="Leagues and standings" data-mobile-tab="LEAGUE">
-          <MyLeaguesPanel
-            profile={data.profile.status === "READY" ? data.profile.data : null}
-            history={data.history.status === "READY" ? data.history.data : null}
-            selectedLeagueKey={data.selectedLeagueKey}
-            onSelect={selectLeague}
-            status={data.profile.status}
-          />
+          {!phone && leaguesPanel}
           <LeagueStandings
             mode={standingsMode}
             leagueName={loadedStandings?.name ?? (data.selectedLeagueKey === "overall" ? "Overall" : undefined)}
@@ -441,6 +458,11 @@ function WorkspaceBody({
           />
         </aside>
       </div>
+      {phone && (
+        <Sheet open={leagueSheetOpen} onClose={onCloseLeagueSheet} title="Switch league" variant="bottom">
+          {leaguesPanel}
+        </Sheet>
+      )}
     </>
   );
 }
@@ -494,6 +516,8 @@ export default function LeagueScreen() {
   const importRef = useRef<HTMLInputElement>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [shellNotice, setShellNotice] = useState<string | null>(null);
+  const phone = usePhoneLayout();
+  const [leagueSheetOpen, setLeagueSheetOpen] = useState(false);
 
   if (!isHydrated) return <main className="leagues-app" aria-busy="true" />;
 
@@ -512,28 +536,43 @@ export default function LeagueScreen() {
   const liveDegraded = data.liveStatus === "ERROR" || data.liveStale;
   const liveNotice = data.liveError ?? data.liveWarning ?? null;
 
+  // The phone header names the league on show and opens the league list. The
+  // name is read from the same rows the list shows, so the two always agree.
+  const selectedLeagueName = buildLeagueRows(
+    data.profile.status === "READY" ? data.profile.data : null,
+    data.history.status === "READY" ? data.history.data : null,
+  ).find((row) => row.key === data.selectedLeagueKey)?.name;
+  const switchName = selectedLeagueName ?? (data.profile.status === "LOADING" ? "Loading…" : "Choose league");
+  const switchLabel = selectedLeagueName ? `Choose league: ${selectedLeagueName}` : "Choose league";
+
   return (
     <main className="leagues-app">
       <header className="topbar leagues-topbar">
         <span className="brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></span>
         <WorkspaceSwitcher />
+        {phone && (
+          <button type="button" className="league-switch" aria-haspopup="dialog" aria-label={switchLabel} onClick={() => setLeagueSheetOpen(true)}>
+            <span>{switchName}</span>
+            <span aria-hidden="true">▾</span>
+          </button>
+        )}
         <div className="topbar-stats" aria-label="Leagues status">
           <StatusCell label="GW" value={gameweek !== null ? String(gameweek) : "—"} />
           <StatusCell
-            label="MATCHES"
+            label="Matches"
             value={liveDegraded ? "STALE"
               : data.anyFixtureLive ? "LIVE"
                 : data.anyFixtureSettling ? "BONUS" : "IDLE"}
             tone={liveDegraded ? "red" : data.anyFixtureLive || data.anyFixtureSettling ? "green" : ""}
           />
           <StatusCell
-            label="UPDATED"
+            label="Updated"
             value={ageLabel(data.liveFetchedAt)}
             tone={liveDegraded ? "red" : data.anyFixtureLive ? "green" : ""}
           />
         </div>
         <div className="topbar-actions">
-          <button type="button" className="text-button" onClick={() => void data.refreshLive()} data-testid="live-refresh">REFRESH</button>
+          <button type="button" className="text-button" onClick={() => void data.refreshLive()} data-testid="live-refresh">Refresh</button>
         </div>
       </header>
       {savedStateNotice && <p className="live-notice" role="alert">{savedStateNotice}</p>}
@@ -542,7 +581,14 @@ export default function LeagueScreen() {
           LIVE FPL DATA UNAVAILABLE · SHOWING THE LAST GOOD SNAPSHOT{liveNotice ? ` · ${liveNotice.toUpperCase()}` : ""}
         </p>
       )}
-      <WorkspaceBody data={data} entryId={entryId} onSelectLeague={selectLeague} />
+      <WorkspaceBody
+        data={data}
+        entryId={entryId}
+        onSelectLeague={selectLeague}
+        phone={phone}
+        leagueSheetOpen={leagueSheetOpen}
+        onCloseLeagueSheet={() => setLeagueSheetOpen(false)}
+      />
       {shellNotice && <p className="live-notice" role="status">{shellNotice}</p>}
       <input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, useTerminalStore.getState(), setShellNotice)} />
       <BottomTabBar active="LEAGUES" onMore={() => setMoreOpen(true)} />

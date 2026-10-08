@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { feedAgeLabel, fixtureTag, kickoffLabel, playerValueLabel, roleMarkerFor } from "@/lib/leagues/display";
+import { feedAgeLabel, fixtureTag, kickoffLabel, playerValueLabel, roleMarkerFor, shouldShowLeagueImpact } from "@/lib/leagues/display";
 import type { LiveEntryPlayer } from "@/types/leagues";
 
 const SHORT_NAMES = new Map([[7, "CHE"], [8, "BOU"]]);
@@ -122,5 +122,20 @@ describe("feedAgeLabel", () => {
 
   it("gives a reconstructed event no age, since its timestamp is when it was read", () => {
     expect(feedAgeLabel({ seeded: true, at: NOW - 8 * 60_000 }, NOW)).toBeNull();
+  });
+});
+
+describe("league impact line", () => {
+  it("is shown for any change that reads as a non-zero tenth", () => {
+    expect(shouldShowLeagueImpact(6.3)).toBe(true);
+    expect(shouldShowLeagueImpact(0.1)).toBe(true);
+    expect(shouldShowLeagueImpact(-0.1)).toBe(true);
+  });
+
+  it("is left off when the change reads as 0.0", () => {
+    expect(shouldShowLeagueImpact(0)).toBe(false);
+    expect(shouldShowLeagueImpact(-0)).toBe(false);
+    expect(shouldShowLeagueImpact(0.04)).toBe(false);
+    expect(shouldShowLeagueImpact(-0.04)).toBe(false);
   });
 });

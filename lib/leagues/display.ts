@@ -52,6 +52,14 @@ export function playerValueLabel(player: LiveEntryPlayer): PlayerValueLabel {
 }
 
 /**
+ * A league-impact figure says something unless it reads as 0.0. An event that
+ * moves nothing in the league is left without a line rather than given one.
+ */
+export function shouldShowLeagueImpact(impact: number): boolean {
+  return Number(impact.toFixed(1)) !== 0;
+}
+
+/**
  * How long ago the feed saw an event land. Only meaningful for one watched as
  * it happened: a reconstructed row records when it was read, never when it
  * happened, so it goes without an age rather than with a wrong one.

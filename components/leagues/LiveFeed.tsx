@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { feedAgeLabel } from "@/lib/leagues/display";
+import { feedAgeLabel, shouldShowLeagueImpact } from "@/lib/leagues/display";
 import { FEED_FILTERS, feedTone, matchesFeedFilter, type FeedFilter } from "@/lib/leagues/feedEvents";
 import {
   ownersOf,
@@ -20,10 +20,14 @@ function signed(points: number): string {
   return points > 0 ? `+${points}` : `${points}`;
 }
 
-/** Says what the number compares against, or why there is no number. */
-function impactLabel(readout: ImpactReadout): string {
+/**
+ * Says what the number compares against, or why there is no number. A readout
+ * that reads as 0.0 has no line at all.
+ */
+function impactLabel(readout: ImpactReadout): string | null {
   if (readout.kind === "LOADING") return "LEAGUE IMPACT LOADING…";
   if (readout.kind === "UNAVAILABLE") return "LEAGUE IMPACT UNAVAILABLE";
+  if (!shouldShowLeagueImpact(readout.impact)) return null;
   const value = readout.impact > 0 ? `+${readout.impact.toFixed(1)}` : readout.impact.toFixed(1);
   const basis = readout.basis === "LEAGUE" ? "" : ` VS TOP ${readout.sampleSize}`;
   return `LEAGUE IMPACT ${value}${basis}`;
@@ -152,10 +156,14 @@ export default function LiveFeed({
             const role = mine?.isCaptain ? " · CAPTAIN" : mine?.isViceCaptain ? " · VICE" : "";
             const age = feedAgeLabel(event, now);
             const toneClass = feedTone(yourPoints);
+            // A reconstructed row has no minute to give, so its column stays blank
+            // and the title keeps its place.
+            const minute = event.minute ?? (event.seeded ? "" : "--'");
+            const impactLine = [impactLabel(impact), age].filter(Boolean).join(" · ");
             return (
               <li key={event.id} className={`feed-event ${toneClass}`} data-testid="feed-event" title={event.detail}>
                 <div className="feed-head">
-                  <span className="feed-minute">{event.minute ?? (event.seeded ? "GW" : "--'")}</span>
+                  <span className="feed-minute">{minute}</span>
                   <strong className="feed-title">{playerName(event.playerId)} {event.kind}</strong>
                   <span className="feed-delta">{signed(event.pointsDelta)}</span>
                 </div>
@@ -164,9 +172,7 @@ export default function LiveFeed({
                     ? <>YOU {userMultiplier > 0 ? signed(yourPoints) : "— · BENCH"}{role}</>
                     : owners > 0 ? `MY LEAGUE ×${owners}` : "LEAGUE WATCH"}
                 </div>
-                <div className="feed-sub">
-                  {impactLabel(impact)}{age ? ` · ${age}` : ""}
-                </div>
+                {impactLine && <div className="feed-sub">{impactLine}</div>}
                 {showsDetail(event) && event.detail && (
                   <div className="feed-sub feed-detail">{event.detail.toUpperCase()}</div>
                 )}

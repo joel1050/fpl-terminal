@@ -268,9 +268,9 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(goal.first()).toContainText("YOU +5");
     // The row reports what the goal was worth, not everything the player has scored.
     await expect(goal.first().locator(".feed-delta")).toHaveText("+5");
-    // FPL says a goal happened, never when, so a reconstructed row is marked as
-    // belonging to the Gameweek rather than given a minute it cannot support.
-    await expect(goal.first().locator(".feed-minute")).toHaveText("GW");
+    // FPL says a goal happened, never when, so a reconstructed row is left without
+    // a minute rather than given one it cannot support.
+    await expect(goal.first().locator(".feed-minute")).toHaveText("");
   });
 
   test("keeps appearance points out of the default view but not out of the feed", async ({ page }) => {
@@ -381,6 +381,8 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(page.getByRole("complementary", { name: "Live feed" })).toBeVisible();
 
     await tabs.getByRole("button", { name: "LEAGUE" }).click();
+    // On a phone My leagues sits behind the drop-down, so open it first.
+    await page.getByRole("button", { name: /choose league/i }).click();
     await expect(page.getByText("MY LEAGUES").first()).toBeVisible();
   });
 
@@ -421,5 +423,84 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
     await switcher.getByRole("link", { name: "PLANNER" }).click();
     await expect(page.getByPlaceholder(/search player, club/i)).toBeVisible();
+  });
+
+  test("puts the standings first on a phone, with the first row above the fold", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const firstRow = page.getByTestId("league-standings").locator("tbody tr").first();
+    await expect(firstRow).toBeVisible();
+    const box = await firstRow.boundingBox();
+    expect(box, "first standings row box").not.toBeNull();
+    expect(box!.y + box!.height, "first standings row bottom").toBeLessThan(844 - 56);
+    // The league list is behind the drop-down, not stacked above the standings.
+    await expect(page.getByRole("region", { name: "My leagues" })).toHaveCount(0);
+  });
+
+  test("opens My leagues from a drop-down in the phone header and closes on a pick", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const switcher = page.getByRole("button", { name: /choose league/i });
+    await expect(switcher).toContainText("UBC FPL");
+    await switcher.click();
+
+    const dialog = page.getByRole("dialog", { name: "Switch league" });
+    await expect(dialog).toBeVisible();
+    const leagues = dialog.getByRole("region", { name: "My leagues" });
+    await expect(leagues).toBeVisible();
+
+    await leagues.getByRole("button", { name: "Office League" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole("region", { name: "League standings" })).toContainText("Office League");
+    await expect(page.getByRole("button", { name: /choose league/i })).toContainText("Office League");
+  });
+
+  test("leaves one navigation on a phone: the bottom tab bar, with Leagues current", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const main = page.getByRole("navigation", { name: "Main" });
+    await expect(main.getByRole("link", { name: "Leagues" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("navigation", { name: "Workspace" })).toBeHidden();
+  });
+
+  test("leaves the league-impact line off a feed row whose impact is zero", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator(".leagues-mobile-tabs").getByRole("button", { name: "FEED" }).click();
+    const feed = page.getByRole("complementary", { name: "Live feed" });
+    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+
+    // Haaland is in nobody's squad, so each of his events is worth 0.0 to the league.
+    const haaland = feed.locator('[data-testid="feed-event"]').filter({ hasText: "Haaland" });
+    await expect(haaland.first()).toBeVisible();
+    await expect(haaland.filter({ hasText: "LEAGUE IMPACT" })).toHaveCount(0);
+    // Rows with a real impact keep the line.
+    await expect(feed.locator('[data-testid="feed-event"]').filter({ hasText: "LEAGUE IMPACT" }).first()).toBeVisible();
+  });
+
+  test("gives the phone header and tabs targets at least 40px tall", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const targets = page.getByRole("button", { name: /choose league/i }).or(page.locator(".leagues-mobile-tabs button"));
+    const count = await targets.count();
+    expect(count).toBe(5);
+    for (let index = 0; index < count; index += 1) {
+      const box = await targets.nth(index).boundingBox();
+      expect(box, `target ${index} box`).not.toBeNull();
+      expect(box!.height, `target ${index} height`).toBeGreaterThanOrEqual(40);
+    }
+  });
+
+  test("keeps My leagues inline on desktop, with no drop-down and no dialog", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await importTeam(page);
+
+    await expect(page.getByRole("region", { name: "My leagues" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.locator(".leagues-mobile-tabs")).toBeHidden();
   });
 });

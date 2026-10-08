@@ -1,19 +1,8 @@
 "use client";
 
-import { useSyncExternalStore, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Sheet } from "./Sheet";
-
-const PHONE_QUERY = "(max-width: 900px)";
-
-function subscribeToPhone(onChange: () => void) {
-  const query = window.matchMedia(PHONE_QUERY);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
-function isPhone() {
-  return window.matchMedia(PHONE_QUERY).matches;
-}
+import { usePhoneLayout } from "./usePhoneLayout";
 
 /**
  * The More menu. It is a bottom sheet on phones and a popover under the top bar
@@ -32,7 +21,7 @@ export function MoreSheet({ open, onClose, onRefresh, onExport, onImportClick, o
   settings?: ReactNode;
   onModeChooser?: () => void;
 }) {
-  const phone = useSyncExternalStore(subscribeToPhone, isPhone, () => true);
+  const phone = usePhoneLayout();
   // Every action closes the sheet first, except Reverse, which stays open to show that it is busy.
   const run = (action: () => void) => () => {
     onClose();

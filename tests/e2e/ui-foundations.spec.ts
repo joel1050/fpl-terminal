@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { interceptFplData } from "../fixtures/network";
+import { interceptFplData, interceptLeaguesData } from "../fixtures/network";
 
 const IMPORT_MODE = /mode b/i;
 
@@ -123,5 +123,39 @@ test.describe("UI foundations", () => {
     const box = await firstRow.boundingBox();
     expect(box, "first player row box").not.toBeNull();
     expect(box!.y, "first row top").toBeLessThan(844 - 56);
+  });
+});
+
+test.describe("UI foundations on Leagues", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      if (!window.sessionStorage.getItem("fpl-leagues-test")) {
+        window.localStorage.clear();
+        window.sessionStorage.setItem("fpl-leagues-test", "ready");
+      }
+    });
+    await interceptLeaguesData(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+  });
+
+  test("phone Leagues text never goes under 12px, on every tab and in the league drop-down", async ({ page }) => {
+    await page.goto("/leagues");
+    await expect(page.getByText("FPL TEAM REQUIRED")).toBeVisible();
+    expect(await textUnderFloor(page, 12), "import gate").toEqual([]);
+
+    await page.getByLabel(/fpl team id/i).fill("4827193");
+    await page.getByRole("button", { name: /^IMPORT$/i }).click();
+    await expect(page.getByTestId("league-standings")).toBeVisible();
+    expect(await textUnderFloor(page, 12), "standings").toEqual([]);
+
+    await page.getByRole("button", { name: /choose league/i }).click();
+    await expect(page.getByRole("region", { name: "My leagues" })).toBeVisible();
+    expect(await textUnderFloor(page, 12), "league drop-down").toEqual([]);
+    await page.keyboard.press("Escape");
+
+    for (const tab of ["TEAM", "MATCHES", "FEED"]) {
+      await page.locator(".leagues-mobile-tabs").getByRole("button", { name: tab }).click();
+      expect(await textUnderFloor(page, 12), `${tab} tab`).toEqual([]);
+    }
   });
 });

@@ -924,3 +924,283 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* Leagues on a phone (Task 12): one slim header with the league drop-down and
+   Refresh, the four views as a segmented control, and the shared tab bar. Text
+   is 12px or more. Desktop keeps its layout; its tokens are set in globals.css. */
+
+@media (max-width: 900px) {
+  .leagues-app .leagues-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+    height: auto;
+    min-height: 0;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: none;
+  }
+
+  .leagues-app .leagues-topbar .brand,
+  .leagues-app .leagues-topbar .workspace-switcher {
+    display: none;
+  }
+
+  .leagues-app .league-switch {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text);
+    font: 600 15px/1 var(--font-ui);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .leagues-app .league-switch > span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .leagues-app .league-switch > span:last-child {
+    flex: 0 0 auto;
+    color: var(--muted);
+  }
+
+  .leagues-app .topbar-actions {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  .leagues-app .topbar-actions .text-button {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    font: 600 13px/1 var(--font-ui);
+    letter-spacing: normal;
+  }
+
+  .leagues-app .topbar-stats {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 16px;
+    padding: 0;
+    border: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .leagues-app .topbar-stats::-webkit-scrollbar {
+    display: none;
+  }
+
+  .leagues-app .status-cell {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .leagues-app .status-cell span {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: normal;
+  }
+
+  .leagues-app .status-cell strong {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .leagues-app .leagues-mobile-tabs {
+    position: static;
+    top: auto;
+    z-index: auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+    margin: 10px 12px 0;
+    padding: 3px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--surface-2);
+  }
+
+  .leagues-app .leagues-mobile-tabs button {
+    min-height: 40px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font: 600 13px/1 var(--font-ui);
+    letter-spacing: normal;
+    text-transform: capitalize;
+    box-shadow: none;
+  }
+
+  .leagues-app .leagues-mobile-tabs button.active {
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
+    box-shadow: none;
+  }
+
+  .leagues-app .live-notice {
+    padding: 8px 12px;
+    color: var(--bad);
+    font-size: 12px;
+    letter-spacing: normal;
+  }
+
+  .leagues-app .leagues-column {
+    padding: 12px;
+  }
+
+  .leagues-app .league-table th {
+    padding: 8px 6px;
+    font-size: 12px;
+    letter-spacing: normal;
+  }
+
+  .leagues-app .league-table td {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+
+  .leagues-app .league-name-button {
+    max-width: 46vw;
+    font-size: 13px;
+  }
+
+  .leagues-app .live-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .leagues-app .live-metrics span {
+    font-size: 12px;
+    letter-spacing: normal;
+    white-space: normal;
+  }
+
+  .leagues-app .live-metrics strong {
+    font-size: 15px;
+  }
+
+  .leagues-app .live-role {
+    min-width: 18px;
+    height: 18px;
+    font-size: 12px;
+  }
+
+  .leagues-app .segmented button,
+  .leagues-app .feed-filters button {
+    min-height: 40px;
+    font-size: 12px;
+  }
+
+  .leagues-app .feed-minute,
+  .leagues-app .feed-title,
+  .leagues-app .feed-sub {
+    font-size: 12px;
+    letter-spacing: normal;
+  }
+
+  .leagues-app .feed-minute {
+    min-width: 36px;
+    color: var(--muted);
+  }
+
+  .leagues-app .feed-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .leagues-app .feed-sub {
+    margin-left: 44px;
+    color: var(--muted);
+  }
+
+  .leagues-app .feed-delta {
+    font-size: 15px;
+  }
+
+  .leagues-app .feed-new {
+    min-height: 40px;
+    font-size: 12px;
+    letter-spacing: normal;
+  }
+
+  /* The league list in the drop-down sheet scrolls rather than pushing the sheet off screen. */
+  .leagues-app .sheet .league-list-wrap {
+    max-height: 56dvh;
+  }
+}
+
+/* Leagues on desktop (Task 12): the same layout, with text at 11.5px or more.
+   These classes are shared with the Planner, so the override stays inside .leagues-app. */
+@media (min-width: 901px) {
+  .leagues-app :is(
+    .brand,
+    .brand-mark,
+    .workspace-switcher a,
+    .status-cell span,
+    .status-cell strong,
+    .text-button,
+    .section-kicker,
+    .panel-count,
+    .sort-button,
+    .data-badge,
+    .position-heading,
+    .lineup-roster-heading,
+    .dim-text,
+    .segmented button,
+    .slot-player,
+    .slot-sub,
+    .live-metrics strong,
+    .match-section li,
+    .match-section-empty,
+    .match-owned,
+    kbd
+  ) {
+    font-size: 11.5px;
+  }
+
+  .leagues-app .live-role {
+    min-width: 16px;
+    height: 16px;
+  }
+
+  .leagues-app .live-notice {
+    color: var(--bad);
+    font-size: 11.5px;
+  }
+
+  /* The larger type needs the standings' seven columns to sit closer, or the Δ column scrolls out of view. */
+  .leagues-app .league-table th,
+  .leagues-app .league-table td {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .leagues-app .league-table th {
+    letter-spacing: 0.02em;
+  }
+}
