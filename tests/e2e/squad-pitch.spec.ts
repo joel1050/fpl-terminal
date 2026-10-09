@@ -395,7 +395,7 @@ test.describe("squad pitch", () => {
     await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Gordon"]')).toHaveCount(1);
   });
 
-  test("refuses a drop that breaks the formation or benches the captain, and swaps the goalkeepers", async ({ page }) => {
+  test("refuses a drop that breaks the formation, passes a benched captain's badge on, and swaps the goalkeepers", async ({ page }) => {
     await importTeam(page);
     await page.setViewportSize({ width: 1280, height: 900 });
 
@@ -404,8 +404,10 @@ test.describe("squad pitch", () => {
     await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(1);
 
     await dragToken(page, "Solanke", "Haaland");
-    await expect(page.getByText(/choose a different captain or vice-captain/i)).toBeVisible();
-    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Haaland"]')).toHaveCount(1);
+    await expect(page.getByText(/solanke moved into the starting xi as captain/i)).toBeVisible();
+    await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Haaland"]')).toHaveCount(1);
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Solanke"]').getByTestId("token-role")).toHaveText("C");
+    await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Haaland"]').getByTestId("token-role")).toHaveCount(0);
 
     await dragToken(page, "Areola", "Raya");
     await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Areola"]')).toHaveCount(1);
@@ -418,7 +420,9 @@ test.describe("squad pitch", () => {
 
     await dragToken(page, "Faes", "Pau", false);
     await expect(token(page, "Pau")).toHaveAttribute("data-drop", "legal");
-    await expect(token(page, "Haaland")).toHaveAttribute("data-drop", "illegal");
+    // A benched captain passes the badge on, so Haaland is a legal target; a goalkeeper never is.
+    await expect(token(page, "Haaland")).toHaveAttribute("data-drop", "legal");
+    await expect(token(page, "Raya")).toHaveAttribute("data-drop", "illegal");
     await page.keyboard.press("Escape");
     await page.mouse.up();
     await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(1);

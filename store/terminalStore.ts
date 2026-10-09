@@ -1555,19 +1555,21 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const benchIds = [state.benchGoalkeeperId, ...state.benchOrder].filter((id): id is number => id !== undefined);
     const startingXI = deriveStartingXI(state.playerIds, state.benchGoalkeeperId, state.benchOrder);
     if (!startingXI.includes(starterId) || !benchIds.includes(benchId)) return false;
-    if (state.captainId === starterId || state.viceCaptainId === starterId) return false;
+    // A benched captain or vice-captain hands the badge to the player who comes on.
+    const captainId = state.captainId === starterId ? benchId : state.captainId;
+    const viceCaptainId = state.viceCaptainId === starterId ? benchId : state.viceCaptainId;
     const nextStartingXI = startingXI.map((id) => id === starterId ? benchId : id);
     const benchGoalkeeperId = state.benchGoalkeeperId === benchId ? starterId : state.benchGoalkeeperId;
     const benchOrder = state.benchOrder.map((id) => id === benchId ? starterId : id);
     const lineupApplied = state.lineupGameweek !== undefined && state.lineupProjectionFingerprint !== undefined;
-    if (lineupApplied && (state.captainId === undefined || state.viceCaptainId === undefined)) return false;
-    const validationCaptainId = state.captainId ?? nextStartingXI[0];
-    const validationViceCaptainId = state.viceCaptainId ?? nextStartingXI.find((id) => id !== validationCaptainId);
+    if (lineupApplied && (captainId === undefined || viceCaptainId === undefined)) return false;
+    const validationCaptainId = captainId ?? nextStartingXI[0];
+    const validationViceCaptainId = viceCaptainId ?? nextStartingXI.find((id) => id !== validationCaptainId);
     const nextState = { ...state, benchGoalkeeperId, benchOrder, captainId: validationCaptainId, viceCaptainId: validationViceCaptainId, playerIds: state.playerIds, byPosition: state.byPosition };
     const checked = validLineup(nextState, { gameweek: state.lineupGameweek ?? 1, lineupProjectionFingerprint: state.lineupProjectionFingerprint ?? "draft" , benchGoalkeeperId, benchOrder });
     const structuralErrors = checked.errors.filter((error) => !error.includes("gameweek") && !error.includes("fingerprint"));
     if (state.playerIds.length === 15 && (structuralErrors.length > 0 || nextStartingXI.length !== 11)) return false;
-    set(activePlanPatch(state, { benchGoalkeeperId, benchOrder }));
+    set(activePlanPatch(state, { benchGoalkeeperId, benchOrder, captainId, viceCaptainId }));
     return true;
   },
   reorderBench: (order) => {

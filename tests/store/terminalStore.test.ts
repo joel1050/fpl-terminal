@@ -53,12 +53,15 @@ describe("persisted weekly lineup state", () => {
     expect(store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "fp", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 1 })).toBe(false);
   });
 
-  it("allows a legal cross-position starter/bench swap but protects captaincy", () => {
+  it("allows a legal cross-position starter/bench swap and passes a benched captain's badge on", () => {
     const store = useTerminalStore.getState();
     expect(store.applyLineup({ gameweek: 1, lineupProjectionFingerprint: "fp", benchGoalkeeperId: 2, benchOrder: [7, 12, 15], captainId: 1, viceCaptainId: 3 })).toBe(true);
     expect(useTerminalStore.getState().swapStarterBench(4, 12)).toBe(true);
     expect(useTerminalStore.getState().benchOrder).toEqual([7, 4, 15]);
-    expect(useTerminalStore.getState().swapStarterBench(1, 2)).toBe(false);
+    expect(useTerminalStore.getState().swapStarterBench(1, 2)).toBe(true);
+    expect(useTerminalStore.getState()).toMatchObject({ benchGoalkeeperId: 1, captainId: 2, viceCaptainId: 3 });
+    expect(useTerminalStore.getState().swapStarterBench(3, 4)).toBe(true);
+    expect(useTerminalStore.getState()).toMatchObject({ benchOrder: [7, 3, 15], captainId: 2, viceCaptainId: 4 });
   });
 
   it("can swap an un-applied draft without inventing persisted captaincy", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BENCH_ORDER_REASON, CAPTAIN_BENCH_REASON, checkLineupMove, FORMATION_REASON, GOALKEEPER_REASON, type LineupShape } from "@/lib/squad/lineupMoves";
+import { BENCH_ORDER_REASON, checkLineupMove, FORMATION_REASON, GOALKEEPER_REASON, type LineupShape } from "@/lib/squad/lineupMoves";
 import type { Position } from "@/types";
 
 // 3-4-3: GK 1; DEF 2,3,4; MID 5,6,7,8; FWD 9,10,11. Bench: GK 12; DEF 13; MID 14; FWD 15.
@@ -47,9 +47,9 @@ describe("checkLineupMove", () => {
     expect(checkLineupMove(lineup, 14, 1, positionOf)).toEqual({ legal: false, reason: GOALKEEPER_REASON });
   });
 
-  it("keeps the captain and vice-captain in the XI", () => {
-    expect(checkLineupMove(lineup, 15, 9, positionOf)).toEqual({ legal: false, reason: CAPTAIN_BENCH_REASON });
-    expect(checkLineupMove(lineup, 15, 10, positionOf)).toEqual({ legal: false, reason: CAPTAIN_BENCH_REASON });
+  it("lets the captain and vice-captain go to the bench; the store passes the badge on", () => {
+    expect(checkLineupMove(lineup, 15, 9, positionOf)).toEqual({ legal: true, kind: "swap", starterId: 9, benchId: 15 });
+    expect(checkLineupMove(lineup, 15, 10, positionOf)).toEqual({ legal: true, kind: "swap", starterId: 10, benchId: 15 });
     expect(checkLineupMove(lineup, 15, 11, positionOf)).toMatchObject({ legal: true });
   });
 

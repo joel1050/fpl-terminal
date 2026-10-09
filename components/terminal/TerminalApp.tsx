@@ -9,7 +9,7 @@ import { exportState, importState, resetTerminalState } from "@/components/shell
 import type { NailedRating, Player, PlayerFixture, PlayerMatchPerformance, PlayerProfileData, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, TransferBaseline, WeeklyLineupPlan } from "@/types";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
 import { effectiveBudgetTenths, explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
-import { CAPTAIN_BENCH_REASON, checkLineupMove, FORMATION_REASON } from "@/lib/squad/lineupMoves";
+import { checkLineupMove, FORMATION_REASON } from "@/lib/squad/lineupMoves";
 import { pickWeeklyTeam, projectWeeklyLineupHorizons, scoreLineupWithChip, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import { ChipSelector, ChipStrategyPanel, usePlanningWeekFinance } from "@/components/terminal/ChipPanels";
 import { availabilityOf, type Availability } from "@/lib/availability/status";
@@ -999,18 +999,15 @@ export default function TerminalApp() {
 
   /** Swap a starter with a bench player through the store, with a notice. Shared by tap and drag. */
   const swapGW = (starterId: number, benchId: number) => {
-    if (currentGWPlan?.captainId === starterId || currentGWPlan?.viceCaptainId === starterId) {
-      setNotice(CAPTAIN_BENCH_REASON);
-      setGWSwapSelection({});
-      return;
-    }
+    // A benched captain or vice-captain passes the badge to the incoming player (the store does it).
+    const badge = currentGWPlan?.captainId === starterId ? " as captain" : currentGWPlan?.viceCaptainId === starterId ? " as vice-captain" : "";
     if (!store.swapStarterBench(starterId, benchId)) {
       setNotice(FORMATION_REASON);
       setGWSwapSelection({});
       return;
     }
     setGWSwapSelection({});
-    setNotice(`${playerById.get(benchId)?.displayName ?? "Player"} moved into the starting XI.`);
+    setNotice(`${playerById.get(benchId)?.displayName ?? "Player"} moved into the starting XI${badge}.`);
   };
 
   const moveGWBench = (id: number, direction: -1 | 1) => {

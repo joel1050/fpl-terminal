@@ -16,7 +16,6 @@ export type LineupMove =
   /** `reason` is null when the target is no target at all (same player, or two starters). */
   | { legal: false; reason: string | null };
 
-export const CAPTAIN_BENCH_REASON = "Choose a different captain or vice-captain before moving that starter to the bench.";
 export const FORMATION_REASON = "That swap would leave an invalid starting formation. Pick a compatible player.";
 export const GOALKEEPER_REASON = "A goalkeeper can only swap with a goalkeeper.";
 export const BENCH_ORDER_REASON = "Only the three outfield substitutes can change places on the bench.";
@@ -37,7 +36,8 @@ function legalXI(ids: readonly number[], positionOf: (id: number) => Position | 
 
 /**
  * Whether dropping `sourceId` on `targetId` is a legal lineup change, and if not, why.
- * A starter and a bench player swap places; two outfield substitutes swap bench order.
+ * A starter and a bench player swap places; a benched captain or vice-captain
+ * passes the badge to the player who comes on. Two outfield substitutes swap bench order.
  * The store checks the same rules again when the move is applied.
  */
 export function checkLineupMove(
@@ -71,7 +71,6 @@ export function checkLineupMove(
   const benchPosition = positionOf(benchId);
   if (!starterPosition || !benchPosition) return { legal: false, reason: null };
   if ((starterPosition === "GK") !== (benchPosition === "GK")) return { legal: false, reason: GOALKEEPER_REASON };
-  if (starterId === lineup.captainId || starterId === lineup.viceCaptainId) return { legal: false, reason: CAPTAIN_BENCH_REASON };
   const nextXI = lineup.starterIds.map((id) => id === starterId ? benchId : id);
   if (!legalXI(nextXI, positionOf)) return { legal: false, reason: FORMATION_REASON };
   return { legal: true, kind: "swap", starterId, benchId };
