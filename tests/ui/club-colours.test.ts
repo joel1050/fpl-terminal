@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import bootstrap from "@/data/snapshots/bootstrap.json";
+// data/snapshots is gitignored, so use the tracked team list: the same 20 clubs.
+import teamStrengths from "@/data/manual/team-strengths.json";
 import { UNKNOWN_CLUB_COLOUR, clubColour } from "@/lib/display/clubColours";
 
 describe("club colours", () => {
@@ -29,8 +30,8 @@ describe("club colours", () => {
     expect(clubColour(shortName)).toBe(colour);
   });
 
-  it("gives every club in the bootstrap snapshot its own colour", () => {
-    const shortNames = bootstrap.data.teams.map((team) => team.short_name);
+  it("gives every club this season its own colour", () => {
+    const shortNames = teamStrengths.teams.map((team) => team.shortName);
     expect(shortNames).toHaveLength(20);
     for (const shortName of shortNames) {
       expect(clubColour(shortName), shortName).not.toBe(UNKNOWN_CLUB_COLOUR);
