@@ -1,4 +1,5 @@
 import { chipLabel, normalizeChipName } from "@/lib/chips/seasonPolicy";
+import { fixtureLabel } from "@/lib/display/fixtureLabel";
 import type { LiveEntryPlayer, PlayerFixtureStatus } from "@/types/leagues";
 
 export type RoleMarker = "C" | "VC";
@@ -29,6 +30,27 @@ export function fixtureTag(
   if (fixture.state === "LIVE") return `${opponent}(${venue}) · ${Math.min(90, Math.floor(fixture.minutes ?? 0))}'`;
   const time = kickoffLabel(fixture.kickoffTime);
   return time ? `${opponent}(${venue}) · ${time}` : `${opponent}(${venue})`;
+}
+
+export interface FixtureChipParts {
+  /** Opponent short name: upper case at home, lower case away. */
+  opponent: string;
+  /** The minute, "FT", or the kickoff time. Empty when none is known. */
+  status: string;
+}
+
+/** The short form of {@link fixtureTag} for a token: "TUN" and "74'". */
+export function fixtureChip(
+  fixture: PlayerFixtureStatus,
+  shortNames: ReadonlyMap<number, string>,
+): FixtureChipParts {
+  const opponent = fixtureLabel({
+    opponentShortName: shortNames.get(fixture.opponentTeamId) ?? String(fixture.opponentTeamId),
+    isHome: fixture.isHome,
+  });
+  if (fixture.state === "FINISHED") return { opponent, status: "FT" };
+  if (fixture.state === "LIVE") return { opponent, status: `${Math.min(90, Math.floor(fixture.minutes ?? 0))}'` };
+  return { opponent, status: kickoffLabel(fixture.kickoffTime) };
 }
 
 export interface PlayerValueLabel {

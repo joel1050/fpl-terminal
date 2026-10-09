@@ -215,8 +215,9 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
     // Every card carries an opponent tag; live and double-header states are labelled.
     const sakaCard = page.locator('[data-player="Saka"]');
-    await expect(sakaCard.locator('[data-testid="live-opponent-tag"]').filter({ hasText: "TUN(H) · 74'" })).toHaveCount(1);
-    await expect(sakaCard.locator('[data-testid="live-opponent-tag"]').filter({ hasText: /^TWA\(A\)/ })).toHaveCount(1);
+    await expect(sakaCard.locator('[data-testid="live-opponent-tag"]').filter({ hasText: "TUN 74'" })).toHaveCount(1);
+    await expect(sakaCard.locator('[data-testid="live-opponent-tag"]').filter({ hasText: "TUN 74'" })).toHaveAttribute("title", "TUN(H) · 74'");
+    await expect(sakaCard.locator('[data-testid="live-opponent-tag"]').filter({ hasText: /^twa / })).toHaveCount(1);
     await expect(page.locator('[data-player="Mbeumo"]').locator('[data-testid="live-opponent-tag"]').filter({ hasText: "FT" })).toHaveCount(1);
 
     // Unplayed players show model xP; started or finished players show actual points.
@@ -279,6 +280,12 @@ test.describe("FPL Terminal Leagues workspace", () => {
     expect(rosterOverflow).toBeLessThanOrEqual(0);
     const tokenBox = await roster.locator(".pitch-token").first().boundingBox();
     expect(tokenBox?.width ?? 0).toBeGreaterThan(40);
+    // A single-fixture token stays compact: shirt, name, one chip and value line, price.
+    const single = await roster.locator('[data-player="Palmer"]').boundingBox();
+    expect(single?.height ?? 999).toBeLessThanOrEqual(100);
+    await expect(roster.locator('[data-player="Watkins"] .token-role')).toHaveText("VC");
+    const chipWraps = await roster.locator(".live-opponent").evaluateAll((chips) => chips.filter((chip) => chip.getClientRects().length && chip.getBoundingClientRect().height > 20).length);
+    expect(chipWraps).toBe(0);
   });
 
   test("keeps the Live Feed as the whole right rail without a status footer", async ({ page }) => {

@@ -1592,23 +1592,21 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
 .live-token:hover .token-name { background: var(--text); }
 .live-token .token-price { color: rgb(255 255 255 / 0.78); font: 12px/1.2 var(--font-num); }
 .bench-strip .live-token .token-price { color: var(--muted); }
-.live-fixtures { display: flex; flex-direction: column; align-items: center; gap: 2px; max-width: 100%; }
-.live-opponent { max-width: 100%; padding: 1px 4px; white-space: normal; border-radius: 4px; background: var(--surface-2); color: var(--muted); font: 12px/1.25 var(--font-num); overflow-wrap: anywhere; text-align: center; }
-.live-opponent.live { background: color-mix(in srgb, var(--good) 16%, var(--surface-2)); color: var(--good); }
-.live-opponent.blank { background: transparent; }
-.pitch .live-opponent.blank { color: rgb(255 255 255 / 0.78); }
-.live-value { padding: 1px 6px; border-radius: 4px; background: rgb(0 0 0 / 0.4); font: 600 13px/1.25 var(--font-num); }
-.live-value.projected { color: var(--text); }
-.live-value.actual { color: var(--accent); }
-.live-value small { color: var(--muted); font: 500 12px/1 var(--font-ui); }
-@media (min-width: 901px) {
-  .token-cell:has(.live-token) { flex-basis: 108px; }
-}
+.live-token .token-fixture { flex-wrap: wrap; justify-content: center; }
+.live-token .live-opponent { padding: 0 3px; border: 0; line-height: 16px; white-space: nowrap; }
+.live-token .live-opponent .chip-status { font-weight: 400; opacity: .8; }
+.live-token .live-opponent.live { background: color-mix(in srgb, var(--good) 16%, var(--surface-2)); color: var(--good); }
+.live-token .live-opponent.blank { background: transparent; }
+.pitch .live-token .live-opponent.blank { color: rgb(255 255 255 / 0.78); }
+.live-token .token-xp small { position: static; width: auto; height: auto; overflow: visible; clip: auto; color: var(--muted); font: 500 12px/1 var(--font-ui); }
+.live-token .token-xp.projected { color: rgb(255 255 255 / 0.72); }
+.bench-strip .live-token .token-xp.projected { color: var(--muted); }
+.live-token .token-xp.actual { color: var(--accent); }
 @media (max-width: 900px) {
   .leagues-app .bench-section { padding: 8px 4px 6px; }
-  .live-opponent { padding: 1px 2px; }
+  .live-token .live-opponent { padding: 0 2px; }
+  .token-cell:has(.live-token) { flex-basis: 86px; }
 }
-
 
 /* Match centre: one card per fixture. */
 .leagues-app .match-list { gap: 6px; }
