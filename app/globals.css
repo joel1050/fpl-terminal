@@ -546,18 +546,10 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
 
 /* Live roster: same centered language as the Planner Starting XI. */
 .leagues-squad-block { display: grid; gap: 5px; }
-.live-slot .slot-main { gap: 3px; }
-.slot-value.projected { color: var(--text); }
-.slot-value.actual { color: var(--accent); }
-.slot-value small { color: var(--muted); font-size: 11.5px; }
-.live-opponents { display: flex; flex-wrap: wrap; gap: 2px; }
 .live-opponent { padding: 2px 3px; border: 1px solid var(--line); color: var(--muted); font-size: 11.5px; line-height: 1.2; white-space: nowrap; }
 .live-opponent.state-live { border-color: color-mix(in srgb, var(--good) 55%, var(--line)); color: var(--good); }
 .live-opponent.state-finished { color: var(--muted); }
 .live-opponent.blank { border-style: dashed; color: var(--muted); }
-.live-role { display: inline-grid; place-items: center; min-width: 14px; height: 13px; margin-left: 4px; padding: 0 3px; font-size: 11.5px; font-weight: 700; line-height: 1; vertical-align: middle; }
-.live-role.captain { background: var(--accent); color: var(--bg); }
-.live-role.vice { border: 1px solid var(--text); color: var(--text); }
 
 /* Match centre */
 .match-list { display: grid; gap: 5px; min-height: 0; }
@@ -916,9 +908,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border); color: var(--muted); fo
   .standings-note,
   .standings-footnote,
   .live-metrics span,
-  .slot-value small,
   .live-opponent,
-  .live-role,
   .match-team,
   .match-score,
   .match-state,

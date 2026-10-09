@@ -1,11 +1,10 @@
-import type { CSSProperties } from "react";
 import { FixtureChip, RunStrip } from "@/components/terminal/fixtures/FixtureChips";
 import { availabilityOf } from "@/lib/availability/status";
-import { clubColour, shirtTextColour } from "@/lib/display/clubColours";
 import { points } from "@/lib/display/format";
 import { weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import type { Player, PlayerFixture } from "@/types";
 import type { ChipKind } from "@/types/chips";
+import { TokenShirt } from "./TokenShirt";
 
 /** The captain scores double; Triple Captain makes it treble. */
 export function captainMultiplier(captain: boolean, chip?: ChipKind | null): number {
@@ -47,7 +46,6 @@ export interface PitchTokenProps {
 export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, locked, chip, selected, swapTarget, showRun, onOpen, onToggleLock }: PitchTokenProps) {
   const availability = availabilityOf(player);
   const fixtures = squadFixturesForGameweek(player, gameweek);
-  const shirtColour = clubColour(player.teamShortName);
   const roleText = captain ? (chip === "3xc" ? "3×" : "C") : vice ? "V" : null;
   const benchCounting = chip === "bboost" && role === "bench";
   return (
@@ -63,12 +61,11 @@ export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, 
       aria-label={`${player.displayName}, ${player.teamShortName}`}
       onClick={(event) => onOpen(event.currentTarget)}
     >
-      <span className="token-shirt" style={{ "--shirt": shirtColour, color: shirtTextColour(shirtColour) } as CSSProperties} aria-hidden="true">
-        <span className="token-club">{player.teamShortName}</span>
+      <TokenShirt club={player.teamShortName}>
         {roleText && <span className={`token-role ${captain ? "captain" : "vice"}`} data-testid="token-role">{roleText}</span>}
         {availability !== "AVAILABLE" && <span className={`token-flag ${availability === "UNAVAILABLE" ? "bad" : "warn"}`} data-testid="token-flag" data-availability={availability}>!</span>}
         {locked && <svg className="token-lock lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d="M4 7V5a4 4 0 0 1 8 0v2" /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg>}
-      </span>
+      </TokenShirt>
       <span className="token-name">{player.displayName}</span>
       <span className="token-line">
         <span className="token-fixture" data-testid="token-fixture">

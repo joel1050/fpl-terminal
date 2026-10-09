@@ -222,6 +222,8 @@ components/
 │   │   ├── SquadKpis.tsx            # Projection, value, bank, transfers and rating strip
 │   │   ├── SquadPitch.tsx           # Starting XI by line on a pitch, with the bench strip
 │   │   ├── PitchToken.tsx           # One player on the pitch or bench: shirt, flags, fixture, xP
+│   │   ├── PitchLayout.tsx          # Generic pitch lines and bench strip, shared by Planner and Leagues
+│   │   ├── TokenShirt.tsx           # Club shirt with badge slots, shared by both token types
 │   │   ├── SquadTable.tsx           # Squad as one row per player, for the Table view
 │   │   └── PlayerActions.tsx        # Player action sheet: captaincy, bench order, lock, remove
 │   ├── rail/
@@ -244,6 +246,7 @@ components/
     ├── LiveGameweekPanel.tsx        # Gameweek summary, average score, and top score
     ├── MatchCentre.tsx              # Fixture tracker with match status and live BPS
     ├── LiveSquad.tsx                # Pitch view of any manager's live XI, bench, and autosubs
+    ├── LivePitchToken.tsx           # One live player on the pitch or bench: read-only shirt, price, fixtures, value
     ├── LiveFeed.tsx                 # Real-time event stream (goals, assists, cards, subs)
     ├── useLeaguesData.ts            # Polling hook for live standings, picks, and elements
     └── tableSort.tsx                # Table sorting primitives
@@ -279,6 +282,7 @@ lib/
 │   ├── diffLiveSnapshots.ts         # Compares live snapshots to produce human-readable explain blocks
 │   ├── feedEvents.ts                # Merges and deduplicates match feed events
 │   ├── leagueImpact.ts              # Effective ownership (EO) and net rank delta calculations
+│   ├── livePitch.ts                 # Live squad as pitch rows and bench slots (GK, B1-B3), with the formation
 │   └── leagueKey.ts & display.ts    # League storage keys, formatting, and display helpers
 ├── analysis/                        # Squad analytics and transfer engines
 │   ├── singleTransfers.ts           # Exact single transfer search with Pareto dominance

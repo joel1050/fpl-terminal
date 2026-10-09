@@ -1438,12 +1438,6 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
     font-size: 15px;
   }
 
-  .leagues-app .live-role {
-    min-width: 18px;
-    height: 18px;
-    font-size: 12px;
-  }
-
   .leagues-app .segmented button,
   .leagues-app .feed-filters button {
     min-height: 40px;
@@ -1590,29 +1584,31 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
 .leagues-app .live-metrics strong.green { color: var(--good); }
 .leagues-app .live-metrics strong.amber { color: var(--accent); }
 
-/* Live squad: the starters on the pitch, the bench on a card below. */
-.leagues-app .lineup-roster { display: grid; gap: 8px; }
-.leagues-app .starting-xi { gap: 8px; padding: 14px 8px 12px; border-radius: 12px; background: repeating-linear-gradient(180deg, var(--pitch) 0 52px, #173c26 52px 104px); }
-.leagues-app .starting-xi .position-heading { display: none; }
-.leagues-app .slot-grid.starting-slot-grid { gap: 6px; max-width: calc(var(--slot-count) * 128px); }
-.leagues-app .live-slot { min-height: 0; padding: 7px 6px 8px; border: 0; border-radius: 8px; background: rgba(11, 12, 14, .78); text-align: center; }
-.leagues-app .live-slot .slot-main { display: grid; justify-items: center; gap: 3px; min-width: 0; }
-.leagues-app .live-slot .slot-player { display: flex; align-items: center; justify-content: center; gap: 4px; max-width: 100%; overflow: hidden; color: var(--text); font: 600 13px/1.2 var(--font-ui); letter-spacing: 0; text-overflow: ellipsis; white-space: nowrap; }
-.leagues-app .live-slot .slot-sub { color: var(--muted); font: 12px/1.2 var(--font-ui); letter-spacing: 0; }
-.leagues-app .live-opponents { justify-content: center; gap: 3px; }
-.leagues-app .live-opponent { padding: 2px 5px; border: 0; border-radius: 4px; background: var(--surface-2); color: var(--muted); font: 12px/1.2 var(--font-num); }
-.leagues-app .live-opponent.live { background: color-mix(in srgb, var(--good) 16%, var(--surface-2)); color: var(--good); }
-.leagues-app .live-opponent.blank { background: transparent; color: var(--muted); }
-.leagues-app .slot-value { color: var(--text); font: 600 15px/1 var(--font-num); }
-.leagues-app .slot-value.projected { color: var(--muted); }
-.leagues-app .slot-value small { color: var(--muted); font: 500 12px/1 var(--font-ui); }
-.leagues-app .live-role { min-width: 18px; height: 16px; margin: 0; padding: 0 4px; border-radius: 4px; font: 700 12px/1 var(--font-ui); }
-.leagues-app .live-role.captain { background: var(--accent); color: #111; }
-.leagues-app .live-role.vice { border: 1px solid var(--muted); background: transparent; color: var(--text); }
-.leagues-app .bench-section { gap: 6px; padding: 8px; border: 0; border-radius: 12px; background: var(--surface); }
-.leagues-app .lineup-roster-heading { min-height: 18px; color: var(--muted); font: 500 12px/1.2 var(--font-ui); letter-spacing: 0; }
-.leagues-app .lineup-roster-heading > span:first-child { color: var(--muted); }
-.leagues-app .bench-section .live-slot { background: var(--surface-2); }
+/* Live squad: the Planner pitch and bench strip, read only. The pitch and token rules above and below are shared. */
+.leagues-app .lineup-roster { display: grid; gap: 6px; }
+.leagues-app .pitch-row { display: grid; min-width: 0; }
+.leagues-app .bench-section { --token-ring: var(--surface); display: block; padding: 10px 6px 8px; border: 0; border-radius: 12px; background: var(--surface); }
+.live-token { cursor: default; }
+.live-token:hover .token-name { background: var(--text); }
+.live-token .token-price { color: rgb(255 255 255 / 0.78); font: 12px/1.2 var(--font-num); }
+.bench-strip .live-token .token-price { color: var(--muted); }
+.live-fixtures { display: flex; flex-direction: column; align-items: center; gap: 2px; max-width: 100%; }
+.live-opponent { max-width: 100%; padding: 1px 4px; white-space: normal; border-radius: 4px; background: var(--surface-2); color: var(--muted); font: 12px/1.25 var(--font-num); overflow-wrap: anywhere; text-align: center; }
+.live-opponent.live { background: color-mix(in srgb, var(--good) 16%, var(--surface-2)); color: var(--good); }
+.live-opponent.blank { background: transparent; }
+.pitch .live-opponent.blank { color: rgb(255 255 255 / 0.78); }
+.live-value { padding: 1px 6px; border-radius: 4px; background: rgb(0 0 0 / 0.4); font: 600 13px/1.25 var(--font-num); }
+.live-value.projected { color: var(--text); }
+.live-value.actual { color: var(--accent); }
+.live-value small { color: var(--muted); font: 500 12px/1 var(--font-ui); }
+@media (min-width: 901px) {
+  .token-cell:has(.live-token) { flex-basis: 108px; }
+}
+@media (max-width: 900px) {
+  .leagues-app .bench-section { padding: 8px 4px 6px; }
+  .live-opponent { padding: 1px 2px; }
+}
+
 
 /* Match centre: one card per fixture. */
 .leagues-app .match-list { gap: 6px; }
@@ -1685,49 +1681,3 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
   .leagues-app .league-table td { padding-left: 5px; padding-right: 5px; }
 }
 
-/* Leagues on a phone, after the shared rules above so these win. */
-@media (max-width: 900px) {
-  /* Five across on a phone: name, fixture and points; the price and club go. */
-  .leagues-app .slot-grid.starting-slot-grid,
-  .leagues-app .slot-grid.bench-slot-grid {
-    gap: 4px;
-  }
-
-  .leagues-app .slot-grid.bench-slot-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .leagues-app .live-slot {
-    min-width: 0;
-    overflow: hidden;
-    padding: 6px 3px 7px;
-  }
-
-  .leagues-app .live-slot .slot-main {
-    grid-template-columns: minmax(0, 1fr);
-    width: 100%;
-  }
-
-  .leagues-app .live-slot .slot-sub {
-    display: none;
-  }
-
-  .leagues-app .live-slot .slot-player {
-    display: block;
-    font-size: 12px;
-  }
-
-  .leagues-app .live-slot .live-role {
-    margin-left: 3px;
-  }
-
-  .leagues-app .live-opponents {
-    max-width: 100%;
-  }
-
-  .leagues-app .live-opponent {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}

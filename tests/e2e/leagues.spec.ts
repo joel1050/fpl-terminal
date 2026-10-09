@@ -195,22 +195,23 @@ test.describe("FPL Terminal Leagues workspace", () => {
   test("renders a centered roster with opponent tags, xP versus P, and real captaincy markers only", async ({ page }) => {
     await importTeam(page);
 
-    // Position groups stay centred like the Planner Starting XI (GK 1, DEF 4, MID 4, FWD 2).
-    const centering = await page.getByTestId("live-roster").evaluate((roster) => {
+    // The live squad is drawn as the Planner pitch: one line per position (GK 1, DEF 4, MID 4, FWD 2), centred.
+    const pitch = await page.getByTestId("live-roster").evaluate((roster) => {
       const rosterRect = roster.getBoundingClientRect();
-      return [...roster.querySelectorAll<HTMLElement>(".starting-slot-grid")].map((grid) => {
-        const rect = grid.getBoundingClientRect();
+      return [...roster.querySelectorAll<HTMLElement>(".pitch .pitch-tokens")].map((line) => {
+        const rect = line.getBoundingClientRect();
         return {
-          columns: getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length,
+          tokens: line.querySelectorAll(".pitch-token").length,
           leftGap: Math.round(rect.left - rosterRect.left),
           rightGap: Math.round(rosterRect.right - rect.right),
         };
       });
     });
-    expect(centering.map((group) => group.columns)).toEqual([1, 4, 4, 2]);
-    for (const group of centering) {
-      expect(Math.abs(group.leftGap - group.rightGap), "position groups must be horizontally centred").toBeLessThan(24);
+    expect(pitch.map((line) => line.tokens)).toEqual([1, 4, 4, 2]);
+    for (const line of pitch) {
+      expect(Math.abs(line.leftGap - line.rightGap), "lines must be horizontally centred").toBeLessThan(24);
     }
+    await expect(page.getByRole("region", { name: "Live bench" }).locator(".pitch-token")).toHaveCount(4);
 
     // Every card carries an opponent tag; live and double-header states are labelled.
     const sakaCard = page.locator('[data-player="Saka"]');
@@ -224,13 +225,60 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(page.locator('[data-player="Mbeumo"] [data-testid="live-player-value"] small')).toHaveText("P");
 
     // Only the two real captaincy holders carry markers; there are no role buttons.
-    await expect(page.getByTestId("live-roster").locator(".live-role.captain")).toHaveCount(1);
-    await expect(page.locator('[data-player="Saka"] .live-role.captain')).toHaveText("C");
-    await expect(page.getByTestId("live-roster").locator(".live-role.vice")).toHaveCount(1);
-    await expect(page.locator('[data-player="Watkins"] .live-role.vice')).toHaveText("VC");
+    await expect(page.getByTestId("live-roster").locator(".token-role.captain")).toHaveCount(1);
+    await expect(page.locator('[data-player="Saka"] .token-role.captain')).toHaveText("C");
+    await expect(page.getByTestId("live-roster").locator(".token-role.vice")).toHaveCount(1);
+    await expect(page.locator('[data-player="Watkins"] .token-role.vice')).toHaveText("VC");
     await expect(page.getByTestId("live-roster").getByRole("button")).toHaveCount(0);
     await expect(page.getByTestId("live-roster").locator("table")).toHaveCount(0);
     await expect(page.getByTestId("live-roster")).not.toContainText("BGK");
+  });
+
+  test("draws the live squad as a read-only pitch with price, fixtures, value and bench labels on every token", async ({ page }) => {
+    await importTeam(page);
+    const roster = page.getByTestId("live-roster");
+    await expect(roster.locator(".pitch .pitch-row")).toHaveCount(4);
+    await expect(roster.locator(".bench-strip .pitch-token")).toHaveCount(4);
+    await expect(roster.locator(".live-slot, .squad-slot")).toHaveCount(0);
+    await expect(roster.getByRole("button")).toHaveCount(0);
+    await expect(roster.locator(".token-lock-button")).toHaveCount(0);
+    await expect(roster.locator(".pitch-token").first()).toHaveCSS("cursor", "default");
+
+    // Bench strip: goalkeeper first, then B1..B3, each dimmed.
+    const labels = await roster.locator('.bench-strip [data-testid="token-bench"]').allTextContents();
+    expect(labels).toEqual(["GK", "B1", "B2", "B3"]);
+    await expect(roster.locator(".bench-strip .pitch-token.benched")).toHaveCount(4);
+    await expect(roster.locator(".pitch .token-bench")).toHaveCount(0);
+
+    // Every token carries a price and a fixture line; a started player shows points, an unstarted one xP.
+    const tokens = roster.locator('[data-testid="live-player-card"]');
+    const count = await tokens.count();
+    expect(count).toBe(15);
+    for (let index = 0; index < count; index += 1) {
+      const token = tokens.nth(index);
+      await expect(token.locator(".token-price")).toHaveText(/^£\d+\.\d$/);
+      await expect(token.locator(".live-opponent").first()).toBeVisible();
+      await expect(token.locator('[data-testid="live-player-value"]')).toBeVisible();
+    }
+    await expect(page.locator('[data-player="Saka"] [data-testid="live-player-value"]')).toHaveClass(/actual/);
+    await expect(page.locator('[data-player="Rogers"] [data-testid="live-player-value"]')).toHaveClass(/projected/);
+    await expect(page.locator('[data-player="Saka"] .token-role')).toHaveText("C");
+  });
+
+  test("fits the live pitch on a phone without sideways scrolling", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator(".leagues-mobile-tabs").getByRole("button", { name: "TEAM" }).click();
+    const roster = page.getByTestId("live-roster");
+    await expect(roster).toBeVisible();
+    await expect(roster.locator(".pitch")).toBeVisible();
+    await expect(roster.locator(".bench-strip .pitch-token")).toHaveCount(4);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    const rosterOverflow = await roster.evaluate((node) => node.scrollWidth - node.clientWidth);
+    expect(rosterOverflow).toBeLessThanOrEqual(0);
+    const tokenBox = await roster.locator(".pitch-token").first().boundingBox();
+    expect(tokenBox?.width ?? 0).toBeGreaterThan(40);
   });
 
   test("keeps the Live Feed as the whole right rail without a status footer", async ({ page }) => {
