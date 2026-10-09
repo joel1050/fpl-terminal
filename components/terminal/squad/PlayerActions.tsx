@@ -46,7 +46,7 @@ export function PlayerActions({ player, starter, benchLabel, benchIndex, captain
     <Sheet open onClose={onClose} title={name} variant={variant} anchor={anchor} placement="side">
       <p className="action-meta">
         {player.teamShortName} · {player.position} · {money(sellingPriceTenths ?? player.priceTenths)}m · {points(pitchXp(player, gameweek, captain, chip))} xP
-        {starter ? "" : ` · ${benchLabel ?? "Bench"}`}
+        {starter ? "" : ` · ${benchLabel && benchLabel !== player.position ? benchLabel : "Bench"}`}
         {captain ? " · Captain" : vice ? " · Vice-captain" : ""}
       </p>
       <div className="action-grid">

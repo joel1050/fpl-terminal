@@ -36,6 +36,7 @@ import { PitchToken, captainMultiplier, pitchXp } from "@/components/terminal/sq
 import { PlayerActions } from "@/components/terminal/squad/PlayerActions";
 import { SquadKpis } from "@/components/terminal/squad/SquadKpis";
 import { SquadPitch } from "@/components/terminal/squad/SquadPitch";
+import { stableLineOrder } from "@/lib/squad/lineOrder";
 import { SquadTable } from "@/components/terminal/squad/SquadTable";
 import { AlertsSection } from "@/components/terminal/rail/AlertsSection";
 import { CaptainSection } from "@/components/terminal/rail/CaptainSection";
@@ -712,6 +713,23 @@ export default function TerminalApp() {
     const plan = scoreLineupWithChip(selected, planningGameweek, store.riskMode, store.chip, saved);
     return plan.starterIds.length === 11 ? plan : null;
   }, [selected, planningGameweek, store.riskMode, store.chip, lineupApplied, store.benchGoalkeeperId, store.benchOrder, store.captainId, store.playerIds, store.viceCaptainId, weeklyEnginePlan]);
+  // Each pitch line keeps the order the user last saw, so a swap moves only the players involved.
+  const [lineOrders, setLineOrders] = useState<Partial<Record<Position, number[]>>>({});
+  const stableLines = useMemo(() => {
+    const lines: Partial<Record<Position, number[]>> = {};
+    if (!currentGWPlan) return lines;
+    for (const position of POSITIONS) {
+      const ids = currentGWPlan.starterIds.filter((id) => playerById.get(id)?.position === position);
+      lines[position] = stableLineOrder(lineOrders[position] ?? [], ids);
+    }
+    return lines;
+  }, [currentGWPlan, lineOrders, playerById]);
+  const linesChanged = POSITIONS.some((position) => {
+    const kept = lineOrders[position] ?? [];
+    const now = stableLines[position] ?? [];
+    return kept.length !== now.length || kept.some((id, index) => id !== now[index]);
+  });
+  if (linesChanged) setLineOrders(stableLines);
   const lineupStale = lineupApplied && (store.lineupGameweek !== weeklyEnginePlan.gameweek || store.lineupProjectionFingerprint !== weeklyEnginePlan.projectionFingerprint);
   const chipNetXp = useMemo(() => {
     if (!currentGWPlan) return undefined;
@@ -1292,7 +1310,7 @@ export default function TerminalApp() {
   const swapHint = pendingSwapPlayer && currentGWPlan ? `Tap a ${pendingStarterId !== undefined ? "bench player" : "starter"} to swap with ${pendingSwapPlayer.displayName}` : undefined;
   const pitchRows = POSITIONS.map((position) => {
     const players = currentGWPlan
-      ? currentGWPlan.starterIds.map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => player?.position === position)
+      ? (stableLines[position] ?? []).map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => player?.position === position)
       : store.byPosition[position].slice(0, DRAFT_XI_COUNTS[position]).map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => Boolean(player));
     return { position, players, slotCount: currentGWPlan ? players.length : DRAFT_XI_COUNTS[position] };
   });

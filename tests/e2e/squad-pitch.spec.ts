@@ -329,6 +329,39 @@ test.describe("squad pitch", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
+  /** Player names per pitch line, from the goalkeeper line up to the forwards. */
+  const lineNames = (page: Page) => startingXi(page).locator(".pitch-row").evaluateAll((rows) =>
+    rows.map((row) => Array.from(row.querySelectorAll('[data-testid="squad-token"]')).map((el) => el.getAttribute("data-player"))));
+
+  test("a drag swap puts the incoming player in the outgoing player's place and leaves the other lines alone", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    const before = await lineNames(page);
+    const defIndex = before.findIndex((line) => line.includes("Pau"));
+    const outgoing = before[defIndex][Math.floor(before[defIndex].length / 2)]!;
+    await dragToken(page, "Faes", outgoing);
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Faes"]')).toHaveCount(1);
+
+    const after = await lineNames(page);
+    const expected = before.map((line) => line.map((name) => (name === outgoing ? "Faes" : name)));
+    expect(after).toEqual(expected);
+  });
+
+  test("a tap swap keeps the other players in place too", async ({ page }) => {
+    await importTeam(page);
+    const before = await lineNames(page);
+
+    const starter = await openActions(page, "Pau");
+    await starter.getByRole("button", { name: "Select Pau to move to bench" }).click();
+    const bench = await openActions(page, "Faes");
+    await bench.getByRole("button", { name: "Select Faes to move into the starting XI" }).click();
+    await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Faes"]')).toHaveCount(1);
+
+    const after = await lineNames(page);
+    expect(after).toEqual(before.map((line) => line.map((name) => (name === "Pau" ? "Faes" : name))));
+  });
+
   test("drags a starter onto the bench to swap, and a press without movement still opens the sheet", async ({ page }) => {
     await importTeam(page);
     await page.setViewportSize({ width: 1280, height: 900 });
