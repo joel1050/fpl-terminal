@@ -8,7 +8,7 @@ Source files are referenced as `path:line`.
 
 ## 1. Units and conventions
 
-- **Money** is stored as integer tenths of a pound: `105` means £10.5m. Convert only for display (`priceTenths / 10`).
+- **Money** is stored as integer tenths of a million pounds: `105` means £10.5m. Convert only for display (`priceTenths / 10`).
 - **Minutes** are always on a 0–90 scale for a single fixture.
 - **Probabilities** are on a 0–1 scale.
 - **Rates** (xG, xA, bonus, saves, defensive contributions) are always **per 90 minutes**.
@@ -46,15 +46,36 @@ A fixture's own-team and opponent short names are matched to ClubElo's three-let
 For a team with Elo `E_own` and opponent Elo `E_opp`, the normalized FDR is venue-agnostic by design - venue lives in the attack multiplier (`1.102 / 0.898`) and the clean-sheet path (§7), so FDR rates only the Elo gap:
 
 ```
-difficulty       = clamp(round(3 + (E_opp - E_own) / 150), 1, 5)
-exactDifficulty  = clamp(3 + (E_opp - E_own) / 150, 1, 5)
+difficulty       = clamp(round(3 + (E_opp - E_own) / 300), 1, 5)
+exactDifficulty  = clamp(3 + (E_opp - E_own) / 300, 1, 5)
 ```
 
-Both ratings use 150 Elo per step. The displayed difficulty rounds to an integer, while the continuous projection input preserves the fractional value.
+Both ratings use 300 Elo per step. The displayed difficulty rounds to an integer, while the continuous projection input preserves the fractional value. The Tier C walk-forward experiment selected 300 on 2023/24 and reduced held-out 2024/25–2025/26 team-xG multiplier RMSE by 0.00307 (95% gameweek-cluster interval −0.00514 to −0.00107) against 150. Historical Elo was a result-derived proxy rather than archived ClubElo, so this supports the divisor on that proxy. See `scripts/backtest/results/tier-c-elo.md`.
 
 Missing Elo values use `difficulty = 3`. The manual `npm run data:elo` refresh parses exact decimal rows embedded in ClubElo's `vegaJson`, merges the server-rendered full England ranking so clubs outside the chart's top 25 remain available, and writes the validated snapshot atomically. Where two exact rows share a code, the merge keeps the ranking's own rounded Elo rather than attach one club's rating to another's row.
 
-The snapshot is a static import, so it cannot change inside one process and stays out of the projection cache key. Its age can, so `enrichBootstrapWithProjections` re-reads it on every call and reports `clubElo` alongside `lineups`: `snapshotDate` is the day ClubElo rated the clubs, `fetchedAt` the day the file was downloaded, `ageSeconds` how long ago that was. Elo feeds every fixture difficulty, so a snapshot left alone drifts.
+The snapshot is a static import, so it cannot change inside one process and stays out of the projection cache key. Its age can, so `enrichBootstrapWithProjections` recalculates its age on every call and reports `clubElo` alongside `lineups`: `snapshotDate` is the day ClubElo rated the clubs, `fetchedAt` the day the file was downloaded, `ageSeconds` how long ago that was. Elo feeds every fixture difficulty, so a snapshot left alone drifts.
+
+### 2.2.1 Historical ClubElo for backtests (evidence)
+
+Public club pages embed dated `Date`/`Elo` rows in their `vegaJson` chart data.
+`scripts/backtest/clubelo-history.ts` fetches and validates these rows; it does
+not use the current ranking's Elo values to fill past ratings. The dated CSV
+API was inaccessible during this extraction, but the public chart data covered
+all 25 clubs and 1,140 fixtures in 2023/24–2025/26. The archive records each
+club's source URL identity, retrieval time, and raw dated rating values.
+
+For a fixture on date `d`, use the latest point with `point.date < d`.
+Same-day points are excluded because the chart records post-match ratings.
+A missing earlier value fails the lookup; future values and synthetic ratings
+are not substitutes. Rating age is recorded, since a summer break can leave
+the last published value months old. In the committed fixture panel, the
+95th-percentile lag is 15 days and the maximum is 107 days. Historical chart values retrieved today
+are evidence for retrospective tests, not copies of the entire FPL input state
+at an old deadline.
+
+Production still reads the committed current ClubElo snapshot. Fetching the
+historical archive does not refresh that snapshot or change live projections.
 
 ### 2.3 Historical stats (evidence)
 
@@ -178,7 +199,7 @@ cameoRate = clamp(max(0, appearances - starts) / sample, 0, 1 - startRate)
 
 `starts` comes from the recorded `starts` count when present, otherwise from the number of matches with `minutes >= 60`. Start and cameo minute averages come from the top-`starts` and remaining appearance rows, respectively.
 
-This is the **seed only**. It is then updated by this season's own team sheets (§4.1.1), and discarded once the current-season role reaches the override threshold.
+This is the **seed only**. This season's completed match observations update the start estimate through the EWMA (§4.1.1); it remains in use after 240 observed minutes.
 
 ### 4.1.1 Current-season update
 
@@ -227,12 +248,14 @@ cameo      = historicalCameo * (1 - seedWeight) + fallbackCameoRate * seedWeight
 
 The `0.25` fallback term applies only while the player has no current-season observations (`observations.length === 0`). It existed to temper an estimate whose sole evidence was last season; once this season's own matches are in the estimate that term only dilutes them, since `fallbackStartRate` is clamped to 0.15–0.80 and would drag a measured 0.99 down to 0.94 and push a measured 0.02 up to 0.05.
 
-Once eligible current-season observations contain at least 240 total minutes,
-the previous-season role is replaced rather than blended: start and cameo
-probabilities become their current-season frequencies, and expected start
-duration becomes the current-season average across starts. Below 240 minutes,
-the historical EWMA remains in place so one or two matches cannot redefine a
-player's role.
+Start probability always uses the historical-seeded EWMA. Removing the old
+240-minute start-frequency override reduced held-out start Brier by 0.01542
+(95% gameweek-cluster interval 0.01318–0.01748) over 56,569 player-gameweeks;
+see `scripts/backtest/results/tier-c-role.md`. Once eligible observations
+contain at least 240 total minutes, cameo probability still uses the
+current-season frequency and expected start duration uses the current-season
+average across starts. Below that threshold, those two calculations retain
+their historical blend; the experiment did not test changing them.
 
 If the player's team is covered by RotoWire for the target fixture/gameweek,
 the RotoWire signal dominates:
@@ -499,8 +522,8 @@ fallback remains `3`, so an unmapped club keeps `base = 1.00`. The old
 walk-forward evidence in `scripts/backtest/fdr.ts` measured FPL's supplied FDR,
 so it does not validate this replacement. ClubElo FDR and the strength ratio
 both describe the matchup and are still multiplied; that weighting is an
-explicit model assumption until the ClubElo input is available across the
-historical backtest seasons.
+explicit model assumption. Real historical ClubElo is now accessible (§2.2.1),
+but the earlier FDR studies retain their original proxy or FPL inputs.
 
 ### 7.2 Strength-based adjustment
 
@@ -566,14 +589,34 @@ level_i = log(attack_i) + log(defence_i)
 skew_i  = log(attack_i) - log(defence_i)
 ```
 
-The level is discarded and rebuilt from ClubElo; the skew is kept, shrunk toward neutral:
+The calculation receives an explicit `Map<teamId, elo>` rather than resolving
+club names or reading a snapshot itself. Normalization supplies ClubElo ratings
+in production; backtests can supply dated ratings through the same interface.
+Missing or non-finite ratings leave that club out of the rated path. Production
+retains `ELO_LEVEL_SLOPE = 0.0034`; a backtest can pass another slope explicitly.
+
+The level starts from Elo and moves toward the in-season fitted level as each
+team plays matches. The fitted levels are centred and stretched to the Elo
+levels' spread; the attacking/defensive skew is shrunk toward neutral:
 
 ```
-level'_i = ELO_LEVEL_SLOPE * (elo_i - meanElo)          ELO_LEVEL_SLOPE = 0.0034
-skew'_i  = CLEAN_SHEET_SKEW_WEIGHT * skew_i             CLEAN_SHEET_SKEW_WEIGHT = 0.6
-attack'_i  = exp((level'_i + skew'_i) / 2)
-defence'_i = exp((level'_i - skew'_i) / 2)
+eloLevel_i   = ELO_LEVEL_SLOPE * (elo_i - meanElo)
+fitLevel_i   = log(attack_i) + log(defence_i)
+stretch      = sd(eloLevel) / sd(fitLevel)  // 0 when sd(fitLevel) <= 1e-9
+fitWeight_i  = matchesPlayed_i / (matchesPlayed_i + 12)
+level'_i     = (1 - fitWeight_i) * eloLevel_i
+               + fitWeight_i * (fitLevel_i - meanFitLevel) * stretch
+skew'_i      = 0.6 * (log(attack_i) - log(defence_i))
+attack'_i    = exp((level'_i + skew'_i) / 2)
+defence'_i   = exp((level'_i - skew'_i) / 2)
 ```
+
+The means and standard deviations use the rated teams in this call. With no
+matches-played map, every fit weight is zero. `CLEAN_SHEET_LEVEL_PRIOR_MATCHES`
+is 12, so 12 played matches give Elo and the fitted level equal weight. The
+historical proxy-Elo test in `scripts/backtest/cs-level-source.ts` supported
+this handover; that evidence does not become an actual-ClubElo comparison
+merely because historical ClubElo data is now available.
 
 **Why the level comes from Elo.** Elo measures a team's overall level with years of memory rather than a few gameweeks of xG, and it rates promoted clubs on the same scale as everyone else - Coventry, Hull and Ipswich have no top-flight goal history at all. It cannot distinguish an attacking side from a defensive one at the same rating, which is exactly what the xG fit is good at, so the lean is kept from §3.
 
@@ -607,13 +650,13 @@ Against the gameweek-4 2026/27 bookmaker clean-sheet market, with no parameter f
 
 Rescaling the app's own level matches ClubElo without using it. ClubElo adds something as a complement - the blend is the best arm - but it is not what carries the result.
 
-**Scope limits, and they are severe.**
+**Scope of the earlier evidence**
 
-- The walk-forward arm in `scripts/backtest/cleansheets.ts` could not resolve a gain against realized clean sheets, and neither could `team-level.ts`: taking the level from ClubElo scores Brier 0.18287 against 0.18237 for the strengths' own level, both inside a corpus that resolves nothing below +/-0.0025. **No outcome test has yet found a gain from the Elo term.**
-- Those arms read `elo-history.ts`'s synthetic ratings, not ClubElo's. ClubElo's history API returns 502 and dated pages redirect, so no past values are obtainable and the shipped input cannot be tested on a past season at all.
+- The walk-forward arm in `scripts/backtest/cleansheets.ts` could not resolve a gain against realized clean sheets, and neither could `team-level.ts`: taking the level from ClubElo scores Brier 0.18287 against 0.18237 for the strengths' own level, both inside a corpus that resolves nothing below +/-0.0025. These earlier tests did not resolve an incremental gain from the Elo term.
+- Those arms read `elo-history.ts`'s synthetic ratings, not ClubElo's. Real dated ClubElo values are now accessible from the embedded charts on public club pages (see §2.2.1). The earlier results still measure their original proxy input; they have not been rerun against the new archive.
 - The gameweek-4 market table is 20 values, and matching it is not evidence about outcomes. Twice now a change that improved market agreement has been worse against realized results - the grid extrapolation arm in the backtest README, and the level rescale in §3.4. The market's clean-sheet odds look like a wide, ratings-derived surface, so a ratings-driven model agrees with them partly by sharing their construction.
 
-What is actually carrying this section is the negative binomial replacing the table (Brier 0.1824 against the table's 0.1847, unresolved). The ClubElo level is kept on the market evidence and the promoted-club coverage, not on an outcome test. Revisit it once a season of live predictions has accumulated against real ratings.
+The earlier negative-binomial versus table comparison was unresolved (Brier 0.1824 versus 0.1847). The later Tier C held-out distribution test also supports keeping the current mix: switching clean sheets to Poisson raised pooled whole-xP RMSE by 0.00153 [95% gameweek-cluster interval 0.00058, 0.00247], while using negative binomial for both clean sheets and conceded deductions did not resolve an xP gain and worsened conceded-count likelihood. Those tests used proxy Elo and observed player minutes. See `scripts/backtest/results/tier-c-conceded.md`; the live ClubElo source and both distribution choices remain unchanged.
 
 ### 7.4.1 Clean-sheet probability table (fallback)
 
@@ -762,15 +805,17 @@ defensiveContribution += weight * 2 * P(count >= threshold)
 ### 8.8 Bonus
 
 ```
-bonus += weight * bonusRate * minutesShare * adjustment.attackMultiplier
+bonusMultiplier = position in {GK, DEF} ? adjustment.attackMultiplier : 1
+bonus += weight * bonusRate * minutesShare * bonusMultiplier
 ```
 
-Bonus follows the player's personal regressed rate, minutes played, and the
-attacking fixture multiplier. The 2026-09-09 remeasurement keeps this shipped
-fixture-scaled path overall, with a position caveat: a flat bonus is better for
-MID/FWD in 2024/25 and 2025/26, while fixture scaling is supported for GK/DEF
-in 2022/23 and 2025/26. See `scripts/backtest/README.md` for the paired
-season results; no production constant changed.
+Bonus uses the player's regressed rate and expected minutes. GK/DEF retain
+the attack multiplier; MID/FWD use a flat bonus rate. The Tier C comparison
+reduced MID/FWD whole-xP RMSE by 0.0051 (95% gameweek-cluster interval
+−0.0081 to −0.0022) over 11,947 evaluated player-fixtures in 2024/25–2025/26.
+Bonus-only RMSE remains unresolved, so this supports the total-points change
+rather than a claim of better bonus forecasts. See
+`scripts/backtest/results/tier-c-bonus.md`.
 
 ### 8.9 Cards
 
@@ -1162,10 +1207,15 @@ Scoring constants (`lib/projections/projectPlayer.ts`):
 | Yellow prior per 90 | GK 0.072, DEF 0.182, MID 0.188, FWD 0.149 |
 | Red prior per 90 | GK 0.001, DEF 0.008, MID 0.005, FWD 0.002 |
 
-Fixture constants (`lib/projections/fixtureAdjustment.ts`):
+Fixture constants (`lib/clubElo.ts`, `lib/projections/fixtureAdjustment.ts`, `lib/projections/cleanSheetStrength.ts`):
 
 | Constant | Value |
 |---|---|
+| ClubElo difficulty divisor | 300 Elo per step |
+| Clean-sheet Elo level slope | 0.0034 |
+| Clean-sheet skew weight | 0.6 |
+| Clean-sheet level prior | 12 played matches |
+| Rated clean-sheet mean / NB dispersion | 1.408 / 12 |
 | League average goals against | 1.35 |
 | Difficulty multipliers | 1→1.14, 2→1.07, 3→1.00, 4→0.92, 5→0.84 |
 | Home / away attack venue | 1.102 / 0.898 (measured) |
@@ -1191,3 +1241,47 @@ Optimizer constants (`lib/optimizer/exactOptimizer.ts`, `lib/optimizer/optimizer
 | Cash xP per tenth per gameweek (`CASH_XP_PER_TENTH_PER_GAMEWEEK`) | 0.025 (£0.25m xP/tenth/GW) |
 | Bench strength bonus (`BENCH_STRENGTH_BONUS`) | 0.04 |
 | High-confidence starter bonus (tie-break) | 0.01 |
+
+
+---
+
+## 20. Validation and research status
+
+The three Tier C production changes are the 300-point ClubElo difficulty
+step (§2.2), retaining the start-probability EWMA after 240 observed minutes
+(§4.3), and flat MID/FWD bonus scaling (§8.8). The combined comparison against
+`74ceff2` scored 49,212 player-gameweeks in 2024/25 and 2025/26, including
+recorded zero-minute outcomes and summing double-gameweek fixtures. RMSE fell
+from 1.99371 to 1.94641; the paired RMSE difference was -0.04730 with a 95%
+season-stratified gameweek-cluster interval of [-0.05879, -0.03619]. Both
+seasons and all four positions improved. These figures measure the combined
+changes, not the effect of any one edit. See
+`scripts/backtest/results/tier-c-combined.md`.
+
+That comparison used historical result-derived Elo, reconstructed availability,
+and a common £5.0m player prior. It excluded cold starts, unsupported positions,
+target-team changes and incomplete fixture coverage. The seasons had already
+informed policy selection, so this is retrospective confirmation under shared
+inputs rather than an untouched holdout or a replay of archived live forecasts.
+Access to real ClubElo histories does not retroactively change those inputs.
+
+The combined runner now shares explicit guards for pre-gameweek history,
+conflicting player-fixture duplicates, and recorded DNPs. It forecasts selection
+and minutes through production rather than using the target match's observed
+minutes, and passes continuous fixture difficulty. An absent player record is
+unknown, not an assumed DNP. Optional actual-history runs freeze all clubs'
+ratings strictly before the first fixture date of the target gameweek and
+record the cache hash, cutoff, rating dates and lag. Their outputs must remain
+separate from proxy runs. See `scripts/backtest/README.md` for reproduction.
+
+The rating-input refactor changes where ratings enter the calculation; it does
+not select a new rating source or recalibrate any production constant.
+Historical-access and backtest safeguards likewise do not replace the live
+model. Homegrown Elo, separate xG attack/defence models and their experimental
+calibrations remain outside the production calculation described here.
+
+The rating-input refactor was checked against `ab5925e` with identical prepared
+inputs: all 49,212 scored player-gameweek predictions and coverage counts were
+unchanged. An actual-ClubElo 2025/26 run completed with 25,637 scored rows and
+20 strictly prior ratings in each evaluated gameweek; this checks the new
+input path, not a gain over another model.

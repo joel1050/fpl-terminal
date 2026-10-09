@@ -72,7 +72,7 @@ function collect(season: Season, overrides: RateOverrides): Row[] {
       const rates = playerRates(p, formBefore(season, r.historicalPlayerId, gw), gw, overrides, strengths);
       // Conversions off: this script exists to derive them, so it must see the
       // raw xG/xA terms rather than the ones the shipped model already scales.
-      const c = expectedPoints(p, p.fixtures[0], r.minutes, rates, strengths, BASELINE, true, true, ONE_CONVERSION, ONE_CONVERSION);
+      const c = expectedPoints(p, p.fixtures[0], r.minutes, rates, strengths, BASELINE, undefined, true, ONE_CONVERSION, ONE_CONVERSION);
       const goalPoints = { GK: 10, DEF: 6, MID: 5, FWD: 4 }[p.position];
       rows.push({
         gameweek: gw, position: p.position, actual: r.totalPoints,

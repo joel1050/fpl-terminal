@@ -35,8 +35,10 @@ session chronology, releases, commits, routine maintenance, or raw logs.
 
 ## 2026-09-10 — FDR sensitivity
 
-- Integer and continuous ClubElo FDR both use divisor 150 by user choice; a
-  more varied display or a preferred player ranking is not calibration evidence.
+- The original ClubElo divisor 150 was a display preference, not calibration
+  evidence. A later venue-neutral, continuous-path experiment selected 300 on
+  2023/24 and improved held-out team-xG error on 2024/25–2025/26. Historical
+  ratings are Elo proxies; the result does not validate the ClubElo source itself.
 - For live-input experiments, verify the parameterized evaluator against actual
   production scoring components. Historical harness parity does not establish
   parity on the continuous FDR path.

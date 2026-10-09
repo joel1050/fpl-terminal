@@ -14,8 +14,8 @@ const ARMS: { name: string; variant: Variant }[] = [
   { name: "ratio[.40,2.20] mult[.45,1.90] + bonus", variant: v({ attackRatioClamp: [0.40, 2.20], multiplierClamp: [0.45, 1.90] }) },
   { name: "no clamps at all + bonus", variant: v({ attackRatioClamp: [0.01, 100], multiplierClamp: [0.01, 100] }) },
 ];
-/** Second axis: does bonus follow the fixture? Index-matched to ARMS. */
-const BONUS_FIXTURE = [true, false, true, true, true, true];
+/** Forward bonus is flat in the shipped position rule; false keeps this old script's arms aligned. */
+const BONUS_FIXTURE = [undefined, false, undefined, undefined, undefined, undefined];
 
 interface Row { gameweek: number; playerId: number; name: string; ratio: number; actual: number; minutes: number; preds: number[]; mults: number[]; seasonXg: number }
 

@@ -5,6 +5,12 @@
  */
 import type { PlayerFixture, Position } from "@/types/player";
 import type { TeamStrength } from "@/types/projection";
+import type { CleanSheetStrength } from "@/lib/projections/cleanSheetStrength";
+import {
+  CLEAN_SHEET_DISPERSION,
+  cleanSheetFromRates,
+  continuousDifficultyMultiplier,
+} from "@/lib/projections/fixtureAdjustment";
 
 export interface Variant {
   /** Multiply by FPL's 1-5 difficulty rating on top of the strength ratio. */
@@ -21,7 +27,13 @@ export interface Variant {
    * BILINEAR interpolates inside the grid and stops at the end rungs;
    * BILINEAR_OPEN carries the edge gradient past them.
    */
-  cleanSheet: "TABLE" | "BILINEAR" | "BILINEAR_OPEN" | "POISSON";
+  cleanSheet: "TABLE" | "BILINEAR" | "BILINEAR_OPEN" | "POISSON" | "RATED_POISSON" | "RATED_NEGATIVE_BINOMIAL";
+  /** Shape parameter phi; variance = mean + mean^2 / phi. */
+  negativeBinomialDispersion?: number;
+  /** Distribution used for the goals-conceded threshold deduction. */
+  goalsConcededDistribution?: "POISSON" | "NEGATIVE_BINOMIAL";
+  /** Baseline for goalkeeper saves-environment scaling. */
+  savesBaselineGoals?: number;
   /** League average goals conceded, the Poisson scale. */
   leagueAverageGoals: number;
   /** Save volume scales with the derived lambda, or with the opponent's attack. */
@@ -65,7 +77,6 @@ export const LEGACY: Variant = {
   csShrinkWeight: undefined,
 };
 
-const difficultyMultiplier: Record<number, number> = { 1: 1.14, 2: 1.07, 3: 1, 4: 0.92, 5: 0.84 };
 const consensusStrengthTiers = [0.84, 0.92, 1, 1.08, 1.16] as const;
 
 const cleanSheetProbabilities = {
@@ -131,13 +142,24 @@ export interface AdjustmentResult {
   savesEnvironment: number;
 }
 
+function negativeBinomialZeroProbability(mean: number, dispersion: number): number {
+  const shape = Math.max(dispersion, 0.1);
+  return clamp(Math.pow(shape / (shape + mean), shape), 0.02, 0.9);
+}
+
 export function adjust(
   fixture: PlayerFixture,
-  options: { ownTeam?: TeamStrength; opponentTeam?: TeamStrength; position?: Position },
+  options: {
+    ownTeam?: TeamStrength;
+    opponentTeam?: TeamStrength;
+    ownCleanSheet?: CleanSheetStrength;
+    opponentCleanSheet?: CleanSheetStrength;
+    position?: Position;
+  },
   variant: Variant,
 ): AdjustmentResult {
-  const difficulty = fixture.difficulty === undefined ? 3 : clamp(Math.round(fixture.difficulty), 1, 5);
-  const base = variant.useDifficultyBase ? (difficultyMultiplier[difficulty] ?? 1) : 1;
+  const difficulty = fixture.exactDifficulty ?? fixture.difficulty ?? 3;
+  const base = variant.useDifficultyBase ? continuousDifficultyMultiplier(difficulty) : 1;
   const [homeVenue, awayVenue] = variant.venue;
   const venue = fixture.isHome ? homeVenue : awayVenue;
   // Home sides concede less because the visiting attack travels: the goals-against
@@ -145,6 +167,7 @@ export function adjust(
   const concedeVenue = fixture.isHome ? awayVenue : homeVenue;
 
   let expectedGoalsAgainst = variant.leagueAverageGoals * (fixture.isHome ? 0.9 : 1.1);
+  let ratedGoalsAgainst: number | undefined;
   let attackMultiplier = base * venue;
   let cleanSheetProbability: number | undefined;
   let opponentAttackRatio = 1;
@@ -161,7 +184,22 @@ export function adjust(
     }
     if (ownDefence > 0 && opponentAttack > 0) {
       opponentAttackRatio = opponentAttack;
-      if (variant.cleanSheet === "POISSON") {
+      if ((variant.cleanSheet === "RATED_POISSON" || variant.cleanSheet === "RATED_NEGATIVE_BINOMIAL")
+        && options.ownCleanSheet && options.opponentCleanSheet) {
+        const rated = cleanSheetFromRates(
+          fixture.isHome,
+          options.ownCleanSheet.defence,
+          options.opponentCleanSheet.attack,
+        );
+        ratedGoalsAgainst = rated.goalsAgainst;
+        expectedGoalsAgainst = rated.goalsAgainst;
+        cleanSheetProbability = variant.cleanSheet === "RATED_POISSON"
+          ? clamp(Math.exp(-rated.goalsAgainst), 0.02, 0.9)
+          : (variant.negativeBinomialDispersion === undefined
+            || variant.negativeBinomialDispersion === CLEAN_SHEET_DISPERSION
+            ? rated.cleanSheetProbability
+            : negativeBinomialZeroProbability(rated.goalsAgainst, variant.negativeBinomialDispersion));
+      } else if (variant.cleanSheet === "POISSON") {
         // One continuous lambda. Clean sheets, the concede deduction and save
         // volume all descend from it, so nothing is quantized away.
         expectedGoalsAgainst = variant.leagueAverageGoals * (opponentAttack / ownDefence) * concedeVenue;
@@ -180,15 +218,15 @@ export function adjust(
 
   attackMultiplier = clamp(attackMultiplier, variant.multiplierClamp[0], variant.multiplierClamp[1]);
   cleanSheetProbability ??= clamp(Math.exp(-expectedGoalsAgainst), 0.03, 0.65);
-  if (variant.csShrinkWeight !== undefined) {
+  if (variant.csShrinkWeight !== undefined && ratedGoalsAgainst === undefined) {
     cleanSheetProbability -= (1 - variant.csShrinkWeight)
       * Math.max(0, cleanSheetProbability - CS_SHRINK_BASE);
   }
-  expectedGoalsAgainst = -Math.log(clamp(cleanSheetProbability, 0.03, 0.9));
+  expectedGoalsAgainst = ratedGoalsAgainst ?? -Math.log(clamp(cleanSheetProbability, 0.03, 0.9));
 
   const savesEnvironment = variant.savesEnvironment === "OPPONENT_ATTACK"
     ? clamp(opponentAttackRatio, 0.7, 1.4)
-    : clamp(expectedGoalsAgainst / variant.leagueAverageGoals, 0.7, 1.4);
+    : clamp(expectedGoalsAgainst / (variant.savesBaselineGoals ?? variant.leagueAverageGoals), 0.7, 1.4);
 
   return { attackMultiplier, cleanSheetProbability, expectedGoalsAgainst, savesEnvironment };
 }

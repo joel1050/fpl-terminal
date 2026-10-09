@@ -125,7 +125,7 @@ describe("player selection model", () => {
     expect(selections.get(2)?.expectedMinutes).not.toBe(73);
   });
 
-  it("overrides a stale historical role after 240 current-season minutes", () => {
+  it("keeps the start EWMA while current minutes set cameo and duration", () => {
     const rows = [65, 60, 20].map((minutes, index) => ({
       historicalPlayerId: 101,
       gameweek: index + 1,
@@ -147,10 +147,46 @@ describe("player selection model", () => {
       },
     }).get(1)!;
 
-    expect(selection.startProbability).toBe(1);
+    expect(selection.startProbability).toBe(0.928);
     expect(selection.cameoProbability).toBe(0);
     expect(selection.expectedStartMinutes).toBe(81);
-    expect(selection.expectedMinutes).toBe(81);
+    expect(selection.expectedMinutes).toBe(75.168);
+  });
+
+  it("continues responding to a benching after 240 current-season minutes", () => {
+    const selection = buildPlayerSelections([player(1, 1, 240)], {
+      historicalStats: {
+        1: { season: "2025/26", minutes: 900, starts: 2 },
+      },
+      startHistory: {
+        1: [80, 80, 80, 0].map((minutes) => ({
+          started: minutes >= 60,
+          appeared: minutes > 0,
+          minutes,
+        })),
+      },
+    }).get(1)!;
+
+    expect(selection.startProbability).toBe(0.496);
+    expect(selection.expectedStartMinutes).toBe(80);
+  });
+
+  it("has no start-probability jump when current minutes reach 240", () => {
+    const selections = buildPlayerSelections([player(1, 1, 239), player(2, 1, 240)], {
+      historicalStats: {
+        1: { season: "2025/26", minutes: 900, starts: 2 },
+        2: { season: "2025/26", minutes: 900, starts: 2 },
+      },
+      startHistory: {
+        1: [80, 80, 79].map((minutes) => ({ started: true, appeared: true, minutes })),
+        2: [80, 80, 80].map((minutes) => ({ started: true, appeared: true, minutes })),
+      },
+    });
+
+    expect(selections.get(1)!.startProbability).toBe(0.827);
+    expect(selections.get(2)!.startProbability).toBe(0.827);
+    // The existing duration branch remains intentional at the role threshold.
+    expect(selections.get(1)!.expectedStartMinutes).not.toBe(selections.get(2)!.expectedStartMinutes);
   });
 
   it("keeps the historical blend below the current-role threshold", () => {

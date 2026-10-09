@@ -18,9 +18,8 @@ import { normalizeBootstrap } from "@/lib/fpl/normalize";
 import { deriveTeamStrengths, enrichPlayersWithHistory } from "@/lib/historical/enrichPlayers";
 import { loadInSeasonTeamXG, loadInSeasonPlayerRates, loadInSeasonStarts } from "@/lib/historical/loadInSeasonForm";
 import { applyInSeasonForm } from "@/lib/historical/inSeasonForm";
-import { deriveCleanSheetStrengths } from "@/lib/projections/cleanSheetStrength";
+import { ELO_LEVEL_SLOPE, deriveCleanSheetStrengths } from "@/lib/projections/cleanSheetStrength";
 import { calculateFixtureAdjustment } from "@/lib/projections/fixtureAdjustment";
-import { clubEloForFplShortName, CLUB_ELO_SNAPSHOT } from "@/lib/clubElo";
 
 const target = (process.argv[2] ?? "CHE").toUpperCase();
 const round = (value: number | undefined, places = 3) =>
@@ -40,6 +39,7 @@ async function main(): Promise<void> {
   const team = normalized.teams.find((t) => t.shortName === target);
   if (!team) throw new Error(`no team ${target}; have ${normalized.teams.map((t) => t.shortName).join(" ")}`);
   const shortNameByTeamId = new Map(normalized.teams.map((t) => [t.id, t.shortName]));
+  const eloByTeamId = new Map(normalized.teams.flatMap((t) => t.elo === undefined ? [] : [[t.id, t.elo] as const]));
 
   console.log(`\n=== ${team.name} (${target}), live gameweek ${normalized.liveGameweek} ===`);
 
@@ -70,7 +70,7 @@ async function main(): Promise<void> {
   console.log(`\n3b. how much does the prior weight cost? defence at other prior weights`);
   for (const priorWeight of [12, 6, 3, 1, 0.0001]) {
     const alt = applyInSeasonForm(priors, inSeasonForm, 0.9, priorWeight);
-    const altCs = deriveCleanSheetStrengths(alt, shortNameByTeamId, undefined, played);
+    const altCs = deriveCleanSheetStrengths(alt, eloByTeamId, played);
     const order = Object.entries(altCs)
       .map(([id, rates]) => ({ name: shortNameByTeamId.get(Number(id)) ?? id, defence: rates.defence }))
       .sort((a, b) => b.defence - a.defence);
@@ -82,23 +82,21 @@ async function main(): Promise<void> {
   }
 
   // --- Boundary 4: the Elo re-level the clean-sheet read actually uses.
-  const csStrengths = deriveCleanSheetStrengths(blended, shortNameByTeamId, undefined, played);
+  const csStrengths = deriveCleanSheetStrengths(blended, eloByTeamId, played);
   const cs = csStrengths[team.id];
-  const elo = clubEloForFplShortName(target, CLUB_ELO_SNAPSHOT);
-  console.log(`\n4. clean-sheet rates   attack ${round(cs?.attack)}  defence ${round(cs?.defence)}   (ClubElo ${elo?.elo ?? "unrated"})`);
+  const elo = team.elo;
+  console.log(`\n4. clean-sheet rates   attack ${round(cs?.attack)}  defence ${round(cs?.defence)}   (ClubElo ${elo ?? "unrated"})`);
   // Where does that defence rating come from? The level is Elo's, the lean is
   // this season's xG, and the skew weight keeps only 60% of the lean. Splitting
   // them says whether a leaky spell can move the number at all.
-  const ratedElos = normalized.teams
-    .map((t) => clubEloForFplShortName(t.shortName, CLUB_ELO_SNAPSHOT)?.elo)
-    .filter((value): value is number => value !== undefined);
+  const ratedElos = [...eloByTeamId.values()];
   const meanElo = ratedElos.reduce((sum, value) => sum + value, 0) / ratedElos.length;
-  const level = 0.0034 * ((elo?.elo ?? meanElo) - meanElo);
+  const level = ELO_LEVEL_SLOPE * ((elo ?? meanElo) - meanElo);
   const rawSkew = Math.log((after.attackHome + after.attackAway) / 2) - Math.log((after.defenceHome + after.defenceAway) / 2);
   console.log(`   level from Elo ${round(level, 3)} (mean Elo ${round(meanElo, 1)})   lean from xG ${round(rawSkew, 3)} -> kept ${round(0.6 * rawSkew, 3)}`);
   const fitWeight = (played.get(team.id) ?? 0) / ((played.get(team.id) ?? 0) + 12);
   console.log(`   level handover to the in-season fit: ${round(fitWeight, 2)} at ${played.get(team.id) ?? 0} matches`);
-  const eloOnly = deriveCleanSheetStrengths(blended, shortNameByTeamId);
+  const eloOnly = deriveCleanSheetStrengths(blended, eloByTeamId);
   console.log(`   defence with the level on Elo alone ${round(eloOnly[team.id]?.defence)}  ->  with the handover ${round(cs?.defence)}`);
 
   const rated = Object.entries(csStrengths)

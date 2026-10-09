@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { projectPlayer } from "@/lib/projections/projectPlayer";
+import { calculateFixtureAdjustment } from "@/lib/projections/fixtureAdjustment";
 import { expectedPoints, playerRates } from "@/scripts/backtest/xp";
-import { BASELINE } from "@/scripts/backtest/variants";
+import { adjust, BASELINE } from "@/scripts/backtest/variants";
 import type { Player, Position } from "@/types/player";
 import type { PlayerMatchRate, ProjectionComponents, TeamStrength } from "@/types/projection";
 
@@ -89,6 +90,17 @@ function productionComponents(
 }
 
 describe("backtest harness parity", () => {
+  it("uses continuous fixture difficulty when it is available", () => {
+    const exact = { ...fixture, exactDifficulty: 2.35 };
+    const options = { ownTeam: strengths[1], opponentTeam: strengths[2] };
+    const production = calculateFixtureAdjustment(exact, options);
+    const harness = adjust(exact, options, BASELINE);
+    expect(harness.attackMultiplier).toBeCloseTo(production.attackMultiplier, 12);
+    expect(harness.cleanSheetProbability).toBeCloseTo(production.cleanSheetProbability, 12);
+    expect(harness.expectedGoalsAgainst).toBeCloseTo(production.expectedGoalsAgainst, 12);
+    expect(harness.attackMultiplier).not.toBeCloseTo(adjust(fixture, options, BASELINE).attackMultiplier, 6);
+  });
+
   it.each([
     ["GK", true, undefined],
     ["DEF", true, form],
@@ -112,19 +124,27 @@ describe("backtest harness parity", () => {
     }
   });
 
-  it("lets bonus follow fixture difficulty", () => {
+  it("scales GK/DEF bonus but keeps MID/FWD bonus flat across fixture difficulty", () => {
     const easy = { ...fixture, opponentTeamId: 2, difficulty: 1 };
     const hard = { ...fixture, opponentTeamId: 3, difficulty: 5 };
-    const candidate = { ...player(5, "MID", true), fixtures: [easy, hard] };
-    const projection = projectPlayer(candidate, {
-      currentGameweek: GAMEWEEK,
-      horizon: 1,
-      expectedMinutes: 90,
-      teamStrengths: strengths,
-    });
+    const bonusByFixture = (position: Position) => {
+      const candidate = { ...player(5, position, true), fixtures: [easy, hard] };
+      const projection = projectPlayer(candidate, {
+        currentGameweek: GAMEWEEK,
+        horizon: 1,
+        expectedMinutes: 90,
+        teamStrengths: strengths,
+      });
+      return projection.fixtures.map((item) => item.components?.bonus ?? Number.NaN);
+    };
 
-    expect(projection.fixtures[0]?.components?.bonus).toBeGreaterThan(
-      projection.fixtures[1]?.components?.bonus ?? Number.POSITIVE_INFINITY,
-    );
+    for (const position of ["GK", "DEF"] as const) {
+      const [easyBonus, hardBonus] = bonusByFixture(position);
+      expect(easyBonus).toBeGreaterThan(hardBonus);
+    }
+    for (const position of ["MID", "FWD"] as const) {
+      const [easyBonus, hardBonus] = bonusByFixture(position);
+      expect(easyBonus).toBeCloseTo(hardBonus, 12);
+    }
   });
 });

@@ -55,6 +55,7 @@ async function main(): Promise<void> {
     loadInSeasonStarts(normalized.players, normalized.fixtures),
   ]);
   const shortNameByTeamId = new Map(normalized.teams.map((t) => [t.id, t.shortName]));
+  const eloByTeamId = new Map(normalized.teams.flatMap((t) => t.elo === undefined ? [] : [[t.id, t.elo] as const]));
   const enriched = enrichPlayersWithHistory(
     normalized.players, normalized.teams, normalized.events, historical,
     inSeasonForm, playerForm, startHistory, normalized.liveGameweek,
@@ -102,7 +103,7 @@ async function main(): Promise<void> {
   const priors = deriveTeamStrengths(normalized.teams).strengths;
   const blended = applyInSeasonForm(priors, inSeasonForm);
   const played = new Map(Object.entries(inSeasonForm).map(([id, ms]) => [Number(id), ms.length]));
-  const csStrengths = deriveCleanSheetStrengths(blended, shortNameByTeamId, undefined, played);
+  const csStrengths = deriveCleanSheetStrengths(blended, eloByTeamId, played);
   console.log("  keeper                team   savePts  impliedSoT  xGA    shots faced  implied save%");
   for (const p of keepers.slice(0, 8)) {
     const row = (p.projection?.fixtures ?? []).find((f) => f.gameweek === (normalized.liveGameweek ?? 0) + 1);

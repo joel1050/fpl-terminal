@@ -379,9 +379,9 @@ export function buildPlayerSelections(
       .map((observation) => observation.minutes)
       .filter(finite);
     const currentAppearances = observations.filter((observation) => observation.appeared).length;
-    const roleStart = currentRoleEstablished
-      ? currentStarts.length / observations.length
-      : blendStartRate(seedStart, observations);
+    // Keep the fitted EWMA at every sample size; raw current frequencies add
+    // noise and created a step change at the arbitrary 240-minute boundary.
+    const roleStart = blendStartRate(seedStart, observations);
     const roleCameo = currentRoleEstablished
       ? Math.max(0, currentAppearances - currentStarts.length) / observations.length
       : blendCameoRate(seedStart, seedCameo, observations);

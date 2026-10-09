@@ -1,5 +1,4 @@
 import type { TeamStrength } from "@/types/projection";
-import { clubEloForFplShortName, type ClubEloSnapshot, CLUB_ELO_SNAPSHOT } from "@/lib/clubElo";
 
 /**
  * A team's attacking and defensive rates as the clean-sheet model reads them.
@@ -78,7 +77,7 @@ const attackOf = (strength: TeamStrength) => (strength.attackHome + strength.att
 const defenceOf = (strength: TeamStrength) => (strength.defenceHome + strength.defenceAway) / 2;
 
 /**
- * Re-levels every team's attack and defence against its ClubElo rating.
+ * Re-levels every team's attack and defence against its Elo rating.
  *
  * A team's strengths carry two separable things: a *level*, the product of
  * attack and defence, and a *lean*, their ratio. Elo measures the level with a
@@ -91,19 +90,20 @@ const defenceOf = (strength: TeamStrength) => (strength.defenceHome + strength.d
  * and the returned rates sit around 1. Both inputs describe the past, so nothing
  * here reads a fixture it will later be scored against.
  *
- * Returns an empty record when no team resolves to a rating, and callers then
+ * Returns an empty record when no team has a rating, and callers then
  * fall back to the 5x5 table.
  */
 export function deriveCleanSheetStrengths(
   strengths: Record<number, TeamStrength>,
-  shortNameByTeamId: ReadonlyMap<number, string>,
-  snapshot: ClubEloSnapshot = CLUB_ELO_SNAPSHOT,
+  eloByTeamId: ReadonlyMap<number, number>,
   /**
    * Matches each team has played this season. Omit it and the level comes from
    * Elo alone, which is what every caller did before the level blend and what
    * the preseason case still wants.
    */
   matchesPlayed?: ReadonlyMap<number, number>,
+  /** Log goal-scale level per Elo point. Defaults to the measured ClubElo slope. */
+  levelSlope = ELO_LEVEL_SLOPE,
 ): Record<number, CleanSheetStrength> {
   const rated: { teamId: number; elo: number; skew: number; fitLevel: number; played: number }[] = [];
   for (const [key, strength] of Object.entries(strengths)) {
@@ -111,8 +111,8 @@ export function deriveCleanSheetStrengths(
     const attack = attackOf(strength);
     const defence = defenceOf(strength);
     if (!(attack > 0) || !(defence > 0)) continue;
-    const elo = clubEloForFplShortName(shortNameByTeamId.get(teamId), snapshot)?.elo;
-    if (elo === undefined) continue;
+    const elo = eloByTeamId.get(teamId);
+    if (elo === undefined || !Number.isFinite(elo)) continue;
     rated.push({
       teamId,
       elo,
@@ -124,7 +124,7 @@ export function deriveCleanSheetStrengths(
   if (rated.length === 0) return {};
 
   const meanElo = mean(rated.map((r) => r.elo));
-  const eloLevels = rated.map((r) => ELO_LEVEL_SLOPE * (r.elo - meanElo));
+  const eloLevels = rated.map((r) => levelSlope * (r.elo - meanElo));
   // The fitted level is centred and stretched onto the spread Elo already has.
   // Without the stretch this would be a downgrade dressed as a swap: these
   // strengths are normalized ratios whose level spread is 1.69x narrower than a

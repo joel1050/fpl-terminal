@@ -7,6 +7,8 @@
 import type { Player, PlayerFixture, Position } from "@/types/player";
 import type { PlayerMatchRate, ProjectionComponents, TeamStrength } from "@/types/projection";
 import { expectedFloorDivision, thresholdProbability } from "@/lib/projections/distributions";
+import { CLEAN_SHEET_DISPERSION } from "@/lib/projections/fixtureAdjustment";
+import type { CleanSheetStrength } from "@/lib/projections/cleanSheetStrength";
 import { regressPer90 } from "@/lib/projections/regression";
 import {
   blendPlayerRateByMinutes,
@@ -27,13 +29,28 @@ const CLEAN_SHEET_POINTS: Record<Position, number> = { GK: 4, DEF: 4, MID: 1, FW
 const DEFENSIVE_CONTRIBUTION_THRESHOLD: Record<Position, number> = { GK: 0, DEF: 10, MID: 12, FWD: 12 };
 const DEFENSIVE_CONTRIBUTION_POINTS = 2;
 const SAVES_PER_POINT = 3;
-const GOAL_CONVERSION: Record<Position, number> = { GK: 1, DEF: 0.7, MID: 0.981, FWD: 0.988 };
-const ASSIST_CONVERSION: Record<Position, number> = { GK: 1, DEF: 1.272, MID: 1.207, FWD: 2.114 };
+export const GOAL_CONVERSION: Record<Position, number> = { GK: 1, DEF: 0.7, MID: 0.981, FWD: 0.988 };
+export const ASSIST_CONVERSION: Record<Position, number> = { GK: 1, DEF: 1.272, MID: 1.207, FWD: 2.114 };
 const YELLOW_CARD_POINTS = 1;
 const RED_CARD_POINTS = 3;
 const PRIOR_YELLOW_CARDS: Record<Position, number> = { GK: 0.072, DEF: 0.182, MID: 0.188, FWD: 0.149 };
 const PRIOR_RED_CARDS: Record<Position, number> = { GK: 0.001, DEF: 0.008, MID: 0.005, FWD: 0.002 };
 const GOALS_CONCEDED_PER_DEDUCTION = 2;
+const MAX_TERMS = 40;
+
+/** Expected floor division for a negative-binomial count with production phi semantics. */
+export function expectedNegativeBinomialFloorDivision(mean: number, divisor: number, dispersion = CLEAN_SHEET_DISPERSION): number {
+  if (!Number.isFinite(mean) || mean <= 0 || divisor <= 0) return 0;
+  const shape = Math.max(dispersion, 0.1);
+  const success = shape / (shape + mean);
+  let probability = Math.pow(success, shape);
+  let total = 0;
+  for (let count = 0; count < MAX_TERMS; count += 1) {
+    total += probability * Math.floor(count / divisor);
+    probability *= ((shape + count) / (count + 1)) * (1 - success);
+  }
+  return total;
+}
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -101,6 +118,8 @@ function regressedFormRate(
   formPriorWeight: number = PLAYER_FORM_PRIOR_WEIGHT_MATCHES,
   currentWeightDivisor = 10, currentWeightCap = 0.6,
   ownTeam?: TeamStrength, strengths?: Record<number, TeamStrength>,
+  anchorPoolRate?: number,
+  anchorPoolWeightMinutes?: number,
 ): number {
   const historical = historicalRate(player, primary) ?? historicalRate(player, fallback);
   // A player's own prior-period rate is used raw today. It is an estimate, so
@@ -110,8 +129,10 @@ function regressedFormRate(
   // sample size before anything else (projectPlayer's `historicalAnchor`), so
   // that is the default here too. The arm knobs stay: an override shrinks
   // toward `poolRate` over `shrinkMinutes` instead.
-  const anchorTarget = poolRate ?? prior;
-  const anchorMinutes = shrinkMinutes > 0 ? shrinkMinutes : 900;
+  const anchorTarget = anchorPoolRate ?? poolRate ?? prior;
+  const anchorMinutes = anchorPoolRate !== undefined
+    ? (anchorPoolWeightMinutes ?? 900)
+    : (shrinkMinutes > 0 ? shrinkMinutes : 900);
   const basePrior = historical
     ? regressPer90(historical.rate, historical.minutes, anchorTarget, anchorMinutes)
     : prior;
@@ -148,7 +169,13 @@ function regressedFormRate(
     rate = rate * (1 - currentWeight) + normalizedCurrent * currentWeight;
     sample += current.minutes * currentWeight;
   }
-  return clamp(regressPer90(rate, sample, prior, 900), 0, ceiling);
+  const fallbackPrior = historical && anchorPoolRate !== undefined && ownAttack > 0
+    ? anchorPoolRate / ownAttack
+    : prior;
+  const fallbackWeight = historical && anchorPoolRate !== undefined
+    ? (anchorPoolWeightMinutes ?? 900)
+    : 900;
+  return clamp(regressPer90(rate, sample, fallbackPrior, fallbackWeight), 0, ceiling);
 }
 
 /**
@@ -169,6 +196,11 @@ export interface RateOverrides {
   priorXa?: Record<Position, number>;
   /** Shrink the player's own anchor toward the pool rate, in minutes of prior weight. */
   anchorShrinkMinutes?: number;
+  /** Optional separate pool targets for the historical xG/xA anchor. */
+  anchorPoolXg?: Record<Position, number>;
+  anchorPoolXa?: Record<Position, number>;
+  /** Prior weight for those pool targets; zero leaves the historical anchor raw. */
+  anchorPoolWeightMinutes?: number;
   /** Recency decay per match back in blendPlayerRate. Defaults to the shipped 0.95. */
   formDecay?: number;
   /** The anchor's weight in "matches worth". Defaults to the shipped 10. */
@@ -199,8 +231,8 @@ export function playerRates(
   const cc = overrides.currentWeightCap ?? 0.6;
   const rw = overrides.rareEventPriorWeight ?? PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS;
   return {
-    xg: regressedFormRate(player, "expectedGoals", "goals", priorXg ?? attackingPrior(player, "expectedGoals"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXg, fd, fw, cd, cc, ownTeam, strengths),
-    xa: regressedFormRate(player, "expectedAssists", "assists", priorXa ?? attackingPrior(player, "expectedAssists"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXa, fd, fw, cd, cc, ownTeam, strengths),
+    xg: regressedFormRate(player, "expectedGoals", "goals", priorXg ?? attackingPrior(player, "expectedGoals"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXg, fd, fw, cd, cc, ownTeam, strengths, overrides.anchorPoolXg?.[player.position], overrides.anchorPoolWeightMinutes),
+    xa: regressedFormRate(player, "expectedAssists", "assists", priorXa ?? attackingPrior(player, "expectedAssists"), form, currentGameweek, RATE_CEILING.goalInvolvement, shrink, priorXa, fd, fw, cd, cc, ownTeam, strengths, overrides.anchorPoolXa?.[player.position], overrides.anchorPoolWeightMinutes),
     // The saves blend weight is its own arm: production gives the current
     // season n/(n+6), the constant `form-weight.ts` selected on overall xP,
     // which is dominated by outfield attacking returns. Defaulting to that
@@ -232,8 +264,8 @@ export function expectedPoints(
   rates: Rates,
   strengths: Record<number, TeamStrength>,
   variant: Variant,
-  /** Experiment: let bonus follow the fixture, as BPS actually does. */
-  bonusFollowsFixture = true,
+  /** Defaults to production's position rule; true/false force fixture/flat bonus for all positions. */
+  bonusFollowsFixture = player.position === "GK" || player.position === "DEF",
   /** Experiment: deduct for yellow and red cards. */
   cards = true,
   /** Experiment: scale xA to the rate FPL actually awards assists. */
@@ -242,6 +274,7 @@ export function expectedPoints(
   goalConversion: Record<Position, number> = GOAL_CONVERSION,
   /** Experiments aimed at the two defender terms that carry no fixture signal. */
   defence: DefenceExperiments = {},
+  cleanSheetStrengths?: Record<number, CleanSheetStrength>,
 ): ProjectionComponents {
   const {
     // distributions.ts documents 8 as an assumption, not a fitted value: the
@@ -251,15 +284,16 @@ export function expectedPoints(
     // A defender making clearances and blocks does more of it against a strong
     // attack, but the term is currently identical in every fixture.
     defConEnvironment = "FLAT",
-    // Where a defender's bonus comes from. Shipped behaviour scales it by the
-    // attacking multiplier, but a defender's BPS is mostly clean sheets and
-    // defensive actions.
+    // A specified defender environment overrides only defensive positions;
+    // outfield attackers retain the shipped position rule unless forced.
     bonusEnvironment = bonusFollowsFixture ? "ATTACK" : "FLAT",
   } = defence;
   const a = adjust(fixture, {
     position: player.position,
     ownTeam: strengths[player.teamId],
     opponentTeam: strengths[fixture.opponentTeamId],
+    ownCleanSheet: cleanSheetStrengths?.[player.teamId],
+    opponentCleanSheet: cleanSheetStrengths?.[fixture.opponentTeamId],
   }, variant);
 
   const c: ProjectionComponents = {
@@ -279,7 +313,14 @@ export function expectedPoints(
   c.assists += rates.xa * assistConversion[player.position] * minutesShare * a.attackMultiplier * 3;
   if (playedSixty) c.cleanSheets += a.cleanSheetProbability * CLEAN_SHEET_POINTS[player.position];
   if (player.position === "GK" || player.position === "DEF") {
-    c.goalsConceded -= expectedFloorDivision(a.expectedGoalsAgainst * minutesShare, GOALS_CONCEDED_PER_DEDUCTION);
+    const concededMean = a.expectedGoalsAgainst * minutesShare;
+    c.goalsConceded -= variant.goalsConcededDistribution === "NEGATIVE_BINOMIAL"
+      ? expectedNegativeBinomialFloorDivision(
+          concededMean,
+          GOALS_CONCEDED_PER_DEDUCTION,
+          variant.negativeBinomialDispersion,
+        )
+      : expectedFloorDivision(concededMean, GOALS_CONCEDED_PER_DEDUCTION);
   }
   if (player.position === "GK") {
     c.saves += expectedFloorDivision(rates.saves * minutesShare * a.savesEnvironment, SAVES_PER_POINT);
@@ -299,11 +340,10 @@ export function expectedPoints(
   const defensive = player.position === "GK" || player.position === "DEF";
   const bonusMultiplier = bonusEnvironment === "FLAT" ? 1
     : bonusEnvironment === "ATTACK" ? a.attackMultiplier
-    // A defender's bonus follows the clean sheet; everyone else keeps the
-    // attacking multiplier, which is where their BPS comes from.
+    // Defender-only environments leave MID/FWD on their default flat bonus.
     : defensive && bonusEnvironment === "DEFENCE" ? defenceEase
     : defensive && bonusEnvironment === "BOTH" ? Math.sqrt(a.attackMultiplier * defenceEase)
-    : a.attackMultiplier;
+    : bonusFollowsFixture ? a.attackMultiplier : 1;
   c.bonus += rates.bonus * minutesShare * bonusMultiplier;
   if (cards) {
     c.cards -= YELLOW_CARD_POINTS * (1 - Math.exp(-rates.yellowCards * minutesShare))

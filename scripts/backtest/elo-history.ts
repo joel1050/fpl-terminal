@@ -4,13 +4,13 @@
  *   fixture-difficulty.json  FPL's own 1-5 rating, from vaastav's fixtures.csv
  *   backtest-elo.json        a walk-forward Elo rating for both sides, pre-match
  *
- * ClubElo publishes dated ratings, but its history API returns 502 and
- * `clubelo.com/<date>/ENG` now redirects to the front page, so no historical
- * ClubElo values are obtainable. These ratings are computed here instead, from
- * the match results already in the corpus. That is a real scope limit: an arm
- * comparison run on them is a claim about the *transformation* applied to a
- * rating, not about ClubElo's numbers against FPL's. Both Elo arms read the
- * same ratings, so a difference between them is a difference of formula.
+ * This file builds a local result-derived Elo proxy; it does not load ClubElo's
+ * actual history. Dated ClubElo chart values are fetched and checked by
+ * `clubelo-history.ts`. Comparisons from this script therefore describe the
+ * transformation applied to this proxy, while the Tier C runner can explicitly
+ * use the dated ClubElo cache with TIER_C_ELO_SOURCE=historical-clubelo.
+ * Both proxy arms read the same ratings, so their difference is a difference
+ * of formula.
  *
  * Method, all conventional and none of it fitted to the outcome:
  *   expected = 1 / (1 + 10^-((own + homeAdvantage - opponent) / 400))
@@ -128,6 +128,11 @@ export interface EloFixtureRow {
   leagueSdElo: number;
 }
 
+export interface GameweekStartElo {
+  gameweek: number;
+  teams: { teamId: number; elo: number }[];
+}
+
 interface SeasonInput {
   season: string;
   directory: string;
@@ -174,6 +179,7 @@ async function main(): Promise<void> {
   // One rating per club name, carried across season boundaries.
   const rating = new Map<string, number>();
   const raw = new Map<string, EloFixtureRow[]>();
+  const rawWeekStarts = new Map<string, GameweekStartElo[]>();
   const burnInRatings: number[] = [];
 
   for (const input of inputs) {
@@ -195,10 +201,19 @@ async function main(): Promise<void> {
     });
 
     const rowsOut: EloFixtureRow[] = [];
+    const weekStarts: GameweekStartElo[] = [];
+    const capturedGameweeks = new Set<number>();
     for (const fixture of ordered) {
       const home = input.clubOf.get(fixture.homeTeamId);
       const away = input.clubOf.get(fixture.awayTeamId);
       if (!home || !away) continue;
+      if (!capturedGameweeks.has(fixture.gameweek)) {
+        capturedGameweeks.add(fixture.gameweek);
+        weekStarts.push({
+          gameweek: fixture.gameweek,
+          teams: [...input.clubOf].map(([teamId, club]) => ({ teamId, elo: rating.get(club)! })),
+        });
+      }
       const homeElo = rating.get(home)!;
       const awayElo = rating.get(away)!;
       const pool = current();
@@ -220,6 +235,7 @@ async function main(): Promise<void> {
       rating.set(away, awayElo - change);
     }
     raw.set(input.season, rowsOut);
+    rawWeekStarts.set(input.season, weekStarts);
   }
 
   // Affine rescale onto ClubElo's observed spread, measured on burn-in only.
@@ -238,6 +254,12 @@ async function main(): Promise<void> {
       leagueSdElo: row.leagueSdElo * scale,
     }));
     writeFileSync(path.join(input.directory, "backtest-elo.json"), JSON.stringify(rows));
+
+    const weekStarts = (rawWeekStarts.get(input.season) ?? []).map((row) => ({
+      gameweek: row.gameweek,
+      teams: row.teams.map((team) => ({ ...team, elo: rescale(team.elo) })),
+    }));
+    writeFileSync(path.join(input.directory, "gameweek-start-elo.json"), JSON.stringify(weekStarts));
 
     const difficulty = [...input.csv.values()]
       .map((fixture) => ({
