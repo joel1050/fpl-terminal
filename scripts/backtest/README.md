@@ -22,7 +22,9 @@ remain available, and the reports state input and coverage limits.
   Bonus-only RMSE remains unresolved. [Report](results/tier-c-bonus.md).
 - Anchor pooling, conversion-factor pooling, the save-denominator change, and
   rated clean-sheet shrink did not resolve a gain, so production retains those calculations.
-  See the corresponding `results/tier-c-*.md` reports.
+  Consistent conceded-goal distributions also lacked a gain: Poisson raised
+  evaluated whole-xP RMSE and NB worsened count likelihood. See the
+  corresponding `results/tier-c-*.md` reports.
 
 Integrated verification passed 658 tests across 80 files, TypeScript, lint
 (with five existing warnings), production build, and all four season parity

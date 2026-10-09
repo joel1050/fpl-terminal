@@ -7,6 +7,8 @@
 import type { Player, PlayerFixture, Position } from "@/types/player";
 import type { PlayerMatchRate, ProjectionComponents, TeamStrength } from "@/types/projection";
 import { expectedFloorDivision, thresholdProbability } from "@/lib/projections/distributions";
+import { CLEAN_SHEET_DISPERSION } from "@/lib/projections/fixtureAdjustment";
+import type { CleanSheetStrength } from "@/lib/projections/cleanSheetStrength";
 import { regressPer90 } from "@/lib/projections/regression";
 import {
   blendPlayerRateByMinutes,
@@ -34,6 +36,21 @@ const RED_CARD_POINTS = 3;
 const PRIOR_YELLOW_CARDS: Record<Position, number> = { GK: 0.072, DEF: 0.182, MID: 0.188, FWD: 0.149 };
 const PRIOR_RED_CARDS: Record<Position, number> = { GK: 0.001, DEF: 0.008, MID: 0.005, FWD: 0.002 };
 const GOALS_CONCEDED_PER_DEDUCTION = 2;
+const MAX_TERMS = 40;
+
+/** Expected floor division for a negative-binomial count with production phi semantics. */
+export function expectedNegativeBinomialFloorDivision(mean: number, divisor: number, dispersion = CLEAN_SHEET_DISPERSION): number {
+  if (!Number.isFinite(mean) || mean <= 0 || divisor <= 0) return 0;
+  const shape = Math.max(dispersion, 0.1);
+  const success = shape / (shape + mean);
+  let probability = Math.pow(success, shape);
+  let total = 0;
+  for (let count = 0; count < MAX_TERMS; count += 1) {
+    total += probability * Math.floor(count / divisor);
+    probability *= ((shape + count) / (count + 1)) * (1 - success);
+  }
+  return total;
+}
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -257,6 +274,7 @@ export function expectedPoints(
   goalConversion: Record<Position, number> = GOAL_CONVERSION,
   /** Experiments aimed at the two defender terms that carry no fixture signal. */
   defence: DefenceExperiments = {},
+  cleanSheetStrengths?: Record<number, CleanSheetStrength>,
 ): ProjectionComponents {
   const {
     // distributions.ts documents 8 as an assumption, not a fitted value: the
@@ -274,6 +292,8 @@ export function expectedPoints(
     position: player.position,
     ownTeam: strengths[player.teamId],
     opponentTeam: strengths[fixture.opponentTeamId],
+    ownCleanSheet: cleanSheetStrengths?.[player.teamId],
+    opponentCleanSheet: cleanSheetStrengths?.[fixture.opponentTeamId],
   }, variant);
 
   const c: ProjectionComponents = {
@@ -293,7 +313,14 @@ export function expectedPoints(
   c.assists += rates.xa * assistConversion[player.position] * minutesShare * a.attackMultiplier * 3;
   if (playedSixty) c.cleanSheets += a.cleanSheetProbability * CLEAN_SHEET_POINTS[player.position];
   if (player.position === "GK" || player.position === "DEF") {
-    c.goalsConceded -= expectedFloorDivision(a.expectedGoalsAgainst * minutesShare, GOALS_CONCEDED_PER_DEDUCTION);
+    const concededMean = a.expectedGoalsAgainst * minutesShare;
+    c.goalsConceded -= variant.goalsConcededDistribution === "NEGATIVE_BINOMIAL"
+      ? expectedNegativeBinomialFloorDivision(
+          concededMean,
+          GOALS_CONCEDED_PER_DEDUCTION,
+          variant.negativeBinomialDispersion,
+        )
+      : expectedFloorDivision(concededMean, GOALS_CONCEDED_PER_DEDUCTION);
   }
   if (player.position === "GK") {
     c.saves += expectedFloorDivision(rates.saves * minutesShare * a.savesEnvironment, SAVES_PER_POINT);
