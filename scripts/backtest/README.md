@@ -41,6 +41,15 @@ Experiment-specific assertions cover continuous FDR, selection normalization,
 and direct rated clean-sheet projections. A generic zero-gap pass does not
 validate every production path.
 
+A direct production comparison of all three edits together against clean
+`main` (`74ceff2`) reduced one-gameweek whole-xP RMSE from 1.99371 to 1.94641
+across 49,212 held-out player-gameweeks, including zero-minute outcomes and
+double gameweeks. The reduction was 2.37%; candidate-minus-main RMSE had a
+paired, season-stratified gameweek bootstrap interval of [−0.05879, −0.03619].
+Both seasons improved. This uses reconstructed availability, proxy Elo, and
+a common £5.0m price prior; it is not a replay of archived live predictions.
+[Combined comparison and reproduction](results/tier-c-combined.md).
+
 ## Remeasurement after production-parity repair — 2026-09-09
 
 This is the authoritative result set after the harness fixes in `fa8f4ca` and
