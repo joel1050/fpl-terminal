@@ -40,7 +40,7 @@ export function SquadPitch({ startingMeta, captainCaption, rows, bench, hint, re
         <h3>Starting XI <span>{startingMeta}</span></h3>
         {captainCaption && <p className="captain-caption">{captainCaption}</p>}
       </div>
-      <section className="starting-xi pitch" aria-label="Starting XI">
+      <section className="starting-xi pitch" aria-label="Starting XI" data-popover-bounds>
         {rows.map(({ position, players, slotCount }) => (
           <div className="position-section starting-position pitch-row" key={position}>
             <div className="position-heading visually-hidden"><span>{position}</span><span>{players.length}/{slotCount}</span></div>
@@ -54,7 +54,7 @@ export function SquadPitch({ startingMeta, captainCaption, rows, bench, hint, re
       </section>
       <section className="bench-section" aria-label="Bench">
         <h3 className="visually-hidden">Bench</h3>
-        <div className="bench-strip">
+        <div className="bench-strip" data-popover-bounds>
           {bench.map((slot) => slot.player
             ? renderPlayer(slot.player, "bench", slot.label)
             : renderEmpty(slot.position, slot.label))}

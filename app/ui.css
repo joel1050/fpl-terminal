@@ -399,7 +399,8 @@
 .squad-column .pitch-row { display: grid; min-width: 0; }
 .pitch-tokens { display: flex; justify-content: space-evenly; align-items: flex-start; gap: 4px; min-width: 0; }
 
-.pitch-token { position: relative; display: grid; justify-items: center; align-content: start; gap: 3px; flex: 0 1 88px; min-width: 0; padding: 2px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--text); font: inherit; text-align: center; }
+.token-cell { position: relative; display: grid; flex: 0 1 88px; min-width: 0; }
+.pitch-token { position: relative; display: grid; justify-items: center; align-content: start; gap: 3px; width: 100%; min-width: 0; padding: 2px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--text); font: inherit; text-align: center; }
 .pitch-token:hover .token-name { background: #fff; }
 .pitch-token:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .pitch-token.selected { border-color: var(--text); background: rgb(0 0 0 / 0.3); }
@@ -431,11 +432,25 @@
 /* Bench: its own card under the pitch. Benched players are dimmed unless Bench Boost makes them count. */
 .terminal-app .bench-section { --token-ring: var(--surface); display: block; padding: 10px 6px 8px; border: 0; border-radius: 12px; background: var(--surface); }
 .bench-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-.bench-strip .pitch-token { flex: none; width: 100%; }
+.bench-strip .token-cell { flex: none; width: 100%; }
 .pitch-token.benched > :not(.token-bench) { opacity: .72; }
 
 /* Drag to swap on the pitch. Tokens carry data-drop while a drag is on; the floating copy is .drag-ghost. */
 .squad-roster[data-draggable="true"] .pitch-token { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; cursor: grab; }
+/* Lock button on hover: only where a pointer can hover. It sits where the locked badge sits. */
+.token-lock-button { display: none; }
+@media (hover: hover) {
+  .token-lock-button { position: absolute; top: 22px; left: calc(50% + 9px); z-index: 2; display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--bg); color: var(--text); visibility: hidden; cursor: pointer; }
+  .token-lock-button .lock-icon { width: 12px; height: 12px; }
+  .token-lock-button[aria-pressed="true"] .lock-body { fill: currentColor; }
+  .token-lock-button:hover { border-color: var(--text); }
+  .token-lock-button:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+  .token-cell:hover .token-lock-button,
+  .token-cell:focus-within .token-lock-button { visibility: visible; }
+  .token-cell:hover .token-lock,
+  .token-cell:focus-within .token-lock { visibility: hidden; }
+  body.pitch-dragging .token-lock-button { visibility: hidden; }
+}
 body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: none; }
 .pitch-token[data-drag-source="true"] { opacity: .35; }
 .pitch-token[data-drop="legal"] { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -485,13 +500,27 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
   .captain-caption { display: none; }
   .squad-roster { gap: 6px; }
   .pitch { gap: 4px; padding: 12px 4px 8px; }
-  .pitch-token { flex-basis: 76px; gap: 2px; padding: 1px; }
+  .token-cell { flex-basis: 76px; }
+  .pitch-token { gap: 2px; padding: 1px; }
   .pitch-token .run { display: none; }
+  .token-lock-button { top: 18px; }
   .token-shirt { width: 42px; height: 32px; }
   .terminal-app .bench-section { padding: 8px 4px 6px; }
 }
 
-/* Action sheet for one player. */
+/* Action sheet for one player. On wider screens it is a compact popover beside the token. */
+.sheet.popover.side { width: 232px; }
+.sheet.side .sheet-head { min-height: 36px; padding: 0 2px 0 12px; font-size: 14px; }
+.sheet.side .sheet-close { width: 32px; height: 32px; font-size: 18px; }
+.sheet.side .sheet-body { padding: 8px 12px 12px; }
+.sheet.side .action-meta { margin: 0 0 8px; font-size: 12px; line-height: 1.35; }
+.sheet.side .action-grid { gap: 6px; }
+.sheet.side .action-button { min-height: 32px; padding: 4px 8px; }
+.sheet.side .action-button.danger { grid-column: 1 / -1; }
+@media (max-width: 900px) {
+  .sheet.side .action-button { min-height: 44px; }
+  .sheet.side .sheet-close { width: 44px; height: 44px; }
+}
 .action-meta { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
 .action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .action-button { min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 12px; }

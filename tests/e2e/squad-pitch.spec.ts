@@ -470,4 +470,51 @@ test.describe("squad pitch", () => {
     await expect(squadTable(page).locator("tbody tr[data-player]")).toHaveCount(14);
     await expect(squadTable(page).locator('tr[data-player="Rogers"]')).toHaveCount(0);
   });
+  test("hovering a token shows a lock button that toggles the lock without opening the sheet", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await importTeam(page);
+    const lock = squadPanel(page).getByRole("button", { name: "Toggle lock, Haaland" });
+    await expect(lock).toBeHidden();
+    await token(page, "Haaland").hover();
+    await expect(lock).toBeVisible();
+    const before = await lock.getAttribute("aria-pressed");
+    await lock.click();
+    await expect(lock).toHaveAttribute("aria-pressed", before === "true" ? "false" : "true");
+    await expect(page.getByRole("dialog", { name: "Haaland", exact: true })).toHaveCount(0);
+    await lock.click();
+    await expect(lock).toHaveAttribute("aria-pressed", before ?? "false");
+    // The rest of the token still opens the sheet.
+    await token(page, "Haaland").click();
+    await expect(page.getByRole("dialog", { name: "Haaland", exact: true })).toBeVisible();
+  });
+
+  test("the action popover opens beside the token: right of left-half tokens, left of right-half tokens", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await importTeam(page);
+    const tokens = squadPanel(page).locator('.pitch [data-testid="squad-token"]');
+    const boxes = await Promise.all((await tokens.all()).map(async (item) => ({ name: await item.getAttribute("data-player"), box: (await item.boundingBox())! })));
+    const left = boxes.reduce((a, b) => (b.box.x < a.box.x ? b : a));
+    const right = boxes.reduce((a, b) => (b.box.x > a.box.x ? b : a));
+    for (const [picked, side] of [[left, "right"], [right, "left"]] as const) {
+      const dialog = await openActions(page, picked.name!);
+      const tokenBox = (await token(page, picked.name!).boundingBox())!;
+      const box = (await dialog.boundingBox())!;
+      expect(box.width).toBeLessThan(260);
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(1280);
+      expect(box.y + box.height).toBeLessThanOrEqual(720);
+      if (side === "right") expect(box.x).toBeGreaterThanOrEqual(tokenBox.x + tokenBox.width);
+      else expect(box.x + box.width).toBeLessThanOrEqual(tokenBox.x);
+    }
+  });
+
+  test("on a phone the action sheet is still a bottom sheet", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const dialog = await openActions(page, "Haaland");
+    const box = (await dialog.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(389);
+    expect(box.y + box.height).toBeGreaterThanOrEqual(843);
+  });
 });

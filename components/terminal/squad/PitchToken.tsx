@@ -38,17 +38,20 @@ export interface PitchTokenProps {
   /** A pending swap is waiting for a player on this side. */
   swapTarget: boolean;
   showRun: boolean;
-  onOpen: () => void;
+  onOpen: (anchor: HTMLElement) => void;
+  /** Toggles the lock from the hover button. */
+  onToggleLock: () => void;
 }
 
 /** One player on the pitch or the bench: shirt, role, flags, fixture, xP. Tapping it opens the action sheet. */
-export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, locked, chip, selected, swapTarget, showRun, onOpen }: PitchTokenProps) {
+export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, locked, chip, selected, swapTarget, showRun, onOpen, onToggleLock }: PitchTokenProps) {
   const availability = availabilityOf(player);
   const fixtures = squadFixturesForGameweek(player, gameweek);
   const shirtColour = clubColour(player.teamShortName);
   const roleText = captain ? (chip === "3xc" ? "3×" : "C") : vice ? "V" : null;
   const benchCounting = chip === "bboost" && role === "bench";
   return (
+    <div className="token-cell">
     <button
       type="button"
       className={["pitch-token", role === "bench" ? "benched" : "", selected ? "selected" : "", swapTarget ? "swap-target" : ""].join(" ")}
@@ -58,7 +61,7 @@ export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, 
       aria-pressed={selected}
       aria-haspopup="dialog"
       aria-label={`${player.displayName}, ${player.teamShortName}`}
-      onClick={onOpen}
+      onClick={(event) => onOpen(event.currentTarget)}
     >
       <span className="token-shirt" style={{ "--shirt": shirtColour, color: shirtTextColour(shirtColour) } as CSSProperties} aria-hidden="true">
         <span className="token-club">{player.teamShortName}</span>
@@ -76,5 +79,16 @@ export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, 
       {role === "bench" && benchLabel && <span className="token-bench" data-testid="token-bench">{benchLabel}{benchCounting ? " · Counts" : ""}</span>}
       {showRun && <RunStrip fixtures={player.fixtures} fromGameweek={gameweek} count={5} />}
     </button>
+    <button
+      type="button"
+      className="token-lock-button"
+      data-no-drag
+      aria-label={`Toggle lock, ${player.displayName}`}
+      aria-pressed={locked}
+      onClick={onToggleLock}
+    >
+      <svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={locked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M4 7V5a4 4 0 0 1 7.4-2.1"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg>
+    </button>
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import { Sheet } from "@/components/shell/Sheet";
 import { money, points } from "@/lib/display/format";
 import type { Player } from "@/types";
@@ -18,6 +19,8 @@ export interface PlayerActionsProps {
   gameweek: number;
   chip?: ChipKind | null;
   variant: "bottom" | "popover";
+  /** The token or row that opened the sheet. A popover opens beside it. */
+  anchor?: RefObject<HTMLElement | null>;
   onClose: () => void;
   onInfo: () => void;
   onCaptain: () => void;
@@ -33,14 +36,14 @@ export interface PlayerActionsProps {
  * The actions for one player, in a sheet. Captaincy, bench order and lock keep
  * the sheet open. Choosing a swap, opening details or removing closes it.
  */
-export function PlayerActions({ player, starter, benchLabel, benchIndex, captain, vice, locked, lineupActive, sellingPriceTenths, gameweek, chip, variant, onClose, onInfo, onCaptain, onViceCaptain, onSwap, onMoveBench, onToggleLock, onRemove }: PlayerActionsProps) {
+export function PlayerActions({ player, starter, benchLabel, benchIndex, captain, vice, locked, lineupActive, sellingPriceTenths, gameweek, chip, variant, anchor, onClose, onInfo, onCaptain, onViceCaptain, onSwap, onMoveBench, onToggleLock, onRemove }: PlayerActionsProps) {
   const name = player.displayName;
   const swap = () => {
     onSwap();
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={name} variant={variant}>
+    <Sheet open onClose={onClose} title={name} variant={variant} anchor={anchor} placement="side">
       <p className="action-meta">
         {player.teamShortName} · {player.position} · {money(sellingPriceTenths ?? player.priceTenths)}m · {points(pitchXp(player, gameweek, captain, chip))} xP
         {starter ? "" : ` · ${benchLabel ?? "Bench"}`}

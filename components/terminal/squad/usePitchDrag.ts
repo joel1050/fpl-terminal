@@ -47,6 +47,7 @@ export function usePitchDrag(options: PitchDragOptions) {
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (!optionsRef.current.enabled || cleanupRef.current) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
+    if ((event.target as Element).closest("[data-no-drag]")) return;
     const root = rootRef.current;
     const sourceId = playerIdOf(event.target as Element, root);
     if (sourceId === null || !root) return;

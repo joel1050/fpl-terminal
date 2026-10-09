@@ -579,6 +579,8 @@ export default function TerminalApp() {
   const [gwSwapSelection, setGWSwapSelection] = useState<{ starterId?: number; benchId?: number }>({});
   const [actionPlayerId, setActionPlayerId] = useState<number | null>(null);
   const isMobileLineup = useMatchMedia("(max-width: 900px)");
+  // The token or table button that opened the action popover; it opens beside this element.
+  const actionAnchor = useRef<HTMLElement | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<ResizeState | null>(null);
@@ -1241,6 +1243,15 @@ export default function TerminalApp() {
   // A pending swap holds one side; the next tap on the other side completes it from that side's sheet.
   const pendingStarterId = gwSwapSelection.starterId !== undefined && gwSwapSelection.benchId === undefined ? gwSwapSelection.starterId : undefined;
   const pendingBenchId = gwSwapSelection.benchId !== undefined && gwSwapSelection.starterId === undefined ? gwSwapSelection.benchId : undefined;
+  /** Opens the action sheet. Rail and alert taps pass no element, so the pitch token or table button is looked up. */
+  const openActions = (playerId: number, anchor?: HTMLElement) => {
+    const name = playerById.get(playerId)?.displayName ?? "";
+    actionAnchor.current = anchor
+      ?? document.querySelector<HTMLElement>(`.pitch-token[data-player-id="${playerId}"]`)
+      ?? Array.from(document.querySelectorAll<HTMLElement>('table[aria-label="Squad table"] tr[data-player] .sq-row-button')).find((button) => button.closest("tr")?.dataset.player === name)
+      ?? null;
+    setActionPlayerId(playerId);
+  };
   const renderSquadPlayer = (player: Player, role: "starter" | "bench", benchLabel?: string) => <PitchToken
     key={player.id}
     player={player}
@@ -1254,7 +1265,8 @@ export default function TerminalApp() {
     selected={actionPlayerId === player.id || gwSwapSelection.starterId === player.id || gwSwapSelection.benchId === player.id}
     swapTarget={Boolean(currentGWPlan) && (pendingStarterId !== undefined ? role === "bench" : pendingBenchId !== undefined && role === "starter")}
     showRun
-    onOpen={() => setActionPlayerId(player.id)}
+    onOpen={(anchor) => openActions(player.id, anchor)}
+    onToggleLock={() => store.toggleLock(player.id)}
   />;
   const choosePlayer = (position: Position) => {
     const maxPriceTenths = slotMaxPrices[position];
@@ -1354,7 +1366,7 @@ export default function TerminalApp() {
                   captainId={lineupApplied ? store.captainId : currentGWPlan?.captainId}
                   viceCaptainId={lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId}
                   chip={store.chip}
-                  onOpen={(player) => setActionPlayerId(player.id)}
+                  onOpen={(player) => openActions(player.id)}
                 />
               </> : <SquadPitch
                 startingMeta={`${currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · ${currentGWPlan ? 11 : draftStarterCount}/11`}
@@ -1378,9 +1390,9 @@ export default function TerminalApp() {
               gameweek={planningGameweek}
               captainId={lineupApplied ? store.captainId : currentGWPlan?.captainId}
               viceCaptainId={lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId}
-              onOpen={(playerId) => setActionPlayerId(playerId)}
+              onOpen={(playerId) => openActions(playerId)}
             />}
-            alerts={<AlertsSection alerts={planAlerts} onOpen={(playerId) => setActionPlayerId(playerId)} />}
+            alerts={<AlertsSection alerts={planAlerts} onOpen={(playerId) => openActions(playerId)} />}
             transfers={<TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />}
             chips={<RailSection title="Chips">
               <ChipSelector gameweek={planningGameweek} onNotice={setNotice} />
@@ -1406,6 +1418,7 @@ export default function TerminalApp() {
         gameweek={planningGameweek}
         chip={store.chip}
         variant={isMobileLineup ? "bottom" : "popover"}
+        anchor={actionAnchor}
         onClose={() => setActionPlayerId(null)}
         onInfo={() => openPlayer(actionPlayer.id)}
         onCaptain={() => makeGWCaptain(actionPlayer.id)}
