@@ -15,7 +15,6 @@ import {
   LEAGUE_AVERAGE_GOALS_AGAINST,
 } from "@/lib/projections/fixtureAdjustment";
 import { deriveCleanSheetStrengths, type CleanSheetStrength } from "@/lib/projections/cleanSheetStrength";
-import { CLUB_ELO_SNAPSHOT, clubEloForFplShortName, type ClubEloSnapshot } from "@/lib/clubElo";
 import { projectPlayer } from "@/lib/projections/projectPlayer";
 import { expectedFloorDivision } from "@/lib/projections/distributions";
 import { loadSeason, formBefore, playerAt, strengthsBefore } from "./season";
@@ -150,12 +149,6 @@ const eloPath = path.join(dataDir, "backtest-elo.json");
 if (!existsSync(eloPath)) throw new Error(`missing ${eloPath}; prepared Elo inputs are required`);
 const eloRows = JSON.parse(readFileSync(eloPath, "utf8")) as EloRow[];
 const teamInfo = JSON.parse(readFileSync(path.join(dataDir, "team-strength.json"), "utf8")) as TeamInfo[];
-const shortNameByTeamId = new Map(teamInfo.map((team) => [team.teamId, team.shortName]));
-const identityByTeamId = new Map(teamInfo.map((team) => {
-  const identity = clubEloForFplShortName(team.shortName, CLUB_ELO_SNAPSHOT);
-  if (!identity) throw new Error(`no ClubElo identity for ${team.name} (${team.shortName})`);
-  return [team.teamId, identity] as const;
-}));
 
 function eloAtGameweekStart(
   season: ReturnType<typeof loadSeason>,
@@ -191,22 +184,12 @@ function cleanSheetStrengthsAt(
   elo: ReadonlyMap<number, number>,
   matchesPlayed?: ReadonlyMap<number, number>,
 ): Record<number, CleanSheetStrength> {
-  const clubs = teamInfo.flatMap((team) => {
-    const identity = identityByTeamId.get(team.teamId);
-    const rating = elo.get(team.teamId);
-    return identity && rating !== undefined ? [{ ...identity, elo: rating }] : [];
-  });
-  if (clubs.length !== teamInfo.length) {
-    throw new Error(`Elo map rated ${clubs.length}/${teamInfo.length} teams before ${seasonName} fixture`);
+  for (const team of teamInfo) {
+    if (!Number.isFinite(elo.get(team.teamId))) {
+      throw new Error(`Elo map is missing ${team.name} before ${seasonName} fixture`);
+    }
   }
-  const snapshot: ClubEloSnapshot = {
-    source: "prepared walk-forward Elo",
-    fetchedAt: "",
-    snapshotDate: seasonName,
-    homeFieldAdvantage: CLUB_ELO_SNAPSHOT.homeFieldAdvantage,
-    clubs,
-  };
-  return deriveCleanSheetStrengths(strengths, shortNameByTeamId, snapshot, matchesPlayed);
+  return deriveCleanSheetStrengths(strengths, elo, matchesPlayed);
 }
 
 function collectEventCases(

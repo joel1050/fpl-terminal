@@ -160,7 +160,12 @@ describe("ClubElo snapshot freshness", () => {
       element_types: [{ id: 3, plural_name_short: "MID" }],
       elements: [{ id: 10, team: 1, element_type: 3, now_cost: 75 }],
     });
-    const enriched = await enrichBootstrapWithProjections(normalizeBootstrap(payload), null);
+    const normalized = normalizeBootstrap(payload);
+    expect(normalized.teams[0]).toMatchObject({
+      shortName: "ARS",
+      elo: clubEloForFplShortName("ARS")?.elo,
+    });
+    const enriched = await enrichBootstrapWithProjections(normalized, null);
     expect(enriched.metadata.clubElo).toMatchObject({
       fetchedAt: CLUB_ELO_SNAPSHOT.fetchedAt,
       snapshotDate: CLUB_ELO_SNAPSHOT.snapshotDate,

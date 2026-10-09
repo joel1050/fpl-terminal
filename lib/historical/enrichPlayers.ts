@@ -11,8 +11,10 @@ import type { HistoricalBundle } from "./types";
 export interface EnrichmentTeam {
   id: number;
   name?: string;
-  /** Needed to resolve the team's ClubElo rating for the clean-sheet model. */
+  /** FPL's three-letter code. */
   shortName?: string;
+  /** Actual ClubElo rating, absent when the club identity is unresolved. */
+  elo?: number;
   strength?: {
     rating?: number;
     attackRating?: number;
@@ -261,8 +263,7 @@ export function enrichPlayersWithHistory(
   }));
   const cleanSheetStrengths = deriveCleanSheetStrengths(
     strengths,
-    new Map(teams.flatMap((team) => (team.shortName ? [[team.id, team.shortName] as const] : []))),
-    undefined,
+    new Map(teams.flatMap((team) => (team.elo === undefined ? [] : [[team.id, team.elo] as const]))),
     // How far the clean-sheet level has moved off Elo and onto this season's
     // fit. Absent before a ball is kicked, which leaves the level on Elo.
     inSeasonForm

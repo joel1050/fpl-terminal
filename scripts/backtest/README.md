@@ -50,6 +50,53 @@ Both seasons improved. This uses reconstructed availability, proxy Elo, and
 a common £5.0m price prior; it is not a replay of archived live predictions.
 [Combined comparison and reproduction](results/tier-c-combined.md).
 
+## Historical ClubElo and backtest safeguards — 2026-10-08
+
+`clubelo-history.ts` fetches actual dated ratings from ClubElo's per-club chart
+series. The current snapshot resolves club identities only; it never supplies
+missing historical ratings. The generated cache records retrieval dates, raw
+series, a strictly prior fixture panel, and rating lag. The committed cache
+covers 25 clubs and 1,140 fixtures; its 95th-percentile lag is 15 days and its
+maximum is 107 days. Same-day chart values
+are post-match, so the lookup excludes them and rejects missing or conflicting
+history. Production still uses its existing ClubElo snapshot.
+
+```bash
+BACKTEST_MULTI_DATA_DIR=/path/to/prepared-seasons npx tsx scripts/backtest/clubelo-history.ts
+BACKTEST_DATA_DIR=/path/to/prepared-seasons/2024-25 \
+  TIER_C_ARM=candidate TIER_C_ELO_SOURCE=historical-clubelo \
+  TIER_C_CLUBELO_HISTORY_FILE=scripts/backtest/results/clubelo-history.json \
+  TIER_C_OUTPUT_DIR=/tmp/tier-c-real-clubelo \
+  npx tsx scripts/backtest/tier-c-combined.ts run
+```
+
+Prepare the seasons with `npm run backtest:prepare` if needed, then run
+`elo-history.ts` against the same `BACKTEST_MULTI_DATA_DIR` to generate the
+required fixture-difficulty inputs. That script also generates proxy ratings;
+actual-history runs do not consume those ratings. The fetcher covers 2023/24–2025/26; the combined runner evaluates 2024/25 and 2025/26.
+For actual-history runs, all 20 club ratings are frozen strictly before the
+first fixture date of each target gameweek, and the output records the cache
+hash, cutoff, rating dates and lag. A separate output directory is required;
+the summarizer rejects comparisons with different rating sources or caches.
+The default remains the result-derived proxy, preserving the published Tier C
+comparison above. Fetching real history does not revise those older results.
+
+The combined runner calls production `projectPlayer()` with forecast selection
+and minutes, continuous fixture difficulty, and pre-gameweek form. Exact
+repeated player-fixture rows are removed, conflicting copies fail, and target
+or future gameweeks cannot enter the history. An explicit zero-minute outcome
+is scored as a DNP; an absent record remains unknown and cannot be invented as
+a DNP. Double-gameweek points sum the recorded fixtures. These checks support
+reproducible comparisons, but do not supply missing historical prices, injuries,
+RotoWire lineups or complete roster membership.
+
+Foundation verification: 668 unit tests, TypeScript, lint and production build
+passed. The proxy runner reproduced all 49,212 predictions and coverage counts
+from `ab5925e` exactly. The actual-history 2025/26 path scored 25,637 rows with
+20 strictly prior ratings per evaluated gameweek. Browser acceptance retained
+the existing Starts-field viewport failure, reproduced on untouched `ab5925e`;
+a navigation timeout passed on isolated retry.
+
 ## Remeasurement after production-parity repair — 2026-09-09
 
 This is the authoritative result set after the harness fixes in `fa8f4ca` and
@@ -493,11 +540,12 @@ the answer to the redundancy worry above - `corr(base, ratio)` rises from 0.575
 to 0.758 when FPL's rating is swapped for the Elo gap, and the residual
 correlation does not fall.
 
-**Reject a tighter divisor; 300 is unresolved.** `GAP(130)` is significantly
+**Historical verdict: reject a tighter divisor; 300 was unresolved.** `GAP(130)` is significantly
 worse than the shipped 200 in both evaluation seasons (+0.00293 [+0.0005,
 +0.0054] and +0.00357 [+0.0001, +0.0069]) and binds the outer multiplier clamp
 on 13% of team-fixtures against 6-10%. `GAP(300)` is directionally better in two
-seasons of three and binds on 3%, but no interval resolves, so 200 stands.
+seasons of three and binds on 3%, but no interval resolves, so that experiment retained 200. The newer Tier C calibration above selected
+300 for production; the table here retains the older experiment's inputs.
 
 **Unresolved: ClubElo against FPL.** FPL's own rating is significantly better in
 2025/26 (-0.00567 [-0.0110, -0.0009]), a null in 2024/25 and worse in 2023/24.
@@ -506,9 +554,11 @@ not concluded from.
 
 ### Scope limits
 
-- **These are not ClubElo's ratings.** ClubElo's history API returns 502 and
-  `clubelo.com/<date>/ENG` redirects to the front page, so no dated historical
-  values are obtainable. `elo-history.ts` computes ratings from the corpus's own
+- **These are not ClubElo's ratings.** ClubElo's history API returned 502 and
+  `clubelo.com/<date>/ENG` redirected to the front page during this experiment.
+  The per-club chart access described above now supplies real dated history,
+  but these recorded results still use synthetic ratings. `elo-history.ts`
+  computes ratings from the corpus's own
   match results instead: K=20 with the World Football Elo goal-difference term,
   65 Elo points of home advantage, chained across seasons by club name, promoted
   clubs entering at the mean of the relegated, then rescaled to the real

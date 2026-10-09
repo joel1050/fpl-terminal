@@ -124,26 +124,8 @@ function ratedStrengths(
   ratings: RatingState,
 ): Record<number, RatedStrength> {
   const ids = Object.keys(strengths).map(Number);
-  for (const id of ids) assert(ratings.byTeam.has(id), "no prior Elo for team " + id);
-  const shortNames = new Map(ids.map((id) => [id, "T" + id]));
-  const snapshot = {
-    source: "walk-forward backtest Elo",
-    fetchedAt: "",
-    snapshotDate: "",
-    homeFieldAdvantage: 0,
-    clubs: ids.map((id) => ({
-      name: "team-" + id,
-      tlc: "T" + id,
-      slug: "team-" + id,
-      elo: ratings.byTeam.get(id)!,
-    })),
-  };
-  return deriveCleanSheetStrengths(
-    strengths,
-    shortNames,
-    snapshot,
-    ratings.matchesPlayed,
-  );
+  for (const id of ids) assert(Number.isFinite(ratings.byTeam.get(id)), "no finite prior Elo for team " + id);
+  return deriveCleanSheetStrengths(strengths, ratings.byTeam, ratings.matchesPlayed);
 }
 
 function fixtureRead(

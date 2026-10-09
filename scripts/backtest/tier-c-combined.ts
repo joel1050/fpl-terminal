@@ -8,6 +8,10 @@
  *   TIER_C_ARM=main TIER_C_SOURCE_REF=74ceff2 \
  *   TIER_C_OUTPUT_DIR=output/tier-c \
  *   npx tsx scripts/backtest/tier-c-combined.ts run
+ *
+ * To use actual dated ClubElo, set TIER_C_ELO_SOURCE=historical-clubelo,
+ * TIER_C_CLUBELO_HISTORY_FILE, and a separate TIER_C_OUTPUT_DIR. This freezes
+ * all clubs' ratings before the first fixture date in each target Gameweek.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -22,9 +26,6 @@ import type { HistoricalBundle } from "@/lib/historical/types";
 import {
   calculateClubEloFdr,
   calculateContinuousClubEloFdr,
-  clubEloForFplShortName,
-  CLUB_ELO_SNAPSHOT,
-  type ClubEloSnapshot,
 } from "@/lib/clubElo";
 import { buildPlayerSelections } from "@/lib/availability/selection";
 import type { StartObservation } from "@/lib/availability/startRate";
@@ -42,6 +43,16 @@ import {
   type Season,
 } from "./season";
 import { buildFixturesFromMatchRows } from "./multiSeasonData";
+import {
+  deduplicateHistoricalFixtureRows,
+  recordedFixtureOutcome,
+  rowsBeforeGameweek,
+} from "./historicalBacktest";
+import {
+  clubEloFixture,
+  clubEloRatingsBeforeDate,
+  readClubEloHistoryCache,
+} from "./clubelo-history";
 
 const FIRST_GAMEWEEK = 6;
 const LAST_GAMEWEEK = 38;
@@ -81,6 +92,12 @@ interface SeasonResult {
   arm: Arm;
   sourceRef: string;
   fdrDivisor: number;
+  ratingSource: "proxy" | "historical-clubelo";
+  ratingHistorySha256?: string;
+  ratingsAsOfByGameweek: Record<string, {
+    cutoffDate: string;
+    teams: Array<{ teamId: number; shortName: string; slug: string; elo: number; ratingDate: string; lagDays: number }>;
+  }>;
   productionHashes: Record<string, string>;
   inputHashes: Record<string, string>;
   coverage: {
@@ -121,7 +138,21 @@ if (!SEASONS.includes(SEASON_NAME as typeof SEASONS[number])) {
   throw new Error(`Unsupported held-out season ${SEASON_NAME}.`);
 }
 const DATA_ROOT = path.dirname(path.resolve(BACKTEST_DIR));
+const RATING_SOURCE: "proxy" | "historical-clubelo" = (() => {
+  const source = process.env.TIER_C_ELO_SOURCE ?? "proxy";
+  if (source !== "proxy" && source !== "historical-clubelo") {
+    throw new Error("Set TIER_C_ELO_SOURCE to proxy or historical-clubelo.");
+  }
+  return source;
+})();
+if (RATING_SOURCE === "historical-clubelo" && !process.env.TIER_C_OUTPUT_DIR) {
+  throw new Error("Set TIER_C_OUTPUT_DIR to a separate directory for historical ClubElo runs.");
+}
 const OUTPUT_DIR = path.resolve(process.env.TIER_C_OUTPUT_DIR ?? "output/tier-c");
+if (RATING_SOURCE === "historical-clubelo" && OUTPUT_DIR === path.resolve("output/tier-c")) {
+  throw new Error("Historical ClubElo results need an output directory separate from output/tier-c.");
+}
+const HISTORY_FILE = path.resolve(process.env.TIER_C_CLUBELO_HISTORY_FILE ?? "scripts/backtest/results/clubelo-history.json");
 const ARM = process.env.TIER_C_ARM as Arm | undefined;
 const SOURCE_REF = process.env.TIER_C_SOURCE_REF ?? "unspecified";
 const DIVISOR = ARM === "main" ? 150 : ARM === "candidate" ? 300 : undefined;
@@ -168,19 +199,11 @@ function normalizedName(value: string): string {
 
 function deduplicateSeason(season: Season): number {
   const fixtureById = new Map(season.fixtures.map((fixture) => [fixture.fixtureId, fixture]));
-  const unique = new Map<string, MatchRow>();
-  let duplicates = 0;
-  for (const row of [...season.rowsByPlayer.values()].flat()) {
-    const key = `${row.historicalPlayerId}:${row.gameweek}:${row.fixtureId}`;
-    const previous = unique.get(key);
-    if (previous) {
-      assert.deepEqual(row, previous, `Conflicting prepared duplicate ${key}`);
-      duplicates += 1;
-    } else unique.set(key, row);
-  }
+  const { rows, duplicatesRemoved: duplicates } = deduplicateHistoricalFixtureRows(
+    [...season.rowsByPlayer.values()].flat(),
+  );
   if (duplicates === 0) return 0;
 
-  const rows = [...unique.values()];
   season.rowsByGameweek = new Map();
   season.rowsByPlayer = new Map();
   const countsByPlayer = new Map<number, Map<number, number>>();
@@ -295,8 +318,7 @@ function readElo(dataDir: string): Map<number, Map<number, number>> {
 
 function countMatchesBefore(season: Season, gameweek: number): Map<number, number> {
   const counts = new Map<number, number>();
-  for (const fixture of season.fixtures) {
-    if (fixture.gameweek >= gameweek) continue;
+  for (const fixture of rowsBeforeGameweek(season.fixtures, gameweek)) {
     counts.set(fixture.homeTeamId, (counts.get(fixture.homeTeamId) ?? 0) + 1);
     counts.set(fixture.awayTeamId, (counts.get(fixture.awayTeamId) ?? 0) + 1);
   }
@@ -310,21 +332,10 @@ function ratedStrengths(
   seasonName: string,
   played: ReadonlyMap<number, number>,
 ): ReturnType<typeof deriveCleanSheetStrengths> {
-  const identities = teamInfo.flatMap((team) => {
-    const identity = clubEloForFplShortName(team.shortName, CLUB_ELO_SNAPSHOT);
-    const elo = ratings.get(team.teamId);
-    return identity && elo !== undefined ? [{ ...identity, elo }] : [];
-  });
-  assert.equal(identities.length, teamInfo.length, `${seasonName}: couldn't resolve a pre-GW Elo rating for each team.`);
-  const snapshot: ClubEloSnapshot = {
-    source: "prepared gameweek-opening Elo proxy",
-    fetchedAt: "",
-    snapshotDate: seasonName,
-    homeFieldAdvantage: CLUB_ELO_SNAPSHOT.homeFieldAdvantage,
-    clubs: identities,
-  };
-  const byTeamName = new Map(teamInfo.map((team) => [team.teamId, team.shortName]));
-  const result = deriveCleanSheetStrengths(strengths, byTeamName, snapshot, played);
+  for (const team of teamInfo) {
+    assert.ok(Number.isFinite(ratings.get(team.teamId)), `${seasonName}: missing pre-GW Elo for ${team.name}.`);
+  }
+  const result = deriveCleanSheetStrengths(strengths, ratings, played);
   assert.equal(Object.keys(result).length, teamInfo.length, `${seasonName}: clean-sheet strengths were not rated for all teams.`);
   return result;
 }
@@ -332,7 +343,7 @@ function ratedStrengths(
 function eligibleFixturesBefore(season: Season, beforeGameweek: number): Map<number, Map<number, Fixture>> {
   const result = new Map<number, Map<number, Fixture>>();
   for (const [gameweek, fixtures] of season.fixturesByGameweek) {
-    if (gameweek >= beforeGameweek) continue;
+    if (rowsBeforeGameweek([{ gameweek }], beforeGameweek).length === 0) continue;
     const matchesPerTeam = new Map<number, number>();
     for (const fixture of fixtures) {
       matchesPerTeam.set(fixture.homeTeamId, (matchesPerTeam.get(fixture.homeTeamId) ?? 0) + 1);
@@ -349,7 +360,7 @@ function eligibleFixturesBefore(season: Season, beforeGameweek: number): Map<num
 }
 
 function currentTeamBefore(season: Season, playerId: number, gameweek: number, fixtureById: ReadonlyMap<number, Fixture>): number | undefined {
-  const prior = (season.rowsByPlayer.get(playerId) ?? []).filter((row) => row.gameweek < gameweek);
+  const prior = rowsBeforeGameweek(season.rowsByPlayer.get(playerId) ?? [], gameweek);
   const latest = prior[prior.length - 1];
   return latest ? teamForRow(latest, fixtureById) : undefined;
 }
@@ -363,8 +374,8 @@ function playerHistories(
   eligible: ReadonlyMap<number, ReadonlyMap<number, Fixture>>,
 ): { form: PlayerMatchRate[]; starts: StartObservation[] } {
   const rowsByWeek = new Map<number, MatchRow[]>();
-  for (const row of season.rowsByPlayer.get(playerId) ?? []) {
-    if (row.gameweek >= beforeGameweek || teamForRow(row, fixtureById) !== teamId) continue;
+  for (const row of rowsBeforeGameweek(season.rowsByPlayer.get(playerId) ?? [], beforeGameweek)) {
+    if (teamForRow(row, fixtureById) !== teamId) continue;
     (rowsByWeek.get(row.gameweek) ?? rowsByWeek.set(row.gameweek, []).get(row.gameweek)!).push(row);
   }
   const form: PlayerMatchRate[] = [];
@@ -445,25 +456,32 @@ function runSeason(): PredictionFile {
   if (!season.hasPreparedPriors) fail("Prepared adjacent-season anchors are required; refusing aggregate target-season priors.");
   const duplicates = deduplicateSeason(season);
   const { bundle: historical, historicalTeamStrengths } = loadHistorical(SEASON_NAME);
-  const eloByWeek = readElo(BACKTEST_DIR);
+  const eloByWeek = RATING_SOURCE === "proxy" ? readElo(BACKTEST_DIR) : undefined;
+  const history = RATING_SOURCE === "historical-clubelo" ? readClubEloHistoryCache(HISTORY_FILE) : undefined;
+  const ratingHistorySha256 = RATING_SOURCE === "historical-clubelo" ? fileHash(HISTORY_FILE) : undefined;
   const teamInfo = readJson<TeamInfo[]>(path.join(BACKTEST_DIR, "team-strength.json"));
   const shortNameByTeam = new Map(teamInfo.map((team) => [team.teamId, team.shortName]));
   const fixtureById = new Map(season.fixtures.map((fixture) => [fixture.fixtureId, fixture]));
   const teamNames = new Map(teamInfo.map((team) => [team.teamId, team.name]));
+  const ratingsAsOfByGameweek: SeasonResult["ratingsAsOfByGameweek"] = {};
   const hashRoot = path.resolve(__dirname, "../..");
   const productionHashes = Object.fromEntries([
     "lib/clubElo.ts",
     "lib/availability/selection.ts",
     "lib/projections/projectPlayer.ts",
   ].map((file) => [file, hashFile(path.join(hashRoot, file))]));
-  const inputHashes = Object.fromEntries([
+  const inputFiles = [
     "historical-match-stats.json",
     "historical-players.json",
     "previous-player-anchors.json",
     "preseason-team-strength.json",
     "fixture-difficulty.json",
-    "gameweek-start-elo.json",
-  ].map((file) => [file, fileHash(path.join(BACKTEST_DIR, file))]));
+    ...(RATING_SOURCE === "proxy" ? ["gameweek-start-elo.json"] : []),
+  ];
+  const inputHashes: Record<string, string> = Object.fromEntries(
+    inputFiles.map((file) => [file, fileHash(path.join(BACKTEST_DIR, file))]),
+  );
+  if (ratingHistorySha256) inputHashes["clubelo-history.json"] = ratingHistorySha256;
   const previousSeason = `${Number(SEASON_NAME.slice(0, 4)) - 1}-${SEASON_NAME.slice(2, 4)}`;
   for (const file of ["historical-match-stats.json", "historical-players.json", "team-strength.json"]) {
     inputHashes[`previous-${file}`] = fileHash(path.join(DATA_ROOT, previousSeason, file));
@@ -495,8 +513,21 @@ function runSeason(): PredictionFile {
     sourceZeroMinuteRows += targetRows.filter((row) => row.minutes === 0).length;
     const groups = activeRowsForWeek(season, gameweek);
     sourcePlayerGameweeks += groups.size;
-    const eloByTeam = eloByWeek.get(gameweek);
-    if (!eloByTeam) fail(`${SEASON_NAME} GW${gameweek}: no gameweek-opening Elo snapshot.`);
+    let eloByTeam: ReadonlyMap<number, number>;
+    if (RATING_SOURCE === "proxy") {
+      const proxyRatings = eloByWeek?.get(gameweek);
+      if (!proxyRatings) fail(`${SEASON_NAME} GW${gameweek}: no gameweek-opening Elo snapshot.`);
+      eloByTeam = proxyRatings;
+    } else {
+      if (!history) fail("Historical ClubElo cache was not loaded.");
+      const cutoffDate = targetFixtures
+        .map((fixture) => clubEloFixture(history, SEASON_NAME, fixture.fixtureId).date)
+        .sort()[0];
+      if (!cutoffDate) fail(`${SEASON_NAME} GW${gameweek}: no dated fixture in the ClubElo panel.`);
+      const datedRatings = clubEloRatingsBeforeDate(history, teamInfo, cutoffDate);
+      eloByTeam = datedRatings.ratings;
+      ratingsAsOfByGameweek[String(gameweek)] = { cutoffDate, teams: datedRatings.asOf };
+    }
     const strengths = strengthsBefore(season, gameweek);
     const csStrengths = ratedStrengths(
       strengths,
@@ -593,6 +624,8 @@ function runSeason(): PredictionFile {
       if (!targetRowsForPlayer) fail(`Missing actual rows for ${player.id} GW${gameweek}.`);
       const actual = targetRowsForPlayer.reduce((sum, row) => sum + row.totalPoints, 0);
       const actualMinutes = targetRowsForPlayer.reduce((sum, row) => sum + row.minutes, 0);
+      const outcome = recordedFixtureOutcome(targetRowsForPlayer.length ? actualMinutes : undefined);
+      assert.notEqual(outcome, "NOT_RECORDED", `${player.id} GW${gameweek}: scored outcome has no recorded player-fixture row.`);
       const predictionValue = prediction.nextGW;
       assert.ok(Number.isFinite(predictionValue), `${player.id} GW${gameweek}: non-finite xP.`);
       assert.equal(prediction.fixtures.length, targetRowsForPlayer.length,
@@ -608,7 +641,7 @@ function runSeason(): PredictionFile {
       };
       scored.push(row);
       scoredPlayers.add(player.id);
-      if (actualMinutes === 0) scoredZeroMinutePlayerGameweeks += 1;
+      if (outcome === "DNP") scoredZeroMinutePlayerGameweeks += 1;
       else if (actualMinutes >= 60) scoredStarts += 1;
       else scoredShortAppearances += 1;
     }
@@ -623,6 +656,9 @@ function runSeason(): PredictionFile {
     arm: ARM!,
     sourceRef: SOURCE_REF,
     fdrDivisor: DIVISOR!,
+    ratingSource: RATING_SOURCE,
+    ...(ratingHistorySha256 ? { ratingHistorySha256 } : {}),
+    ratingsAsOfByGameweek,
     productionHashes,
     inputHashes,
     coverage: {
@@ -750,6 +786,12 @@ function summarize(): void {
     assert.equal(candidate.season, season);
     assert.equal(main.arm, "main");
     assert.equal(candidate.arm, "candidate");
+    assert.equal(mainFull.ratingSource, RATING_SOURCE, `${season}: main file uses a different Elo source than requested.`);
+    assert.equal(candidateFull.ratingSource, RATING_SOURCE, `${season}: candidate file uses a different Elo source than requested.`);
+    assert.equal(mainFull.ratingHistorySha256, candidateFull.ratingHistorySha256,
+      `${season}: main and candidate used different historical ClubElo files.`);
+    assert.deepEqual(mainFull.ratingsAsOfByGameweek, candidateFull.ratingsAsOfByGameweek,
+      `${season}: main and candidate used different point-in-time ratings.`);
     assert.equal(main.rows.length, candidate.rows.length, `${season}: row count changed between arms.`);
     assert.deepEqual(mainFull.inputHashes, candidateFull.inputHashes,
       `${season}: main and candidate did not use identical prepared inputs.`);
@@ -772,6 +814,8 @@ function summarize(): void {
     bySeason.set(season, { main: main.rows, candidate: candidate.rows });
   }
   const report = {
+    ratingSource: RATING_SOURCE,
+    ratingHistorySha256: readJson<PredictionFile>(path.join(OUTPUT_DIR, "combined-main-2024-25.json")).ratingHistorySha256,
     seasons: Object.fromEntries([...bySeason].map(([season, pair]) => [season, {
       main: metricRows(pair.main),
       candidate: metricRows(pair.candidate),

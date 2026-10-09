@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { projectPlayer } from "@/lib/projections/projectPlayer";
+import { calculateFixtureAdjustment } from "@/lib/projections/fixtureAdjustment";
 import { expectedPoints, playerRates } from "@/scripts/backtest/xp";
-import { BASELINE } from "@/scripts/backtest/variants";
+import { adjust, BASELINE } from "@/scripts/backtest/variants";
 import type { Player, Position } from "@/types/player";
 import type { PlayerMatchRate, ProjectionComponents, TeamStrength } from "@/types/projection";
 
@@ -89,6 +90,17 @@ function productionComponents(
 }
 
 describe("backtest harness parity", () => {
+  it("uses continuous fixture difficulty when it is available", () => {
+    const exact = { ...fixture, exactDifficulty: 2.35 };
+    const options = { ownTeam: strengths[1], opponentTeam: strengths[2] };
+    const production = calculateFixtureAdjustment(exact, options);
+    const harness = adjust(exact, options, BASELINE);
+    expect(harness.attackMultiplier).toBeCloseTo(production.attackMultiplier, 12);
+    expect(harness.cleanSheetProbability).toBeCloseTo(production.cleanSheetProbability, 12);
+    expect(harness.expectedGoalsAgainst).toBeCloseTo(production.expectedGoalsAgainst, 12);
+    expect(harness.attackMultiplier).not.toBeCloseTo(adjust(fixture, options, BASELINE).attackMultiplier, 6);
+  });
+
   it.each([
     ["GK", true, undefined],
     ["DEF", true, form],

@@ -18,7 +18,7 @@ import { packComponents } from "@/lib/projections/breakdown";
 import { rotowireSnapshotAge } from "@/lib/availability/refreshLineups";
 import { historicalBundleGeneration } from "@/lib/historical/load";
 import type { FreshnessMetadata } from "./cache";
-import { CLUB_ELO_SNAPSHOT, fixtureDifficultyFromClubElo, continuousFixtureDifficultyFromClubElo, type ClubEloSnapshot } from "@/lib/clubElo";
+import { CLUB_ELO_SNAPSHOT, clubEloForFplShortName, fixtureDifficultyFromClubElo, continuousFixtureDifficultyFromClubElo, type ClubEloSnapshot } from "@/lib/clubElo";
 import {
   type FplBootstrapPayload,
   type FplFixturePayload,
@@ -45,6 +45,8 @@ export interface NormalizedTeam {
   id: number;
   name: string;
   shortName: string;
+  /** ClubElo rating used by the clean-sheet model, absent for unresolved clubs. */
+  elo?: number;
   strength?: {
     rating?: ConsensusTeamStrength;
     attackRating?: ConsensusTeamStrength;
@@ -194,6 +196,12 @@ const optionalNumber = (
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
+/** The club's actual ClubElo rating, or nothing when its identity is unresolved. */
+function ratingOf(shortName: string): { elo?: number } {
+  const elo = clubEloForFplShortName(shortName)?.elo;
+  return elo === undefined ? {} : { elo };
+}
+
 function teamMap(teams: FplBootstrapPayload["teams"]): Map<number, NormalizedTeam> {
   return new Map(
     teams.map((team) => {
@@ -204,6 +212,7 @@ function teamMap(teams: FplBootstrapPayload["teams"]): Map<number, NormalizedTea
         id: team.id,
         name: team.name,
         shortName: team.short_name,
+        ...ratingOf(team.short_name),
         strength: {
           rating: consensus?.overall,
           attackRating: consensus?.attack,
