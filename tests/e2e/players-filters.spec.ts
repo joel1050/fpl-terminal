@@ -64,6 +64,33 @@ test.describe("players filters", () => {
       await expect.poll(() => rows.count()).toBe(all);
     });
 
+    test("each row shows the stat the list is sorted by", async ({ page }) => {
+      const first = page.getByTestId("player-row").first();
+      const stat = first.locator(".player-row-xp");
+      await expect(stat.locator("small")).toHaveText("GW xP");
+
+      await page.getByLabel("Sort players").selectOption({ label: "Form" });
+      await expect(stat.locator("small")).toHaveText("Form");
+      await expect(stat.locator("strong")).toHaveText(/^\d+\.\d$/);
+      const form = Number(await stat.locator("strong").textContent());
+      const second = Number(await page.getByTestId("player-row").nth(1).locator(".player-row-xp strong").textContent());
+      expect(form).toBeGreaterThanOrEqual(second);
+
+      await page.getByLabel("Sort players").selectOption({ label: "Own" });
+      await expect(stat.locator("small")).toHaveText("Own");
+      await expect(stat.locator("strong")).toHaveText(/%$/);
+
+      await page.getByLabel("Sort players").selectOption({ label: "£m" });
+      await expect(stat.locator("small")).toHaveText("£m");
+      const add = first.getByRole("button", { name: /^Add / });
+      const statBox = await stat.boundingBox();
+      const addBox = await add.boundingBox();
+      expect(statBox!.x + statBox!.width).toBeLessThanOrEqual(addBox!.x);
+
+      await page.getByLabel("Sort players").selectOption({ label: "Name" });
+      await expect(stat.locator("small")).toHaveText("GW xP");
+    });
+
     test("Reset filters in the sheet clears every filter", async ({ page }) => {
       await page.getByRole("button", { name: /^Filters · 0$/ }).click();
       const sheet = page.getByRole("dialog", { name: "Filters" });

@@ -1175,7 +1175,7 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
 }
 .player-row-fixtures { display: flex; grid-area: fixtures; justify-content: flex-start; }
 .player-row-fixtures .fc { min-width: 26px; padding: 1px 2px; }
-.player-row-xp { display: grid; grid-area: xp; justify-items: end; }
+.player-row-xp { display: grid; grid-area: xp; justify-items: end; min-width: 56px; white-space: nowrap; }
 .player-row-xp strong { color: var(--text); font: 600 17px/1.1 var(--font-num); font-variant-numeric: tabular-nums; }
 .player-row-xp small { color: var(--muted); font: 12px/1.3 var(--font-ui); }
 .player-row .add-button { grid-area: add; width: 40px; height: 40px; font: 600 18px/1 var(--font-num); }

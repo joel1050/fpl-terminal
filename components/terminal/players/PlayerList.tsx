@@ -1,26 +1,12 @@
 import { FixtureRun } from "@/components/terminal/fixtures/FixtureChips";
 import { universeWeekFor, type UniverseWeekMetrics } from "@/lib/analysis/universeWeek";
-import { money, ownershipPercent, points } from "@/lib/display/format";
+import { money, ownershipPercent } from "@/lib/display/format";
 import type { SortKey } from "@/store/terminalStore";
+import { SORT_LABELS, sortStat } from "./columns";
 import type { TerminalPlayer } from "./PlayersTable";
 
 /** The phone row shows four Gameweeks of fixtures. */
 const LIST_FIXTURE_COUNT = 4;
-
-const SORT_LABELS: Record<SortKey, string> = {
-  name: "Name",
-  price: "£m",
-  nextGW: "GW xP",
-  form: "Form",
-  next3: "3GW",
-  next5: "5GW",
-  value: "5GW xP/£",
-  next10: "10GW",
-  value10: "10GW xP/£",
-  xgi: "xGI/90",
-  ownership: "Own",
-  start: "Start",
-};
 
 const SORT_KEYS = Object.keys(SORT_LABELS) as SortKey[];
 
@@ -51,17 +37,19 @@ export interface PlayerListProps {
   rows: TerminalPlayer[];
   weeks: Map<number, UniverseWeekMetrics>;
   gameweek: number;
+  sortKey: SortKey;
   inSquadIds: ReadonlySet<number>;
   onOpen: (id: number) => void;
   onAdd: (player: TerminalPlayer) => void;
 }
 
-/** The phone market: one row per player with its fixtures, GW xP and Add. The desktop table is PlayersTable. */
-export function PlayerList({ rows, weeks, gameweek, inSquadIds, onOpen, onAdd }: PlayerListProps) {
+/** The phone market: one row per player with its fixtures, the stat it is sorted by (GW xP by default) and Add. The desktop table is PlayersTable. */
+export function PlayerList({ rows, weeks, gameweek, sortKey, inSquadIds, onOpen, onAdd }: PlayerListProps) {
   return (
     <ul className="player-list" aria-label="Players">
       {rows.map((player) => {
         const week = weeks.get(player.id) ?? universeWeekFor(player, gameweek);
+        const stat = sortStat(sortKey, player, week);
         const inSquad = inSquadIds.has(player.id);
         return (
           <li key={player.id} className={`player-row${inSquad ? " in" : ""}`} data-testid="player-row">
@@ -73,8 +61,8 @@ export function PlayerList({ rows, weeks, gameweek, inSquadIds, onOpen, onAdd }:
               <FixtureRun fixtures={player.fixtures} fromGameweek={gameweek} count={LIST_FIXTURE_COUNT} />
             </span>
             <span className="player-row-xp">
-              <strong>{points(week.xp)}</strong>
-              <small>GW xP</small>
+              <strong>{stat.text}</strong>
+              <small>{stat.label}</small>
             </span>
             <button type="button" className="add-button" disabled={inSquad} aria-label={`Add ${player.displayName}`} onClick={() => onAdd(player)}>
               {inSquad ? "In" : "+"}
