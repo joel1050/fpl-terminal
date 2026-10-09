@@ -233,4 +233,115 @@ describe("FPL team import route", () => {
       expect(data.transferBaseline.warnings.join(" ")).toContain("FPL reports");
     });
   });
+
+  describe("benched armbands", () => {
+    it("handles benched vice-captain by reassigning to a starter with an explanatory warning", async () => {
+      const benchedVcPicks = picks.map((pick) => {
+        if (pick.element === 13) return { ...pick, is_captain: true, is_vice_captain: false };
+        if (pick.element === 15) return { ...pick, is_captain: false, is_vice_captain: true }; // Position 15 (bench)
+        return { ...pick, is_captain: false, is_vice_captain: false };
+      });
+      mocks.getEntryPicks.mockResolvedValue({
+        data: { picks: benchedVcPicks, entry_history: { bank: 10, value: 1000 } },
+        freshness: null,
+      });
+
+      const response = await GET(
+        new Request("http://localhost/api/fpl/entry/4827193"),
+        { params: Promise.resolve({ id: "4827193" }) },
+      );
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.data.lineup.captainId).toBe(13);
+      expect(body.data.lineup.viceCaptainId).toBe(14); // Next highest outfield starter
+      expect(body.data.importWarnings).toContain("Vice-captain was benched in FPL; reassigned vice-captain to a starting player.");
+    });
+
+    it("handles benched captain by promoting starting vice-captain to captain with an explanatory warning", async () => {
+      const benchedCapPicks = picks.map((pick) => {
+        if (pick.element === 15) return { ...pick, is_captain: true, is_vice_captain: false }; // Position 15 (bench)
+        if (pick.element === 14) return { ...pick, is_captain: false, is_vice_captain: true }; // Position 11 (starter)
+        return { ...pick, is_captain: false, is_vice_captain: false };
+      });
+      mocks.getEntryPicks.mockResolvedValue({
+        data: { picks: benchedCapPicks, entry_history: { bank: 10, value: 1000 } },
+        freshness: null,
+      });
+
+      const response = await GET(
+        new Request("http://localhost/api/fpl/entry/4827193"),
+        { params: Promise.resolve({ id: "4827193" }) },
+      );
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.data.lineup.captainId).toBe(14); // Promoted starting vice-captain
+      expect(body.data.lineup.viceCaptainId).toBe(13); // Reassigned starting vice-captain
+      expect(body.data.importWarnings).toContain("Captain was benched in FPL; promoted vice-captain to captain and reassigned vice-captain to a starting player.");
+    });
+
+    it("handles both captain and vice-captain benched by assigning both to starting players", async () => {
+      const bothBenchedPicks = picks.map((pick) => {
+        if (pick.element === 15) return { ...pick, is_captain: true, is_vice_captain: false }; // Position 15 (bench)
+        if (pick.element === 7) return { ...pick, is_captain: false, is_vice_captain: true }; // Position 14 (bench)
+        return { ...pick, is_captain: false, is_vice_captain: false };
+      });
+      mocks.getEntryPicks.mockResolvedValue({
+        data: { picks: bothBenchedPicks, entry_history: { bank: 10, value: 1000 } },
+        freshness: null,
+      });
+
+      const response = await GET(
+        new Request("http://localhost/api/fpl/entry/4827193"),
+        { params: Promise.resolve({ id: "4827193" }) },
+      );
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.data.lineup.captainId).toBe(14);
+      expect(body.data.lineup.viceCaptainId).toBe(13);
+      expect(body.data.importWarnings).toContain("Captain and vice-captain were benched in FPL; assigned captain and vice-captain to starting players.");
+    });
+
+    it("successfully imports entry 1666253 squad where Joao Pedro is benched at pos 15 with the VC badge", async () => {
+      const entry1666253Picks = [
+        { element: 496, position: 1, element_type: 1 },
+        { element: 115, position: 2, element_type: 2 },
+        { element: 499, position: 3, element_type: 2 },
+        { element: 8, position: 4, element_type: 2 },
+        { element: 259, position: 5, element_type: 2 },
+        { element: 368, position: 6, element_type: 3 },
+        { element: 426, position: 7, element_type: 3 },
+        { element: 565, position: 8, element_type: 3 },
+        { element: 237, position: 9, element_type: 3 },
+        { element: 464, position: 10, element_type: 4 },
+        { element: 411, position: 11, element_type: 4, is_captain: true },
+        { element: 412, position: 12, element_type: 1 },
+        { element: 175, position: 13, element_type: 2 },
+        { element: 212, position: 14, element_type: 3 },
+        { element: 165, position: 15, element_type: 4, is_vice_captain: true },
+      ];
+      mocks.getEntry.mockResolvedValue({
+        data: { id: 1666253, name: "Jesse Leningard", player_first_name: "Prathyush", player_last_name: "S" },
+        freshness: null,
+      });
+      mocks.getEntryPicks.mockResolvedValue({
+        data: { picks: entry1666253Picks, entry_history: { bank: 25, value: 1006 } },
+        freshness: null,
+      });
+
+      const response = await GET(
+        new Request("http://localhost/api/fpl/entry/1666253?gameweek=5"),
+        { params: Promise.resolve({ id: "1666253" }) },
+      );
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.data.teamName).toBe("Jesse Leningard");
+      expect(body.data.lineup.captainId).toBe(411); // Haaland
+      expect(body.data.lineup.viceCaptainId).toBe(464); // Welbeck (outfield starter, FWD)
+      expect(body.data.importWarnings).toContain("Vice-captain was benched in FPL; reassigned vice-captain to a starting player.");
+    });
+  });
 });

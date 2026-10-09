@@ -18,14 +18,71 @@ function toSquad(picks: Array<{ element: number; element_type: number }>): Squad
   return { playerIds: picks.map((pick) => pick.element), byPosition };
 }
 
+function resolveStartingCaptaincy(
+  starters: Array<{ element: number; position: number; element_type: number }>,
+  allCaptains: Array<{ element: number }>,
+  allViceCaptains: Array<{ element: number }>,
+): { captainId: number; viceCaptainId: number; warnings: string[] } {
+  const warnings: string[] = [];
+  const starterIds = new Set(starters.map((pick) => pick.element));
+
+  // Fallback priority for starter armbands: FWD (4) & MID (3) before DEF (2) & GK (1),
+  // with higher positions (closer to forwards) preferred.
+  const fallbackOrder = [...starters].sort((a, b) => {
+    const priority = (type: number) => (type === 4 ? 4 : type === 3 ? 3 : type === 2 ? 2 : 1);
+    return priority(b.element_type) - priority(a.element_type) || b.position - a.position;
+  });
+
+  const rawCaptain = allCaptains[0]?.element;
+  const rawVice = allViceCaptains[0]?.element;
+
+  const captainIsStarter = rawCaptain !== undefined && starterIds.has(rawCaptain);
+  const viceIsStarter = rawVice !== undefined && starterIds.has(rawVice);
+
+  let captainId: number;
+  let viceCaptainId: number;
+
+  if (captainIsStarter && viceIsStarter) {
+    captainId = rawCaptain;
+    viceCaptainId = rawVice;
+  } else if (captainIsStarter && !viceIsStarter) {
+    captainId = rawCaptain;
+    const replacementVice = fallbackOrder.find((pick) => pick.element !== captainId);
+    viceCaptainId = replacementVice ? replacementVice.element : 0;
+    warnings.push("Vice-captain was benched in FPL; reassigned vice-captain to a starting player.");
+  } else if (!captainIsStarter && viceIsStarter) {
+    captainId = rawVice;
+    const replacementVice = fallbackOrder.find((pick) => pick.element !== captainId);
+    viceCaptainId = replacementVice ? replacementVice.element : 0;
+    warnings.push("Captain was benched in FPL; promoted vice-captain to captain and reassigned vice-captain to a starting player.");
+  } else {
+    const replacementCaptain = fallbackOrder[0];
+    captainId = replacementCaptain ? replacementCaptain.element : 0;
+    const replacementVice = fallbackOrder.find((pick) => pick.element !== captainId);
+    viceCaptainId = replacementVice ? replacementVice.element : 0;
+    warnings.push("Captain and vice-captain were benched in FPL; assigned captain and vice-captain to starting players.");
+  }
+
+  return { captainId, viceCaptainId, warnings };
+}
+
 function lineupOf(picks: Array<{ element: number; position: number; element_type: number; is_captain?: boolean; is_vice_captain?: boolean }>, gameweek: number) {
   const starters = picks.filter((pick) => pick.position <= 11);
   const bench = picks.filter((pick) => pick.position > 11);
   const benchGoalkeepers = bench.filter((pick) => pick.element_type === 1);
   const benchOrder = bench.filter((pick) => pick.element_type !== 1).map((pick) => pick.element);
-  const captains = starters.filter((pick) => pick.is_captain);
-  const viceCaptains = starters.filter((pick) => pick.is_vice_captain);
-  return { starters, benchGoalkeepers, benchOrder, captains, viceCaptains, gameweek };
+  const allCaptains = picks.filter((pick) => pick.is_captain);
+  const allViceCaptains = picks.filter((pick) => pick.is_vice_captain);
+  const resolved = resolveStartingCaptaincy(starters, allCaptains, allViceCaptains);
+  return {
+    starters,
+    benchGoalkeepers,
+    benchOrder,
+    captainId: resolved.captainId,
+    viceCaptainId: resolved.viceCaptainId,
+    warnings: resolved.warnings,
+    gameweek,
+  };
 }
 
 export async function GET(
@@ -64,8 +121,8 @@ export async function GET(
   const bench = picks.filter((pick) => pick.position > 11);
   const benchGoalkeepers = bench.filter((pick) => pick.element_type === 1);
   const benchOrder = bench.filter((pick) => pick.element_type !== 1).map((pick) => pick.element);
-  const captains = starters.filter((pick) => pick.is_captain);
-  const viceCaptains = starters.filter((pick) => pick.is_vice_captain);
+  const allCaptains = picks.filter((pick) => pick.is_captain);
+  const allViceCaptains = picks.filter((pick) => pick.is_vice_captain);
   const valid = picks.length === 15
     && new Set(playerIds).size === 15
     && new Set(picks.map((pick) => pick.position)).size === 15
@@ -76,18 +133,20 @@ export async function GET(
     && starters.filter((pick) => pick.element_type === 4).length >= 1
     && benchGoalkeepers.length === 1
     && benchOrder.length === 3
-    && captains.length === 1
-    && viceCaptains.length === 1
-    && captains[0].element !== viceCaptains[0].element;
+    && allCaptains.length === 1
+    && allViceCaptains.length === 1
+    && allCaptains[0].element !== allViceCaptains[0].element;
   if (!valid) return fplJson(null, { entry: entry.freshness, picks: event.freshness }, ["FPL returned an invalid 15-player squad"], 422);
 
   const bankTenths = Math.trunc(Number(event.data.entry_history?.bank ?? entry.data.last_deadline_bank ?? 0));
   const budgetTenths = Math.trunc(Number(event.data.entry_history?.value ?? entry.data.last_deadline_value ?? 1000));
 
+  const resolvedArmbands = resolveStartingCaptaincy(starters, allCaptains, allViceCaptains);
+
   // Enrich the import with chip history, transfer history, and finances.
   // Every enrichment is best-effort: failures mark finances ESTIMATED with a
   // warning instead of blocking planning.
-  const importWarnings: string[] = [];
+  const importWarnings: string[] = [...resolvedArmbands.warnings];
   let nestedCacheUnsafe = false;
   let usedChips: Array<{ kind: NonNullable<ReturnType<typeof normalizeChipName>>; gameweek: number }> = [];
   let transferBaseline = null;
@@ -99,8 +158,8 @@ export async function GET(
     gameweek: picksGameweek,
     benchGoalkeeperId: benchGoalkeepers[0].element,
     benchOrder,
-    captainId: captains[0].element,
-    viceCaptainId: viceCaptains[0].element,
+    captainId: resolvedArmbands.captainId,
+    viceCaptainId: resolvedArmbands.viceCaptainId,
   };
 
   try {
@@ -149,7 +208,8 @@ export async function GET(
         if (previous.data && Array.isArray(previous.data.picks) && previous.data.picks.length === 15) {
           const prevPicks = [...previous.data.picks].sort((left, right) => left.position - right.position);
           const prevLineup = lineupOf(prevPicks, picksGameweek);
-          const prevValid = prevLineup.captains.length === 1 && prevLineup.viceCaptains.length === 1
+          const prevValid = prevLineup.captainId !== 0 && prevLineup.viceCaptainId !== 0
+            && prevLineup.captainId !== prevLineup.viceCaptainId
             && prevLineup.benchGoalkeepers.length === 1 && prevLineup.benchOrder.length === 3;
           if (prevValid) {
             activeSquad = toSquad(prevPicks);
@@ -157,9 +217,10 @@ export async function GET(
               gameweek: picksGameweek,
               benchGoalkeeperId: prevLineup.benchGoalkeepers[0].element,
               benchOrder: prevLineup.benchOrder,
-              captainId: prevLineup.captains[0].element,
-              viceCaptainId: prevLineup.viceCaptains[0].element,
+              captainId: prevLineup.captainId,
+              viceCaptainId: prevLineup.viceCaptainId,
             };
+            importWarnings.push(...prevLineup.warnings);
             freeHitImport = true;
             importWarnings.push(`GW${picksGameweek} is a Free Hit; imported the GW${picksGameweek - 1} permanent squad instead of the temporary picks.`);
           }
