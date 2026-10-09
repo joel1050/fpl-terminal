@@ -75,9 +75,9 @@ describe("ClubElo snapshot and FDR", () => {
   });
 
   it("applies the venue-agnostic Elo formula, aliases, and neutral fallback", () => {
-    expect(calculateClubEloFdr(1700, 1780, true)).toBe(4);
-    expect(calculateClubEloFdr(1780, 1700, true)).toBe(2);
-    expect(calculateClubEloFdr(1700, 1800, false)).toBe(4);
+    expect(calculateClubEloFdr(1700, 2000, true)).toBe(4);
+    expect(calculateClubEloFdr(2000, 1700, true)).toBe(2);
+    expect(calculateClubEloFdr(1700, 1800, false)).toBe(3);
     expect(calculateClubEloFdr(2200, 1200, true)).toBe(1);
     expect(calculateClubEloFdr(1200, 2200, false)).toBe(5);
     expect(calculateClubEloFdr(undefined, 1800, true)).toBe(3);
@@ -89,15 +89,15 @@ describe("ClubElo snapshot and FDR", () => {
     expect(fixtureDifficultyFromClubElo("UNKNOWN", "CHE", true, SNAPSHOT)).toBe(3);
   });
 
-  it("uses the 150-Elo divisor for continuous ratings and keeps clamps and fallback", () => {
-    expect(calculateContinuousClubEloFdr(1700, 1850, true)).toBe(4);
-    expect(calculateContinuousClubEloFdr(1700, 1775, true)).toBe(3.5);
-    expect(calculateContinuousClubEloFdr(1850, 1700, false)).toBe(2);
+  it("uses the 300-Elo divisor for continuous ratings and keeps clamps and fallback", () => {
+    expect(calculateContinuousClubEloFdr(1700, 1850, true)).toBe(3.5);
+    expect(calculateContinuousClubEloFdr(1700, 1775, true)).toBe(3.25);
+    expect(calculateContinuousClubEloFdr(1850, 1700, false)).toBe(2.5);
     expect(calculateContinuousClubEloFdr(2200, 1200, true)).toBe(1);
     expect(calculateContinuousClubEloFdr(1200, 2200, false)).toBe(5);
     expect(calculateContinuousClubEloFdr(undefined, 1800, true)).toBe(NEUTRAL_CLUB_ELO_FDR);
     expect(calculateContinuousClubEloFdr(1800, undefined, true)).toBe(NEUTRAL_CLUB_ELO_FDR);
-    expect(continuousFixtureDifficultyFromClubElo("ARS", "CHE", true, SNAPSHOT)).toBeCloseTo(5 / 3, 10);
+    expect(continuousFixtureDifficultyFromClubElo("ARS", "CHE", true, SNAPSHOT)).toBeCloseTo(7 / 3, 10);
     expect(continuousFixtureDifficultyFromClubElo("UNKNOWN", "CHE", true, SNAPSHOT)).toBe(NEUTRAL_CLUB_ELO_FDR);
   });
 });
@@ -197,7 +197,7 @@ describe("ClubElo snapshot injection", () => {
       elements: [],
     });
     // ARS 2200 vs CHE 1400 clamps to the easiest rating, 1.
-    // CHE 1400 vs ARS 2200 -> 3 + (2200 - 1400) / 150 = 8.33 -> 5.
+    // CHE 1400 vs ARS 2200 -> 3 + (2200 - 1400) / 300 = 5.67 -> 5.
     const fixtures = normalizeFixtures(
       [{ id: 1, team_h: 1, team_a: 2, team_h_difficulty: 5, team_a_difficulty: 1 }],
       payload.teams,

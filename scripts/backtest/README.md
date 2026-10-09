@@ -3,6 +3,37 @@
 Walk-forward tests of the projection model. Everything a projection sees at
 gameweek `t` comes from gameweeks before `t`.
 
+## Tier C experiments — 2026-10-08
+
+The Tier C reports compare candidates against `74ceff2`; their historical
+numbers do not describe the baseline after these changes. Reproduction scripts
+remain available, and the reports state input and coverage limits.
+
+- Elo FDR now uses 300 rather than 150 Elo per step. A 2023/24 calibration
+  selected 300; pooled 2024/25–2025/26 team-xG multiplier RMSE improved by
+  0.00307 [95% GW-cluster CI −0.00514, −0.00107]. Historical Elo is a
+  result-derived proxy rather than archived ClubElo. [Report](results/tier-c-elo.md).
+- Start probability continues its EWMA after 240 observed minutes. Removing
+  the frequency override improved held-out start Brier by 0.01542
+  [0.01318, 0.01748] over 56,569 player-gameweeks. Cameo and duration branches
+  retain their threshold behavior. [Report](results/tier-c-role.md).
+- MID/FWD bonus is flat; GK/DEF retain fixture scaling. Evaluated MID/FWD
+  whole-xP RMSE improved by 0.0051 [−0.0081, −0.0022] over 11,947 rows.
+  Bonus-only RMSE remains unresolved. [Report](results/tier-c-bonus.md).
+- Anchor pooling, conversion-factor pooling, the save-denominator change, and
+  rated clean-sheet shrink did not resolve a gain, so production retains those calculations.
+  See the corresponding `results/tier-c-*.md` reports.
+
+Integrated verification passed 658 tests across 80 files, TypeScript, lint
+(with five existing warnings), production build, and all four season parity
+gates. Browser acceptance passed 52/53 tests; the player-details Starts-field
+viewport assertion also fails on untouched baseline `74ceff2`.
+
+The generic parity gate still covers the unadjusted form/table fallback.
+Experiment-specific assertions cover continuous FDR, selection normalization,
+and direct rated clean-sheet projections. A generic zero-gap pass does not
+validate every production path.
+
 ## Remeasurement after production-parity repair — 2026-09-09
 
 This is the authoritative result set after the harness fixes in `fa8f4ca` and

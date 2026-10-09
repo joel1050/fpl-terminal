@@ -5,6 +5,7 @@
  */
 import type { PlayerFixture, Position } from "@/types/player";
 import type { TeamStrength } from "@/types/projection";
+import { continuousDifficultyMultiplier } from "@/lib/projections/fixtureAdjustment";
 
 export interface Variant {
   /** Multiply by FPL's 1-5 difficulty rating on top of the strength ratio. */
@@ -65,7 +66,6 @@ export const LEGACY: Variant = {
   csShrinkWeight: undefined,
 };
 
-const difficultyMultiplier: Record<number, number> = { 1: 1.14, 2: 1.07, 3: 1, 4: 0.92, 5: 0.84 };
 const consensusStrengthTiers = [0.84, 0.92, 1, 1.08, 1.16] as const;
 
 const cleanSheetProbabilities = {
@@ -136,8 +136,8 @@ export function adjust(
   options: { ownTeam?: TeamStrength; opponentTeam?: TeamStrength; position?: Position },
   variant: Variant,
 ): AdjustmentResult {
-  const difficulty = fixture.difficulty === undefined ? 3 : clamp(Math.round(fixture.difficulty), 1, 5);
-  const base = variant.useDifficultyBase ? (difficultyMultiplier[difficulty] ?? 1) : 1;
+  const difficulty = fixture.exactDifficulty ?? fixture.difficulty ?? 3;
+  const base = variant.useDifficultyBase ? continuousDifficultyMultiplier(difficulty) : 1;
   const [homeVenue, awayVenue] = variant.venue;
   const venue = fixture.isHome ? homeVenue : awayVenue;
   // Home sides concede less because the visiting attack travels: the goals-against

@@ -56,8 +56,8 @@ function main(): void {
       const st = season.players.get(r.historicalPlayerId)!.stats;
       rows.push({
         position: base.position, minutes: r.minutes, actual: r.totalPoints,
-        noAnchor: expectedPoints(withAnchor, withAnchor.fixtures[0], r.minutes, playerRates(withAnchor, form, gw), strengths, BASELINE, true, false).total,
-        anchored: expectedPoints(withAnchor, withAnchor.fixtures[0], r.minutes, playerRates(withAnchor, form, gw), strengths, BASELINE, true, true).total,
+        noAnchor: expectedPoints(withAnchor, withAnchor.fixtures[0], r.minutes, playerRates(withAnchor, form, gw), strengths, BASELINE, undefined, false).total,
+        anchored: expectedPoints(withAnchor, withAnchor.fixtures[0], r.minutes, playerRates(withAnchor, form, gw), strengths, BASELINE, undefined, true).total,
         seasonXg: st.minutes > 0 ? (((st.expectedGoals ?? 0) + (st.expectedAssists ?? 0)) / st.minutes) * 90 : 0,
       });
     }

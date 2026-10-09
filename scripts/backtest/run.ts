@@ -32,32 +32,31 @@ interface Row {
 const v = (over: Partial<Variant>): Variant => ({ ...BASELINE, ...over });
 
 const ARMS: { name: string; variant: Variant; note: string; bonusFixture?: boolean; defence?: DefenceExperiments }[] = [
-  // Arm 0 must be what production does today, or every delta below is measured
-  // against the wrong reference. Bonus following the fixture shipped in fd89d2f.
-  { name: "shipped", variant: BASELINE, note: "", bonusFixture: true },
+  // Arm 0 uses the position-aware production bonus rule at this commit.
+  { name: "shipped", variant: BASELINE, note: "" },
   { name: "bonus flat (pre-ship)", variant: BASELINE, note: "", bonusFixture: false },
-  { name: "outer clamp [0.70,1.30] (pre-ship)", variant: v({ multiplierClamp: [0.70, 1.30] }), note: "", bonusFixture: true },
-  { name: "+ ratio [0.55,1.75]", variant: v({ attackRatioClamp: [0.55, 1.75], multiplierClamp: [0.55, 1.60] }), note: "", bonusFixture: true },
+  { name: "outer clamp [0.70,1.30] (pre-ship)", variant: v({ multiplierClamp: [0.70, 1.30] }), note: "" },
+  { name: "+ ratio [0.55,1.75]", variant: v({ attackRatioClamp: [0.55, 1.75], multiplierClamp: [0.55, 1.60] }), note: "" },
 
   // The defensive-contribution threshold. Its dispersion of 8 is an assumption
   // documented as such; these sweep it. Higher is nearer a Poisson.
   ...[3, 5, 12, 20, 1000].map((dispersion) => ({
-    name: `defCon dispersion ${dispersion}`, variant: BASELINE, note: "", bonusFixture: true,
+    name: `defCon dispersion ${dispersion}`, variant: BASELINE, note: "",
     defence: { dispersion } as DefenceExperiments,
   })),
 
   // Does the term deserve a fixture at all? A defender should make more
   // clearances and blocks against a stronger attack.
-  { name: "defCon rises vs attack (half)", variant: BASELINE, note: "", bonusFixture: true, defence: { defConEnvironment: "HALF_PRESSURE" } },
-  { name: "defCon rises vs attack (full)", variant: BASELINE, note: "", bonusFixture: true, defence: { defConEnvironment: "PRESSURE" } },
+  { name: "defCon rises vs attack (half)", variant: BASELINE, note: "", defence: { defConEnvironment: "HALF_PRESSURE" } },
+  { name: "defCon rises vs attack (full)", variant: BASELINE, note: "", defence: { defConEnvironment: "PRESSURE" } },
 
-  // Which side of the fixture a defender's bonus follows. Shipped scales it by
-  // the attacking multiplier; a defender's BPS is mostly clean sheets.
-  { name: "GK/DEF bonus follows CS", variant: BASELINE, note: "", bonusFixture: true, defence: { bonusEnvironment: "DEFENCE" } },
-  { name: "GK/DEF bonus follows both", variant: BASELINE, note: "", bonusFixture: true, defence: { bonusEnvironment: "BOTH" } },
+  // Which side of the fixture a defender's bonus follows; MID/FWD retain the
+  // shipped flat rate in both arms.
+  { name: "GK/DEF bonus follows CS", variant: BASELINE, note: "", defence: { bonusEnvironment: "DEFENCE" } },
+  { name: "GK/DEF bonus follows both", variant: BASELINE, note: "", defence: { bonusEnvironment: "BOTH" } },
 
-  { name: "clean sheets interpolated", variant: v({ cleanSheet: "BILINEAR" }), note: "rejected: see README", bonusFixture: true },
-  { name: "interpolated + extrapolated", variant: v({ cleanSheet: "BILINEAR_OPEN" }), note: "rejected: see README", bonusFixture: true },
+  { name: "clean sheets interpolated", variant: v({ cleanSheet: "BILINEAR" }), note: "rejected: see README" },
+  { name: "interpolated + extrapolated", variant: v({ cleanSheet: "BILINEAR_OPEN" }), note: "rejected: see README" },
 ];
 function collect(season: Season): Row[] {
   const rows: Row[] = [];
@@ -75,7 +74,7 @@ function collect(season: Season): Row[] {
       );
       const upcoming = player.fixtures[0];
       const predictions = ARMS.map((arm) =>
-        expectedPoints(player, upcoming, row.minutes, rates, strengths, arm.variant, arm.bonusFixture ?? false,
+        expectedPoints(player, upcoming, row.minutes, rates, strengths, arm.variant, arm.bonusFixture,
           undefined, undefined, undefined, arm.defence).total);
       rows.push({
         gameweek, playerId: row.historicalPlayerId, position: player.position,

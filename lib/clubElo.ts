@@ -3,6 +3,8 @@ import generatedClubElo from "@/data/generated/club-elo.json";
 export const CLUB_ELO_SOURCE = "https://clubelo.com/ENG";
 export const CLUB_ELO_HOME_FIELD_ADVANTAGE = 40;
 export const NEUTRAL_CLUB_ELO_FDR = 3;
+// Walk-forward team-xG RMSE favored this divisor over 150 on both holdout seasons.
+const CLUB_ELO_FDR_DIVISOR = 300;
 
 export interface ClubEloClub {
   name: string;
@@ -307,7 +309,7 @@ export function calculateClubEloFdr(
   // 0.898) and the clean-sheet path, so FDR rates only the Elo gap.
   void isHome;
   void homeFieldAdvantage;
-  return Math.min(5, Math.max(1, Math.round(3 + ((opponentElo as number) - (ownElo as number)) / 150)));
+  return Math.min(5, Math.max(1, Math.round(3 + ((opponentElo as number) - (ownElo as number)) / CLUB_ELO_FDR_DIVISOR)));
 }
 
 export function fixtureDifficultyFromClubElo(
@@ -335,7 +337,7 @@ export function calculateContinuousClubEloFdr(
   // Venue-agnostic by design: see calculateClubEloFdr.
   void isHome;
   void homeFieldAdvantage;
-  return Math.min(5, Math.max(1, 3 + ((opponentElo as number) - (ownElo as number)) / 150));
+  return Math.min(5, Math.max(1, 3 + ((opponentElo as number) - (ownElo as number)) / CLUB_ELO_FDR_DIVISOR));
 }
 
 export function continuousFixtureDifficultyFromClubElo(

@@ -46,11 +46,11 @@ A fixture's own-team and opponent short names are matched to ClubElo's three-let
 For a team with Elo `E_own` and opponent Elo `E_opp`, the normalized FDR is venue-agnostic by design - venue lives in the attack multiplier (`1.102 / 0.898`) and the clean-sheet path (§7), so FDR rates only the Elo gap:
 
 ```
-difficulty       = clamp(round(3 + (E_opp - E_own) / 150), 1, 5)
-exactDifficulty  = clamp(3 + (E_opp - E_own) / 150, 1, 5)
+difficulty       = clamp(round(3 + (E_opp - E_own) / 300), 1, 5)
+exactDifficulty  = clamp(3 + (E_opp - E_own) / 300, 1, 5)
 ```
 
-Both ratings use 150 Elo per step. The displayed difficulty rounds to an integer, while the continuous projection input preserves the fractional value.
+Both ratings use 300 Elo per step. The displayed difficulty rounds to an integer, while the continuous projection input preserves the fractional value. The Tier C walk-forward experiment selected 300 on 2023/24 and reduced held-out 2024/25–2025/26 team-xG multiplier RMSE by 0.00307 (95% gameweek-cluster interval −0.00514 to −0.00107) against 150. Historical Elo was a result-derived proxy rather than archived ClubElo, so this supports the divisor on that proxy. See `scripts/backtest/results/tier-c-elo.md`.
 
 Missing Elo values use `difficulty = 3`. The manual `npm run data:elo` refresh parses exact decimal rows embedded in ClubElo's `vegaJson`, merges the server-rendered full England ranking so clubs outside the chart's top 25 remain available, and writes the validated snapshot atomically. Where two exact rows share a code, the merge keeps the ranking's own rounded Elo rather than attach one club's rating to another's row.
 
@@ -178,7 +178,7 @@ cameoRate = clamp(max(0, appearances - starts) / sample, 0, 1 - startRate)
 
 `starts` comes from the recorded `starts` count when present, otherwise from the number of matches with `minutes >= 60`. Start and cameo minute averages come from the top-`starts` and remaining appearance rows, respectively.
 
-This is the **seed only**. It is then updated by this season's own team sheets (§4.1.1), and discarded once the current-season role reaches the override threshold.
+This is the **seed only**. This season's completed match observations update the start estimate through the EWMA (§4.1.1); it remains in use after 240 observed minutes.
 
 ### 4.1.1 Current-season update
 
@@ -227,12 +227,14 @@ cameo      = historicalCameo * (1 - seedWeight) + fallbackCameoRate * seedWeight
 
 The `0.25` fallback term applies only while the player has no current-season observations (`observations.length === 0`). It existed to temper an estimate whose sole evidence was last season; once this season's own matches are in the estimate that term only dilutes them, since `fallbackStartRate` is clamped to 0.15–0.80 and would drag a measured 0.99 down to 0.94 and push a measured 0.02 up to 0.05.
 
-Once eligible current-season observations contain at least 240 total minutes,
-the previous-season role is replaced rather than blended: start and cameo
-probabilities become their current-season frequencies, and expected start
-duration becomes the current-season average across starts. Below 240 minutes,
-the historical EWMA remains in place so one or two matches cannot redefine a
-player's role.
+Start probability always uses the historical-seeded EWMA. Removing the old
+240-minute start-frequency override reduced held-out start Brier by 0.01542
+(95% gameweek-cluster interval 0.01318–0.01748) over 56,569 player-gameweeks;
+see `scripts/backtest/results/tier-c-role.md`. Once eligible observations
+contain at least 240 total minutes, cameo probability still uses the
+current-season frequency and expected start duration uses the current-season
+average across starts. Below that threshold, those two calculations retain
+their historical blend; the experiment did not test changing them.
 
 If the player's team is covered by RotoWire for the target fixture/gameweek,
 the RotoWire signal dominates:
@@ -762,15 +764,17 @@ defensiveContribution += weight * 2 * P(count >= threshold)
 ### 8.8 Bonus
 
 ```
-bonus += weight * bonusRate * minutesShare * adjustment.attackMultiplier
+bonusMultiplier = position in {GK, DEF} ? adjustment.attackMultiplier : 1
+bonus += weight * bonusRate * minutesShare * bonusMultiplier
 ```
 
-Bonus follows the player's personal regressed rate, minutes played, and the
-attacking fixture multiplier. The 2026-09-09 remeasurement keeps this shipped
-fixture-scaled path overall, with a position caveat: a flat bonus is better for
-MID/FWD in 2024/25 and 2025/26, while fixture scaling is supported for GK/DEF
-in 2022/23 and 2025/26. See `scripts/backtest/README.md` for the paired
-season results; no production constant changed.
+Bonus uses the player's regressed rate and expected minutes. GK/DEF retain
+the attack multiplier; MID/FWD use a flat bonus rate. The Tier C comparison
+reduced MID/FWD whole-xP RMSE by 0.0051 (95% gameweek-cluster interval
+−0.0081 to −0.0022) over 11,947 evaluated player-fixtures in 2024/25–2025/26.
+Bonus-only RMSE remains unresolved, so this supports the total-points change
+rather than a claim of better bonus forecasts. See
+`scripts/backtest/results/tier-c-bonus.md`.
 
 ### 8.9 Cards
 

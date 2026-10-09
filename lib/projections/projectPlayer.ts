@@ -590,14 +590,12 @@ function fixtureComponents(
       components.defensiveContribution += weight * DEFENSIVE_CONTRIBUTION_POINTS
         * thresholdProbability(rates.defensiveContribution * minutesShare, threshold);
     }
-    // Bonus follows the fixture. BPS is driven by the same goals, assists and
-    // clean sheets section 7 already adjusts, so a flat per-90 rate priced a
-    // player identically at home to the worst defence and away to the best.
-    // Backtested over 2025/26: RMSE -0.0033 for GK/DEF with the paired
-    // confidence interval excluding zero, -0.0017 across all rows. It also
-    // closes most of the gap in how far a forward's projection moves between
-    // an easy and a hard fixture (0.73 -> 1.01 against an observed 1.07).
-    components.bonus += weight * rates.bonus * minutesShare * adjustment.attackMultiplier;
+    // Held-out tests support fixture scaling for GK/DEF, but flat bonus for
+    // MID/FWD; the attacking multiplier otherwise over-projects their bonus.
+    const bonusMultiplier = player.position === "GK" || player.position === "DEF"
+      ? adjustment.attackMultiplier
+      : 1;
+    components.bonus += weight * rates.bonus * minutesShare * bonusMultiplier;
     // A booking is something that either happens or does not, so this is a
     // probability rather than a rate times minutes: at a 0.18 yellow rate the
     // difference is small, but it keeps a full match from ever implying more

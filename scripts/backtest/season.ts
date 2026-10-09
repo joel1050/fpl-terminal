@@ -28,13 +28,6 @@ export const KNOWN_LEAKS = existsSync(path.join(dataDir, "previous-player-anchor
       "defensive contributions per-90: season aggregate only",
       "card rates per-90: season aggregate only, so they are reused at every gameweek",
     ];
-const read = <T,>(file: string): T =>
-  JSON.parse(readFileSync(path.join(dataDir, file), "utf8")) as T;
-/** Optional inputs: absent for a plain `npm run data:ingest`, so callers degrade. */
-const readOptional = <T,>(file: string): T | undefined => {
-  try { return read<T>(file); } catch { return undefined; }
-};
-
 export interface MatchRow {
   historicalPlayerId: number;
   gameweek: number;
@@ -103,7 +96,12 @@ export interface Season {
   leagueAverageXg: number;
 }
 
-export function loadSeason(): Season {
+export function loadSeason(inputDataDir = dataDir): Season {
+  const read = <T,>(file: string): T =>
+    JSON.parse(readFileSync(path.join(inputDataDir, file), "utf8")) as T;
+  const readOptional = <T,>(file: string): T | undefined => {
+    try { return read<T>(file); } catch { return undefined; }
+  };
   const rows = read<MatchRow[]>("historical-match-stats.json");
   // vaastav's fixtures.csv carries team_h_difficulty / team_a_difficulty for every
   // season; merged_gw.csv does not, which is why FDR was long recorded here as
@@ -113,11 +111,11 @@ export function loadSeason(): Season {
   );
   const difficultyById = new Map((difficulty ?? []).map((d) => [d.fixtureId, d]));
   const playerList = read<SeasonPlayer[]>("historical-players.json");
-  const priorFile = existsSync(path.join(dataDir, "preseason-team-strength.json"))
+  const priorFile = existsSync(path.join(inputDataDir, "preseason-team-strength.json"))
     ? "preseason-team-strength.json"
     : "team-strength.json";
   const rawStrengths = read<RawTeamStrength[]>(priorFile);
-  const hasPreparedPriors = existsSync(path.join(dataDir, "previous-player-anchors.json"));
+  const hasPreparedPriors = existsSync(path.join(inputDataDir, "previous-player-anchors.json"));
   const previousAnchors = hasPreparedPriors
     ? read<PreparedPlayerAnchor[]>("previous-player-anchors.json")
     : [];

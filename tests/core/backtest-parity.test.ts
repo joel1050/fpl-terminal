@@ -112,19 +112,27 @@ describe("backtest harness parity", () => {
     }
   });
 
-  it("lets bonus follow fixture difficulty", () => {
+  it("scales GK/DEF bonus but keeps MID/FWD bonus flat across fixture difficulty", () => {
     const easy = { ...fixture, opponentTeamId: 2, difficulty: 1 };
     const hard = { ...fixture, opponentTeamId: 3, difficulty: 5 };
-    const candidate = { ...player(5, "MID", true), fixtures: [easy, hard] };
-    const projection = projectPlayer(candidate, {
-      currentGameweek: GAMEWEEK,
-      horizon: 1,
-      expectedMinutes: 90,
-      teamStrengths: strengths,
-    });
+    const bonusByFixture = (position: Position) => {
+      const candidate = { ...player(5, position, true), fixtures: [easy, hard] };
+      const projection = projectPlayer(candidate, {
+        currentGameweek: GAMEWEEK,
+        horizon: 1,
+        expectedMinutes: 90,
+        teamStrengths: strengths,
+      });
+      return projection.fixtures.map((item) => item.components?.bonus ?? Number.NaN);
+    };
 
-    expect(projection.fixtures[0]?.components?.bonus).toBeGreaterThan(
-      projection.fixtures[1]?.components?.bonus ?? Number.POSITIVE_INFINITY,
-    );
+    for (const position of ["GK", "DEF"] as const) {
+      const [easyBonus, hardBonus] = bonusByFixture(position);
+      expect(easyBonus).toBeGreaterThan(hardBonus);
+    }
+    for (const position of ["MID", "FWD"] as const) {
+      const [easyBonus, hardBonus] = bonusByFixture(position);
+      expect(easyBonus).toBeCloseTo(hardBonus, 12);
+    }
   });
 });
