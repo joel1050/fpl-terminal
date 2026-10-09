@@ -25,6 +25,11 @@ remain available, and the reports state input and coverage limits.
   Consistent conceded-goal distributions also lacked a gain: Poisson raised
   evaluated whole-xP RMSE and NB worsened count likelihood. See the
   corresponding `results/tier-c-*.md` reports.
+- Replacing beam-search utility with raw xP or a fitted discount did not
+  resolve a gain across 43 held-out gameweeks, so utility stays unchanged.
+  [Report](results/tier-c-utility.md).
+- Rerunning stale backtests found schedule adjustment already in production;
+  the reruns support no additional change. [Report](results/tier-c-reruns.md).
 
 Integrated verification passed 658 tests across 80 files, TypeScript, lint
 (with five existing warnings), production build, and all four season parity
