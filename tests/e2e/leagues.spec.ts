@@ -28,6 +28,11 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(page.getByTestId("live-roster")).toBeVisible();
   }
 
+  /** On desktop the right column shows Match centre until the switch picks the Live feed. */
+  async function showFeed(page: Page) {
+    await page.getByRole("group", { name: "Right panel" }).getByRole("button", { name: "Live feed" }).click();
+  }
+
   test("imports an FPL team ID through the gate and unlocks the workspace", async ({ page }) => {
     await page.goto("/leagues");
     await expect(page.getByText("FPL TEAM REQUIRED")).toBeVisible();
@@ -288,19 +293,32 @@ test.describe("FPL Terminal Leagues workspace", () => {
     expect(chipWraps).toBe(0);
   });
 
-  test("keeps the Live Feed as the whole right rail without a status footer", async ({ page }) => {
+  test("shows Match centre in the right column by default, switches it to the Live Feed, and has no status footer", async ({ page }) => {
     await importTeam(page);
 
     await expect(page.getByText(/DEADLINE PASSED|AUTO-SUBS ON/i)).toHaveCount(0);
 
+    const switcher = page.getByRole("group", { name: "Right panel" });
+    const matchCentre = page.getByRole("region", { name: "Match centre" });
     const feed = page.getByRole("complementary", { name: "Live feed" });
-    const feedBox = await page.locator("aside.leagues-right").boundingBox();
+    await expect(switcher.getByRole("button", { name: "Match centre" })).toHaveAttribute("aria-pressed", "true");
+    await expect(matchCentre).toBeVisible();
+    await expect(feed).toBeHidden();
+    const squadBox = await page.locator("section.leagues-center-top").boundingBox();
     const centreBox = await page.locator("section.leagues-center-bottom").boundingBox();
-    expect(feedBox).not.toBeNull();
+    expect(squadBox).not.toBeNull();
     expect(centreBox).not.toBeNull();
-    expect(feedBox!.x).toBeGreaterThan(centreBox!.x);
-    expect(feedBox!.height).toBeGreaterThan(320);
+    expect(centreBox!.x).toBeGreaterThanOrEqual(squadBox!.x + squadBox!.width);
+    expect(centreBox!.height).toBeGreaterThan(320);
+
+    await showFeed(page);
+    await expect(switcher.getByRole("button", { name: "Live feed" })).toHaveAttribute("aria-pressed", "true");
+    await expect(matchCentre).toBeHidden();
     await expect(feed).toBeVisible();
+    const feedBox = await page.locator("aside.leagues-right").boundingBox();
+    expect(feedBox).not.toBeNull();
+    expect(feedBox!.x).toBeGreaterThanOrEqual(squadBox!.x + squadBox!.width);
+    expect(feedBox!.height).toBeGreaterThan(320);
 
     // A polling-style update turns into exactly one personalised feed event.
     await page.getByTestId("live-refresh").click();
@@ -314,6 +332,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
   test("shows the Gameweek so far the moment the page opens", async ({ page }) => {
     await importTeam(page);
+    await showFeed(page);
     const feed = page.getByRole("complementary", { name: "Live feed" });
 
     // No refresh: the opening snapshot is read back into events, so a goal
@@ -330,6 +349,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
   test("keeps appearance points out of the default view but not out of the feed", async ({ page }) => {
     await importTeam(page);
+    await showFeed(page);
     const feed = page.getByRole("complementary", { name: "Live feed" });
     const appearances = feed.locator('[data-testid="feed-event"]').filter({ hasText: "APPEARANCE" });
 
@@ -342,6 +362,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
   test("colours a row by what it did to your own score, and nothing else", async ({ page }) => {
     await importTeam(page);
+    await showFeed(page);
     const feed = page.getByRole("complementary", { name: "Live feed" });
     await page.getByTestId("live-refresh").click();
     await feed.getByRole("button", { name: "All", exact: true }).click();
@@ -357,6 +378,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
   test("offers a way back to the top when events land out of sight", async ({ page }) => {
     await importTeam(page);
+    await showFeed(page);
     const feed = page.getByRole("complementary", { name: "Live feed" });
     await feed.getByRole("button", { name: "All", exact: true }).click();
     await expect(feed.locator('[data-testid="feed-event"]').first()).toBeVisible();
@@ -424,6 +446,8 @@ test.describe("FPL Terminal Leagues workspace", () => {
     const tabs = page.locator(".leagues-mobile-tabs");
     await expect(tabs).toBeVisible();
     await expect(tabs.getByRole("button", { name: "FEED" })).toBeVisible();
+    // Phones keep Match centre and Feed as their own tabs, so the desktop switch is gone.
+    await expect(page.getByRole("group", { name: "Right panel" })).toBeHidden();
 
     await tabs.getByRole("button", { name: "TEAM" }).click();
     await expect(page.getByTestId("live-roster")).toBeVisible();

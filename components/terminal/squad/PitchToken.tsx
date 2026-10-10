@@ -1,9 +1,10 @@
-import { FixtureChip, RunStrip } from "@/components/terminal/fixtures/FixtureChips";
+import { FixtureChip, FixtureRun, RunStrip } from "@/components/terminal/fixtures/FixtureChips";
 import { availabilityOf } from "@/lib/availability/status";
 import { points } from "@/lib/display/format";
 import { weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import type { Player, PlayerFixture } from "@/types";
 import type { ChipKind } from "@/types/chips";
+import { PlayerNameLink } from "@/components/terminal/PlayerNameLink";
 import { TokenShirt } from "./TokenShirt";
 
 /** The captain scores double; Triple Captain makes it treble. */
@@ -38,12 +39,14 @@ export interface PitchTokenProps {
   swapTarget: boolean;
   showRun: boolean;
   onOpen: (anchor: HTMLElement) => void;
+  /** A click on the name opens the details. Leave it out while a swap is pending, so the click finishes the swap. */
+  onOpenDetails?: (playerId: number) => void;
   /** Toggles the lock from the hover button. */
   onToggleLock: () => void;
 }
 
 /** One player on the pitch or the bench: shirt, role, flags, fixture, xP. Tapping it opens the action sheet. */
-export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, locked, chip, selected, swapTarget, showRun, onOpen, onToggleLock }: PitchTokenProps) {
+export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, locked, chip, selected, swapTarget, showRun, onOpen, onOpenDetails, onToggleLock }: PitchTokenProps) {
   const availability = availabilityOf(player);
   const fixtures = squadFixturesForGameweek(player, gameweek);
   const roleText = captain ? (chip === "3xc" ? "3×" : "C") : vice ? "V" : null;
@@ -66,7 +69,7 @@ export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, 
         {availability !== "AVAILABLE" && <span className={`token-flag ${availability === "UNAVAILABLE" ? "bad" : "warn"}`} data-testid="token-flag" data-availability={availability}>!</span>}
         {locked && <svg className="token-lock lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d="M4 7V5a4 4 0 0 1 8 0v2" /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg>}
       </TokenShirt>
-      <span className="token-name">{player.displayName}</span>
+      <span className="token-name"><PlayerNameLink playerId={player.id} name={player.displayName} onOpenDetails={onOpenDetails} /></span>
       <span className="token-line">
         <span className="token-fixture" data-testid="token-fixture">
           {fixtures.length ? fixtures.map((fixture, index) => <FixtureChip key={index} fixture={fixture} />) : <span className="token-blank">Blank</span>}
@@ -86,6 +89,7 @@ export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, 
     >
       <svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={locked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M4 7V5a4 4 0 0 1 7.4-2.1"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg>
     </button>
+    {showRun && <span className="token-run-layer" data-testid="token-run-layer" aria-hidden="true"><FixtureRun fixtures={player.fixtures} fromGameweek={gameweek} count={5} /></span>}
     </div>
   );
 }

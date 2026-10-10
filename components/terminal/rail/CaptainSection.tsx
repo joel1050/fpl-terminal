@@ -1,6 +1,7 @@
 import { points } from "@/lib/display/format";
 import { weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import type { Player } from "@/types";
+import { PlayerNameLink } from "@/components/terminal/PlayerNameLink";
 import { RailSection } from "./DecisionRail";
 
 const SHOWN = 4;
@@ -12,13 +13,15 @@ export interface CaptainSectionProps {
   viceCaptainId?: number;
   /** Opens a player's action sheet, where the armband is set. */
   onOpen: (playerId: number) => void;
+  /** A click on a name opens the player's details. Leave it out while a swap is pending. */
+  onOpenDetails?: (playerId: number) => void;
 }
 
 /**
  * The four starters with the most Gameweek xP, as bars. Bars show xP before the
  * captain's double, so every row compares like with like.
  */
-export function CaptainSection({ starters, gameweek, captainId, viceCaptainId, onOpen }: CaptainSectionProps) {
+export function CaptainSection({ starters, gameweek, captainId, viceCaptainId, onOpen, onOpenDetails }: CaptainSectionProps) {
   const ranked = starters
     .map((player) => ({ player, xp: weeklyPlayerMetrics(player, gameweek).points }))
     .sort((a, b) => b.xp - a.xp)
@@ -38,7 +41,7 @@ export function CaptainSection({ starters, gameweek, captainId, viceCaptainId, o
               <li key={player.id}>
                 <button type="button" className={`captain-row ${player.id === captainId ? "is-captain" : ""}`} aria-haspopup="dialog" onClick={() => onOpen(player.id)}>
                   <span className="captain-name">
-                    {player.displayName}
+                    <PlayerNameLink playerId={player.id} name={player.displayName} onOpenDetails={onOpenDetails} />
                     {role && <span className={`captain-role ${role === "C" ? "captain" : "vice"}`}>{role}</span>}
                   </span>
                   <span className="captain-bar" aria-hidden="true"><i style={{ width: `${width}%` }} /></span>

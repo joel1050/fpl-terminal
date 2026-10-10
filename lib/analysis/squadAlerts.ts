@@ -14,6 +14,11 @@ function slotLabel(id: number, input: { starterIds: number[]; benchOrder: number
   return index >= 0 ? `${ORDINAL[index]} on bench` : "in squad";
 }
 
+/** The title is the name and message joined; the name stays apart so the UI can link it. */
+function alertText(player: Player, message: string): Pick<SquadAlert, "name" | "message" | "title"> {
+  return { name: player.displayName, message, title: `${player.displayName} ${message}` };
+}
+
 export function squadAlerts(input: {
   squad: Player[]; starterIds: number[]; benchOrder: number[]; benchGoalkeeperId: number; gameweek: number;
 }): SquadAlert[] {
@@ -31,7 +36,7 @@ export function squadAlerts(input: {
         kind: "AVAILABILITY",
         severity: level === "UNAVAILABLE" ? "BAD" : "WARN",
         playerId: player.id,
-        title: `${player.displayName} ${level === "UNAVAILABLE" ? "unavailable" : "doubtful"}${chance}`,
+        ...alertText(player, `${level === "UNAVAILABLE" ? "unavailable" : "doubtful"}${chance}`),
         detail: `${slotLabel(player.id, input)} · ${Math.round(week.minutes)} min expected · ${week.points.toFixed(1)} xP`,
       });
     }
@@ -48,15 +53,15 @@ export function squadAlerts(input: {
           .reduce((sum, gw) => sum + weeklyPlayerMetrics(player, gw).points, 0);
         hardRun.push({
           kind: "HARD_RUN", severity: "INFO", playerId: player.id,
-          title: `${player.displayName} has a hard run`,
+          ...alertText(player, "has a hard run"),
           detail: `${upcoming.map((f) => f.opponentShortName).join(" · ")} → ${runXp.toFixed(1)} xP over ${RUN_GAMEWEEKS} GWs`,
         });
       }
     }
 
     const count = player.fixtures.filter((f) => f.gameweek === input.gameweek).length;
-    if (count === 0) schedule.push({ kind: "BLANK", severity: "INFO", playerId: player.id, title: `${player.displayName} has no fixture`, detail: `Blank gameweek ${input.gameweek}` });
-    if (count > 1) schedule.push({ kind: "DOUBLE", severity: "INFO", playerId: player.id, title: `${player.displayName} plays twice`, detail: `Double gameweek ${input.gameweek}` });
+    if (count === 0) schedule.push({ kind: "BLANK", severity: "INFO", playerId: player.id, ...alertText(player, "has no fixture"), detail: `Blank gameweek ${input.gameweek}` });
+    if (count > 1) schedule.push({ kind: "DOUBLE", severity: "INFO", playerId: player.id, ...alertText(player, "plays twice"), detail: `Double gameweek ${input.gameweek}` });
   }
 
   return [...unavailable, ...doubtful, ...hardRun, ...schedule].slice(0, MAX_ALERTS);

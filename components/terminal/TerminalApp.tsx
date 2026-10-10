@@ -32,7 +32,8 @@ import {
   type TerminalMode,
   type SortKey,
 } from "@/store/terminalStore";
-import { PitchToken, captainMultiplier, pitchXp } from "@/components/terminal/squad/PitchToken";
+import { PitchToken } from "@/components/terminal/squad/PitchToken";
+import { PlayerNameLink } from "@/components/terminal/PlayerNameLink";
 import { PlayerActions } from "@/components/terminal/squad/PlayerActions";
 import { SquadKpis } from "@/components/terminal/squad/SquadKpis";
 import { SquadPitch } from "@/components/terminal/squad/SquadPitch";
@@ -61,8 +62,15 @@ type DataState = "SYNCING" | "LIVE" | "SNAPSHOT" | "STALE" | "EMPTY" | "ERROR";
 
 const POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
 const DRAFT_XI_COUNTS: Record<Position, number> = { GK: 1, DEF: 3, MID: 4, FWD: 3 };
-const DESKTOP_PANELS: DesktopPanel[] = ["market", "squad"];
-const PANEL_LABELS: Record<DesktopPanel, string> = { market: "Player universe", squad: "Squad builder and analysis" };
+const DESKTOP_PANELS: DesktopPanel[] = ["market", "squad", "rail"];
+const PANEL_LABELS: Record<DesktopPanel, string> = { market: "Player universe", squad: "Squad builder and analysis", rail: "Analysis" };
+/** From this width the Analysis panel is its own column; below it sits under the squad. */
+const RAIL_COLUMN_MIN_WIDTH = 1400;
+const PANEL_MIN_WIDTH: Record<DesktopPanel, number> = { market: 260, squad: 260, rail: 240 };
+/** The panels that share the row at this window width, left to right. */
+function activePanels(windowWidth: number): DesktopPanel[] {
+  return windowWidth >= RAIL_COLUMN_MIN_WIDTH ? DESKTOP_PANELS : DESKTOP_PANELS.filter((panel) => panel !== "rail");
+}
 
 type ResizeState = {
   panel: DesktopPanel;
@@ -72,7 +80,8 @@ type ResizeState = {
   currentWidth: number;
   neighborWidth: number;
   availableWidth: number;
-  ratios: Record<DesktopPanel, number>;
+  scale: number;
+  ratios: Partial<Record<DesktopPanel, number>>;
 };
 
 type Bootstrap = {
@@ -588,7 +597,7 @@ export default function TerminalApp() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersButton = useRef<HTMLButtonElement>(null);
-  const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false });
+  const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false, rail: false });
   const { data, status, message, refresh, ageAnchor } = bootstrap;
   const liveCurrentGW = clamp(Math.round(data.gameweek ?? store.currentGameweek ?? 1), 1, 38);
   const initializeGameweek = store.initializeGameweek;
@@ -602,20 +611,26 @@ export default function TerminalApp() {
     const handle = event.currentTarget;
     const section = handle.closest<HTMLElement>("[data-panel]");
     const grid = handle.closest<HTMLElement>(".terminal-grid");
-    const panelIndex = DESKTOP_PANELS.indexOf(panel);
-    const neighborIndex = panelIndex === DESKTOP_PANELS.length - 1 ? panelIndex - 1 : panelIndex + 1;
-    const neighbor = DESKTOP_PANELS[neighborIndex];
+    const panels = activePanels(window.innerWidth);
+    const panelIndex = panels.indexOf(panel);
+    if (panelIndex < 0) return;
+    const neighborIndex = panelIndex === panels.length - 1 ? panelIndex - 1 : panelIndex + 1;
+    const neighbor = panels[neighborIndex];
     if (!section || !grid || !neighbor || collapsedPanels[neighbor]) return;
     const neighborSection = grid.querySelector<HTMLElement>(`[data-panel="${neighbor}"]`);
     if (!neighborSection) return;
     // Read the grid tracks, not the sections: at 901–1399px the squad section sits in a scrolling stack, and its scrollbar would narrow the box.
     const tracks = getComputedStyle(grid).gridTemplateColumns.split(" ").map((track) => parseFloat(track) || 0);
-    const widths = DESKTOP_PANELS.map((_, index) => tracks[index] ?? 0);
-    // The divider shares the market and squad tracks only. The rail is a third column and is not part of the split.
+    const widths = panels.map((_, index) => tracks[index] ?? 0);
     const availableWidth = widths.reduce((sum, width) => sum + width, 0);
-    if (availableWidth <= 0 || widths.some((width) => width <= 0)) return;
-    const ratios = Object.fromEntries(DESKTOP_PANELS.map((name, index) => [name, ratioPercent(widths[index], availableWidth)])) as Record<DesktopPanel, number>;
-    resizeRef.current = { panel, neighbor, direction: panelIndex === DESKTOP_PANELS.length - 1 ? -1 : 1, startX: event.clientX, currentWidth: widths[panelIndex], neighborWidth: widths[neighborIndex], availableWidth, ratios };
+    if (availableWidth <= 0 || widths[panelIndex] <= 0 || widths[neighborIndex] <= 0) return;
+    // Ratios use one scale. With fewer panels on screen, keep the sum the saved ratios of those panels already have, so a saved rail ratio still fits.
+    const saved = useTerminalStore.getState().panelRatios;
+    const scale = panels.length < DESKTOP_PANELS.length && panels.every((name) => saved[name]) ? panels.reduce((sum, name) => sum + (saved[name] ?? 0), 0) / 100 : 1;
+    // A minimized panel keeps its saved ratio; only open panels get new ones.
+    const ratios: Partial<Record<DesktopPanel, number>> = {};
+    panels.forEach((name, index) => { if (!collapsedPanels[name]) ratios[name] = Math.max(1, Math.round(ratioPercent(widths[index], availableWidth) * scale)); });
+    resizeRef.current = { panel, neighbor, direction: panelIndex === panels.length - 1 ? -1 : 1, startX: event.clientX, currentWidth: widths[panelIndex], neighborWidth: widths[neighborIndex], availableWidth, scale, ratios };
     useTerminalStore.getState().setPanelRatios(ratios);
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
@@ -626,8 +641,8 @@ export default function TerminalApp() {
     const onPointerMove = (event: PointerEvent) => {
       const resize = resizeRef.current;
       if (!resize) return;
-      const delta = clamp((event.clientX - resize.startX) * resize.direction, 260 - resize.currentWidth, resize.neighborWidth - 260);
-      useTerminalStore.getState().setPanelRatios({ ...resize.ratios, [resize.panel]: ratioPercent(resize.currentWidth + delta, resize.availableWidth), [resize.neighbor]: ratioPercent(resize.neighborWidth - delta, resize.availableWidth) });
+      const delta = clamp((event.clientX - resize.startX) * resize.direction, PANEL_MIN_WIDTH[resize.panel] - resize.currentWidth, resize.neighborWidth - PANEL_MIN_WIDTH[resize.neighbor]);
+      useTerminalStore.getState().setPanelRatios({ ...resize.ratios, [resize.panel]: Math.max(1, Math.round(ratioPercent(resize.currentWidth + delta, resize.availableWidth) * resize.scale)), [resize.neighbor]: Math.max(1, Math.round(ratioPercent(resize.neighborWidth - delta, resize.availableWidth) * resize.scale)) });
     };
     const onPointerUp = () => {
       resizeRef.current = null;
@@ -1247,7 +1262,11 @@ export default function TerminalApp() {
   const openPlayer = (playerId: number) => {
     store.setMobileTab("MARKET");
     store.setSelectedPlayer(playerId);
+    // Details show in the players panel, so open it if it is minimized.
+    setCollapsedPanels((current) => current.market ? { ...current, market: false } : current);
   };
+  // A name opens details, except while a swap is pending: then a click finishes the swap like a tap on the token.
+  const nameDetails = gwSwapSelection.starterId !== undefined || gwSwapSelection.benchId !== undefined ? undefined : openPlayer;
   const removeSquadPlayer = (player: TerminalPlayer) => {
     if (store.lockedPlayerIds.includes(player.id)) {
       setNotice(`${player.displayName} is locked. Unlock them before removing.`);
@@ -1281,6 +1300,7 @@ export default function TerminalApp() {
     swapTarget={Boolean(currentGWPlan) && (pendingStarterId !== undefined ? role === "bench" : pendingBenchId !== undefined && role === "starter")}
     showRun
     onOpen={(anchor) => openActions(player.id, anchor)}
+    onOpenDetails={nameDetails}
     onToggleLock={() => store.toggleLock(player.id)}
   />;
   const choosePlayer = (position: Position) => {
@@ -1311,10 +1331,6 @@ export default function TerminalApp() {
       : store.byPosition[position].slice(0, DRAFT_XI_COUNTS[position]).map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => Boolean(player));
     return { position, players, slotCount: currentGWPlan ? players.length : DRAFT_XI_COUNTS[position] };
   });
-  const pitchCaptain = playerById.get((lineupApplied ? store.captainId : currentGWPlan?.captainId) ?? -1);
-  const captainCaption = pitchCaptain
-    ? `Captain counts ${captainMultiplier(true, store.chip) === 3 ? "triple" : "double"}: ${pitchCaptain.displayName} ${points(pitchXp(pitchCaptain, planningGameweek, false))} → ${points(pitchXp(pitchCaptain, planningGameweek, true, store.chip))}`
-    : undefined;
   const allSquadPlayersLocked = store.playerIds.length > 0 && store.playerIds.every((id) => store.lockedPlayerIds.includes(id));
   return (
     <main className="terminal-app">
@@ -1382,10 +1398,10 @@ export default function TerminalApp() {
                   viceCaptainId={lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId}
                   chip={store.chip}
                   onOpen={(player) => openActions(player.id)}
+                  onOpenDetails={nameDetails}
                 />
               </> : <SquadPitch
                 startingMeta={`${currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · ${currentGWPlan ? 11 : draftStarterCount}/11`}
-                captainCaption={captainCaption}
                 rows={pitchRows}
                 bench={benchSlots.map((slot) => ({ player: slot.id ? playerById.get(slot.id) : undefined, position: slot.position, label: slot.label }))}
                 hint={swapHint}
@@ -1394,11 +1410,13 @@ export default function TerminalApp() {
                 renderEmpty={(position, key) => <EmptySlot key={key} position={position} maxPriceTenths={slotMaxPrices[position]} onChoose={() => choosePlayer(position)} />}
               />}
             </div>
-            {simulation && simulationMoves && simulationMoves.length > 0 && <div className="squad-overlay" ref={simulationRef}><SimulationPanel result={simulation} moves={simulationMoves} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMoves(null); }} /></div>}
+            {simulation && simulationMoves && simulationMoves.length > 0 && <div className="squad-overlay" ref={simulationRef}><SimulationPanel result={simulation} moves={simulationMoves} playerById={playerById} onOpenDetails={openPlayer} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMoves(null); }} /></div>}
             <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
           </section>
 
           <DecisionRail
+            collapsed={collapsedPanels.rail}
+            headerAction={<PanelToggle panel="rail" collapsed={collapsedPanels.rail} onToggle={() => togglePanel("rail")} />}
             mobileVisible={store.activeMobileTab === "SQUAD"}
             captain={<CaptainSection
               starters={pitchRows.flatMap((row) => row.players)}
@@ -1406,9 +1424,10 @@ export default function TerminalApp() {
               captainId={lineupApplied ? store.captainId : currentGWPlan?.captainId}
               viceCaptainId={lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId}
               onOpen={(playerId) => openActions(playerId)}
+              onOpenDetails={nameDetails}
             />}
-            alerts={<AlertsSection alerts={planAlerts} onOpen={(playerId) => openActions(playerId)} />}
-            transfers={<TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />}
+            alerts={<AlertsSection alerts={planAlerts} onOpen={(playerId) => openActions(playerId)} onOpenDetails={nameDetails} />}
+            transfers={<TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onOpenDetails={openPlayer} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />}
             chips={<RailSection title="Chips">
               <ChipSelector gameweek={planningGameweek} onNotice={setNotice} />
               <ChipStrategyPanel players={data.players} planningGameweek={planningGameweek} onNotice={setNotice} />
@@ -1793,6 +1812,7 @@ function TransferSuggestionsPanel({
   bankedTransfers,
   onBankedTransfers,
   playerById,
+  onOpenDetails,
   onSimulate,
   onDismiss,
 }: {
@@ -1804,10 +1824,11 @@ function TransferSuggestionsPanel({
   bankedTransfers: number;
   onBankedTransfers: (banked: number) => void;
   playerById: Map<number, TerminalPlayer>;
+  onOpenDetails: (playerId: number) => void;
   onSimulate: (suggestion: SingleTransferSuggestion) => void;
   onDismiss: (suggestion: SingleTransferSuggestion) => void;
 }) {
-  const name = (id: number) => playerById.get(id)?.displayName ?? `Player ${id}`;
+  const name = (id: number) => <PlayerNameLink playerId={id} name={playerById.get(id)?.displayName ?? `Player ${id}`} onOpenDetails={playerById.has(id) ? onOpenDetails : undefined} />;
   const signedMoney = (tenths: number) => `${tenths >= 0 ? "+" : "−"}${money(Math.abs(tenths))}`;
   return (
     <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions">
@@ -1897,12 +1918,14 @@ function SimulationPanel({
   result,
   moves,
   playerById,
+  onOpenDetails,
   onApply,
   onDiscard,
 }: {
   result: SimulationResult;
   moves: Array<{ outId: number; inId: number; cashReleasedTenths?: number }>;
   playerById: Map<number, TerminalPlayer>;
+  onOpenDetails: (playerId: number) => void;
   onApply: () => void;
   onDiscard: () => void;
 }) {
@@ -1921,9 +1944,9 @@ function SimulationPanel({
         {moves.map((m, idx) => (
           <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span className="fs-small" style={{ color: "var(--muted)", minWidth: "14px" }}>{idx + 1}.</span>
-            <span>{playerById.get(m.outId)?.displayName ?? "Outgoing"}</span>
+            <PlayerNameLink playerId={m.outId} name={playerById.get(m.outId)?.displayName ?? "Outgoing"} onOpenDetails={playerById.has(m.outId) ? onOpenDetails : undefined} />
             <span>→</span>
-            <span>{playerById.get(m.inId)?.displayName ?? "Incoming"}</span>
+            <PlayerNameLink playerId={m.inId} name={playerById.get(m.inId)?.displayName ?? "Incoming"} onOpenDetails={playerById.has(m.inId) ? onOpenDetails : undefined} />
             {m.cashReleasedTenths !== undefined && (
               <small className="fs-small" style={{ color: "var(--muted)" }}>
                 ({m.cashReleasedTenths >= 0 ? `+${money(m.cashReleasedTenths)}` : `−${money(Math.abs(m.cashReleasedTenths))}`})

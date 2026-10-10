@@ -10,14 +10,15 @@ import { validateWeeklyLineup } from "@/lib/squad/weeklyLineup";
 type RiskMode = "SAFE" | "BALANCED" | "AGGRESSIVE";
 type BenchStrategy = "CHEAP" | "BALANCED" | "STRONG";
 
-export type DesktopPanel = "market" | "squad";
+export type DesktopPanel = "market" | "squad" | "rail";
+const DESKTOP_PANEL_NAMES: DesktopPanel[] = ["market", "squad", "rail"];
 
 export const PANEL_RATIO_MAX = 1000;
 
 export function sanitizePanelRatios(ratios: Partial<Record<DesktopPanel, number>> | undefined): Partial<Record<DesktopPanel, number>> {
   const cleaned: Partial<Record<DesktopPanel, number>> = {};
   if (!ratios) return cleaned;
-  for (const panel of Object.keys(ratios) as DesktopPanel[]) {
+  for (const panel of DESKTOP_PANEL_NAMES) {
     const value = ratios[panel];
     if (typeof value === "number" && Number.isFinite(value) && value >= 1 && value <= PANEL_RATIO_MAX) cleaned[panel] = Math.round(value);
   }
@@ -1510,7 +1511,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   setSelectedLeagueKey: (key) => {
     if (isLeagueKey(key)) set({ selectedLeagueKey: key });
   },
-  setPanelRatios: (ratios) => set({ panelRatios: sanitizePanelRatios(ratios) }),
+  // Merge: a resize with two panels on screen keeps the saved ratio of the third.
+  setPanelRatios: (ratios) => set((state) => ({ panelRatios: { ...state.panelRatios, ...sanitizePanelRatios(ratios) } })),
   setSquadView: (squadView) => set({ squadView }),
   setPlayerColumns: (keys) => set({ playerColumns: sanitizeColumns(keys) ?? DEFAULT_PLAYER_COLUMNS }),
   dismissTransferSuggestion: (outgoingId, incomingId) => {

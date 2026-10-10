@@ -69,7 +69,7 @@ test.describe("FPL Terminal acceptance", () => {
   /** Opens a squad token's action sheet. Escape first, so an open sheet's backdrop does not take the tap. */
   async function openSheet(page: Page, name: string) {
     await page.keyboard.press("Escape");
-    await page.getByRole("region", { name: /squad builder and analysis/i }).locator(`[data-testid="squad-token"][data-player="${name}"]`).click();
+    await page.getByRole("region", { name: /squad builder and analysis/i }).locator(`[data-testid="squad-token"][data-player="${name}"]`).locator(".token-shirt").click();
     const dialog = page.getByRole("dialog", { name, exact: true });
     await expect(dialog).toBeVisible();
     return dialog;

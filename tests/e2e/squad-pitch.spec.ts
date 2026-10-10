@@ -56,7 +56,7 @@ test.describe("squad pitch", () => {
   /** Escape first: an open sheet's backdrop would otherwise take the tap. */
   async function openActions(page: Page, name: string): Promise<Locator> {
     await page.keyboard.press("Escape");
-    await token(page, name).click();
+    await token(page, name).locator(".token-shirt").click();
     const dialog = page.getByRole("dialog", { name, exact: true });
     await expect(dialog).toBeVisible();
     return dialog;
@@ -116,6 +116,24 @@ test.describe("squad pitch", () => {
     const tokens = squadPanel(page).getByTestId("squad-token");
     await expect(tokens).toHaveCount(15);
     await expect(squadPanel(page).getByTestId("squad-token").locator(".run")).toHaveCount(15);
+  });
+
+  test("shows a visible xP label after every token's value, on desktop and phone", async ({ page }) => {
+    await importTeam(page);
+    const labels = squadPanel(page).getByTestId("token-xp").locator("small");
+
+    for (const [width, height] of [[1440, 900], [390, 844]] as const) {
+      await page.setViewportSize({ width, height });
+      await expect(labels).toHaveCount(15);
+      for (const label of await labels.all()) {
+        await expect(label).toHaveText("xP");
+        await expect(label).toBeVisible();
+        // toBeVisible passes on the 1px screen-reader clip too, so check the real box.
+        const box = await label.boundingBox();
+        expect(box, "every xP label has a box").not.toBeNull();
+        expect(box!.width).toBeGreaterThan(4);
+      }
+    }
   });
 
   test("opens an action sheet from a token, sets the captain, and keeps it after a reload", async ({ page }) => {
@@ -370,7 +388,7 @@ test.describe("squad pitch", () => {
     await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(1);
     await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Konsa"]')).toHaveCount(1);
 
-    await token(page, "Gordon").click();
+    await token(page, "Gordon").locator(".token-shirt").click();
     await expect(page.getByRole("dialog", { name: "Gordon", exact: true })).toBeVisible();
   });
 
@@ -521,7 +539,7 @@ test.describe("squad pitch", () => {
     await lock.click();
     await expect(lock).toHaveAttribute("aria-pressed", before ?? "false");
     // The rest of the token still opens the sheet.
-    await token(page, "Haaland").click();
+    await token(page, "Haaland").locator(".token-shirt").click();
     await expect(page.getByRole("dialog", { name: "Haaland", exact: true })).toBeVisible();
   });
 
@@ -543,6 +561,54 @@ test.describe("squad pitch", () => {
       expect(box.y + box.height).toBeLessThanOrEqual(720);
       if (side === "right") expect(box.x).toBeGreaterThanOrEqual(tokenBox.x + tokenBox.width);
       else expect(box.x + box.width).toBeLessThanOrEqual(tokenBox.x);
+    }
+  });
+
+  /** Every player gets five Gameweeks of fixtures: single, single, blank, double, single. */
+  async function withFixtureRun(page: Page) {
+    const at = (gameweek: number, opponentShortName: string, isHome: boolean, difficulty: number) => ({ gameweek, opponentTeamId: 2, opponentShortName, isHome, difficulty });
+    const run = [at(1, "ARS", true, 2), at(2, "che", false, 5), at(4, "LIV", true, 3), at(4, "mci", false, 4), at(5, "WHU", true, 3)];
+    await page.route("**/api/fpl/bootstrap*", async (route) => {
+      const players = bootstrapStaticFixture.players.map((player) => ({
+        ...player,
+        fixtures: run,
+        projection: { ...player.projection, fixtures: [{ gameweek: 1, expectedPoints: player.projection.nextGW, expectedMinutes: 80, fixture: run[0] }] },
+      }));
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...bootstrapStaticFixture, players }) });
+    });
+    await page.goto("/");
+    await importTeam(page);
+  }
+
+  test("hovering a token opens its next five opponents without blocking its neighbours", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await withFixtureRun(page);
+    const onana = token(page, "Onana");
+    const layer = onana.locator("xpath=..").getByTestId("token-run-layer");
+    await expect(layer).toBeHidden();
+
+    await onana.hover();
+    await expect(layer).toBeVisible();
+    await expect(layer.locator(".fc")).toHaveText(["ARS", "che", "—", "LIV", "mci", "WHU"]);
+
+    // The layer takes no pointer events: the element under its middle is not part of it.
+    const box = (await layer.boundingBox())!;
+    const covered = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest(".token-run-layer") !== null, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+    expect(covered).toBe(false);
+
+    await token(page, "Haaland").locator(".token-shirt").click();
+    await expect(page.getByRole("dialog", { name: "Haaland", exact: true })).toBeVisible();
+  });
+
+  test("on a five-man line a single-fixture token keeps its fixture and xP on one row", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await withFixtureRun(page);
+    const midfield = ["Rice", "Onana", "Mbeumo", "Gordon", "Rogers"];
+    // Haaland is captain, so his xP has two digits and is the widest case.
+    for (const name of [...midfield, "Haaland"]) {
+      const fixture = (await token(page, name).getByTestId("token-fixture").boundingBox())!;
+      const xp = (await token(page, name).getByTestId("token-xp").boundingBox())!;
+      expect(Math.abs(fixture.y + fixture.height / 2 - (xp.y + xp.height / 2)), `${name} fixture and xP share a row`).toBeLessThanOrEqual(4);
     }
   });
 

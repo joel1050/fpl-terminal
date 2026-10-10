@@ -12,7 +12,7 @@ function squadPanel(page: Page) {
 }
 
 function rail(page: Page) {
-  return page.getByRole("complementary", { name: "Decision rail" });
+  return page.getByRole("complementary", { name: "Analysis" });
 }
 
 /** The squad column's scroll container: the nearest ancestor of the squad region that scrolls on Y. It is the root when none does. */
@@ -132,7 +132,7 @@ test.describe("decision rail", () => {
 
     const column = await squadColumn(page);
     expect(await column.evaluate((el) => getComputedStyle(el).overflowY), "the squad column scrolls on its own").toMatch(/^(auto|scroll)$/);
-    expect(await column.evaluate((el) => el.querySelector('aside[aria-label="Decision rail"]') !== null), "the rail is inside the squad column").toBe(true);
+    expect(await column.evaluate((el) => el.querySelector('aside[aria-label="Analysis"]') !== null), "the rail is inside the squad column").toBe(true);
 
     await column.evaluate((el) => { el.scrollTop = el.scrollHeight; });
     await expect(rail(page).getByRole("heading", { name: "Chips" }), "Chips heading scrolls into view").toBeInViewport();

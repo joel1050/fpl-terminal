@@ -31,6 +31,8 @@ const EMPTY_PLAYER_MAP = new Map<number, Player>();
 const EMPTY_STRING_MAP = new Map<number, string>();
 
 type MobileTab = "LEAGUE" | "TEAM" | "MATCHES" | "FEED";
+/** The panel the desktop right column shows. Phones show both as tabs. */
+type SidePanel = "MATCHES" | "FEED";
 const MOBILE_TABS: MobileTab[] = ["LEAGUE", "TEAM", "MATCHES", "FEED"];
 
 // Versioned: rows written under the older event shape are dropped rather than
@@ -187,6 +189,7 @@ function WorkspaceBody({
 
   const [feedEvents, setFeedEvents] = useState<LiveFeedEvent[]>([]);
   const [mobileTab, setMobileTab] = useState<MobileTab>("LEAGUE");
+  const [sidePanel, setSidePanel] = useState<SidePanel>("MATCHES");
   const [selectedEntryId, setSelectedEntryId] = useState(entryId);
   const previousLiveRef = useRef<Map<number, LiveStats> | null>(null);
   const feedGameweekRef = useRef<number | null>(null);
@@ -439,7 +442,14 @@ function WorkspaceBody({
           </section>
         </section>
 
-        <section className={`leagues-column leagues-center-bottom ${mobileTab === "MATCHES" ? "mobile-visible" : ""}`} aria-label="Match centre" data-mobile-tab="MATCHES">
+        <div className="leagues-column leagues-side-switch">
+          <div className="squad-view-switch" role="group" aria-label="Right panel">
+            <button type="button" aria-pressed={sidePanel === "MATCHES"} onClick={() => setSidePanel("MATCHES")}>Match centre</button>
+            <button type="button" aria-pressed={sidePanel === "FEED"} onClick={() => setSidePanel("FEED")}>Live feed</button>
+          </div>
+        </div>
+
+        <section className={`leagues-column leagues-center-bottom ${mobileTab === "MATCHES" ? "mobile-visible" : ""}${sidePanel === "MATCHES" ? "" : " side-hidden"}`} aria-label="Match centre" data-mobile-tab="MATCHES">
           <MatchCentre
             fixtures={data.fixturesData}
             ownedPlayers={myLive?.playerPoints ?? []}
@@ -449,7 +459,7 @@ function WorkspaceBody({
           />
         </section>
 
-        <aside className={`leagues-column leagues-right ${mobileTab === "FEED" ? "mobile-visible" : ""}`} aria-label="Live feed" data-mobile-tab="FEED">
+        <aside className={`leagues-column leagues-right ${mobileTab === "FEED" ? "mobile-visible" : ""}${sidePanel === "FEED" ? "" : " side-hidden"}`} aria-label="Live feed" data-mobile-tab="FEED">
           <LiveFeed
             events={feedEvents}
             userPlayerById={userPlayerById}

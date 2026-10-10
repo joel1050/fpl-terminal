@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_PLAYER_COLUMNS, exportTerminalState, parseSavedStateResult, useTerminalStore } from "@/store/terminalStore";
+import { DEFAULT_PLAYER_COLUMNS, exportTerminalState, parseSavedStateResult, sanitizePanelRatios, useTerminalStore } from "@/store/terminalStore";
 
 describe("ui preferences", () => {
   beforeEach(() => useTerminalStore.getState().reset());
@@ -37,5 +37,28 @@ describe("ui preferences", () => {
     if (parsed.status === "accepted") useTerminalStore.getState().hydrate(parsed.state);
     expect(useTerminalStore.getState().squadView).toBe("PITCH");
     expect(useTerminalStore.getState().playerColumns).toEqual(["own"]);
+  });
+});
+
+describe("panel ratios", () => {
+  beforeEach(() => useTerminalStore.getState().reset());
+
+  it("keeps rail and drops unknown panels", () => {
+    expect(sanitizePanelRatios({ market: 30, squad: 40, rail: 30, extra: 5 } as never)).toEqual({ market: 30, squad: 40, rail: 30 });
+  });
+
+  it("setPanelRatios with two panels keeps a stored rail ratio", () => {
+    const s = useTerminalStore.getState();
+    s.setPanelRatios({ market: 40, squad: 40, rail: 20 });
+    s.setPanelRatios({ market: 45, squad: 35 });
+    expect(useTerminalStore.getState().panelRatios).toEqual({ market: 45, squad: 35, rail: 20 });
+  });
+
+  it("an old save without rail still loads", () => {
+    const old = JSON.stringify({ ...exportTerminalState(useTerminalStore.getState()), panelRatios: { market: 30, squad: 70 } });
+    const parsed = parseSavedStateResult(old);
+    expect(parsed.status).toBe("accepted");
+    if (parsed.status === "accepted") useTerminalStore.getState().hydrate(parsed.state);
+    expect(useTerminalStore.getState().panelRatios).toEqual({ market: 30, squad: 70 });
   });
 });

@@ -387,9 +387,8 @@
 .pitch-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
 .pitch-head h3 { margin: 0; color: var(--text); font: 600 14px/1.2 var(--font-ui); }
 .pitch-head h3 span { margin-left: 6px; color: var(--muted); font: 12px/1.2 var(--font-num); }
-.captain-caption { margin: 0; color: var(--muted); font: 12px/1.3 var(--font-ui); }
 
-.pitch { --token-ring: var(--pitch); position: relative; display: grid; gap: 6px; padding: 16px 8px 12px; overflow: hidden; border-radius: 12px; background: repeating-linear-gradient(180deg, var(--pitch) 0 52px, #173c26 52px 104px); }
+.pitch { --token-ring: var(--pitch); position: relative; display: grid; gap: 6px; padding: 16px 8px 12px; border-radius: 12px; background: repeating-linear-gradient(180deg, var(--pitch) 0 52px, #173c26 52px 104px); }
 /* Touch line and the penalty box at the goalkeeper's end. Drawn behind the tokens. */
 .pitch::before,
 .pitch::after { content: ""; position: absolute; border: 1px solid rgb(255 255 255 / 0.1); pointer-events: none; }
@@ -420,14 +419,38 @@
 .token-flag.bad { background: var(--bad); }
 .token-lock { right: -6px; bottom: -3px; width: 16px; height: 16px; padding: 3.5px; border-radius: 50%; background: var(--bg); color: var(--text); }
 .token-name { display: block; max-width: 100%; padding: 2px 6px; overflow: hidden; border-radius: 4px; background: var(--text); color: var(--bg); font: 600 12px/1.25 var(--font-ui); text-overflow: ellipsis; white-space: nowrap; }
-.token-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 4px; max-width: 100%; }
+/* A player name that opens details: the text only is the target, so the row or token keeps its centre. */
+.player-name-link { cursor: pointer; text-underline-offset: 2px; }
+.player-name-link:hover { text-decoration: underline; }.token-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 4px; max-width: 100%; }
 .token-fixture { display: flex; gap: 2px; }
 .token-fixture .fc { min-width: 0; padding: 0 3px; line-height: 16px; }
 .token-blank { color: var(--muted); font-size: 12px; }
-.token-xp { color: var(--text); font: 600 12px/16px var(--font-num); }
-.token-xp small { position: absolute; font-size: 12px; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.token-xp { color: var(--text); font: 600 12px/16px var(--font-num); white-space: nowrap; }
+.token-xp small { color: var(--muted); font: 500 12px/1 var(--font-ui); }
+/* Planner tokens: a single fixture and its xP share a row on a five-man line. A double may still wrap. */
+.pitch-token:not(.live-token) .token-line { column-gap: 3px; }
+.pitch-token:not(.live-token) .token-fixture .fc { padding: 0 2px; }
+.pitch-token:not(.live-token) .token-xp small { margin-left: -1px; }
 .token-bench { color: var(--muted); font: 12px/1.2 var(--font-ui); }
 .pitch-token .run { margin-top: 1px; }
+
+/* Hover or focus on a token opens its next five opponents under the bars. The layer floats, so no token moves. */
+.token-run-layer { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .token-run-layer { position: absolute; top: calc(100% - 6px); left: 50%; z-index: 5; display: block; padding: 3px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface-2); box-shadow: 0 12px 32px rgb(0 0 0 / 0.45); white-space: nowrap; pointer-events: none; visibility: hidden; transform: translateX(-50%); }
+  .token-run-layer .fixture-chips { flex-wrap: nowrap; }
+  .token-run-layer .fc { min-width: 0; padding: 0 3px; font-size: 12px; line-height: 16px; }
+  .token-cell:hover > .token-run-layer,
+  .token-cell:focus-within > .token-run-layer { visibility: visible; }
+  .pitch-tokens > .token-cell:first-child:not(:last-child) > .token-run-layer,
+  .bench-strip > .token-cell:first-child > .token-run-layer { left: 0; transform: none; }
+  .pitch-tokens > .token-cell:last-child:not(:first-child) > .token-run-layer,
+  .bench-strip > .token-cell:last-child > .token-run-layer { right: 0; left: auto; transform: none; }
+  /* The bench card is the last thing in the stack, so its layer covers the bench label and bars instead of hanging below. */
+  .bench-strip .token-run-layer { top: auto; bottom: -2px; }
+  .pitch > .pitch-row:has(.token-cell:hover, .token-cell:focus-within) { z-index: 3; }
+  body.pitch-dragging .token-run-layer { visibility: hidden; }
+}
 
 /* Bench: its own card under the pitch. Benched players are dimmed unless Bench Boost makes them count. */
 .terminal-app .bench-section { --token-ring: var(--surface); display: block; padding: 10px 6px 8px; border: 0; border-radius: 12px; background: var(--surface); }
@@ -497,7 +520,6 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
   .kpi-bank .metric-money > span,
   .kpi-bank .metric-input { font-size: 15px; }
   .kpi-proj strong { font-size: 20px; }
-  .captain-caption { display: none; }
   .squad-roster { gap: 6px; }
   .pitch { gap: 4px; padding: 12px 4px 8px; }
   .token-cell { flex-basis: 76px; }
@@ -614,7 +636,7 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
   .squad-column.panel-collapsed { height: 100%; }
 }
 @media (min-width: 1400px) {
-  .terminal-grid { grid-template-columns: var(--market-column, 668px) var(--squad-column, minmax(0, 1fr)) 296px; }
+  .terminal-grid { grid-template-columns: var(--market-column, 668px) var(--squad-column, minmax(0, 1fr)) var(--rail-column, 296px); }
   .squad-column { display: flex; flex-direction: column; }
   .squad-body { display: block; flex: 1 1 0; min-height: 0; overflow-x: hidden; overflow-y: auto; }
   .decision-rail { grid-column: 3; grid-row: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; }
@@ -1598,7 +1620,6 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
 .live-token .live-opponent.live { background: color-mix(in srgb, var(--good) 16%, var(--surface-2)); color: var(--good); }
 .live-token .live-opponent.blank { background: transparent; }
 .pitch .live-token .live-opponent.blank { color: rgb(255 255 255 / 0.78); }
-.live-token .token-xp small { position: static; width: auto; height: auto; overflow: visible; clip: auto; color: var(--muted); font: 500 12px/1 var(--font-ui); }
 .live-token .token-xp.projected { color: rgb(255 255 255 / 0.72); }
 .bench-strip .live-token .token-xp.projected { color: var(--muted); }
 .live-token .token-xp.actual { color: var(--accent); }
@@ -1679,3 +1700,39 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
   .leagues-app .league-table td { padding-left: 5px; padding-right: 5px; }
 }
 
+
+/* Leagues desktop: the squad takes the whole centre column; the right column
+   shows Match centre or Live feed, picked by the switch above it. */
+@media (min-width: 901px) {
+  .leagues-app .leagues-center-top { grid-row: 1 / 3; overflow-y: auto; }
+  .leagues-app .leagues-side-switch { display: flex; grid-column: 3; grid-row: 1; padding-bottom: 10px; }
+  .leagues-app .leagues-center-bottom { grid-column: 3; grid-row: 2; padding-top: 4px; }
+  .leagues-app .leagues-right { grid-row: 2; padding-top: 4px; overflow-y: auto; }
+  .leagues-app .leagues-column.side-hidden { display: none; }
+  /* The right column is narrow at 1280: the filters drop under the heading. */
+  .leagues-app .leagues-center-bottom .panel-header { flex-wrap: wrap; row-gap: 8px; }
+}
+@media (max-width: 900px) {
+  .leagues-app .leagues-side-switch { display: none; }
+}
+
+/* Analysis panel header. Below 1400px the rail sits under the squad and has a plain heading; from 1400px it is a column and can be minimized or resized. */
+.terminal-app .decision-rail > .rail-panel-header { flex: none; margin: 0; padding: 14px 16px 0; }
+.terminal-app .decision-rail .rail-panel-header .panel-collapse { display: none; }
+@media (min-width: 901px) and (max-width: 1399px) {
+  /* The squad is the last column here, with the window edge on its right: nothing to resize against. */
+  .squad-column > .panel-resizer { display: none; }
+  .decision-rail { border-top: 1px solid var(--line); }
+}
+@media (min-width: 1400px) {
+  .terminal-app .decision-rail .rail-panel-header .panel-collapse { display: inline-grid; place-items: center; }
+  /* A minimized rail is a 52px strip with only its expand button, like the other two panels. */
+  .decision-rail.rail-collapsed { padding: 8px; overflow: hidden; }
+  .decision-rail.rail-collapsed > :not(.rail-panel-header) { display: none; }
+  .terminal-app .decision-rail.rail-collapsed > .rail-panel-header { flex-direction: column; align-items: center; justify-content: flex-start; gap: 9px; padding: 0; }
+  .decision-rail.rail-collapsed > .rail-panel-header > div:first-child { writing-mode: vertical-rl; }
+  .terminal-app .decision-rail.rail-collapsed > .rail-panel-header > .header-actions { margin-left: 0; }
+}
+@media (max-width: 900px) {
+  .terminal-app .decision-rail > .rail-panel-header { padding: 14px 12px 0; }
+}

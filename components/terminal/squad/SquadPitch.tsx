@@ -8,8 +8,6 @@ export type { BenchSlot, PitchRow };
 export interface SquadPitchProps {
   /** Formation and count shown beside the "Starting XI" heading, for example "3-4-3 · 11/11". */
   startingMeta: string;
-  /** What the captain adds, for example "Captain counts double: Haaland 5.6 → 11.2". Desktop only. */
-  captainCaption?: string;
   rows: PitchRow<Player>[];
   bench: BenchSlot<Player>[];
   /** Instruction shown while a swap waits for its second player. */
@@ -21,7 +19,7 @@ export interface SquadPitchProps {
 }
 
 /** The squad laid out as a pitch (starters by line) with a bench strip below. Both sections sit in one roster. */
-export function SquadPitch({ startingMeta, captainCaption, rows, bench, hint, renderPlayer, renderEmpty, drag }: SquadPitchProps) {
+export function SquadPitch({ startingMeta, rows, bench, hint, renderPlayer, renderEmpty, drag }: SquadPitchProps) {
   const noDrag = { canDrop: () => ({ legal: false, reason: null }), onDrop: () => {}, onReject: () => {} };
   const { rootRef, rootProps } = usePitchDrag({ enabled: Boolean(drag), ...(drag ?? noDrag) });
   return (
@@ -29,7 +27,6 @@ export function SquadPitch({ startingMeta, captainCaption, rows, bench, hint, re
       {hint && <p className="swap-hint">{hint}</p>}
       <div className="pitch-head">
         <h3>Starting XI <span>{startingMeta}</span></h3>
-        {captainCaption && <p className="captain-caption">{captainCaption}</p>}
       </div>
       <PitchLayout startingLabel="Starting XI" benchLabel="Bench" rows={rows} bench={bench} renderPlayer={renderPlayer} renderEmpty={renderEmpty} />
     </div>
