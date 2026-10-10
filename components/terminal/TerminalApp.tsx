@@ -61,8 +61,15 @@ type DataState = "SYNCING" | "LIVE" | "SNAPSHOT" | "STALE" | "EMPTY" | "ERROR";
 
 const POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
 const DRAFT_XI_COUNTS: Record<Position, number> = { GK: 1, DEF: 3, MID: 4, FWD: 3 };
-const DESKTOP_PANELS: DesktopPanel[] = ["market", "squad"];
-const PANEL_LABELS: Record<DesktopPanel, string> = { market: "Player universe", squad: "Squad builder and analysis" };
+const DESKTOP_PANELS: DesktopPanel[] = ["market", "squad", "rail"];
+const PANEL_LABELS: Record<DesktopPanel, string> = { market: "Player universe", squad: "Squad builder and analysis", rail: "Analysis" };
+/** From this width the Analysis panel is its own column; below it sits under the squad. */
+const RAIL_COLUMN_MIN_WIDTH = 1400;
+const PANEL_MIN_WIDTH: Record<DesktopPanel, number> = { market: 260, squad: 260, rail: 240 };
+/** The panels that share the row at this window width, left to right. */
+function activePanels(windowWidth: number): DesktopPanel[] {
+  return windowWidth >= RAIL_COLUMN_MIN_WIDTH ? DESKTOP_PANELS : DESKTOP_PANELS.filter((panel) => panel !== "rail");
+}
 
 type ResizeState = {
   panel: DesktopPanel;
@@ -72,7 +79,8 @@ type ResizeState = {
   currentWidth: number;
   neighborWidth: number;
   availableWidth: number;
-  ratios: Record<DesktopPanel, number>;
+  scale: number;
+  ratios: Partial<Record<DesktopPanel, number>>;
 };
 
 type Bootstrap = {
@@ -588,7 +596,7 @@ export default function TerminalApp() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersButton = useRef<HTMLButtonElement>(null);
-  const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false });
+  const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false, rail: false });
   const { data, status, message, refresh, ageAnchor } = bootstrap;
   const liveCurrentGW = clamp(Math.round(data.gameweek ?? store.currentGameweek ?? 1), 1, 38);
   const initializeGameweek = store.initializeGameweek;
@@ -602,20 +610,26 @@ export default function TerminalApp() {
     const handle = event.currentTarget;
     const section = handle.closest<HTMLElement>("[data-panel]");
     const grid = handle.closest<HTMLElement>(".terminal-grid");
-    const panelIndex = DESKTOP_PANELS.indexOf(panel);
-    const neighborIndex = panelIndex === DESKTOP_PANELS.length - 1 ? panelIndex - 1 : panelIndex + 1;
-    const neighbor = DESKTOP_PANELS[neighborIndex];
+    const panels = activePanels(window.innerWidth);
+    const panelIndex = panels.indexOf(panel);
+    if (panelIndex < 0) return;
+    const neighborIndex = panelIndex === panels.length - 1 ? panelIndex - 1 : panelIndex + 1;
+    const neighbor = panels[neighborIndex];
     if (!section || !grid || !neighbor || collapsedPanels[neighbor]) return;
     const neighborSection = grid.querySelector<HTMLElement>(`[data-panel="${neighbor}"]`);
     if (!neighborSection) return;
     // Read the grid tracks, not the sections: at 901–1399px the squad section sits in a scrolling stack, and its scrollbar would narrow the box.
     const tracks = getComputedStyle(grid).gridTemplateColumns.split(" ").map((track) => parseFloat(track) || 0);
-    const widths = DESKTOP_PANELS.map((_, index) => tracks[index] ?? 0);
-    // The divider shares the market and squad tracks only. The rail is a third column and is not part of the split.
+    const widths = panels.map((_, index) => tracks[index] ?? 0);
     const availableWidth = widths.reduce((sum, width) => sum + width, 0);
-    if (availableWidth <= 0 || widths.some((width) => width <= 0)) return;
-    const ratios = Object.fromEntries(DESKTOP_PANELS.map((name, index) => [name, ratioPercent(widths[index], availableWidth)])) as Record<DesktopPanel, number>;
-    resizeRef.current = { panel, neighbor, direction: panelIndex === DESKTOP_PANELS.length - 1 ? -1 : 1, startX: event.clientX, currentWidth: widths[panelIndex], neighborWidth: widths[neighborIndex], availableWidth, ratios };
+    if (availableWidth <= 0 || widths[panelIndex] <= 0 || widths[neighborIndex] <= 0) return;
+    // Ratios use one scale. With fewer panels on screen, keep the sum the saved ratios of those panels already have, so a saved rail ratio still fits.
+    const saved = useTerminalStore.getState().panelRatios;
+    const scale = panels.length < DESKTOP_PANELS.length && panels.every((name) => saved[name]) ? panels.reduce((sum, name) => sum + (saved[name] ?? 0), 0) / 100 : 1;
+    // A minimized panel keeps its saved ratio; only open panels get new ones.
+    const ratios: Partial<Record<DesktopPanel, number>> = {};
+    panels.forEach((name, index) => { if (!collapsedPanels[name]) ratios[name] = Math.max(1, Math.round(ratioPercent(widths[index], availableWidth) * scale)); });
+    resizeRef.current = { panel, neighbor, direction: panelIndex === panels.length - 1 ? -1 : 1, startX: event.clientX, currentWidth: widths[panelIndex], neighborWidth: widths[neighborIndex], availableWidth, scale, ratios };
     useTerminalStore.getState().setPanelRatios(ratios);
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
@@ -626,8 +640,8 @@ export default function TerminalApp() {
     const onPointerMove = (event: PointerEvent) => {
       const resize = resizeRef.current;
       if (!resize) return;
-      const delta = clamp((event.clientX - resize.startX) * resize.direction, 260 - resize.currentWidth, resize.neighborWidth - 260);
-      useTerminalStore.getState().setPanelRatios({ ...resize.ratios, [resize.panel]: ratioPercent(resize.currentWidth + delta, resize.availableWidth), [resize.neighbor]: ratioPercent(resize.neighborWidth - delta, resize.availableWidth) });
+      const delta = clamp((event.clientX - resize.startX) * resize.direction, PANEL_MIN_WIDTH[resize.panel] - resize.currentWidth, resize.neighborWidth - PANEL_MIN_WIDTH[resize.neighbor]);
+      useTerminalStore.getState().setPanelRatios({ ...resize.ratios, [resize.panel]: Math.max(1, Math.round(ratioPercent(resize.currentWidth + delta, resize.availableWidth) * resize.scale)), [resize.neighbor]: Math.max(1, Math.round(ratioPercent(resize.neighborWidth - delta, resize.availableWidth) * resize.scale)) });
     };
     const onPointerUp = () => {
       resizeRef.current = null;
@@ -1394,6 +1408,8 @@ export default function TerminalApp() {
           </section>
 
           <DecisionRail
+            collapsed={collapsedPanels.rail}
+            headerAction={<PanelToggle panel="rail" collapsed={collapsedPanels.rail} onToggle={() => togglePanel("rail")} />}
             mobileVisible={store.activeMobileTab === "SQUAD"}
             captain={<CaptainSection
               starters={pitchRows.flatMap((row) => row.players)}

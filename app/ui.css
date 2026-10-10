@@ -634,7 +634,7 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
   .squad-column.panel-collapsed { height: 100%; }
 }
 @media (min-width: 1400px) {
-  .terminal-grid { grid-template-columns: var(--market-column, 668px) var(--squad-column, minmax(0, 1fr)) 296px; }
+  .terminal-grid { grid-template-columns: var(--market-column, 668px) var(--squad-column, minmax(0, 1fr)) var(--rail-column, 296px); }
   .squad-column { display: flex; flex-direction: column; }
   .squad-body { display: block; flex: 1 1 0; min-height: 0; overflow-x: hidden; overflow-y: auto; }
   .decision-rail { grid-column: 3; grid-row: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; }
@@ -1712,4 +1712,25 @@ body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: 
 }
 @media (max-width: 900px) {
   .leagues-app .leagues-side-switch { display: none; }
+}
+
+/* Analysis panel header. Below 1400px the rail sits under the squad and has a plain heading; from 1400px it is a column and can be minimized or resized. */
+.terminal-app .decision-rail > .rail-panel-header { flex: none; margin: 0; padding: 14px 16px 0; }
+.terminal-app .decision-rail .rail-panel-header .panel-collapse { display: none; }
+@media (min-width: 901px) and (max-width: 1399px) {
+  /* The squad is the last column here, with the window edge on its right: nothing to resize against. */
+  .squad-column > .panel-resizer { display: none; }
+  .decision-rail { border-top: 1px solid var(--line); }
+}
+@media (min-width: 1400px) {
+  .terminal-app .decision-rail .rail-panel-header .panel-collapse { display: inline-grid; place-items: center; }
+  /* A minimized rail is a 52px strip with only its expand button, like the other two panels. */
+  .decision-rail.rail-collapsed { padding: 8px; overflow: hidden; }
+  .decision-rail.rail-collapsed > :not(.rail-panel-header) { display: none; }
+  .terminal-app .decision-rail.rail-collapsed > .rail-panel-header { flex-direction: column; align-items: center; justify-content: flex-start; gap: 9px; padding: 0; }
+  .decision-rail.rail-collapsed > .rail-panel-header > div:first-child { writing-mode: vertical-rl; }
+  .terminal-app .decision-rail.rail-collapsed > .rail-panel-header > .header-actions { margin-left: 0; }
+}
+@media (max-width: 900px) {
+  .terminal-app .decision-rail > .rail-panel-header { padding: 14px 12px 0; }
 }

@@ -11,7 +11,7 @@ const IMPORT_MODE = /mode b/i;
 
 /** Chip choice and chip strategy live in the decision rail, beside the squad. */
 function railOf(page: Page) {
-  return page.getByRole("complementary", { name: "Decision rail" });
+  return page.getByRole("complementary", { name: "Analysis" });
 }
 
 const chipSuggestions = {
