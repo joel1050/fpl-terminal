@@ -30,6 +30,12 @@ describe("squadAlerts", () => {
     expect(out[0].title).toContain("doubtful, 50%");
   });
 
+  it("keeps the player name apart from the message, and the title joins them", () => {
+    const s = squad.map((x) => (x.id === 3 ? p(3, { status: "d", chanceOfPlaying: 50 }) : x));
+    const [alert] = squadAlerts(base(s));
+    expect(alert).toMatchObject({ name: "P3", message: "doubtful, 50%", title: "P3 doubtful, 50%" });
+  });
+
   it("flags a starter with a 0% chance as unavailable", () => {
     const s = squad.map((x) => (x.id === 3 ? p(3, { status: "a", chanceOfPlaying: 0 }) : x));
     const out = squadAlerts(base(s));

@@ -419,6 +419,11 @@
 .token-flag.bad { background: var(--bad); }
 .token-lock { right: -6px; bottom: -3px; width: 16px; height: 16px; padding: 3.5px; border-radius: 50%; background: var(--bg); color: var(--text); }
 .token-name { display: block; max-width: 100%; padding: 2px 6px; overflow: hidden; border-radius: 4px; background: var(--text); color: var(--bg); font: 600 12px/1.25 var(--font-ui); text-overflow: ellipsis; white-space: nowrap; }
+/* A player name that opens details: the text only is the target, so the row or token keeps its centre. */
+.player-name-link { cursor: pointer; text-underline-offset: 2px; }
+.player-name-link:hover { text-decoration: underline; }
+/* A token is a tall button whose exact centre often falls on its name. A 6px dot there keeps a click on the centre opening the action sheet, as before. */
+.pitch-token::after { content: ""; position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; transform: translate(-50%, -50%); }
 .token-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 4px; max-width: 100%; }
 .token-fixture { display: flex; gap: 2px; }
 .token-fixture .fc { min-width: 0; padding: 0 3px; line-height: 16px; }

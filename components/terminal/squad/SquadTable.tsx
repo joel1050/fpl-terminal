@@ -6,6 +6,7 @@ import { projectedPointsForGameweeks } from "@/lib/projections/projectPlayer";
 import { weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import type { Player } from "@/types/player";
 import type { ChipKind } from "@/types/chips";
+import { PlayerNameLink } from "@/components/terminal/PlayerNameLink";
 import { squadFixturesForGameweek } from "./PitchToken";
 
 export interface SquadTableProps {
@@ -18,6 +19,8 @@ export interface SquadTableProps {
   chip?: ChipKind | null;
   /** Opens the same action sheet that a pitch token opens. */
   onOpen: (player: Player) => void;
+  /** A click on a name opens the player's details. Leave it out while a swap is pending. */
+  onOpenDetails?: (playerId: number) => void;
 }
 
 /** A start chance under this percentage shows in orange. */
@@ -30,9 +33,10 @@ interface SquadTableRowProps {
   vice: boolean;
   benchLabel?: string;
   onOpen: (player: Player) => void;
+  onOpenDetails?: (playerId: number) => void;
 }
 
-function SquadTableRow({ player, gameweek, captain, vice, benchLabel, onOpen }: SquadTableRowProps) {
+function SquadTableRow({ player, gameweek, captain, vice, benchLabel, onOpen, onOpenDetails }: SquadTableRowProps) {
   const availability = availabilityOf(player);
   const fixtures = squadFixturesForGameweek(player, gameweek);
   const projectedFixtures = player.projection?.fixtures ?? [];
@@ -44,7 +48,7 @@ function SquadTableRow({ player, gameweek, captain, vice, benchLabel, onOpen }: 
       <td className="sq-pos">{player.position}</td>
       <td className="sq-player">
         <button type="button" className="sq-row-button" aria-label={[`${player.displayName}, ${player.teamShortName}`, role].filter(Boolean).join(", ")} aria-haspopup="dialog" onClick={() => onOpen(player)}>
-          <span className="sq-name">{player.displayName}</span>
+          <span className="sq-name"><PlayerNameLink playerId={player.id} name={player.displayName} onOpenDetails={onOpenDetails} /></span>
           {captain && <span className="sq-badge captain" data-testid="table-role" aria-hidden="true">C</span>}
           {vice && <span className="sq-badge vice" data-testid="table-role" aria-hidden="true">V</span>}
           {availability !== "AVAILABLE" && <span className={`sq-flag ${availability === "UNAVAILABLE" ? "bad" : "warn"}`} aria-hidden="true">!</span>}
@@ -68,7 +72,7 @@ function SquadTableRow({ player, gameweek, captain, vice, benchLabel, onOpen }: 
 }
 
 /** The squad as one row per player: starters in pitch order, then a dimmed bench. Rows open the same action sheet as tokens. */
-export function SquadTable({ starters, bench, gameweek, captainId, viceCaptainId, chip, onOpen }: SquadTableProps) {
+export function SquadTable({ starters, bench, gameweek, captainId, viceCaptainId, chip, onOpen, onOpenDetails }: SquadTableProps) {
   const benchPlayers = bench.flatMap((slot) => slot.player ? [{ player: slot.player, label: slot.label }] : []);
   return (
     <table className="squad-table" aria-label="Squad table">
@@ -88,9 +92,9 @@ export function SquadTable({ starters, bench, gameweek, captainId, viceCaptainId
       </thead>
       <tbody>
         {starters.length + benchPlayers.length === 0 && <tr className="squad-table-empty"><td colSpan={10}>No players yet. Add them from the Players list.</td></tr>}
-        {starters.map((player) => <SquadTableRow key={player.id} player={player} gameweek={gameweek} captain={player.id === captainId} vice={player.id === viceCaptainId} onOpen={onOpen} />)}
+        {starters.map((player) => <SquadTableRow key={player.id} player={player} gameweek={gameweek} captain={player.id === captainId} vice={player.id === viceCaptainId} onOpen={onOpen} onOpenDetails={onOpenDetails} />)}
         {benchPlayers.length > 0 && <tr className="squad-table-divider"><td colSpan={10}><span>Bench</span>{chip === "bboost" && <span> · Counts</span>}</td></tr>}
-        {benchPlayers.map(({ player, label }) => <SquadTableRow key={player.id} player={player} gameweek={gameweek} captain={player.id === captainId} vice={player.id === viceCaptainId} benchLabel={label} onOpen={onOpen} />)}
+        {benchPlayers.map(({ player, label }) => <SquadTableRow key={player.id} player={player} gameweek={gameweek} captain={player.id === captainId} vice={player.id === viceCaptainId} benchLabel={label} onOpen={onOpen} onOpenDetails={onOpenDetails} />)}
       </tbody>
     </table>
   );

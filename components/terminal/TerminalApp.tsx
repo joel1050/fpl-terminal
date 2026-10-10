@@ -33,6 +33,7 @@ import {
   type SortKey,
 } from "@/store/terminalStore";
 import { PitchToken } from "@/components/terminal/squad/PitchToken";
+import { PlayerNameLink } from "@/components/terminal/PlayerNameLink";
 import { PlayerActions } from "@/components/terminal/squad/PlayerActions";
 import { SquadKpis } from "@/components/terminal/squad/SquadKpis";
 import { SquadPitch } from "@/components/terminal/squad/SquadPitch";
@@ -1261,7 +1262,11 @@ export default function TerminalApp() {
   const openPlayer = (playerId: number) => {
     store.setMobileTab("MARKET");
     store.setSelectedPlayer(playerId);
+    // Details show in the players panel, so open it if it is minimized.
+    setCollapsedPanels((current) => current.market ? { ...current, market: false } : current);
   };
+  // A name opens details, except while a swap is pending: then a click finishes the swap like a tap on the token.
+  const nameDetails = gwSwapSelection.starterId !== undefined || gwSwapSelection.benchId !== undefined ? undefined : openPlayer;
   const removeSquadPlayer = (player: TerminalPlayer) => {
     if (store.lockedPlayerIds.includes(player.id)) {
       setNotice(`${player.displayName} is locked. Unlock them before removing.`);
@@ -1295,6 +1300,7 @@ export default function TerminalApp() {
     swapTarget={Boolean(currentGWPlan) && (pendingStarterId !== undefined ? role === "bench" : pendingBenchId !== undefined && role === "starter")}
     showRun
     onOpen={(anchor) => openActions(player.id, anchor)}
+    onOpenDetails={nameDetails}
     onToggleLock={() => store.toggleLock(player.id)}
   />;
   const choosePlayer = (position: Position) => {
@@ -1392,6 +1398,7 @@ export default function TerminalApp() {
                   viceCaptainId={lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId}
                   chip={store.chip}
                   onOpen={(player) => openActions(player.id)}
+                  onOpenDetails={nameDetails}
                 />
               </> : <SquadPitch
                 startingMeta={`${currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · ${currentGWPlan ? 11 : draftStarterCount}/11`}
@@ -1403,7 +1410,7 @@ export default function TerminalApp() {
                 renderEmpty={(position, key) => <EmptySlot key={key} position={position} maxPriceTenths={slotMaxPrices[position]} onChoose={() => choosePlayer(position)} />}
               />}
             </div>
-            {simulation && simulationMoves && simulationMoves.length > 0 && <div className="squad-overlay" ref={simulationRef}><SimulationPanel result={simulation} moves={simulationMoves} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMoves(null); }} /></div>}
+            {simulation && simulationMoves && simulationMoves.length > 0 && <div className="squad-overlay" ref={simulationRef}><SimulationPanel result={simulation} moves={simulationMoves} playerById={playerById} onOpenDetails={openPlayer} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMoves(null); }} /></div>}
             <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
           </section>
 
@@ -1417,9 +1424,10 @@ export default function TerminalApp() {
               captainId={lineupApplied ? store.captainId : currentGWPlan?.captainId}
               viceCaptainId={lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId}
               onOpen={(playerId) => openActions(playerId)}
+              onOpenDetails={nameDetails}
             />}
-            alerts={<AlertsSection alerts={planAlerts} onOpen={(playerId) => openActions(playerId)} />}
-            transfers={<TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />}
+            alerts={<AlertsSection alerts={planAlerts} onOpen={(playerId) => openActions(playerId)} onOpenDetails={nameDetails} />}
+            transfers={<TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onOpenDetails={openPlayer} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />}
             chips={<RailSection title="Chips">
               <ChipSelector gameweek={planningGameweek} onNotice={setNotice} />
               <ChipStrategyPanel players={data.players} planningGameweek={planningGameweek} onNotice={setNotice} />
@@ -1804,6 +1812,7 @@ function TransferSuggestionsPanel({
   bankedTransfers,
   onBankedTransfers,
   playerById,
+  onOpenDetails,
   onSimulate,
   onDismiss,
 }: {
@@ -1815,10 +1824,11 @@ function TransferSuggestionsPanel({
   bankedTransfers: number;
   onBankedTransfers: (banked: number) => void;
   playerById: Map<number, TerminalPlayer>;
+  onOpenDetails: (playerId: number) => void;
   onSimulate: (suggestion: SingleTransferSuggestion) => void;
   onDismiss: (suggestion: SingleTransferSuggestion) => void;
 }) {
-  const name = (id: number) => playerById.get(id)?.displayName ?? `Player ${id}`;
+  const name = (id: number) => <PlayerNameLink playerId={id} name={playerById.get(id)?.displayName ?? `Player ${id}`} onOpenDetails={playerById.has(id) ? onOpenDetails : undefined} />;
   const signedMoney = (tenths: number) => `${tenths >= 0 ? "+" : "−"}${money(Math.abs(tenths))}`;
   return (
     <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions">
@@ -1908,12 +1918,14 @@ function SimulationPanel({
   result,
   moves,
   playerById,
+  onOpenDetails,
   onApply,
   onDiscard,
 }: {
   result: SimulationResult;
   moves: Array<{ outId: number; inId: number; cashReleasedTenths?: number }>;
   playerById: Map<number, TerminalPlayer>;
+  onOpenDetails: (playerId: number) => void;
   onApply: () => void;
   onDiscard: () => void;
 }) {
@@ -1932,9 +1944,9 @@ function SimulationPanel({
         {moves.map((m, idx) => (
           <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span className="fs-small" style={{ color: "var(--muted)", minWidth: "14px" }}>{idx + 1}.</span>
-            <span>{playerById.get(m.outId)?.displayName ?? "Outgoing"}</span>
+            <PlayerNameLink playerId={m.outId} name={playerById.get(m.outId)?.displayName ?? "Outgoing"} onOpenDetails={playerById.has(m.outId) ? onOpenDetails : undefined} />
             <span>→</span>
-            <span>{playerById.get(m.inId)?.displayName ?? "Incoming"}</span>
+            <PlayerNameLink playerId={m.inId} name={playerById.get(m.inId)?.displayName ?? "Incoming"} onOpenDetails={playerById.has(m.inId) ? onOpenDetails : undefined} />
             {m.cashReleasedTenths !== undefined && (
               <small className="fs-small" style={{ color: "var(--muted)" }}>
                 ({m.cashReleasedTenths >= 0 ? `+${money(m.cashReleasedTenths)}` : `−${money(Math.abs(m.cashReleasedTenths))}`})

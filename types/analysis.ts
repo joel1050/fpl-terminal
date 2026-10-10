@@ -113,6 +113,11 @@ export interface SquadAlert {
   /** BAD: unavailable. WARN: doubtful. INFO: fixture schedule or form. */
   severity: "BAD" | "WARN" | "INFO";
   playerId: number;
+  /** The player's display name, which the UI shows as a link. */
+  name: string;
+  /** What is wrong, without the name: "doubtful, 75%". */
+  message: string;
+  /** `name` and `message` joined. */
   title: string;
   detail: string;
 }
