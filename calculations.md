@@ -1258,7 +1258,7 @@ hitCost        = paid * 4                                // hitCostPerTransferPo
 freeAfter      = min(5, freeBefore - freeUsed + 1)
 ```
 
-Each transfer beyond the free-transfer balance costs four points (`hitCostPerTransferPoints` in `SEASON_CHIP_POLICY`, `lib/chips/seasonPolicy.ts`); transfers within the balance cost nothing. The planner warns about each hit, and the squad panel's GW xP subtracts it. A sale or purchase without its pair is not yet a transfer, so it costs no points. A Wildcard or Free Hit week is free and unlimited; it uses up that week's new free transfer, and saved transfers carry on (`freeTransfersAfterChipWeek`).
+Each transfer beyond the free-transfer balance costs four points (`hitCostPerTransferPoints` in `SEASON_CHIP_POLICY`, `lib/chips/seasonPolicy.ts`); transfers within the balance cost nothing. The planner warns about each hit, and the squad panel's Proj. GW figure subtracts it. A sale or purchase without its pair is not yet a transfer, so it costs no points. A Wildcard or Free Hit week is free and unlimited; it uses up that week's new free transfer, and saved transfers carry on (`freeTransfersAfterChipWeek`).
 
 `replayTimeline` (`lib/chips/timeline.ts`) replays a saved plan week by week from the imported baseline, pairing each sale with a purchase, moving money in integer tenths, and keeping a purchase-price ledger so later sales use the right selling price. Under a Wildcard the new squad becomes permanent. Under a Free Hit the scoring squad is temporary: the permanent squad, its purchase prices and the bank all revert the next week. Each week records `bankTenths`, the bank while its squad is active, and `bankAfterTenths`, the bank carried into the next week; the two differ only in a Free Hit week.
 

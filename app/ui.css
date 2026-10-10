@@ -1,0 +1,1681 @@
+/* Redesign layer. Loaded after globals.css (see app/layout.tsx) so its rules
+   win over the older ones at equal specificity. */
+
+@media (max-width: 900px) {
+  :root { --min-text: 12px; }
+  .terminal-app *, .leagues-app * { letter-spacing: normal; }
+}
+
+/* Shell: the Planner top bar, the phone tab bar and the More sheet (Task 5). */
+
+.shell-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.shell-topbar .brand { gap: 8px; padding: 0; color: var(--text); font: 600 15px/1 var(--font-ui); letter-spacing: 0; }
+.brand-mark { width: auto; height: 22px; padding: 0 5px; border: 1.5px solid var(--accent); border-radius: 4px; color: var(--accent); font: 700 12px/19px var(--font-num); letter-spacing: .02em; }
+
+/* Planner / Leagues: a segmented control. The current workspace is the raised segment. */
+.workspace-switcher { display: inline-flex; gap: 2px; padding: 3px; border: 0; border-radius: 9px; background: var(--surface-2); }
+.workspace-switcher a { display: inline-flex; align-items: center; min-height: 28px; padding: 0 12px; border: 0; border-radius: 6px; color: var(--muted); font: 500 13px/1 var(--font-ui); letter-spacing: 0; text-decoration: none; }
+.workspace-switcher a:hover { color: var(--text); }
+.workspace-switcher a.active { background: var(--line-strong); color: var(--text); box-shadow: none; }
+
+.shell-topbar .planning-switcher { gap: 4px; border: 0; background: transparent; }
+.shell-topbar .planning-switcher > span { min-width: 48px; color: var(--text); font: 600 14px/1 var(--font-ui); letter-spacing: 0; text-align: center; }
+.shell-topbar .planning-arrow { width: 28px; height: 28px; border: 0; border-radius: 6px; background: var(--surface-2); color: var(--text); font: 500 18px/1 var(--font-ui); }
+.shell-topbar .planning-arrow:hover:not(:disabled) { background: var(--line-strong); }
+.shell-topbar .planning-arrow:disabled { opacity: .35; }
+
+/* The live Gameweek (only when planning ahead), the deadline and the data status, in one quiet line. */
+.shell-status { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.shell-topbar .status-cell { display: flex; align-items: baseline; gap: 5px; min-width: 0; padding: 0; border: 0; }
+.shell-topbar .status-cell span,
+.shell-live { color: var(--muted); font: 13px/1 var(--font-ui); letter-spacing: 0; white-space: nowrap; }
+.shell-topbar .status-cell strong { color: var(--text); font: 600 13px/1 var(--font-ui); letter-spacing: 0; white-space: nowrap; }
+.shell-topbar .data-status { align-items: center; }
+.data-status > i { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--warn); }
+.shell-topbar .data-status.live strong { color: var(--good); }
+.data-status.live > i { background: var(--good); }
+.shell-topbar .data-status.stale strong { color: var(--warn-text); }
+.shell-topbar .data-status.error strong { color: var(--bad); }
+.data-status.error > i { background: var(--bad); }
+
+/* Phones only: "Gameweek 6" over the time to the deadline. */
+.shell-title { display: none; }
+
+.shell-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.shell-actions button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: 500 13px/1 var(--font-ui);
+  cursor: pointer;
+}
+.shell-actions button:hover { background: var(--surface-2); }
+
+.tab-bar {
+  display: none;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  background: rgb(0 0 0 / 0.5);
+}
+
+.sheet-backdrop.bottom {
+  align-items: flex-end;
+}
+
+.sheet-backdrop.popover {
+  justify-content: flex-end;
+  align-items: flex-start;
+  background: transparent;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  color: var(--text);
+  outline: none;
+}
+
+.sheet.bottom {
+  width: 100%;
+  max-height: 80dvh;
+  border-radius: 16px 16px 0 0;
+  background: var(--surface);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.sheet.popover {
+  align-self: flex-start;
+  width: 320px;
+  max-height: 70vh;
+  margin: 56px 18px 0 auto;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 4px 0 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.sheet-close {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.sheet-body {
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+}
+
+.more-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.more-actions > button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+}
+
+.more-actions > button:disabled {
+  color: var(--muted);
+}
+
+.more-actions > .danger {
+  color: var(--bad);
+}
+
+.more-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.more-settings {
+  display: grid;
+  gap: 8px;
+  padding: 4px 0 8px;
+}
+
+.more-settings .strategy-panel { display: grid; gap: 10px; }
+.more-settings .strategy-panel > div { display: grid; gap: 6px; }
+.more-settings .strategy-title { color: var(--text); font: 600 14px/1.2 var(--font-ui); }
+.more-settings .strategy-label { color: var(--muted); font: 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.more-settings .segmented { display: flex; }
+.more-settings .segmented button {
+  flex: 1 1 0;
+  min-height: 40px;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .shell-topbar {
+    height: 56px;
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  /* One title, one line of context and the stepper. Refresh and More are in the tab bar's More sheet. */
+  .shell-topbar .brand,
+  .shell-topbar .workspace-switcher,
+  .shell-topbar .shell-status,
+  .shell-topbar .shell-actions {
+    display: none;
+  }
+
+  .shell-title { display: grid; gap: 3px; min-width: 0; margin-right: auto; }
+  .shell-title strong { color: var(--text); font: 600 17px/1.1 var(--font-ui); white-space: nowrap; }
+  .shell-title span { overflow: hidden; color: var(--muted); font: 12px/1.2 var(--font-ui); text-overflow: ellipsis; white-space: nowrap; }
+
+  .shell-topbar .planning-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+
+  /* The title already names the Gameweek; the stepper's own label stays for screen readers. */
+  .shell-topbar .planning-switcher > span {
+    position: absolute;
+    width: 1px;
+    min-width: 0;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* Lifts the notice toast clear of the tab bar it would otherwise sit under. */
+  .toast {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Clears the fixed tab bar at the foot of the screen. */
+  .terminal-app,
+  .leagues-app {
+    padding-bottom: 64px;
+  }
+
+  /* The squad panel fills the screen between the 56px top bar and the tab bar. */
+  .terminal-app .squad-column.mobile-visible {
+    height: calc(100dvh - 120px);
+  }
+
+  .tab-bar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    height: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .tab-bar > * {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    text-decoration: none;
+  }
+
+  .tab-bar > [aria-current="page"] {
+    color: var(--accent);
+    box-shadow: inset 0 2px var(--accent);
+  }
+}
+
+/* Fixture difficulty (Task 6). Green to red means difficulty only; a blank Gameweek stays neutral. */
+
+.fixture-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.fc {
+  display: inline-block;
+  min-width: 30px;
+  padding: 1px 3px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--font-num);
+  font-size: var(--min-text);
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.fc.d1 { background: var(--fdr-1-bg); color: var(--fdr-1-text); }
+.fc.d2 { background: var(--fdr-2-bg); color: var(--fdr-2-text); }
+.fc.d3 { background: var(--fdr-3-bg); color: var(--fdr-3-text); }
+.fc.d4 { background: var(--fdr-4-bg); color: var(--fdr-4-text); }
+.fc.d5 { background: var(--fdr-5-bg); color: var(--fdr-5-text); }
+
+.fc.blank {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+
+/* A slot is 12px wide whatever the fixture count, so five slots fit a 76px phone token. */
+.run {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.run-slot {
+  display: inline-flex;
+  gap: 1px;
+  width: 12px;
+}
+
+.run-slot > i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fdr-3);
+}
+
+.run-slot > i.d1 { background: var(--fdr-1); }
+.run-slot > i.d2 { background: var(--fdr-2); }
+.run-slot > i.d3 { background: var(--fdr-3); }
+.run-slot > i.d4 { background: var(--fdr-4); }
+.run-slot > i.d5 { background: var(--fdr-5); }
+
+.run-slot > i.blank {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+
+@media (max-width: 900px) {
+  .terminal-app .squad-column.mobile-visible { display: block; height: auto; min-height: 0; overflow: visible; grid-template-rows: none; }
+}
+.squad-column .replacement-scroll { overflow-y: visible; }
+
+/* Panels sit on the page colour; cards inside them (KPI strip, bench) use the surface colour. */
+.terminal-app .terminal-grid { background: var(--line); }
+.terminal-app .market-column,
+.terminal-app .squad-column,
+.terminal-app .decision-rail { background: var(--bg); }
+
+/* Panel headers: a 15px title and a muted count, then the panel's actions. The count drops under the title when the actions need the room. */
+.terminal-app .panel-header { flex-wrap: wrap; align-items: center; row-gap: 8px; min-height: 36px; margin: 0 0 10px; }
+.terminal-app .panel-header > div:first-child { display: flex; flex: 0 0 auto; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+.terminal-app .panel-header > .header-actions { margin-left: auto; }
+.panel-title { color: var(--text); font: 600 15px/1.2 var(--font-ui); white-space: nowrap; }
+.terminal-app .panel-count { margin: 0; color: var(--muted); font: 13px/1.2 var(--font-ui); letter-spacing: 0; white-space: nowrap; }
+.terminal-app .header-actions { flex: none; gap: 4px; }
+.terminal-app .data-badge { min-height: 24px; padding: 0 8px; border: 0; border-radius: 6px; background: var(--surface-2); color: var(--warn-text); font: 500 12px/1 var(--font-ui); letter-spacing: 0; }
+.terminal-app .panel-collapse { width: 28px; height: 28px; flex: 0 0 28px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: 400 18px/1 var(--font-ui); }
+.terminal-app .panel-collapse:hover { background: var(--surface-2); color: var(--text); }
+
+/* Panel and rail buttons: neutral by default. Optimize is the one amber button. */
+.terminal-app .compact-action { display: inline-flex; align-items: center; justify-content: center; min-height: 30px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: transparent; color: var(--text); font: 500 13px/1 var(--font-ui); letter-spacing: 0; white-space: nowrap; }
+.terminal-app .compact-action:hover:not(:disabled) { background: var(--surface-2); }
+.terminal-app .compact-action.primary-action { border-color: var(--accent); background: var(--accent); color: #111; font-weight: 600; }
+.terminal-app .compact-action.primary-action:hover:not(:disabled) { background: #ffc21a; }
+.terminal-app .pick-team-action.stale { border-color: var(--warn); color: var(--warn-text); }
+.terminal-app .squad-lock-all { width: 30px; padding: 0; color: var(--muted); }
+.terminal-app .squad-lock-all[aria-pressed="true"] { color: var(--text); }
+.squad-lock-all .lock-icon { width: 13px; height: 13px; }
+
+/* Short desktop screens: tighter tokens so the starting XI and bench sit above the fold. */
+@media (min-width: 901px) and (max-height: 800px) {
+  .squad-column .pitch { gap: 2px; padding-block: 10px 8px; }
+  .squad-column .pitch-token { gap: 2px; }
+  .squad-column .token-shirt { width: 40px; height: 30px; }
+}
+
+/* Pitch: a heading, the starting XI in four lines on a marked pitch, then the bench card. */
+.squad-roster { display: grid; gap: 8px; min-height: 0; }
+.swap-hint { margin: 0; padding: 8px 12px; border: 1px dashed var(--line-strong); border-radius: 8px; color: var(--text); font-size: 13px; }
+.pitch-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
+.pitch-head h3 { margin: 0; color: var(--text); font: 600 14px/1.2 var(--font-ui); }
+.pitch-head h3 span { margin-left: 6px; color: var(--muted); font: 12px/1.2 var(--font-num); }
+.captain-caption { margin: 0; color: var(--muted); font: 12px/1.3 var(--font-ui); }
+
+.pitch { --token-ring: var(--pitch); position: relative; display: grid; gap: 6px; padding: 16px 8px 12px; overflow: hidden; border-radius: 12px; background: repeating-linear-gradient(180deg, var(--pitch) 0 52px, #173c26 52px 104px); }
+/* Touch line and the penalty box at the goalkeeper's end. Drawn behind the tokens. */
+.pitch::before,
+.pitch::after { content: ""; position: absolute; border: 1px solid rgb(255 255 255 / 0.1); pointer-events: none; }
+.pitch::before { inset: 6px; border-radius: 6px; }
+.pitch::after { top: 6px; left: 50%; width: 46%; height: 60px; border-top: 0; transform: translateX(-50%); }
+.pitch > * { position: relative; z-index: 1; }
+.squad-column .pitch-row { display: grid; min-width: 0; }
+.pitch-tokens { display: flex; justify-content: space-evenly; align-items: flex-start; gap: 4px; min-width: 0; }
+
+.token-cell { position: relative; display: grid; flex: 0 1 88px; min-width: 0; }
+.pitch-token { position: relative; display: grid; justify-items: center; align-content: start; gap: 3px; width: 100%; min-width: 0; padding: 2px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--text); font: inherit; text-align: center; }
+.pitch-token:hover .token-name { background: #fff; }
+.pitch-token:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.pitch-token.selected { border-color: var(--text); background: rgb(0 0 0 / 0.3); }
+.pitch-token.swap-target { outline: 1px dashed var(--text); outline-offset: 2px; }
+
+/* The shirt: club colour clipped to a shirt shape, club short name on the chest. Badges sit outside the clip. */
+.token-shirt { position: relative; display: grid; place-items: center; width: 46px; height: 36px; font: 700 12px/1 var(--font-num); letter-spacing: 0; }
+.token-shirt::before { content: ""; position: absolute; inset: 0; background: var(--shirt, var(--fdr-3)); clip-path: polygon(27% 0, 39% 7%, 61% 7%, 73% 0, 100% 17%, 91% 45%, 79% 40%, 79% 100%, 21% 100%, 21% 40%, 9% 45%, 0 17%); }
+.token-club { position: relative; top: 3px; }
+.token-role,
+.token-flag,
+.token-lock { position: absolute; box-shadow: 0 0 0 2px var(--token-ring); }
+.token-role { top: -5px; right: -7px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--accent); color: #111; font: 700 12px/18px var(--font-num); }
+.token-role.vice { background: var(--text); }
+.token-flag { top: -5px; left: -7px; width: 18px; height: 18px; border-radius: 50%; color: #111; font: 700 12px/18px var(--font-num); }
+.token-flag.warn { background: var(--warn); }
+.token-flag.bad { background: var(--bad); }
+.token-lock { right: -6px; bottom: -3px; width: 16px; height: 16px; padding: 3.5px; border-radius: 50%; background: var(--bg); color: var(--text); }
+.token-name { display: block; max-width: 100%; padding: 2px 6px; overflow: hidden; border-radius: 4px; background: var(--text); color: var(--bg); font: 600 12px/1.25 var(--font-ui); text-overflow: ellipsis; white-space: nowrap; }
+.token-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 4px; max-width: 100%; }
+.token-fixture { display: flex; gap: 2px; }
+.token-fixture .fc { min-width: 0; padding: 0 3px; line-height: 16px; }
+.token-blank { color: var(--muted); font-size: 12px; }
+.token-xp { color: var(--text); font: 600 12px/16px var(--font-num); }
+.token-xp small { position: absolute; font-size: 12px; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.token-bench { color: var(--muted); font: 12px/1.2 var(--font-ui); }
+.pitch-token .run { margin-top: 1px; }
+
+/* Bench: its own card under the pitch. Benched players are dimmed unless Bench Boost makes them count. */
+.terminal-app .bench-section { --token-ring: var(--surface); display: block; padding: 10px 6px 8px; border: 0; border-radius: 12px; background: var(--surface); }
+.bench-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.bench-strip .token-cell { flex: none; width: 100%; }
+.pitch-token.benched > :not(.token-bench) { opacity: .72; }
+
+/* Drag to swap on the pitch. Tokens carry data-drop while a drag is on; the floating copy is .drag-ghost. */
+.squad-roster[data-draggable="true"] .pitch-token { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; cursor: grab; }
+/* Lock button on hover: only where a pointer can hover. It sits where the locked badge sits. */
+.token-lock-button { display: none; }
+@media (hover: hover) {
+  .token-lock-button { position: absolute; top: 22px; left: calc(50% + 9px); z-index: 2; display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--bg); color: var(--text); visibility: hidden; cursor: pointer; }
+  .token-lock-button .lock-icon { width: 12px; height: 12px; }
+  .token-lock-button[aria-pressed="true"] .lock-body { fill: currentColor; }
+  .token-lock-button:hover { border-color: var(--text); }
+  .token-lock-button:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+  .token-cell:hover .token-lock-button,
+  .token-cell:focus-within .token-lock-button { visibility: visible; }
+  .token-cell:hover .token-lock,
+  .token-cell:focus-within .token-lock { visibility: hidden; }
+  body.pitch-dragging .token-lock-button { visibility: hidden; }
+}
+body.pitch-dragging { cursor: grabbing; -webkit-user-select: none; user-select: none; }
+.pitch-token[data-drag-source="true"] { opacity: .35; }
+.pitch-token[data-drop="legal"] { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pitch-token[data-drop="legal"][data-drop-over="true"] { background: rgb(0 0 0 / 0.4); outline-width: 3px; }
+.pitch-token[data-drop="illegal"] { opacity: .4; }
+.pitch-token.drag-ghost { opacity: .95; box-shadow: 0 8px 20px rgb(0 0 0 / 0.5); background: rgb(0 0 0 / 0.5); }
+
+.pitch-empty { display: grid; justify-items: center; align-content: center; gap: 2px; flex: 0 1 88px; min-width: 0; min-height: 84px; padding: 4px; border: 1px dashed rgb(255 255 255 / 0.25); border-radius: 10px; background: rgb(0 0 0 / 0.2); color: var(--muted); font: inherit; font-size: 12px; text-align: center; }
+.bench-strip .pitch-empty { flex: none; width: 100%; border-color: var(--line-strong); }
+.pitch-empty .empty-plus { position: static; color: var(--text); font-size: 16px; line-height: 1; }
+.pitch-empty .token-name { padding: 0; background: none; color: var(--text); }
+.pitch-empty .suggest-label { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: 0; }
+
+/* KPI strip: one card of five cells above the pitch. The projection is the headline. */
+.squad-kpis { display: grid; grid-template-columns: minmax(0, 1.2fr) repeat(4, minmax(0, 1fr)); margin: 0 0 12px; padding: 10px 0; border: 0; border-radius: 12px; background: var(--surface); }
+.kpi { display: grid; align-content: center; gap: 4px; min-width: 0; padding: 0 10px; }
+.kpi + .kpi { border-left: 1px solid var(--line-strong); }
+.kpi > span { overflow: hidden; color: var(--muted); font: 12px/1.2 var(--font-ui); letter-spacing: 0; text-overflow: ellipsis; white-space: nowrap; }
+.kpi strong { color: var(--text); font: 600 17px/1.15 var(--font-num); white-space: nowrap; }
+.kpi strong.good { color: var(--good); }
+.kpi strong.warn { color: var(--warn-text); }
+.kpi-proj strong { font-size: 28px; line-height: 1; }
+.kpi-meter { display: block; height: 3px; overflow: hidden; border-radius: 2px; background: var(--line-strong); }
+.kpi-meter i { display: block; height: 100%; border-radius: 2px; background: var(--muted); }
+.kpi-meter.good i { background: var(--good); }
+.kpi-meter.warn i { background: var(--warn); }
+.kpi-bank .metric-editable { display: grid; gap: 4px; min-width: 0; }
+.kpi-bank .metric-editable > span:first-child { color: var(--muted); font: 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.kpi-bank .metric-money { display: flex; align-items: baseline; gap: 1px; }
+.kpi-bank .metric-money > span { color: var(--text); font: 600 17px/1.15 var(--font-num); }
+.kpi-bank .metric-input { width: 100%; min-width: 0; border-bottom: 1px dashed var(--line-strong); color: var(--text); font: 600 17px/1.15 var(--font-num); }
+.kpi-bank .metric-steppers { gap: 4px; }
+.kpi-bank .metric-step { position: relative; width: 18px; height: 18px; border-color: var(--line-strong); border-radius: 4px; background: var(--surface-2); color: var(--text); }
+.kpi-bank .metric-step::before { content: ""; position: absolute; inset: -11px; }
+
+/* Phone: five token rows (four on the pitch, one bench) must clear the tab bar, so tokens stay near 76px wide and 70px tall. */
+@media (max-width: 900px) {
+  .terminal-app .panel-header { row-gap: 4px; }
+  .terminal-app .panel-header > div:first-child { flex-direction: row; align-items: baseline; gap: 8px; }
+  .panel-title { line-height: 1.1; }
+  .squad-kpis { margin-bottom: 10px; padding: 5px 0; }
+  .kpi { gap: 2px; padding: 0 7px; }
+  .kpi strong,
+  .kpi-bank .metric-money > span,
+  .kpi-bank .metric-input { font-size: 15px; }
+  .kpi-proj strong { font-size: 20px; }
+  .captain-caption { display: none; }
+  .squad-roster { gap: 6px; }
+  .pitch { gap: 4px; padding: 12px 4px 8px; }
+  .token-cell { flex-basis: 76px; }
+  .pitch-token { gap: 2px; padding: 1px; }
+  .pitch-token .run { display: none; }
+  .token-lock-button { top: 18px; }
+  .token-shirt { width: 42px; height: 32px; }
+  .terminal-app .bench-section { padding: 8px 4px 6px; }
+}
+
+/* Action sheet for one player. On wider screens it is a compact popover beside the token. */
+.sheet.popover.side { width: 232px; }
+.sheet.side .sheet-head { min-height: 36px; padding: 0 2px 0 12px; font-size: 14px; }
+.sheet.side .sheet-close { width: 32px; height: 32px; font-size: 18px; }
+.sheet.side .sheet-body { padding: 8px 12px 12px; }
+.sheet.side .action-meta { margin: 0 0 8px; font-size: 12px; line-height: 1.35; }
+.sheet.side .action-grid { gap: 6px; }
+.sheet.side .action-button { min-height: 32px; padding: 4px 8px; }
+.sheet.side .action-button.danger { grid-column: 1 / -1; }
+@media (max-width: 900px) {
+  .sheet.side .action-button { min-height: 44px; }
+  .sheet.side .sheet-close { width: 44px; height: 44px; }
+}
+.action-meta { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+.action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.action-button { min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 12px; }
+.action-button.on { border-color: var(--accent); color: var(--accent); }
+.action-button.danger { color: var(--bad); }
+.action-button:disabled { color: var(--dim); }
+
+/* Pitch/Table switch in the squad header, drawn like the other segmented controls. The visible
+   button is 26px; ::before widens the tap area to 40px on phones. */
+.squad-view-switch { display: inline-flex; flex: none; gap: 2px; padding: 2px; border-radius: 8px; background: var(--surface-2); }
+.squad-view-switch button { position: relative; min-height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: 500 12px/1 var(--font-ui); }
+.squad-view-switch button:hover:not([aria-pressed="true"]) { color: var(--text); }
+.squad-view-switch button[aria-pressed="true"] { background: var(--line-strong); color: var(--text); }
+.squad-view-switch button:focus-visible { outline: 2px solid var(--text); outline-offset: -2px; }
+@media (max-width: 900px) {
+  .squad-view-switch button { min-width: 64px; }
+  .squad-view-switch button::before { content: ""; position: absolute; inset: -7px 0; }
+}
+
+/* The narrowest phones: the squad actions still fit one row, and a £100.0 bank fits its cell. */
+@media (max-width: 360px) {
+  .squad-view-switch button { min-width: 0; padding: 0 8px; }
+  .terminal-app .squad-column .header-actions .compact-action:not(.squad-lock-all) { padding: 0 8px; }
+  .squad-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .kpi { padding: 0 5px; }
+  .kpi strong,
+  .kpi-bank .metric-money > span,
+  .kpi-bank .metric-input { font-size: 13px; }
+  .kpi-proj strong { font-size: 18px; }
+}
+
+/* Squad table: starters in pitch order, then a dimmed bench. On phones five columns fit the panel with no scroll. */
+.squad-table { width: 100%; border-collapse: collapse; color: var(--text); font-family: var(--font-num); font-size: 13px; }
+.squad-table th { padding: 6px 5px; border-bottom: 1px solid var(--line); color: var(--muted); font: 500 11.5px/1.2 var(--font-ui); text-align: left; white-space: nowrap; }
+.squad-table td { height: 36px; padding: 0 5px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+.squad-table .num { text-align: right; }
+.squad-table td.sq-gw { color: var(--text); font-weight: 600; }
+.squad-table .sq-start.warn { color: var(--warn-text); }
+.squad-table .sq-pos { color: var(--muted); font-size: 11.5px; }
+.squad-table th.sq-player, .squad-table td.sq-player { padding-left: 14px; }
+.squad-table tr.bench-row td { color: var(--muted); }
+.squad-table tr.squad-table-empty td { height: 64px; color: var(--muted); font: 13px/1.4 var(--font-ui); text-align: center; }
+.squad-table tr.squad-table-divider td { height: 26px; padding-left: 14px; background: var(--surface); color: var(--muted); font: 500 12px/1.2 var(--font-ui); text-align: left; }
+.squad-table .sq-row-button { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; min-height: 36px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
+.squad-table .sq-row-button:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+.squad-table .sq-name { min-width: 0; overflow: hidden; color: var(--text); font: 600 13px/1.2 var(--font-ui); text-overflow: ellipsis; white-space: nowrap; }
+.squad-table tr.bench-row .sq-name { color: var(--muted); }
+.squad-table .sq-team { flex: none; color: var(--muted); font: 12px/1.2 var(--font-ui); }
+.squad-table .sq-fixtures { display: inline-flex; gap: 2px; }
+.squad-table .sq-badge { flex: none; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; font: 700 12px/18px var(--font-num); text-align: center; }
+.squad-table .sq-badge.captain { background: var(--accent); color: #111; }
+.squad-table .sq-badge.vice { background: var(--text); color: #111; }
+.squad-table .sq-flag { flex: none; width: 16px; height: 16px; border-radius: 50%; color: #111; font: 700 12px/16px var(--font-num); text-align: center; }
+.squad-table .sq-flag.warn { background: var(--warn); }
+.squad-table .sq-flag.bad { background: var(--bad); }
+@media (max-width: 900px) {
+  .squad-table { table-layout: auto; }
+  .squad-table th { padding: 6px 4px; font-size: 12px; }
+  .squad-table td { height: 40px; padding: 0 4px; }
+  .squad-table .wide-only { display: none; }
+  .squad-table .sq-row-button { min-height: 40px; }
+  .squad-table th.sq-pos, .squad-table td.sq-pos { width: 38px; }
+  .squad-table th.sq-next, .squad-table td.sq-next { width: 88px; }
+  .squad-table th.sq-gw, .squad-table td.sq-gw { width: 40px; }
+  .squad-table th.sq-start, .squad-table td.sq-start { width: 46px; }
+  /* Player takes the width the four fixed columns leave. max-width 0 keeps a long name from widening the table. */
+  .squad-table th.sq-player, .squad-table td.sq-player { max-width: 0; padding-left: 4px; }
+  .squad-table td.sq-player { overflow: hidden; }
+  .squad-table .sq-pos { font-size: 12px; }
+  .squad-table .sq-name { font-size: 13px; }
+  .squad-table tr.squad-table-divider td { padding-left: 4px; }
+}
+
+/* Desktop layout. The app fills the viewport and the grid takes the space under the top bar, so the page never scrolls and each column scrolls inside it.
+   Market and squad share the top row. From 901px to 1399px the squad column is one scroll container, and the rail sits under the squad.
+   From 1400px the rail is a third column, and the squad body scrolls under the squad header. The squad-stack and squad-body wrappers
+   are `display: contents` wherever they do not scroll, so phones keep their layout. */
+.squad-stack { display: contents; }
+.squad-body { display: contents; }
+@media (min-width: 901px) {
+  .terminal-app { display: flex; flex-direction: column; height: 100dvh; }
+  .terminal-grid { flex: 1 1 0; height: auto; min-height: 0; overflow: hidden; grid-template-rows: minmax(0, 1fr); }
+  .market-column { display: flex; flex-direction: column; grid-column: 1; grid-row: 1; }
+  .market-column > .table-wrap { flex: 1 1 0; height: auto; min-height: 0; }
+  .squad-column { display: block; height: auto; container: squad-panel / inline-size; }
+}
+/* A collapsed squad is a 52px strip. The rail cannot sit in that track, so it steps aside until the squad opens. */
+@media (min-width: 901px) and (max-width: 1399px) {
+  .squad-stack { display: block; grid-column: 2; grid-row: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+  .squad-stack:has(> .squad-column.panel-collapsed) > .decision-rail { display: none; }
+  .squad-column.panel-collapsed { height: 100%; }
+}
+@media (min-width: 1400px) {
+  .terminal-grid { grid-template-columns: var(--market-column, 668px) var(--squad-column, minmax(0, 1fr)) 296px; }
+  .squad-column { display: flex; flex-direction: column; }
+  .squad-body { display: block; flex: 1 1 0; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+  .decision-rail { grid-column: 3; grid-row: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+}
+/* Table view in a narrow squad column drops Form and Run, which need about 110px between them. */
+@container squad-panel (max-width: 560px) {
+  .squad-table .roomy { display: none; }
+}
+
+/* Segmented control, used across the app: a sunken track, and the chosen segment raised in a neutral tone. */
+.segmented { display: inline-flex; flex-wrap: nowrap; gap: 2px; padding: 2px; border-radius: 8px; background: var(--surface-2); }
+.segmented button { min-height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: 500 12px/1 var(--font-ui); letter-spacing: 0; white-space: nowrap; }
+.segmented button:hover:not(.active) { color: var(--text); }
+.segmented button.active { border: 0; background: var(--line-strong); color: var(--text); }
+
+/* Decision rail. Amber marks the captain and the primary action. Orange marks doubt. Red marks unavailable and errors. */
+.decision-rail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+}
+.decision-rail .rail-section,
+.decision-rail .unified-replacements {
+  padding: 14px 16px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  box-shadow: none;
+}
+.decision-rail .rail-section:last-child { border-bottom: 0; }
+/* The rail scrolls as a whole, so its sections keep their content height. */
+.decision-rail > * { flex: none; }
+.decision-rail small { font-size: 12px; }
+.decision-rail .compact-action { min-height: 28px; padding: 0 10px; font-size: 12px; }
+
+.rail-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; margin-bottom: 8px; }
+.rail-head h2 { margin: 0; color: var(--muted); font: 500 13px/1.2 var(--font-ui); }
+.decision-rail .rail-head .panel-count { margin: 0; color: var(--muted); font: 12px/1 var(--font-ui); }
+.rail-count { color: var(--muted); font: 600 12px/1 var(--font-num); }
+.rail-action { min-height: 28px; padding: 0 6px; border: 0; background: transparent; color: var(--accent); font: 500 12px/1 var(--font-ui); }
+.rail-action:disabled { color: var(--muted); }
+.rail-empty { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--surface); color: var(--muted); font-size: 13px; line-height: 1.45; }
+
+/* Captain: four bars, drawn from the same Gameweek xP as the table, before the captain's double. */
+.captain-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.captain-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px 40px; gap: 8px; align-items: center; width: 100%; min-height: 30px; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; }
+.captain-row:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.captain-name { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; font: 600 13px/1.2 var(--font-ui); text-overflow: ellipsis; white-space: nowrap; }
+.captain-role { display: inline-grid; place-items: center; flex: none; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; color: #111; font: 700 12px/1 var(--font-num); }
+.captain-role.captain { background: var(--accent); }
+.captain-role.vice { background: var(--text); }
+.captain-bar { height: 6px; overflow: hidden; border-radius: 3px; background: var(--line-strong); }
+.captain-bar i { display: block; height: 100%; border-radius: 3px; background: var(--muted); }
+.captain-row.is-captain .captain-bar i { background: var(--accent); }
+.captain-xp { color: var(--text); font: 600 13px/1 var(--font-num); text-align: right; }
+
+/* Needs a look: the glyph carries the severity, and the row opens the player's action sheet. */
+.alert-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.alert-row { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; align-items: start; width: 100%; min-height: 40px; padding: 6px 0; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; }
+.alert-row:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.alert-glyph { display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font: 800 12px/1 var(--font-num); }
+.alert-row.bad .alert-glyph { background: var(--bad); color: #111; }
+.alert-row.warn .alert-glyph { background: var(--warn); color: #111; }
+.alert-text { display: grid; gap: 2px; min-width: 0; }
+.alert-text strong { font: 600 13px/1.25 var(--font-ui); }
+.alert-text small { color: var(--muted); line-height: 1.35; }
+
+/* Transfers: free transfers and the horizon on one line, then one card per suggestion. */
+.decision-rail .unified-replacements { display: block; min-height: 0; overflow: visible; }
+.decision-rail .replacement-scroll { display: grid; gap: 6px; min-height: 0; overflow: visible; }
+.transfer-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; }
+.transfer-controls .transfer-horizon { order: -1; }
+.banked-transfers { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.banked-transfers select { height: 30px; padding: 0 6px; border: 0; border-radius: 6px; background: var(--surface-2); color: var(--text); font: 600 13px/1 var(--font-num); cursor: pointer; }
+.decision-rail .replacement-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 6px 10px; padding: 10px 12px; border: 0; border-radius: 8px; background: var(--surface); }
+.decision-rail .replacement-row > div { display: grid; gap: 3px; min-width: 0; }
+.decision-rail .replacement-row strong { overflow: hidden; color: var(--text); font: 600 13px/1.3 var(--font-ui); text-overflow: ellipsis; white-space: nowrap; }
+.decision-rail .replacement-row small { overflow: hidden; color: var(--muted); font-size: 12px; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+.transfer-step { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.transfer-step-index { flex: none; color: var(--muted); font: 12px/1 var(--font-num); }
+.decision-rail .transfer-effects { display: grid; justify-items: end; gap: 3px; color: var(--muted); font: 12px/1.3 var(--font-num); white-space: nowrap; }
+.decision-rail .transfer-effects .green { color: var(--good); font-weight: 600; font-size: 13px; }
+.decision-rail .replacement-row > .transfer-actions { display: flex; grid-column: 1 / -1; align-items: center; justify-content: flex-end; gap: 4px; }
+.transfer-dismiss { width: 28px; min-height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 16px; line-height: 1; }
+.transfer-dismiss:hover { background: var(--surface-2); color: var(--text); }
+
+/* Chips: five small pills. A used chip is struck through and says which Gameweek it went in. */
+.decision-rail .chip-selector { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.chip-option { display: inline-flex; align-items: center; gap: 6px; min-width: 0; min-height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: var(--surface-2); color: var(--text); font: 500 12px/1 var(--font-ui); }
+.chip-option:hover:not(:disabled) { background: var(--line-strong); }
+.chip-option.active { background: var(--accent); color: #111; }
+.chip-option:disabled { color: var(--muted); cursor: not-allowed; }
+.chip-option .chip-name { font: inherit; letter-spacing: 0; }
+.chip-option.used .chip-name { color: var(--muted); text-decoration: line-through; }
+.chip-used { color: var(--muted); font-size: 12px; }
+.chip-used > span + span { margin-left: 3px; }
+.chip-strategy { display: grid; gap: 8px; }
+.chip-strategy-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.chip-strategy-head p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.35; }
+.chip-strategy .header-actions { display: flex; gap: 4px; }
+.chip-strategy .replacement-scroll { display: grid; gap: 6px; }
+.chip-reason { grid-column: 1 / -1; color: var(--muted); }
+.plan-notice { font-size: 12px; }
+
+/* Simulation: an overlay card above the squad. */
+.squad-overlay .simulation-panel { padding: 16px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); box-shadow: 0 12px 32px rgb(0 0 0 / 0.45); }
+.simulation-panel .panel-header > div:first-child { flex-direction: column; }
+.simulation-panel .icon-button { width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 18px; }
+.simulation-panel .icon-button:hover { background: var(--surface-2); color: var(--text); }
+.simulation-move { margin: 0 0 12px; color: var(--text); font: 600 13px/1.4 var(--font-ui); }
+.simulation-move span { padding: 0; color: inherit; }
+.simulation-move small { color: var(--muted); font-weight: 400; }
+.simulation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; background: none; }
+.simulation-grid > div { display: grid; gap: 4px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); }
+.simulation-grid span { color: var(--muted); font: 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.simulation-grid strong { color: var(--text); font: 600 17px/1.15 var(--font-num); }
+.simulation-grid strong.green { color: var(--good); }
+.simulation-grid strong.red { color: var(--bad); }
+.simulation-note { margin: 12px 0; color: var(--muted); font: 13px/1.45 var(--font-ui); }
+.simulation-actions { display: flex; gap: 8px; }
+.simulation-actions button { flex: 1; min-height: 36px; border-radius: 8px; font: 600 13px/1 var(--font-ui); letter-spacing: 0; }
+.simulation-actions .primary-button { border: 0; background: var(--accent); color: #111; }
+.simulation-actions .secondary-button { border: 1px solid var(--line-strong); background: transparent; color: var(--text); }
+
+@media (max-width: 900px) {
+  .decision-rail { display: none; }
+  .decision-rail.mobile-visible { display: flex; }
+  .decision-rail .rail-section,
+  .decision-rail .unified-replacements { padding: 14px 12px 16px; }
+  /* Every control in the rail keeps a 40px tap area. */
+  .decision-rail button,
+  .decision-rail select { min-height: 40px; }
+  .decision-rail .compact-action,
+  .decision-rail .rail-action { min-height: 40px; }
+  .chip-option { min-height: 40px; padding: 0 12px; }
+}
+
+/* Notice toast: a raised neutral card. Its buttons are quiet until hovered. */
+.toast,
+.toast-pill { border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); color: var(--text); box-shadow: 0 10px 28px rgb(0 0 0 / 0.45); }
+.toast { align-items: center; padding: 10px 10px 10px 14px; }
+.toast-message { font: 13px/1.4 var(--font-ui); }
+.toast-actions { margin: 0; gap: 2px; }
+.toast-actions .toast-button { min-width: 28px; min-height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 14px; }
+.toast-actions .toast-button:hover { border: 0; background: var(--line-strong); color: var(--text); }
+.toast-pill { padding: 8px 14px; color: var(--text); font: 12px/1.3 var(--font-ui); letter-spacing: 0; }
+.toast-pill:hover { background: var(--line-strong); }
+
+/* Player detail: the redesign's type scale and cards over the original layout. Labels are 12px muted text,
+   values use the number face, and colour is kept for meaning (green for gains, red for losses and doubt). */
+.detail-panel { border: 0; border-right: 1px solid var(--line-strong); background: var(--bg); box-shadow: 14px 0 32px rgb(0 0 0 / 0.4); }
+.detail-panel .detail-head { gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }
+.detail-panel .detail-head h2 { font: 600 22px/1.15 var(--font-ui); letter-spacing: -0.01em; }
+.detail-panel .detail-head p { margin-top: 4px; font: 13px/1.35 var(--font-ui); }
+.detail-panel .detail-head .detail-news { color: var(--warn-text); font: 13px/1.45 var(--font-ui); }
+.detail-panel .pos-tag { padding: 2px 6px; border: 0; border-radius: 4px; background: var(--surface-2); color: var(--muted); font: 600 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.detail-panel .icon-button { width: 32px; height: 32px; flex-basis: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 20px; }
+.detail-panel .icon-button:hover { background: var(--surface-2); color: var(--text); }
+.detail-panel .profile-status { min-height: 24px; padding: 0 8px; border: 0; border-radius: 999px; background: var(--surface-2); font: 500 12px/1 var(--font-ui); letter-spacing: 0; }
+.detail-panel .profile-status.available { color: var(--good); }
+.detail-panel .profile-status.doubtful { color: var(--warn-text); }
+.detail-panel .profile-status.unavailable { color: var(--bad); }
+.detail-panel .detail-scroll { padding: 0 16px 16px; }
+
+.detail-panel .profile-hero { gap: 0; margin-top: 14px; overflow: hidden; border-radius: 12px; background: var(--surface); box-shadow: none; }
+.detail-panel .profile-points { gap: 4px; min-height: 0; padding: 12px 14px; border-left: 0; background: transparent; }
+.detail-panel .profile-points > span,
+.detail-panel .profile-hero-metrics span,
+.detail-panel .current-stat-grid span,
+.detail-panel .profile-model-grid span { color: var(--muted); font: 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.detail-panel .profile-points > strong { margin: 0; color: var(--text); font: 600 30px/1 var(--font-num); letter-spacing: 0; }
+.detail-panel .profile-points > small { margin: 0; font: 12px/1.2 var(--font-ui); }
+.detail-panel .profile-hero-metrics { gap: 0; background: transparent; }
+.detail-panel .profile-hero-metrics > div { padding: 12px; border-left: 1px solid var(--line-strong); background: transparent; }
+.detail-panel .profile-hero-metrics strong { color: var(--text); font: 600 18px/1.1 var(--font-num); }
+.detail-panel .profile-hero-metrics strong.amber,
+.detail-panel .profile-hero-metrics strong.cyan,
+.detail-panel .profile-model-grid strong.amber,
+.detail-panel .profile-model-grid strong.cyan { color: var(--text); }
+
+.detail-panel .profile-section { padding-top: 16px; }
+.detail-panel .profile-section + .profile-section,
+.detail-panel .profile-split + .profile-section,
+.detail-panel .profile-split { margin-top: 16px; border-top: 1px solid var(--line); }
+.detail-panel .profile-split { padding-top: 0; gap: 0; }
+.detail-panel .profile-split .profile-section { padding-top: 16px; }
+.detail-panel .profile-section-head { align-items: flex-start; margin-bottom: 10px; }
+.detail-panel .profile-section-head h3 { color: var(--text); font: 600 15px/1.2 var(--font-ui); letter-spacing: 0; }
+.detail-panel .profile-section-head p { margin-top: 3px; max-width: 70ch; font: 12px/1.45 var(--font-ui); }
+.detail-panel .profile-record-count { color: var(--muted); font: 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.detail-panel .data-badge { min-height: 22px; padding: 0 8px; border: 0; border-radius: 999px; background: var(--surface-2); color: var(--muted); font: 500 12px/22px var(--font-ui); letter-spacing: 0; white-space: nowrap; }
+.detail-panel .profile-loading,
+.detail-panel .profile-empty,
+.detail-panel .profile-error { padding: 16px; border: 0; border-radius: 8px; background: var(--surface); font: 13px/1.4 var(--font-ui); }
+.detail-panel .profile-error { color: var(--bad); }
+
+/* xP breakdown: one card, a row per way to score, the total on its own line. */
+.detail-panel .breakdown-rows { gap: 0; overflow: hidden; border-radius: 12px; background: var(--surface); }
+.detail-panel .breakdown-row { grid-template-columns: minmax(0, 1fr) 96px 56px; min-height: 44px; padding: 8px 14px; background: transparent; }
+.detail-panel .breakdown-row + .breakdown-row { border-top: 1px solid var(--line); }
+.detail-panel .breakdown-label strong { font: 600 13px/1.25 var(--font-ui); }
+.detail-panel .breakdown-label small { color: var(--muted); font: 12px/1.35 var(--font-ui); white-space: normal; }
+.detail-panel .breakdown-evidence { gap: 2px 10px; color: var(--muted); font: 12px/1.35 var(--font-num); }
+.detail-panel .breakdown-evidence em { color: var(--muted); letter-spacing: 0; }
+.detail-panel .breakdown-evidence i { color: var(--muted); opacity: .8; }
+.detail-panel .breakdown-bar { height: 6px; border-radius: 3px; background: var(--line-strong); }
+.detail-panel .breakdown-bar i { border-radius: 3px; background: var(--good); }
+.detail-panel .breakdown-bar i.minus { background: var(--bad); }
+.detail-panel .breakdown-points { font: 600 14px/1 var(--font-num); }
+.detail-panel .breakdown-total { border-top: 1px solid var(--line-strong); background: transparent; }
+.detail-panel .breakdown-total .breakdown-label strong { color: var(--text); font: 600 13px/1.25 var(--font-ui); letter-spacing: 0; }
+.detail-panel .breakdown-total .breakdown-points { color: var(--text); font: 600 18px/1 var(--font-num); }
+
+/* Recent matches: one card of rows; a row opens to the match's stats. */
+.detail-panel .recent-match-list { gap: 0; overflow: hidden; border-radius: 12px; background: var(--surface); }
+.detail-panel .recent-match-row { background: transparent; }
+.detail-panel .recent-match-row + .recent-match-row { border-top: 1px solid var(--line); }
+.detail-panel .recent-match-row > summary { grid-template-columns: 48px minmax(0, 1fr) 64px 56px 16px; gap: 8px; min-height: 48px; padding: 6px 14px; }
+.detail-panel .recent-match-row > summary:hover { background: var(--surface-2); }
+.detail-panel .recent-match-row > summary::after { color: var(--muted); font-size: 15px; }
+.detail-panel .recent-match-row[open] > summary::after { color: var(--text); }
+.detail-panel .recent-match-row.haul > summary,
+.detail-panel .recent-match-row.return > summary { box-shadow: none; }
+.detail-panel .recent-match-row.blank > summary { opacity: 1; }
+.detail-panel .recent-match-gw,
+.detail-panel .recent-match-row time { font: 12px/1.2 var(--font-ui); }
+.detail-panel .recent-match-opponent strong { font: 600 13px/1.25 var(--font-ui); }
+.detail-panel .recent-match-opponent strong small,
+.detail-panel .recent-match-opponent > span { font: 12px/1.25 var(--font-ui); }
+.detail-panel .recent-match-opponent em { width: 18px; height: 18px; flex-basis: 18px; border: 0; border-radius: 4px; background: var(--surface-2); color: var(--muted); font: 600 12px/18px var(--font-ui); }
+.detail-panel .recent-match-opponent .outcome-w { border: 0; color: var(--good); }
+.detail-panel .recent-match-opponent .outcome-d { border: 0; color: var(--text); }
+.detail-panel .recent-match-opponent .outcome-l { border: 0; color: var(--bad); }
+.detail-panel .recent-row-points { color: var(--text); font: 600 16px/1 var(--font-num); }
+.detail-panel .recent-match-row.haul .recent-row-points,
+.detail-panel .recent-match-row.return .recent-row-points { color: var(--good); }
+.detail-panel .recent-match-row.blank .recent-row-points { color: var(--muted); }
+.detail-panel .recent-row-points small { font: 12px/1 var(--font-ui); }
+.detail-panel .recent-match-expanded { padding: 8px 14px 10px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.detail-panel .recent-match-stats { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 4px; background: none; }
+.detail-panel .recent-match-stats > div { padding: 4px 6px; border-radius: 4px; background: var(--surface); }
+.detail-panel .recent-match-stats dt { color: var(--muted); font: 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.detail-panel .recent-match-stats dd { font: 600 12px/1.2 var(--font-num); }
+.detail-panel .recent-match-foot { margin-top: 8px; font: 12px/1.2 var(--font-ui); }
+
+/* Stat grids: cards of label over value. */
+.detail-panel .current-stat-grid,
+.detail-panel .profile-model-grid { gap: 0; overflow: hidden; border-radius: 12px; background: var(--surface); }
+.detail-panel .current-stat-grid > div,
+.detail-panel .profile-model-grid > div { min-height: 56px; padding: 10px 12px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); background: transparent; }
+.detail-panel .current-stat-grid strong,
+.detail-panel .profile-model-grid strong { color: var(--text); font: 600 15px/1.15 var(--font-num); }
+.detail-panel .advanced-stat-disclosure { margin-top: 8px; overflow: hidden; border-radius: 12px; background: var(--surface); }
+.detail-panel .advanced-stat-disclosure > summary { min-height: 40px; padding: 0 14px; color: var(--text); font: 500 13px/1 var(--font-ui); letter-spacing: 0; }
+.detail-panel .advanced-stat-disclosure > summary > span:nth-child(2) { color: var(--muted); font-size: 12px; }
+.detail-panel .advanced-stat-disclosure > summary::after { color: var(--muted); }
+.detail-panel .advanced-stat-disclosure[open] > summary { color: var(--text); border-bottom: 1px solid var(--line); }
+.detail-panel .advanced-stat-disclosure .current-stat-grid { border-radius: 0; }
+
+/* Upcoming fixtures: rows in one card; the difficulty pill takes the shared fixture colours. */
+.detail-panel .profile-fixture-list { gap: 0; overflow: hidden; border-radius: 12px; background: var(--surface); }
+.detail-panel .profile-fixture { grid-template-columns: 48px minmax(0, 1fr) 72px 56px; min-height: 44px; padding: 6px 14px; background: transparent; }
+.detail-panel .profile-fixture + .profile-fixture { border-top: 1px solid var(--line); }
+.detail-panel .profile-fixture > span,
+.detail-panel .profile-fixture time { font: 12px/1.2 var(--font-ui); }
+.detail-panel .profile-fixture strong { font: 600 13px/1.25 var(--font-ui); }
+.detail-panel .profile-fixture strong small { font: 12px/1 var(--font-ui); }
+.detail-panel .profile-fixture em { min-width: 48px; padding: 3px 6px; border: 0; border-radius: 4px; background: var(--surface-2); color: var(--muted); font: 600 12px/1.2 var(--font-num); }
+.detail-panel .profile-fixture em.fdr-1,
+.detail-panel .profile-fixture em.fdr-2 { background: var(--fdr-2-bg); color: var(--fdr-2-text); }
+.detail-panel .profile-fixture em.fdr-4 { background: var(--fdr-4-bg); color: var(--fdr-4-text); }
+.detail-panel .profile-fixture em.fdr-5 { background: var(--fdr-5-bg); color: var(--fdr-5-text); }
+
+/* Previous seasons: a quiet scrolling table. */
+.detail-panel .profile-history-wrap { border-radius: 12px; background: var(--surface); box-shadow: none; }
+.detail-panel .profile-history-table th,
+.detail-panel .profile-history-table td { padding: 8px 10px; border-right: 0; border-bottom: 1px solid var(--line); font: 12px/1.2 var(--font-num); }
+.detail-panel .profile-history-table thead th { background: var(--surface); color: var(--muted); font: 500 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.detail-panel .profile-history-table th:first-child,
+.detail-panel .profile-history-table thead th:first-child { background: var(--surface); }
+.detail-panel .profile-history-table .history-points { color: var(--text); font-weight: 600; }
+
+/* Footer: Add is the amber action; Lock is neutral. */
+.detail-panel .detail-footer { gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--bg); box-shadow: none; }
+.detail-panel .detail-actions { gap: 8px; }
+.detail-panel .detail-actions button { min-height: 40px; border-radius: 8px; font: 600 13px/1 var(--font-ui); letter-spacing: 0; }
+.detail-panel .detail-actions .primary-button { border: 0; background: var(--accent); color: #111; }
+.detail-panel .detail-actions .primary-button:disabled { background: var(--surface-2); color: var(--muted); }
+.detail-panel .detail-actions .secondary-button { border: 1px solid var(--line-strong); background: transparent; color: var(--text); }
+.detail-panel .detail-actions .secondary-button.locked { border-color: var(--text); }
+.detail-panel .provenance { margin: 0; color: var(--muted); font: 12px/1.45 var(--font-ui); }
+.detail-panel .provenance .data-badge { margin-right: 2px; }
+
+/* Players table (Task 10). Fixed columns: Player, £m, GW xP, Next 5 and Add. The rest come from the Columns menu.
+   Numbers use the tabular mono face. The active sort is amber, a start chance under 80% is orange, and squad members are dimmed. */
+.players-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--text);
+  font-family: var(--font-num);
+  font-size: 13px;
+}
+
+.players-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  font: 500 12px/1.2 var(--font-ui);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.players-table td {
+  height: 34px;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.players-table .col-player,
+.players-table .col-fixtures { text-align: left; }
+.players-table th.col-player { padding-left: 10px; }
+.players-table td.col-player { width: 100%; max-width: 0; padding-left: 10px; overflow: hidden; }
+.players-table td.col-fixtures { padding-left: 8px; }
+.players-table .fixture-chips { flex-wrap: nowrap; gap: 1px; }
+.players-table .fc { min-width: 26px; padding: 1px 2px; }
+.players-table td.col-gw { color: var(--text); font-weight: 600; }
+.players-table td.col-start.warn { color: var(--warn-text); }
+.players-table .col-add { padding-right: 6px; }
+.players-table tbody tr:hover td { background: var(--surface-2); }
+.players-table tbody tr.in > td:not(.col-add) { color: var(--muted); }
+
+.players-table .sort-button { font: inherit; letter-spacing: inherit; }
+
+.players-table .player-name-button {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.players-table .player-name-button strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font: 600 13.5px/1.2 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.players-table .player-name-button small {
+  flex: none;
+  color: var(--muted);
+  font: 12px/1.2 var(--font-ui);
+}
+.players-table tbody tr.in .player-name-button strong { color: var(--muted); }
+
+.players-table .add-button {
+  width: 28px;
+  height: 28px;
+  font: 600 14px/1 var(--font-ui);
+}
+.players-table .add-button:disabled,
+.players-table .add-button:disabled:hover {
+  width: auto;
+  min-width: 34px;
+  padding: 0 6px;
+  border-color: var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: 500 12px/1 var(--font-ui);
+}
+
+/* Below 1180px the table drops Own and Form. */
+@media (max-width: 1179px) {
+  .players-table .col-own,
+  .players-table .col-form { display: none; }
+}
+
+/* Phone: the market is the player list (Task 11), so the table and its Columns menu are not shown. */
+@media (max-width: 900px) {
+  .players-columns-button { display: none; }
+}
+
+/* Columns menu: a popover of checkboxes. Each row is a 40px tap target. */
+.players-columns-button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: 500 13px/1 var(--font-ui);
+}
+.players-columns-button:hover,
+.players-columns-button[aria-expanded="true"] { background: var(--surface-2); }
+.columns-options { display: grid; gap: 2px; padding: 8px; }
+.columns-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--text);
+  font: 13px/1.2 var(--font-ui);
+  cursor: pointer;
+}
+.columns-option:hover { background: var(--surface-2); }
+.columns-option input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+
+/* Players filters and the phone list (Task 11). The filter row stays on screen; the rest of the filters live in the Filters sheet.
+   Controls are neutral: a raised segment marks the chosen position, and amber is left for the active sort and Add. */
+.market-filters { display: grid; gap: 8px; padding: 0 0 10px; border-bottom: 1px solid var(--line); }
+.market-search-row { display: flex; align-items: center; gap: 8px; }
+.terminal-app .search-wrap { flex: 1 1 auto; min-width: 0; height: 34px; gap: 8px; padding: 0 10px; border: 0; border-radius: 8px; background: var(--surface); }
+.terminal-app .search-wrap > span { color: var(--muted); font: 14px/1 var(--font-num); }
+.terminal-app .search-wrap input { font: 13px/1 var(--font-ui); }
+.terminal-app .search-wrap input::placeholder { color: var(--muted); }
+.terminal-app .search-wrap kbd { padding: 2px 6px; border: 1px solid var(--line-strong); border-radius: 4px; color: var(--muted); font: 12px/1 var(--font-num); }
+.filters-button {
+  flex: none;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: 500 13px/1 var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.filters-button:hover { background: var(--surface-2); }
+.filters-button[aria-expanded="true"] { background: var(--surface-2); }
+.market-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.position-filter { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--surface-2); }
+.position-filter button {
+  min-width: 40px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: 500 12px/1 var(--font-ui);
+  cursor: pointer;
+}
+.position-filter button:hover:not([aria-pressed="true"]) { color: var(--text); }
+.position-filter button[aria-pressed="true"] { background: var(--line-strong); color: var(--text); }
+.filter-desktop { display: flex; gap: 8px; }
+.filter-control {
+  height: 32px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: 500 12px/1 var(--font-ui);
+}
+.filter-control::placeholder { color: var(--muted); }
+.filter-desktop select.filter-control { max-width: 150px; padding-right: 26px; appearance: none; background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238b929a' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; }
+.filter-desktop select.filter-control option { background: var(--surface); }
+.filter-desktop input.filter-control { width: 84px; font-family: var(--font-num); }
+.active-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.active-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: 12px/1 var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.active-filter-chip:hover { background: var(--line-strong); }
+.active-filter-chip span[aria-hidden="true"] { color: var(--muted); font-size: 14px; }
+
+.player-sort-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; }
+.player-sort-line label { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font: 12px/1 var(--font-ui); }
+.player-sort-line select {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--accent);
+  font: 600 13px/1 var(--font-ui);
+}
+.player-sort-line .sort-direction {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--accent);
+  font: 600 14px/1 var(--font-num);
+}
+
+.player-list { margin: 0; padding: 0; list-style: none; }
+/* Name and meta on top, the fixture run under them; GW xP and Add sit on the right across both lines. */
+.player-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 40px;
+  grid-template-areas: "main xp add" "fixtures xp add";
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.player-row-main {
+  display: grid;
+  grid-area: main;
+  gap: 2px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.player-row-main strong {
+  overflow: hidden;
+  color: var(--text);
+  font: 600 14px/1.2 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-row-main small {
+  overflow: hidden;
+  color: var(--muted);
+  font: 12px/1.3 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-row-fixtures { display: flex; grid-area: fixtures; justify-content: flex-start; }
+.player-row-fixtures .fc { min-width: 26px; padding: 1px 2px; }
+.player-row-xp { display: grid; grid-area: xp; justify-items: end; min-width: 56px; white-space: nowrap; }
+.player-row-xp strong { color: var(--text); font: 600 17px/1.1 var(--font-num); font-variant-numeric: tabular-nums; }
+.player-row-xp small { color: var(--muted); font: 12px/1.3 var(--font-ui); }
+.player-row .add-button { grid-area: add; width: 40px; height: 40px; font: 600 18px/1 var(--font-num); }
+.player-row .add-button:disabled { border-color: var(--line); background: transparent; color: var(--muted); }
+.player-row.in .player-row-main strong { color: var(--muted); }
+
+.filter-sheet { display: grid; gap: 14px; }
+.filter-group { display: grid; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.filter-group legend { margin-bottom: 6px; padding: 0; color: var(--muted); font: 12px/1.2 var(--font-ui); }
+.filter-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.filter-pair input,
+.filter-group select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: 14px/1 var(--font-ui);
+}
+.filter-pair input { font-family: var(--font-num); }
+.filter-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-chip-row button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: 13px/1 var(--font-ui);
+  cursor: pointer;
+}
+.filter-chip-row button[aria-pressed="true"] { border-color: var(--text); background: var(--surface-2); color: var(--text); }
+.filter-checks { display: grid; gap: 2px; }
+.filter-checks label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  color: var(--text);
+  font: 14px/1.2 var(--font-ui);
+  cursor: pointer;
+}
+.filter-checks input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.filter-reset {
+  min-height: 40px;
+  border: 1px solid var(--bad);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--bad);
+  font: 600 14px/1 var(--font-ui);
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .filter-desktop { display: none; }
+  .market-search-row .search-wrap { height: 44px; }
+  .filters-button { min-height: 40px; padding: 0 12px; font-size: 13px; }
+  .position-filter { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; }
+  .position-filter button { min-height: 40px; min-width: 0; font-size: 13px; }
+  .active-filter-chip { min-height: 40px; }
+  .player-sort-line select { font-size: 14px; }
+}
+
+/* Hidden from view but still read by screen readers. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The old phone rule made line headings sticky with padding and a fill, which
+   left a dark tick on the pitch's edge. A hidden heading stays hidden. */
+.squad-column.mobile-visible .position-heading.visually-hidden { position: absolute; padding: 0; background: none; }
+
+/* Leagues on a phone (Task 12): one slim header with the league drop-down and
+   Refresh, the four views as a segmented control, and the shared tab bar. Text
+   is 12px or more. Desktop keeps its layout; its tokens are set in globals.css. */
+
+@media (max-width: 900px) {
+  .leagues-app .leagues-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+    height: auto;
+    min-height: 0;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: none;
+  }
+
+  .leagues-app .leagues-topbar .brand,
+  .leagues-app .leagues-topbar .workspace-switcher {
+    display: none;
+  }
+
+  .leagues-app .league-switch {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text);
+    font: 600 15px/1 var(--font-ui);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .leagues-app .league-switch > span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .leagues-app .league-switch > span:last-child {
+    flex: 0 0 auto;
+    color: var(--muted);
+  }
+
+  .leagues-app .topbar-actions {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  .leagues-app .topbar-actions .text-button {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    font: 600 13px/1 var(--font-ui);
+    letter-spacing: normal;
+  }
+
+  .leagues-app .topbar-stats {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 16px;
+    padding: 0;
+    border: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .leagues-app .topbar-stats::-webkit-scrollbar {
+    display: none;
+  }
+
+  .leagues-app .status-cell {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .leagues-app .status-cell span {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: normal;
+  }
+
+  .leagues-app .status-cell strong {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .leagues-app .leagues-mobile-tabs {
+    position: static;
+    top: auto;
+    z-index: auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+    margin: 10px 12px 0;
+    padding: 3px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--surface-2);
+  }
+
+  .leagues-app .leagues-mobile-tabs button {
+    min-height: 40px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font: 600 13px/1 var(--font-ui);
+    letter-spacing: normal;
+    box-shadow: none;
+  }
+
+  .leagues-app .leagues-mobile-tabs button.active {
+    background: var(--line-strong);
+    color: var(--text);
+    box-shadow: none;
+  }
+
+  .leagues-app .live-notice {
+    padding: 8px 12px;
+    color: var(--bad);
+    font-size: 12px;
+    letter-spacing: normal;
+  }
+
+  .leagues-app .leagues-column {
+    padding: 12px;
+  }
+
+  .leagues-app .league-table th {
+    padding: 8px 6px;
+    font-size: 12px;
+    letter-spacing: normal;
+  }
+
+  .leagues-app .league-table td {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+
+  .leagues-app .league-name-button {
+    max-width: 46vw;
+    font-size: 13px;
+  }
+
+  /* The standings run down the page rather than in a box of their own. */
+  .leagues-app .leagues-left .league-table-wrap {
+    max-height: none;
+  }
+
+  .leagues-app .live-metrics span {
+    font-size: 12px;
+    letter-spacing: normal;
+    white-space: normal;
+  }
+
+  .leagues-app .live-metrics strong {
+    font-size: 15px;
+  }
+
+  .leagues-app .segmented button,
+  .leagues-app .feed-filters button {
+    min-height: 40px;
+    font-size: 12px;
+  }
+
+  .leagues-app .feed-minute,
+  .leagues-app .feed-title,
+  .leagues-app .feed-sub {
+    font-size: 12px;
+    letter-spacing: normal;
+  }
+
+  .leagues-app .feed-minute {
+    min-width: 36px;
+    color: var(--muted);
+  }
+
+  .leagues-app .feed-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .leagues-app .feed-sub {
+    margin-left: 44px;
+    color: var(--muted);
+  }
+
+  .leagues-app .feed-delta {
+    font-size: 15px;
+  }
+
+  .leagues-app .feed-new {
+    min-height: 40px;
+    font-size: 12px;
+    letter-spacing: normal;
+  }
+
+  /* The league list in the drop-down sheet scrolls rather than pushing the sheet off screen. */
+  .leagues-app .sheet .league-list-wrap {
+    max-height: 56dvh;
+  }
+}
+
+/* The mode chooser and the import screen: the brand, one line on what the app
+   does, two cards. Shared with the Leagues team gate. */
+.mode-screen { width: min(100%, 640px); padding: 32px 20px; background: var(--bg); }
+.mode-brand { justify-content: center; gap: 10px; color: var(--text); font: 600 24px/1 var(--font-ui); letter-spacing: 0; }
+.mode-brand .brand-mark { height: 26px; padding: 0 6px; font-size: 14px; line-height: 23px; }
+.mode-tagline { margin: 12px 0 28px; color: var(--muted); font: 15px/1.4 var(--font-ui); letter-spacing: 0; text-align: center; }
+.mode-grid { gap: 12px; }
+.mode-card { gap: 10px; min-height: 0; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-align: left; transition: border-color 120ms; }
+.mode-card:hover { border-color: var(--line-strong); background: var(--surface); }
+.mode-card:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.mode-card:nth-child(2) { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.mode-card .mode-index { color: var(--muted); font: 500 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.mode-card:nth-child(2) .mode-index { color: var(--accent); }
+.mode-card strong { color: var(--text); font: 600 17px/1.25 var(--font-ui); letter-spacing: 0; }
+.mode-card span:not(.mode-index) { color: var(--muted); font: 13px/1.5 var(--font-ui); letter-spacing: 0; }
+.mode-leagues-link { margin: 16px 0 0; }
+.mode-leagues-link a { min-height: 40px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--text); font: 500 13px/1 var(--font-ui); letter-spacing: 0; text-decoration: none; }
+.mode-leagues-link a:hover { border-color: var(--line-strong); background: var(--surface-2); color: var(--text); }
+.mode-footer { margin-top: 24px; color: var(--muted); font: 12px/1.4 var(--font-ui); letter-spacing: 0; }
+.mode-disclaimer { color: var(--muted); font: 12px/1.5 var(--font-ui); letter-spacing: 0; }
+.import-back { padding: 6px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: 500 13px/1 var(--font-ui); letter-spacing: 0; }
+.import-back:hover { background: var(--surface-2); color: var(--text); }
+.mode-screen .import-card { gap: 12px; padding: 20px; border: 0; border-radius: 12px; background: var(--surface); }
+.mode-screen .import-card label { color: var(--text); font: 600 13px/1.2 var(--font-ui); letter-spacing: 0; }
+.mode-screen .import-card p { color: var(--muted); font: 13px/1.5 var(--font-ui); }
+.mode-screen .import-controls { gap: 8px; }
+.mode-screen .import-controls input { height: 40px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--bg); color: var(--text); font: 15px/1 var(--font-num); }
+.mode-screen .import-controls input:focus { border-color: var(--text); outline: none; }
+.mode-screen .import-controls .primary-button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--accent); color: #111; font: 600 13px/1 var(--font-ui); letter-spacing: 0; }
+.mode-screen .import-controls .primary-button:disabled { opacity: .5; }
+.mode-screen .import-guide summary { color: var(--text); font: 500 13px/1.4 var(--font-ui); letter-spacing: 0; }
+.mode-screen .import-guide ol { color: var(--muted); font: 13px/1.5 var(--font-ui); }
+.mode-screen .import-guide a, .mode-screen .import-guide code { color: var(--text); }
+.mode-screen .import-guide > summary::after { color: var(--muted); }
+.mode-screen .import-guide[open] > summary::after { color: var(--text); }
+.mode-screen .import-error { font: 13px/1.4 var(--font-ui); letter-spacing: 0; }
+
+/* Leagues on every screen: the Planner's tokens and type. Headings are 15px
+   words, labels muted, numbers in the number font; amber marks only your row,
+   the captain and the active selection. Desktop keeps its three-column layout. */
+.leagues-app .leagues-panel { gap: 8px; }
+.leagues-app .panel-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-height: 28px; margin: 0; }
+.leagues-app .panel-header > div { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.leagues-app .section-kicker { flex: none; color: var(--text); font: 600 15px/1.2 var(--font-ui); letter-spacing: 0; text-transform: none; }
+.leagues-app .panel-count { min-width: 0; overflow: hidden; color: var(--muted); font: 13px/1.2 var(--font-ui); letter-spacing: 0; text-overflow: ellipsis; white-space: nowrap; }
+.leagues-app .data-badge { flex: none; padding: 5px 8px; border: 0; border-radius: 6px; background: var(--surface-2); color: var(--muted); font: 500 12px/1 var(--font-ui); letter-spacing: 0; }
+.leagues-app .data-badge.live { color: var(--good); }
+.leagues-app .empty-state { padding: 14px 12px; border: 0; border-radius: 10px; background: var(--surface); color: var(--muted); font: 13px/1.45 var(--font-ui); letter-spacing: 0; text-align: left; }
+.leagues-app .empty-state strong { display: block; margin-bottom: 2px; color: var(--text); font-weight: 600; }
+.leagues-app .icon-button { width: 28px; height: 28px; border: 0; border-radius: 6px; background: var(--surface-2); color: var(--text); }
+
+/* Search and tables, as in the Players table. */
+.leagues-app .league-search { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.leagues-app .league-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: transparent; color: var(--text); font: 13px/1 var(--font-ui); outline: none; }
+.leagues-app .league-search input::placeholder { color: var(--muted); }
+.leagues-app .league-search kbd { padding: 2px 6px; border: 1px solid var(--line-strong); border-radius: 4px; background: transparent; color: var(--muted); font: 12px/1 var(--font-num); }
+.leagues-app .league-table th { background: var(--bg); color: var(--muted); font: 500 12px/1.2 var(--font-ui); letter-spacing: 0; text-transform: none; }
+.leagues-app .league-table td { color: var(--text); font: 13px/16px var(--font-num); }
+.leagues-app .sort-button { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: 0; cursor: pointer; }
+.leagues-app .sort-button:hover, .leagues-app .sort-button.active { color: var(--text); }
+.leagues-app .league-name-button { max-width: 180px; color: var(--text); font: 600 13px/16px var(--font-ui); }
+.leagues-app .league-name-button:hover { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+.leagues-app .league-table td.league-type { color: var(--muted); font-family: var(--font-ui); }
+.leagues-app .league-table td.green { color: var(--good); }
+.leagues-app .league-table td.red { color: var(--bad); }
+.leagues-app .league-list-wrap .league-name-button { max-width: 130px; }
+/* Below 1360px the league list drops its type, so the trend stays in view,
+   and the seven Gameweek figures sit in two rows of four. */
+@media (max-width: 1359px) {
+  .leagues-app .league-list-wrap th:nth-child(2),
+  .leagues-app .league-list-wrap td:nth-child(2) { display: none; }
+  .leagues-app .live-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 10px; }
+  .leagues-app .live-metrics > div:nth-child(4n + 1) { border-left: 0; }
+  .leagues-app .live-metrics > div:nth-child(n + 5) { padding-top: 10px; border-top: 1px solid var(--line); }
+}
+.leagues-app .league-table tbody tr.selected { background: var(--surface-2); box-shadow: inset 2px 0 var(--text); }
+.leagues-app .league-table tbody tr.you,
+.leagues-app .league-table tbody tr.you:hover { background: color-mix(in srgb, var(--accent) 9%, var(--bg)); box-shadow: inset 2px 0 var(--accent); }
+
+/* Standings: rank, team over manager, then the numbers. */
+.leagues-app .standings-table th,
+.leagues-app .standings-table td { padding: 8px 6px; }
+.leagues-app .standings-table th { padding-block: 6px; }
+.leagues-app .standings-table th:nth-child(2),
+.leagues-app .standings-table td:nth-child(2) { text-align: left; }
+.leagues-app .standings-table .standings-pos { width: 28px; color: var(--muted); text-align: left; }
+.leagues-app .standings-team { width: 100%; max-width: 0; }
+.leagues-app .standings-team .league-name-button { max-width: 100%; }
+.leagues-app .standings-manager { display: block; overflow: hidden; margin-top: 2px; color: var(--muted); font: 12px/15px var(--font-ui); text-overflow: ellipsis; white-space: nowrap; }
+.leagues-app .standings-note { margin: 0; padding: 8px 10px; border: 0; border-radius: 8px; background: var(--surface); color: var(--muted); font: 12px/1.45 var(--font-ui); letter-spacing: 0; }
+.leagues-app .standings-footnote { margin: 6px 0 0; color: var(--muted); font: 12px/1.4 var(--font-ui); letter-spacing: 0; }
+
+/* Live Gameweek: one card of figures, like the squad's KPI card. */
+.leagues-app .live-metrics { gap: 0; padding: 10px 0; border: 0; border-radius: 10px; background: var(--surface); }
+.leagues-app .live-metrics > div { gap: 4px; padding: 0 12px; border-left: 1px solid var(--line); background: transparent; }
+.leagues-app .live-metrics > div:first-child { border-left: 0; }
+.leagues-app .live-metrics span { color: var(--muted); font: 12px/1.2 var(--font-ui); letter-spacing: 0; }
+.leagues-app .live-metrics strong { color: var(--text); font: 600 14px/1.15 var(--font-num); }
+.leagues-app .live-metrics strong.cyan-text { color: var(--text); font-size: 18px; }
+.leagues-app .live-metrics strong.green { color: var(--good); }
+.leagues-app .live-metrics strong.amber { color: var(--accent); }
+
+/* Live squad: the Planner pitch and bench strip, read only. The pitch and token rules above and below are shared. */
+.leagues-app .lineup-roster { display: grid; gap: 6px; }
+.leagues-app .pitch-row { display: grid; min-width: 0; }
+.leagues-app .bench-section { --token-ring: var(--surface); display: block; padding: 10px 6px 8px; border: 0; border-radius: 12px; background: var(--surface); }
+.live-token { cursor: default; }
+.live-token:hover .token-name { background: var(--text); }
+.live-token .token-price { color: rgb(255 255 255 / 0.78); font: 12px/1.2 var(--font-num); }
+.bench-strip .live-token .token-price { color: var(--muted); }
+.live-token .token-fixture { flex-wrap: wrap; justify-content: center; }
+.live-token .live-opponent { padding: 0 3px; border: 0; line-height: 16px; white-space: nowrap; }
+.live-token .live-opponent .chip-status { font-weight: 400; opacity: .8; }
+.live-token .live-opponent.live { background: color-mix(in srgb, var(--good) 16%, var(--surface-2)); color: var(--good); }
+.live-token .live-opponent.blank { background: transparent; }
+.pitch .live-token .live-opponent.blank { color: rgb(255 255 255 / 0.78); }
+.live-token .token-xp small { position: static; width: auto; height: auto; overflow: visible; clip: auto; color: var(--muted); font: 500 12px/1 var(--font-ui); }
+.live-token .token-xp.projected { color: rgb(255 255 255 / 0.72); }
+.bench-strip .live-token .token-xp.projected { color: var(--muted); }
+.live-token .token-xp.actual { color: var(--accent); }
+@media (max-width: 900px) {
+  .leagues-app .bench-section { padding: 8px 4px 6px; }
+  .live-token .live-opponent { padding: 0 2px; }
+  .token-cell:has(.live-token) { flex-basis: 86px; }
+}
+
+/* Match centre: one card per fixture. */
+.leagues-app .match-list { gap: 6px; }
+.leagues-app .match-row { border: 0; border-radius: 10px; background: var(--surface); }
+.leagues-app .match-row.live { box-shadow: inset 2px 0 var(--good); }
+.leagues-app .match-row > summary { gap: 6px; padding: 10px 12px; border-radius: 10px; }
+.leagues-app .match-row > summary:hover { background: var(--surface-2); }
+.leagues-app .match-row > summary:focus-visible { outline: 2px solid var(--text); }
+.leagues-app .match-line { gap: 10px; }
+.leagues-app .match-line::after { color: var(--muted); font: 16px/1 var(--font-ui); }
+.leagues-app .match-row[open] .match-line::after { color: var(--text); }
+.leagues-app .match-team { min-width: 36px; font: 600 13px/1 var(--font-num); }
+.leagues-app .match-score { font: 600 13px/1 var(--font-num); }
+.leagues-app .match-state { color: var(--muted); font: 12px/1 var(--font-num); }
+.leagues-app .match-state.live { color: var(--good); font-weight: 600; }
+.leagues-app .match-owned { color: var(--muted); font: 12px/1.35 var(--font-ui); letter-spacing: 0; }
+.leagues-app .match-detail { gap: 8px; padding: 0 12px 10px; }
+.leagues-app .match-section { gap: 4px; padding-top: 8px; }
+.leagues-app .match-section .section-kicker { color: var(--muted); font: 500 12px/1.3 var(--font-ui); }
+.leagues-app .match-section li,
+.leagues-app .match-section-empty { color: var(--muted); font: 12px/1.45 var(--font-ui); }
+.leagues-app .match-section li.owned { color: var(--text); }
+.leagues-app .match-section li.owned .match-side { color: var(--accent); }
+.leagues-app .match-bps li em { color: var(--good); font: 600 12px/1.45 var(--font-num); }
+.leagues-app .match-bps li strong { font: 500 12px/1.45 var(--font-num); }
+
+/* Live feed. */
+.leagues-app .segmented button { flex: none; overflow: visible; }
+.leagues-app .feed-filters { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; padding: 0; background: transparent; }
+.leagues-app .feed-filters button { min-height: 28px; padding: 0 7px; border-radius: 14px; background: var(--surface-2); }
+.leagues-app .feed-filters button.active { background: var(--line-strong); color: var(--text); }
+.leagues-app .feed-event { gap: 3px; padding: 10px 0; }
+.leagues-app .feed-head { gap: 8px; }
+.leagues-app .feed-minute { min-width: 34px; color: var(--muted); font: 12px/1.25 var(--font-num); }
+.leagues-app .feed-title { color: var(--text); font: 600 13px/1.25 var(--font-ui); letter-spacing: 0; }
+.leagues-app .feed-delta { font: 600 14px/1 var(--font-num); }
+.leagues-app .feed-sub { margin-left: 42px; color: var(--muted); font: 12px/1.35 var(--font-ui); letter-spacing: 0; }
+.leagues-app .feed-detail { color: var(--muted); }
+.leagues-app .feed-new { min-height: 28px; border: 0; border-radius: 8px; background: var(--surface-2); color: var(--text); font: 500 12px/1 var(--font-ui); letter-spacing: 0; }
+
+/* Notices and the team gate. */
+.leagues-app .live-notice { margin: 0; padding: 8px 16px; background: color-mix(in srgb, var(--bad) 10%, var(--bg)); color: var(--bad); font: 13px/1.35 var(--font-ui); letter-spacing: 0; }
+.leagues-app .mode-tagline { color: var(--text); font: 600 18px/1.3 var(--font-ui); letter-spacing: 0; }
+.leagues-app .topbar .brand-mark { width: auto; }
+.leagues-app .import-card { gap: 14px; border: 0; border-radius: 12px; background: var(--surface); }
+.leagues-app .import-card p { color: var(--muted); font: 13px/1.5 var(--font-ui); }
+.leagues-app .import-card span[role="status"],
+.leagues-app .import-error { font: 13px/1.4 var(--font-ui); letter-spacing: 0; }
+.leagues-app .import-controls input { height: 38px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--bg); color: var(--text); font: 14px/1 var(--font-num); }
+.leagues-app .import-controls .primary-button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--accent); color: #111; font: 600 13px/1 var(--font-ui); letter-spacing: 0; }
+
+/* Desktop: the Planner's top bar, and columns split by hairlines. */
+@media (min-width: 901px) {
+  .leagues-app .topbar { gap: 16px; height: 52px; min-height: 52px; padding: 0 16px; border-bottom: 1px solid var(--line); background: var(--bg); }
+  .leagues-app .topbar .brand { display: inline-flex; align-items: center; gap: 8px; padding: 0; color: var(--text); font: 600 15px/1 var(--font-ui); letter-spacing: 0; }
+  .leagues-app .topbar-stats { display: flex; align-items: center; gap: 16px; padding: 0; border: 0; }
+  .leagues-app .status-cell { display: flex; align-items: baseline; gap: 5px; min-width: 0; padding: 0; border: 0; }
+  .leagues-app .status-cell span { color: var(--muted); font: 13px/1 var(--font-ui); letter-spacing: 0; }
+  .leagues-app .status-cell strong { color: var(--text); font: 600 13px/1 var(--font-ui); letter-spacing: 0; }
+  .leagues-app .status-cell strong.green { color: var(--good); }
+  .leagues-app .status-cell strong.red { color: var(--bad); }
+  .leagues-app .topbar-actions { margin-left: auto; }
+  .leagues-app .topbar-actions .text-button { min-height: 32px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: transparent; color: var(--text); font: 500 13px/1 var(--font-ui); letter-spacing: 0; }
+  .leagues-app .topbar-actions .text-button:hover { background: var(--surface-2); }
+  .leagues-app .leagues-grid { height: calc(100dvh - 52px); padding: 0; gap: 1px; background: var(--line); }
+  .leagues-app .leagues-column { padding: 14px 16px; background: var(--bg); }
+  .leagues-app .leagues-left { gap: 16px; }
+  .leagues-app .leagues-center-top { gap: 14px; }
+  .leagues-app .league-table th,
+  .leagues-app .league-table td { padding-left: 5px; padding-right: 5px; }
+}
+

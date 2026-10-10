@@ -76,69 +76,93 @@ test.describe("weekly lineup acceptance", () => {
     return region;
   }
 
-  async function chooseCaptainAndVice(region: ReturnType<typeof weeklyRegion>) {
-    const captainButtons = region.getByRole("button", { name: /captain/i });
-    const captainCount = await captainButtons.count();
-    let captainChosen = false;
-    let captainPlayer = "";
-    for (let index = 0; index < captainCount; index += 1) {
-      const candidate = captainButtons.nth(index);
-      const label = `${await candidate.getAttribute("aria-label")} ${await candidate.innerText().catch(() => "")}`;
-      if (!/vice/i.test(label) && await candidate.getAttribute("aria-pressed") !== "true" && await candidate.isVisible().catch(() => false)) {
-        await candidate.click();
-        captainPlayer = label.replace(/^.*?make\s+/i, "").replace(/\s+captain.*$/i, "").trim().toLowerCase();
-        captainChosen = true;
-        break;
-      }
-    }
-    expect(captainChosen, "a starter must expose a captain control").toBe(true);
+  /** The starting XI and bench regions, as the pitch exposes them. */
+  function startingXi(region: ReturnType<typeof weeklyRegion>) {
+    return region.getByRole("region", { name: /^starting xi$/i });
+  }
 
-    const viceButtons = region.getByRole("button", { name: /vice[- ]?captain/i });
-    const viceCount = await viceButtons.count();
-    let viceChosen = false;
-    for (let index = 0; index < viceCount; index += 1) {
-      const candidate = viceButtons.nth(index);
-      const label = `${await candidate.getAttribute("aria-label")} ${await candidate.innerText().catch(() => "")}`.toLowerCase();
-      if ((!captainPlayer || !label.includes(captainPlayer)) && await candidate.isVisible().catch(() => false)) {
-        await candidate.click();
-        viceChosen = true;
-        break;
+  function benchOf(region: ReturnType<typeof weeklyRegion>) {
+    return region.getByRole("region", { name: /^bench$/i });
+  }
+
+  /** Captaincy and bench order live in each player's sheet, which a tap on the token opens. */
+  async function openStarterSheet(page: Page, region: ReturnType<typeof weeklyRegion>) {
+    await startingXi(region).getByTestId("squad-token").first().click();
+    const sheet = page.getByRole("dialog").first();
+    await expect(sheet).toBeVisible();
+    return sheet;
+  }
+
+  async function chooseCaptainAndVice(page: Page, region: ReturnType<typeof weeklyRegion>) {
+    const starters = startingXi(region).getByTestId("squad-token");
+    const starterCount = await starters.count();
+    let captainIndex = -1;
+    for (let index = 0; index < starterCount && captainIndex < 0; index += 1) {
+      await starters.nth(index).click();
+      const sheet = page.getByRole("dialog").first();
+      await expect(sheet).toBeVisible();
+      const captain = sheet.getByRole("button", { name: /make .* captain/i });
+      if (await captain.getAttribute("aria-pressed") !== "true") {
+        await captain.click();
+        captainIndex = index;
       }
+      await page.keyboard.press("Escape");
+    }
+    expect(captainIndex, "a starter must expose a captain control").toBeGreaterThanOrEqual(0);
+
+    let viceChosen = false;
+    for (let index = 0; index < starterCount && !viceChosen; index += 1) {
+      if (index === captainIndex) continue;
+      await starters.nth(index).click();
+      const sheet = page.getByRole("dialog").first();
+      await expect(sheet).toBeVisible();
+      const vice = sheet.getByRole("button", { name: /make .* vice-captain/i });
+      if (await vice.getAttribute("aria-pressed") !== "true") {
+        await vice.click();
+        viceChosen = true;
+      }
+      await page.keyboard.press("Escape");
     }
     expect(viceChosen, "a different starter must expose a vice-captain control").toBe(true);
   }
 
-  async function reorderBench(region: ReturnType<typeof weeklyRegion>) {
-    const controls = region.getByRole("button", { name: /(?:move|reorder).*(?:bench|up|down)|(?:bench|up|down).*(?:move|reorder)/i });
-    const count = await controls.count();
-    for (let index = 0; index < count; index += 1) {
-      const move = controls.nth(index);
-      if (await move.isEnabled().catch(() => false) && await move.isVisible().catch(() => false)) {
-        await move.click();
+  async function reorderBench(page: Page, region: ReturnType<typeof weeklyRegion>) {
+    const bench = benchOf(region).getByTestId("squad-token");
+    const benchCount = await bench.count();
+    for (let index = 0; index < benchCount; index += 1) {
+      await bench.nth(index).click();
+      const sheet = page.getByRole("dialog").first();
+      await expect(sheet).toBeVisible();
+      const down = sheet.getByRole("button", { name: /move .* down the bench order/i });
+      const canMoveDown = (await down.count()) > 0 && (await down.isEnabled());
+      if (canMoveDown) {
+        await down.click();
+        await page.keyboard.press("Escape");
         return;
       }
+      await page.keyboard.press("Escape");
     }
     throw new Error("the three-player outfield bench must expose an enabled order control");
   }
 
-  async function editWeeklyTeam(region: ReturnType<typeof weeklyRegion>) {
-    await chooseCaptainAndVice(region);
-    await reorderBench(region);
+  async function editWeeklyTeam(page: Page, region: ReturnType<typeof weeklyRegion>) {
+    await chooseCaptainAndVice(page, region);
+    await reorderBench(page, region);
   }
 
   test("builds a legal 15, picks and edits the weekly team, and reloads", async ({ page }) => {
     await importLegalSquad(page);
     const region = await openWeeklyTeam(page);
 
-    await expect(region.getByRole("article")).toHaveCount(15);
+    await expect(region.getByTestId("squad-token")).toHaveCount(15);
     await expect(region.getByRole("region", { name: /^starting xi$/i })).toBeVisible();
     await expect(region.getByRole("region", { name: /^bench$/i })).toBeVisible();
-    await expect(region.getByRole("button", { name: /select .* to move to bench/i })).toHaveCount(11);
-    await expect(region.getByRole("button", { name: /select .* to move into the starting xi/i })).toHaveCount(4);
-    await editWeeklyTeam(region);
+    await expect(startingXi(region).getByTestId("squad-token")).toHaveCount(11);
+    await expect(benchOf(region).getByTestId("squad-token")).toHaveCount(4);
+    await editWeeklyTeam(page, region);
 
     await expect(region.locator(".lineup-status")).toHaveCount(0);
-    await expect(region.getByLabel("Squad projection metrics")).toContainText(/GW xP/i);
+    await expect(region.getByLabel("Squad projection metrics")).toContainText(/Proj\. GW/i);
     const saved = await page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");
       return state && {
@@ -155,13 +179,15 @@ test.describe("weekly lineup acceptance", () => {
     await page.reload();
     await waitForMarket(page);
     const reloadedRegion = await openWeeklyTeam(page, false);
-    await expect(reloadedRegion.getByRole("button", { name: /select .* to move to bench/i })).toHaveCount(11);
-    await expect(reloadedRegion.getByRole("button", { name: /select .* to move into the starting xi/i })).toHaveCount(4);
-    await expect(reloadedRegion.locator('button[aria-label$=" captain"][aria-pressed="true"]')).toHaveCount(1);
-    await expect(reloadedRegion.locator('button[aria-label$=" vice-captain"][aria-pressed="true"]')).toHaveCount(1);
-    await expect(reloadedRegion.getByRole("button", { name: /make .* captain/i }).first()).toBeVisible();
-    await expect(reloadedRegion.getByRole("button", { name: /make .* vice-captain/i }).first()).toBeVisible();
-    await expect(reloadedRegion.locator(".role-button.bench-toggle").filter({ hasText: /^B[123]$/ }).first()).toBeVisible();
+    await expect(startingXi(reloadedRegion).getByTestId("squad-token")).toHaveCount(11);
+    await expect(benchOf(reloadedRegion).getByTestId("squad-token")).toHaveCount(4);
+    await expect(reloadedRegion.getByTestId("token-role").filter({ hasText: /^C$/ })).toHaveCount(1);
+    await expect(reloadedRegion.getByTestId("token-role").filter({ hasText: /^V$/ })).toHaveCount(1);
+    const sheet = await openStarterSheet(page, reloadedRegion);
+    await expect(sheet.getByRole("button", { name: /make .* captain/i })).toBeVisible();
+    await expect(sheet.getByRole("button", { name: /make .* vice-captain/i })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(benchOf(reloadedRegion).getByTestId("token-bench").filter({ hasText: /^B[123]$/ }).first()).toBeVisible();
     const reloaded = await page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");
       return state && {
@@ -180,23 +206,26 @@ test.describe("weekly lineup acceptance", () => {
     await importLegalSquad(page);
     const region = await openWeeklyTeam(page);
     await page.setViewportSize({ width: 1280, height: 720 });
-    await expect(region.getByRole("article")).toHaveCount(15);
-    await expect(region.getByRole("button", { name: /select .* to move to bench/i })).toHaveCount(11);
-    await expect(region.getByRole("button", { name: /select .* to move into the starting xi/i })).toHaveCount(4);
-    await expect(region.getByRole("button", { name: /make .* captain/i }).first()).toBeVisible();
-    await expect(region.getByRole("button", { name: /make .* vice-captain/i }).first()).toBeVisible();
+    await expect(region.getByTestId("squad-token")).toHaveCount(15);
+    await expect(startingXi(region).getByTestId("squad-token")).toHaveCount(11);
+    await expect(benchOf(region).getByTestId("squad-token")).toHaveCount(4);
+    const sheet = await openStarterSheet(page, region);
+    await expect(sheet.getByRole("button", { name: /make .* captain/i })).toBeVisible();
+    await expect(sheet.getByRole("button", { name: /make .* vice-captain/i })).toBeVisible();
+    await page.keyboard.press("Escape");
     const layout = await region.evaluate((panel) => {
       const roster = panel.querySelector<HTMLElement>('[data-testid="squad-roster"]')!;
       const rosterRect = roster.getBoundingClientRect();
-      const cards = [...roster.querySelectorAll<HTMLElement>("article")].map((card) => card.getBoundingClientRect());
-      const cardGroup = (element: Element) => {
-        const rects = [...element.querySelectorAll<HTMLElement>("article")].map((card) => card.getBoundingClientRect());
+      const tokens = [...roster.querySelectorAll<HTMLElement>('[data-testid="squad-token"]')].map((token) => token.getBoundingClientRect());
+      const tokenGroup = (element: Element) => {
+        const rects = [...element.querySelectorAll<HTMLElement>('[data-testid="squad-token"]')].map((token) => token.getBoundingClientRect());
         return { left: Math.min(...rects.map((rect) => rect.left)), right: Math.max(...rects.map((rect) => rect.right)) };
       };
       const centered = (rect: { left: number; right: number }) => Math.abs((rect.left + rect.right) / 2 - (rosterRect.left + rosterRect.right) / 2) < 1;
-      const positionGroups = [...roster.querySelectorAll(".starting-position")].map(cardGroup);
-      const goalkeeper = roster.querySelector<HTMLElement>(".starting-position article")!.getBoundingClientRect();
-      return { centeredRows: positionGroups.every(centered), centeredBench: centered(cardGroup(roster.querySelector(".bench-section")!)), goalkeeperWideEnough: goalkeeper.width >= 120, cardsInsidePanel: cards.every((card) => card.top >= rosterRect.top && card.bottom <= panel.getBoundingClientRect().bottom) };
+      const positionGroups = [...roster.querySelectorAll(".starting-position")].map(tokenGroup);
+      // A token is at least 76px wide: its flex basis on the pitch.
+      const goalkeeper = roster.querySelector<HTMLElement>('.starting-position [data-testid="squad-token"]')!.getBoundingClientRect();
+      return { centeredRows: positionGroups.every(centered), centeredBench: centered(tokenGroup(roster.querySelector(".bench-section")!)), goalkeeperWideEnough: goalkeeper.width >= 76, cardsInsidePanel: tokens.every((token) => token.top >= rosterRect.top && token.bottom <= panel.getBoundingClientRect().bottom) };
     });
     expect(layout).toEqual({ centeredRows: true, centeredBench: true, goalkeeperWideEnough: true, cardsInsidePanel: true });
   });
@@ -206,8 +235,8 @@ test.describe("weekly lineup acceptance", () => {
     const region = weeklyRegion(page);
     await expect(region.getByRole("region", { name: /^starting xi$/i })).toBeVisible();
     await expect(region.getByRole("region", { name: /^bench$/i })).toBeVisible();
-    await expect(region.getByRole("button", { name: /make .* captain/i })).toHaveCount(11);
-    await expect(region.getByRole("button", { name: /select .* to move into the starting xi/i })).toHaveCount(4);
+    await expect(startingXi(region).getByTestId("squad-token")).toHaveCount(11);
+    await expect(benchOf(region).getByTestId("squad-token")).toHaveCount(4);
   });
 
   test("surfaces stale FPL data after a gameweek refresh", async ({ page }) => {
@@ -249,16 +278,16 @@ test.describe("weekly lineup acceptance", () => {
     const region = await openWeeklyTeam(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(region).toBeVisible();
-    // Narrow viewports use tap-to-select pitch cards with a sticky action bar.
-    await region.locator(".starting-xi .slot-main").first().click();
-    const bar = region.locator(".mobile-lineup-bar");
-    await expect(bar).toBeVisible();
-    const captain = bar.getByRole("button", { name: /make .* captain/i });
+    // Narrow viewports open a bottom sheet for each player, with captaincy inside it.
+    await startingXi(region).getByTestId("squad-token").first().click();
+    const sheet = page.getByRole("dialog").first();
+    await expect(sheet).toBeVisible();
+    const captain = sheet.getByRole("button", { name: /make .* captain/i });
     await expect(captain).toBeVisible();
     expect((await captain.boundingBox())?.height).toBeGreaterThanOrEqual(44);
-    // Captaincy through the bar applies and marks the pitch card.
+    // Captaincy through the sheet applies and marks the pitch token.
     // Keyboard activation: the Next.js dev-tools overlay sits over this
-    // bottom-anchored bar in dev and would swallow a pointer tap.
+    // bottom-anchored sheet in dev and would swallow a pointer tap.
     await captain.focus();
     await page.keyboard.press("Enter");
     await expect(page.getByText(/captaincy updated/i)).toBeVisible();

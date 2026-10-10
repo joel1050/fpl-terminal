@@ -1,45 +1,38 @@
 # Latest Session Work
 
-Deployment `b_fixes_20260917` completed on 2026-09-17.
+Pitch UI redesign, Task 13: the project docs now record the new UI structure.
 
-## Implemented
+## Branch
 
-- `app/api/fpl/bootstrap/route.ts` rejects the fourth forced refresh from one
-  client within a minute before any FPL fetch or projection work. Normal reads
-  are unchanged; 429 responses include `Retry-After` and `Cache-Control:
-  no-store`.
-- `lib/http/computeRateLimit.ts` retains the 30/min compute default, supports a
-  scoped limit, prunes expired entries, and caps buckets at 1,000.
-- `lib/fpl/cache.ts` uses a 1,000-entry LRU memory cap while preserving cache
-  updates, TTL checks, and stale fallback.
-- Saved-state reads distinguish missing, accepted, malformed, and newer data.
-  Refused localStorage data is preserved without writeback and produces a
-  recovery notice in Planner and Leagues; compatible import or reset unblocks
-  persistence.
-- The four heavy compute routes export `maxDuration = 30`, and the central FPL
-  client sends `FPL-Terminal/0.1 (+https://github.com/joel1050/fpl-terminal)`.
+- Branch `worktree-ui-pitch-redesign` holds 19 commits, from the spec and plan
+  (`2c68469`) through Task 12 (`93e25cb`), plus the Task 13 docs commit.
+- The branch starts at `64e594b`. `main` has two newer commits (data
+  refreshes). Merge or rebase before the pull request.
 
-## Verification
+## Verification (Stage 4, after Task 12)
 
-- Full serial unit/integration corpus: 79 files and 650 tests passed.
-- Focused B tests cover limiter defaults/custom limits/caps, cache LRU behavior,
-  pre-work bootstrap rejection, saved-state outcomes, and exact upstream
-  headers.
-- Typecheck and production build passed. Build output retains five existing
-  dynamic-filesystem tracing warnings.
-- Focused B ESLint passed with zero errors and two pre-existing TerminalApp
-  unused-variable warnings.
-- The two stale transfer UI assertions in `tests/e2e/fpl-terminal.spec.ts`
-  were updated to the current panel wording (suggestion count and card-scoped
-  dismiss label); the full `fpl-terminal.spec.ts` passes 10/10.
-- `tests/e2e/persistence-guard.spec.ts` passed 2/2: Planner and Leagues preserve
-  a newer save byte-for-byte, and Planner resumes persistence after a compatible
-  import.
-- `git diff --check` passed; verification-generated `next-env.d.ts` drift was
-  restored and no project-local test server remains.
+- `npm test`: 88 files, 744 tests pass.
+- `npm run typecheck`: clean.
+- `npm run lint`: 0 errors, 5 warnings in files the branch does not touch.
+- `npm run test:e2e`: 116 pass, 1 fails: `tests/e2e/fpl-terminal.spec.ts:371`.
+  It also fails on the unmodified base commit.
+- `npm run build`: passes.
+
+Task 13 changes docs only. It ran no checks of its own.
+
+## Handoff
+
+- Test changes, each file and why, plus the assertions that changed:
+  `.superpowers/sdd/2026-10-06-pitch-ui-redesign/pr-description.md`.
+- Task 13 report: `.superpowers/sdd/2026-10-06-pitch-ui-redesign/task-13-report.md`.
 
 ## Continuation
 
-The combined A/B implementation is uncommitted. The separate RotoWire
-publication decision remains open. Existing unrelated working-tree changes in
-League UI/tests were preserved.
+1. The controller's final pass.
+2. The user's manual testing, on desktop and phone.
+3. A pull request, once the user approves.
+
+## Carried over
+
+- From the 2026-09-17 B-fixes handoff, not re-checked here: the RotoWire
+  publication decision was open before the public link is shared.

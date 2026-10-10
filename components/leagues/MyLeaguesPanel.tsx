@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { compactCount } from "@/lib/display/format";
+import { leagueTypeLabel } from "@/lib/leagues/display";
 import type { ManagerHistory, ManagerProfile } from "@/types/leagues";
 import { compareSortValues, SortableHead, useSortState, type SortValue } from "./tableSort";
 
@@ -33,8 +35,8 @@ function leagueSortValue(row: LeagueRow, key: LeagueSortKey): SortValue {
 export function movementLabel(from?: number, to?: number): { label: string; className: string } {
   if (!from || !to || from === to) return { label: "—", className: "" };
   return to < from
-    ? { label: `▲ ${Math.abs(to - from)}`, className: "green" }
-    : { label: `▼ ${to - from}`, className: "red" };
+    ? { label: `▲ ${compactCount(Math.abs(to - from))}`, className: "green" }
+    : { label: `▼ ${compactCount(to - from)}`, className: "red" };
 }
 
 export function buildLeagueRows(profile: ManagerProfile | null, history: ManagerHistory | null): LeagueRow[] {
@@ -103,7 +105,7 @@ export default function MyLeaguesPanel({
   return (
     <section className="leagues-panel" aria-label="My leagues">
       <div className="panel-header">
-        <span className="section-kicker">MY LEAGUES</span>
+        <span className="section-kicker">My leagues</span>
         <span className="panel-count">{allRows.length || "—"} leagues</span>
       </div>
       <div className="search-wrap league-search">
@@ -115,18 +117,18 @@ export default function MyLeaguesPanel({
         />
         <kbd>/</kbd>
       </div>
-      {status === "LOADING" && <div className="empty-state">SYNCING LEAGUES…</div>}
-      {status === "ERROR" && <div className="empty-state">LEAGUE DATA UNAVAILABLE</div>}
+      {status === "LOADING" && <div className="empty-state">Loading leagues…</div>}
+      {status === "ERROR" && <div className="empty-state">League data unavailable</div>}
       {status !== "LOADING" && status !== "ERROR" && (
         <div className="table-wrap league-table-wrap league-list-wrap">
           <table className="league-table">
             <thead>
               <tr>
-                <SortableHead label="LEAGUE" sortKey="name" active={sortKey} direction={sortDirection} onSort={onSort} />
-                <SortableHead label="TYPE" sortKey="type" active={sortKey} direction={sortDirection} onSort={onSort} />
-                <SortableHead label="RANK" sortKey="rank" active={sortKey} direction={sortDirection} onSort={onSort} />
-                <SortableHead label="TEAMS" sortKey="teams" active={sortKey} direction={sortDirection} onSort={onSort} />
-                <SortableHead label="TREND" sortKey="trend" active={sortKey} direction={sortDirection} onSort={onSort} />
+                <SortableHead label="League" sortKey="name" active={sortKey} direction={sortDirection} onSort={onSort} />
+                <SortableHead label="Type" sortKey="type" active={sortKey} direction={sortDirection} onSort={onSort} />
+                <SortableHead label="Rank" sortKey="rank" active={sortKey} direction={sortDirection} onSort={onSort} />
+                <SortableHead label="Teams" sortKey="teams" active={sortKey} direction={sortDirection} onSort={onSort} />
+                <SortableHead label="Trend" sortKey="trend" active={sortKey} direction={sortDirection} onSort={onSort} />
               </tr>
             </thead>
             <tbody>
@@ -143,9 +145,9 @@ export default function MyLeaguesPanel({
                         {row.name || `League ${row.key}`}
                       </button>
                     </td>
-                    <td><span className={`data-badge league-type-${row.type.toLowerCase()}`}>{row.type}</span></td>
-                    <td>{row.rank?.toLocaleString() ?? "—"}</td>
-                    <td>{row.teams?.toLocaleString() ?? "—"}</td>
+                    <td className="league-type">{leagueTypeLabel(row.type)}</td>
+                    <td title={row.rank?.toLocaleString()}>{compactCount(row.rank)}</td>
+                    <td title={row.teams?.toLocaleString()}>{compactCount(row.teams)}</td>
                     <td className={trend.className}>{trend.label}</td>
                   </tr>
                 );

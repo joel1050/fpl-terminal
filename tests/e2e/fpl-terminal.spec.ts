@@ -61,9 +61,18 @@ test.describe("FPL Terminal acceptance", () => {
       return;
     }
 
-    const card = page.getByRole("article").filter({ hasText: name }).first();
-    await card.hover();
-    await card.getByRole("button", { name: new RegExp(`lock.*${name}|${name}.*lock`, "i") }).click();
+    const dialog = await openSheet(page, name);
+    await dialog.getByRole("button", { name: new RegExp(`^Lock ${name}$`, "i") }).click();
+    await page.keyboard.press("Escape");
+  }
+
+  /** Opens a squad token's action sheet. Escape first, so an open sheet's backdrop does not take the tap. */
+  async function openSheet(page: Page, name: string) {
+    await page.keyboard.press("Escape");
+    await page.getByRole("region", { name: /squad builder and analysis/i }).locator(`[data-testid="squad-token"][data-player="${name}"]`).click();
+    const dialog = page.getByRole("dialog", { name, exact: true });
+    await expect(dialog).toBeVisible();
+    return dialog;
   }
 
   async function waitForMarket(page: Page) {
@@ -119,25 +128,28 @@ test.describe("FPL Terminal acceptance", () => {
     const squad = page.getByRole("region", { name: /squad builder and analysis/i });
     await expect(squad).toContainText(/15\/15 selected/i);
     await expect(squad.getByTestId("squad-roster")).toContainText(/Haaland/i);
-    const haalandCard = squad.getByRole("article").filter({ hasText: "Haaland" });
-    await expect(haalandCard).toContainText(/£14\.0m/i);
-    await expect(haalandCard).not.toContainText(/SELL/i);
-    await expect(haalandCard.getByRole("button", { name: /make haaland captain/i })).toHaveAttribute("aria-pressed", "true");
+    const haalandSheet = await openSheet(page, "Haaland");
+    await expect(haalandSheet).toContainText(/£14\.0m/i);
+    await expect(haalandSheet).not.toContainText(/SELL/i);
+    await expect(haalandSheet.getByRole("button", { name: /make haaland captain/i })).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
     const haalandMarketRow = page.getByRole("row").filter({ hasText: "Haaland" }).first();
-    await expect(haalandMarketRow).toContainText(/£14\.0m/i);
+    await expect(haalandMarketRow.locator(".col-price")).toHaveText("14.0");
     await expect(haalandMarketRow).not.toContainText(/SELL/i);
-    await expect(squad.getByRole("article").filter({ hasText: "Watkins" }).getByRole("button", { name: /make watkins vice-captain/i })).toHaveAttribute("aria-pressed", "true");
+    const watkinsSheet = await openSheet(page, "Watkins");
+    await expect(watkinsSheet.getByRole("button", { name: /make watkins vice-captain/i })).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
     const bench = squad.getByRole("region", { name: /^bench$/i });
     const metrics = squad.getByLabel("Squad projection metrics");
     await expect(metrics).toContainText(/VALUE/i);
     await expect(metrics).not.toContainText(/SELL/i);
-    await expect(metrics).toContainText(/TEAM RATING/i);
+    await expect(metrics).toContainText(/Rating/);
     await expect(metrics).not.toContainText(/5GW/i);
     await expect(metrics.getByText(/^\d+%$/)).toBeVisible();
-    await expect(bench.getByRole("article").nth(0)).toContainText(/Areola/i);
-    await expect(bench.getByRole("article").nth(1)).toContainText(/Faes/i);
-    await expect(bench.getByRole("article").nth(2)).toContainText(/Konsa/i);
-    await expect(bench.getByRole("article").nth(3)).toContainText(/Solanke/i);
+    await expect(bench.getByTestId("squad-token").nth(0)).toContainText(/Areola/i);
+    await expect(bench.getByTestId("squad-token").nth(1)).toContainText(/Faes/i);
+    await expect(bench.getByTestId("squad-token").nth(2)).toContainText(/Konsa/i);
+    await expect(bench.getByTestId("squad-token").nth(3)).toContainText(/Solanke/i);
     await expect(page.getByText(/imported test xi/i)).toBeVisible();
     await expect.poll(() => importRequests).toBe(1);
     await page.reload();
@@ -179,14 +191,16 @@ test.describe("FPL Terminal acceptance", () => {
     await chooseMode(page, IMPORT_MODE);
     await waitForMarket(page);
     const squadPanel = page.getByRole("region", { name: /squad builder and analysis/i });
-    await expect(squadPanel.getByRole("article").filter({ hasText: "Haaland" })).toContainText(/£13\.5m/i);
-    await expect(page.getByRole("row").filter({ hasText: "Haaland" }).first()).toContainText(/£14\.0m/i);
+    const haalandSheet = await openSheet(page, "Haaland");
+    await expect(haalandSheet).toContainText(/£13\.5m/i);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("row").filter({ hasText: "Haaland" }).first().locator(".col-price")).toHaveText("14.0");
     await expect(squadPanel.getByLabel("Cash in the bank in millions")).toHaveValue("9.0");
     await expect(squadPanel.getByLabel("Squad projection metrics")).toContainText(/VALUE£89\.1/i);
 
-    const rice = squadPanel.getByRole("article").filter({ hasText: "Rice" });
-    await rice.hover();
-    await rice.getByRole("button", { name: /unlock rice/i }).click();
+    const riceSheet = await openSheet(page, "Rice");
+    await riceSheet.getByRole("button", { name: /unlock rice/i }).click();
+    await page.keyboard.press("Escape");
     await clickButton(page, /^OPTIMIZE$/i);
 
     await expect(squadPanel.getByTestId("squad-roster")).toContainText(/Saka/i);
@@ -230,10 +244,10 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByText(/15\s*(?:players|\/\s*15)|squad complete|legal/i).first()).toBeVisible();
     for (const name of ["Haaland", "Saka", "Palmer"]) {
       await expect(page.getByText(new RegExp(`\\b${name}\\b`, "i")).first()).toBeVisible();
-      const card = page.getByRole("article").filter({ hasText: name }).first();
-      await card.hover();
-      await expect(card.getByRole("button", { name: new RegExp(`Unlock ${name}`, "i") })).toBeVisible();
-      await expect(card.getByRole("button", { name: new RegExp(`Remove ${name}`, "i") })).toHaveCount(0);
+      const dialog = await openSheet(page, name);
+      await expect(dialog.getByRole("button", { name: new RegExp(`Unlock ${name}`, "i") })).toBeVisible();
+      await expect(dialog.getByRole("button", { name: new RegExp(`Remove ${name}`, "i") })).toBeDisabled();
+      await page.keyboard.press("Escape");
     }
     await expect(page.getByText(/£?100(?:\.0)?m|budget|bank|remaining/i).first()).toBeVisible();
   });
@@ -245,7 +259,7 @@ test.describe("FPL Terminal acceptance", () => {
     await expect(page.getByRole("region", { name: /weakest links/i })).toHaveCount(0);
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
     await expect(replacements).toBeVisible();
-    await expect(replacements.locator(".panel-count")).toHaveText(/1 FOUND/);
+    await expect(replacements.locator(".panel-count")).toHaveText(/1 found/);
     await expect(replacements).toContainText(/Rice\s*→\s*Saka/i);
 
     await clickButton(page, /^PICK TEAM$/i);
@@ -256,9 +270,9 @@ test.describe("FPL Terminal acceptance", () => {
     await clickButton(page, /apply/i);
     await expect(page.getByText(/move cannot be applied while an outgoing player is locked/i)).toBeVisible();
     await page.getByRole("button", { name: /close simulation/i }).click();
-    const rice = page.getByRole("article").filter({ hasText: "Rice" }).first();
-    await rice.hover();
-    await rice.getByRole("button", { name: /unlock rice/i }).click();
+    const riceSheet = await openSheet(page, "Rice");
+    await riceSheet.getByRole("button", { name: /unlock rice/i }).click();
+    await page.keyboard.press("Escape");
     await replacements.getByRole("button", { name: /simulate/i }).first().click();
     await expect(page.getByText(/simulation|before|after|price effect|gw effect/i).first()).toBeVisible();
     await clickButton(page, /apply/i);
@@ -285,23 +299,23 @@ test.describe("FPL Terminal acceptance", () => {
     const replacements = page.getByRole("region", { name: /^transfer suggestions$/i });
     const toggles = replacements.getByRole("group", { name: /transfer suggestion horizon/i });
     await expect(toggles).toBeVisible();
-    for (const label of ["GW", "3GW", "5GW", "10GW"]) {
+    for (const label of ["1 GW", "3 GW", "5 GW", "10 GW"]) {
       await expect(toggles.getByRole("button", { name: label, exact: true })).toBeVisible();
     }
-    await expect(toggles.getByRole("button", { name: "5GW", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(toggles.getByRole("button", { name: "5 GW", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => horizons).toEqual([5]);
 
-    await toggles.getByRole("button", { name: "10GW", exact: true }).click();
-    await expect(toggles.getByRole("button", { name: "10GW", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await toggles.getByRole("button", { name: "10 GW", exact: true }).click();
+    await expect(toggles.getByRole("button", { name: "10 GW", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => horizons).toEqual([5, 10]);
 
-    await toggles.getByRole("button", { name: "GW", exact: true }).click();
+    await toggles.getByRole("button", { name: "1 GW", exact: true }).click();
     await expect.poll(() => horizons).toEqual([5, 10, 1]);
 
     await page.reload();
     await waitForMarket(page);
     const reloaded = page.getByRole("region", { name: /^transfer suggestions$/i }).getByRole("group", { name: /transfer suggestion horizon/i });
-    await expect(reloaded.getByRole("button", { name: "GW", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(reloaded.getByRole("button", { name: "1 GW", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => horizons.at(-1)).toBe(1);
   });
 
@@ -316,7 +330,7 @@ test.describe("FPL Terminal acceptance", () => {
     expect(box).not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(390);
-    await expect(toggles.getByRole("button", { name: "10GW", exact: true })).toBeVisible();
+    await expect(toggles.getByRole("button", { name: "10 GW", exact: true })).toBeVisible();
   });
 
   test("dismisses a transfer suggestion across reloads", async ({ page }) => {
@@ -395,14 +409,20 @@ test.describe("FPL Terminal acceptance", () => {
     const universe = page.getByRole("region", { name: /player universe/i }).first();
     await expect(universe).toBeVisible();
     const headers = () => universe.getByRole("columnheader").allTextContents().then((texts) => texts.join(" ").replace(/\s+/g, " "));
-    for (const label of [/own(?:ership)?%?/i, /form/i, /(?:gw\s*xp|xp\s*gw)/i, /(?:5gw|5\s*gw|xp\s*5)/i, /xp\s*5\s*\/\s*£/i, /fixtures/i]) {
+    for (const label of [/own(?:ership)?%?/i, /form/i, /(?:gw\s*xp|xp\s*gw)/i, /(?:5gw|5\s*gw|xp\s*5)/i, /next\s*5/i]) {
       expect(await headers(), `player universe should expose ${label}`).toMatch(label);
     }
 
-    // Secondary metric columns yield to panel width and return on wide screens.
+    // Secondary metric columns are off by default. Tick them in the Columns menu, then check they show on wide panels.
     await page.setViewportSize({ width: 1728, height: 1000 });
     await expect(universe).toBeVisible();
-    for (const label of [/xp\s*10/i, /xp\s*10\s*\/\s*£/i, /xgi\s*\/?\s*90/i]) {
+    await universe.getByRole("button", { name: "Columns" }).click();
+    const columns = page.getByRole("dialog", { name: "Columns" });
+    for (const label of ["5GW xP / £", "10GW", "10GW xP / £", "xGI/90"]) {
+      await columns.getByRole("checkbox", { name: label, exact: true }).check();
+    }
+    await page.keyboard.press("Escape");
+    for (const label of [/5\s*gw\s*xp\s*\/\s*£/i, /10\s*gw/i, /10\s*gw\s*xp\s*\/\s*£/i, /xgi\s*\/?\s*90/i]) {
       expect(await headers(), `player universe should expose ${label} on wide panels`).toMatch(label);
     }
 
@@ -428,14 +448,14 @@ test.describe("FPL Terminal acceptance", () => {
       await page.setViewportSize(viewport);
       const panel = page.getByRole("region", { name: /squad builder and analysis/i });
       const roster = panel.getByTestId("squad-roster");
-      const cards = roster.getByRole("article");
+      const cards = roster.getByTestId("squad-token");
       await expect(cards).toHaveCount(15);
       await expect(cards.last()).toBeVisible();
 
       const layout = await panel.evaluate((element) => {
         const rosterElement = element.querySelector<HTMLElement>('[data-testid="squad-roster"]')!;
         const panelRect = element.getBoundingClientRect();
-        const cardRects = [...rosterElement.querySelectorAll<HTMLElement>('article')].map((card) => card.getBoundingClientRect());
+        const cardRects = [...rosterElement.querySelectorAll<HTMLElement>('[data-testid="squad-token"]')].map((card) => card.getBoundingClientRect());
         return {
           panelOverflowY: getComputedStyle(element).overflowY,
           rosterOverflowY: getComputedStyle(rosterElement).overflowY,
@@ -454,20 +474,19 @@ test.describe("FPL Terminal acceptance", () => {
   test("shows the xP horizon and bench strategy in optimizer Settings", async ({ page }) => {
     await chooseMode(page, /build from scratch/i);
     await waitForMarket(page);
-    const panel = page.getByRole("region", { name: /squad builder and analysis/i });
-    const settings = panel.getByText(/^SETTINGS$/i);
-    await settings.focus();
-    await settings.press("Enter");
-    const popover = panel.locator(".strategy-popover");
+    const more = page.getByRole("button", { name: "More", exact: true });
+    await more.focus();
+    await more.press("Enter");
+    const popover = page.getByRole("dialog", { name: "More" });
     await expect(popover.getByText(/optimizer settings/i)).toBeVisible();
     await expect(popover.getByText(/^HORIZON$/i)).toBeVisible();
-    const tenGameweek = popover.getByRole("button", { name: "10GW", exact: true });
+    const tenGameweek = popover.getByRole("button", { name: "10 GW", exact: true });
     await expect(tenGameweek).toBeVisible();
     await expect(popover.getByText(/^RISK$/i)).toHaveCount(0);
     await expect(popover.getByText(/^BENCH$/i)).toBeVisible();
-    await expect(popover.getByRole("button", { name: "CHEAP", exact: true })).toBeVisible();
-    await expect(popover.getByRole("button", { name: "BALANCED", exact: true })).toBeVisible();
-    await expect(popover.getByRole("button", { name: "STRONG", exact: true })).toBeVisible();
+    await expect(popover.getByRole("button", { name: "Cheap", exact: true })).toBeVisible();
+    await expect(popover.getByRole("button", { name: "Balanced", exact: true })).toBeVisible();
+    await expect(popover.getByRole("button", { name: "Strong", exact: true })).toBeVisible();
   });
 
   test("minimizes and restores Player Universe, then resizes it by dragging", async ({ page }) => {

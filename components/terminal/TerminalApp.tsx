@@ -2,12 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
-import WorkspaceSwitcher from "@/components/terminal/WorkspaceSwitcher";
+import { BottomTabBar } from "@/components/shell/BottomTabBar";
+import { MoreSheet } from "@/components/shell/MoreSheet";
+import { TopBar } from "@/components/shell/TopBar";
+import { exportState, importState, resetTerminalState } from "@/components/shell/stateFile";
 import type { NailedRating, Player, PlayerFixture, PlayerMatchPerformance, PlayerProfileData, PlayerSelection, Position, SelectionEvidence, SimulationResult, SingleTransferSuggestion, SquadState, TransferBaseline, WeeklyLineupPlan } from "@/types";
 import { simulateChange as simulateSquadChange } from "@/lib/analysis/simulateChange";
 import { effectiveBudgetTenths, explainIllegalSelection, maxSafePriceForPosition } from "@/lib/squad/budget";
+import { checkLineupMove, FORMATION_REASON } from "@/lib/squad/lineupMoves";
 import { pickWeeklyTeam, projectWeeklyLineupHorizons, scoreLineupWithChip, weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
 import { ChipSelector, ChipStrategyPanel, usePlanningWeekFinance } from "@/components/terminal/ChipPanels";
+import { availabilityOf, type Availability } from "@/lib/availability/status";
 import { chipLabel } from "@/lib/chips/seasonPolicy";
 import type { ChipKind } from "@/types/chips";
 import type { OptimizerResult } from "@/lib/optimizer/optimizer";
@@ -27,6 +32,29 @@ import {
   type TerminalMode,
   type SortKey,
 } from "@/store/terminalStore";
+import { PitchToken, captainMultiplier, pitchXp } from "@/components/terminal/squad/PitchToken";
+import { PlayerActions } from "@/components/terminal/squad/PlayerActions";
+import { SquadKpis } from "@/components/terminal/squad/SquadKpis";
+import { SquadPitch } from "@/components/terminal/squad/SquadPitch";
+import { stableLineOrder } from "@/lib/squad/lineOrder";
+import { SquadTable } from "@/components/terminal/squad/SquadTable";
+import { AlertsSection } from "@/components/terminal/rail/AlertsSection";
+import { CaptainSection } from "@/components/terminal/rail/CaptainSection";
+import { DecisionRail, RailSection } from "@/components/terminal/rail/DecisionRail";
+import { squadAlerts } from "@/lib/analysis/squadAlerts";
+import { money, points } from "@/lib/display/format";
+import { ColumnsMenu } from "@/components/terminal/players/ColumnsMenu";
+import { PlayersTable, type TerminalPlayer } from "@/components/terminal/players/PlayersTable";
+import { PlayerList, PlayerSortLine } from "@/components/terminal/players/PlayerList";
+import { FilterSheet } from "@/components/terminal/players/FilterSheet";
+import { ActiveFilters } from "@/components/terminal/players/ActiveFilters";
+import { countActiveFilters } from "@/lib/display/filterCount";
+import { expectedInvolvementPer90 } from "@/lib/analysis/expectedInvolvement";
+import { universeWeekFor, type UniverseWeekMetrics } from "@/lib/analysis/universeWeek";
+import { startChanceOf } from "@/lib/availability/startChance";
+
+// The deadline formatter moved with the top bar; the Planner's tests still import it from here.
+export { formatDeadlineCountdown } from "@/components/shell/deadline";
 
 type UnknownRecord = Record<string, unknown>;
 type DataState = "SYNCING" | "LIVE" | "SNAPSHOT" | "STALE" | "EMPTY" | "ERROR";
@@ -45,10 +73,6 @@ type ResizeState = {
   neighborWidth: number;
   availableWidth: number;
   ratios: Record<DesktopPanel, number>;
-};
-
-type TerminalPlayer = Player & {
-  projection: NonNullable<Player["projection"]>;
 };
 
 type Bootstrap = {
@@ -402,26 +426,6 @@ export function normalizeBootstrap(value: unknown): Bootstrap {
   return { players, gameweek, deadline, source: stringOf(readField(root, "source", "dataSource")) ?? stringOf(readField(data, "source")) ?? null, freshness: "LIVE", fetchedAt: null };
 }
 
-function money(tenths: number | undefined): string {
-  return tenths === undefined || !Number.isFinite(tenths) ? "—" : `£${(tenths / 10).toFixed(1)}`;
-}
-
-function points(value: number | undefined): string {
-  return value === undefined || !Number.isFinite(value) || value === 0 ? "—" : value.toFixed(1);
-}
-
-function metric(value: number | undefined, suffix = ""): string {
-  return value === undefined || !Number.isFinite(value) || value === 0 ? "—" : `${value.toFixed(1)}${suffix}`;
-}
-
-function availabilityOf(player: TerminalPlayer): TerminalFilters["availability"] {
-  const status = player.status.trim().toLowerCase();
-  if (["i", "u", "n", "s"].includes(status)) return "UNAVAILABLE";
-  if (status === "d") return "DOUBTFUL";
-  if (typeof player.chanceOfPlaying === "number" && player.chanceOfPlaying < 75) return "DOUBTFUL";
-  return "AVAILABLE";
-}
-
 function confidenceOf(player: TerminalPlayer): TerminalFilters["confidence"] {
   const confidence = player.selection?.confidence ?? player.projection?.confidence;
   return confidence === "HIGH" || confidence === "MEDIUM" || confidence === "LOW" ? confidence : "LOW";
@@ -431,59 +435,6 @@ function riskBandOf(player: TerminalPlayer): Exclude<TerminalFilters["risk"], "A
   const score = player.projection?.riskScore;
   if (score === undefined || !Number.isFinite(score)) return undefined;
   return score >= 60 ? "HIGH" : score >= 30 ? "MEDIUM" : "LOW";
-}
-
-/** In-season xGI per 90, falling back to the prior season when this one has no minutes yet. */
-function expectedInvolvementPer90Value(player: TerminalPlayer): number | undefined {
-  const minutes = player.current.minutes;
-  const expectedGoals = player.current.expectedGoals;
-  const expectedAssists = player.current.expectedAssists;
-  if (minutes <= 0 || expectedGoals === undefined || expectedAssists === undefined || !Number.isFinite(expectedGoals + expectedAssists)) {
-    const historical = player.historical?.xGIPer90;
-    return historical !== undefined && Number.isFinite(historical) ? historical : undefined;
-  }
-  return (expectedGoals + expectedAssists) / minutes * 90;
-}
-
-function expectedInvolvementPer90(player: TerminalPlayer): string {
-  const value = expectedInvolvementPer90Value(player);
-  return value === undefined ? "—" : value.toFixed(2);
-}
-
-function FixtureRun({ player, gameweek }: { player: TerminalPlayer; gameweek: number }) {
-  const fixtures = player.fixtures.filter((fixture) => fixture.gameweek >= gameweek).slice(0, 12);
-  if (!fixtures.length) return <>—</>;
-  return <span className="fixture-run">{fixtures.map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>)}</span>;
-}
-
-type UniverseWeekMetrics = { xp: number; next5: number; next10: number; value: number; value10: number };
-
-/** Market metrics for the planning gameweek, derived from the same weekly-lineup engine the squad uses. */
-function universeWeekFor(player: TerminalPlayer, gameweek: number): UniverseWeekMetrics {
-  const week = weeklyPlayerMetrics(player, gameweek);
-  const fixtures = player.projection?.fixtures ?? [];
-  const next5 = projectedPointsForGameweeks(fixtures, gameweek, 5);
-  const next10 = projectedPointsForGameweeks(fixtures, gameweek, 10);
-  return {
-    xp: week.points,
-    next5,
-    next10,
-    value: valuePerMillion(next5, player.priceTenths),
-    value10: valuePerMillion(next10, player.priceTenths),
-  };
-}
-
-function squadFixturesForGameweek(player: TerminalPlayer, gameweek: number): PlayerFixture[] {
-  const projectedFixtures = player.projection?.fixtures ?? [];
-  if (projectedFixtures.length) return projectedFixtures.filter((fixture) => fixture.gameweek === gameweek).map((fixture) => fixture.fixture);
-  return player.fixtures.filter((fixture) => fixture.gameweek === gameweek);
-}
-
-function SquadFixtureBadges({ player, gameweek }: { player: TerminalPlayer; gameweek: number }) {
-  const fixtures = squadFixturesForGameweek(player, gameweek);
-  return <span className="squad-fixture-badges" aria-label={`Gameweek ${gameweek} fixtures`}>
-    {fixtures.length ? fixtures.map((fixture) => <span className={(fixture.difficulty ?? 3) <= 2 ? "easy" : (fixture.difficulty ?? 3) >= 4 ? "hard" : ""} key={`${fixture.gameweek}-${fixture.opponentTeamId}`}>{fixture.opponentShortName}({fixture.isHome ? "H" : "A"})</span>) : <span className="blank">BLANK</span>}
-  </span>;
 }
 
 function aggregateWeeklyProjection(players: readonly TerminalPlayer[], gameweek: number): { nextGW: number; next3: number; next5: number; next10: number } {
@@ -620,14 +571,23 @@ export default function TerminalApp() {
   const [transferSearch, setTransferSearch] = useState<{ key: string; suggestions: SingleTransferSuggestion[]; state: "READY" | "ERROR"; message: string | null }>({ key: "", suggestions: [], state: "READY", message: null });
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
   const [simulationMoves, setSimulationMoves] = useState<Array<{ outId: number; inId: number; cashReleasedTenths?: number }> | null>(null);
+  // The result sits over the squad column, which may be above the rail the user opened it from.
+  const simulationRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (simulation) simulationRef.current?.scrollIntoView({ block: "nearest" });
+  }, [simulation]);
   const simulationMove = simulationMoves?.[0] ?? null;
   const [gwSwapSelection, setGWSwapSelection] = useState<{ starterId?: number; benchId?: number }>({});
-  const [mobilePickedId, setMobilePickedId] = useState<number | null>(null);
+  const [actionPlayerId, setActionPlayerId] = useState<number | null>(null);
   const isMobileLineup = useMatchMedia("(max-width: 900px)");
+  // The token or table button that opened the action popover; it opens beside this element.
+  const actionAnchor = useRef<HTMLElement | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<ResizeState | null>(null);
-  const settingsRef = useRef<HTMLDetailsElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersButton = useRef<HTMLButtonElement>(null);
   const [collapsedPanels, setCollapsedPanels] = useState<Record<DesktopPanel, boolean>>({ market: false, squad: false });
   const { data, status, message, refresh, ageAnchor } = bootstrap;
   const liveCurrentGW = clamp(Math.round(data.gameweek ?? store.currentGameweek ?? 1), 1, 38);
@@ -648,8 +608,11 @@ export default function TerminalApp() {
     if (!section || !grid || !neighbor || collapsedPanels[neighbor]) return;
     const neighborSection = grid.querySelector<HTMLElement>(`[data-panel="${neighbor}"]`);
     if (!neighborSection) return;
-    const availableWidth = grid.getBoundingClientRect().width - (DESKTOP_PANELS.length - 1);
-    const widths = DESKTOP_PANELS.map((name) => grid.querySelector<HTMLElement>(`[data-panel="${name}"]`)?.getBoundingClientRect().width ?? 0);
+    // Read the grid tracks, not the sections: at 901–1399px the squad section sits in a scrolling stack, and its scrollbar would narrow the box.
+    const tracks = getComputedStyle(grid).gridTemplateColumns.split(" ").map((track) => parseFloat(track) || 0);
+    const widths = DESKTOP_PANELS.map((_, index) => tracks[index] ?? 0);
+    // The divider shares the market and squad tracks only. The rail is a third column and is not part of the split.
+    const availableWidth = widths.reduce((sum, width) => sum + width, 0);
     if (availableWidth <= 0 || widths.some((width) => width <= 0)) return;
     const ratios = Object.fromEntries(DESKTOP_PANELS.map((name, index) => [name, ratioPercent(widths[index], availableWidth)])) as Record<DesktopPanel, number>;
     resizeRef.current = { panel, neighbor, direction: panelIndex === DESKTOP_PANELS.length - 1 ? -1 : 1, startX: event.clientX, currentWidth: widths[panelIndex], neighborWidth: widths[neighborIndex], availableWidth, ratios };
@@ -702,7 +665,7 @@ export default function TerminalApp() {
     const state = useTerminalStore.getState();
     if (!state.isHydrated || state.persistenceBlocked) return;
     window.localStorage.setItem("fpl-terminal-state", JSON.stringify(exportTerminalState(state)));
-  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.persistenceBlocked, store.mode, store.entryId, store.budgetTenths, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.transferHorizon, store.riskMode, store.benchStrategy, store.panelRatios, store.dismissedTransferKeys, store.chip, store.plannedTransfers, store.permanentSquad, store.transferBaseline, store.usedChips]);
+  }, [store.gameweekPlans, store.planningGameweek, store.currentGameweek, store.isHydrated, store.persistenceBlocked, store.mode, store.entryId, store.budgetTenths, store.playerIds, store.byPosition, store.benchGoalkeeperId, store.benchOrder, store.lineupGameweek, store.lineupProjectionFingerprint, store.lockedPlayerIds, store.captainId, store.viceCaptainId, store.horizon, store.transferHorizon, store.riskMode, store.benchStrategy, store.panelRatios, store.squadView, store.playerColumns, store.dismissedTransferKeys, store.chip, store.plannedTransfers, store.permanentSquad, store.transferBaseline, store.usedChips]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -750,11 +713,32 @@ export default function TerminalApp() {
     const plan = scoreLineupWithChip(selected, planningGameweek, store.riskMode, store.chip, saved);
     return plan.starterIds.length === 11 ? plan : null;
   }, [selected, planningGameweek, store.riskMode, store.chip, lineupApplied, store.benchGoalkeeperId, store.benchOrder, store.captainId, store.playerIds, store.viceCaptainId, weeklyEnginePlan]);
+  // Each pitch line keeps the order the user last saw, so a swap moves only the players involved.
+  const [lineOrders, setLineOrders] = useState<Partial<Record<Position, number[]>>>({});
+  const stableLines = useMemo(() => {
+    const lines: Partial<Record<Position, number[]>> = {};
+    if (!currentGWPlan) return lines;
+    for (const position of POSITIONS) {
+      const ids = currentGWPlan.starterIds.filter((id) => playerById.get(id)?.position === position);
+      lines[position] = stableLineOrder(lineOrders[position] ?? [], ids);
+    }
+    return lines;
+  }, [currentGWPlan, lineOrders, playerById]);
+  const linesChanged = POSITIONS.some((position) => {
+    const kept = lineOrders[position] ?? [];
+    const now = stableLines[position] ?? [];
+    return kept.length !== now.length || kept.some((id, index) => id !== now[index]);
+  });
+  if (linesChanged) setLineOrders(stableLines);
   const lineupStale = lineupApplied && (store.lineupGameweek !== weeklyEnginePlan.gameweek || store.lineupProjectionFingerprint !== weeklyEnginePlan.projectionFingerprint);
   const chipNetXp = useMemo(() => {
     if (!currentGWPlan) return undefined;
     return currentGWPlan.projectedTotal - (weekFinance?.hitCost ?? 0);
   }, [currentGWPlan, weekFinance]);
+  // Alerts follow the same lineup the pitch shows, so a benched player is listed with the bench slot the pitch shows.
+  const planAlerts = useMemo(() => currentGWPlan
+    ? squadAlerts({ squad: selected, starterIds: currentGWPlan.starterIds, benchOrder: [...currentGWPlan.benchOrder], benchGoalkeeperId: currentGWPlan.benchGoalkeeperId, gameweek: planningGameweek })
+    : [], [currentGWPlan, planningGameweek, selected]);
   const projected = useMemo<{ nextGW?: number; next3?: number; next5?: number; next10?: number }>(() => {
     if (!selected.length) return {};
     if (weeklyEnginePlan.starterIds.length !== 11) return aggregateWeeklyProjection(selected, planningGameweek);
@@ -764,11 +748,6 @@ export default function TerminalApp() {
       riskMode: store.riskMode,
     }, !lineupStale ? currentGWPlan ?? undefined : undefined);
   }, [currentGWPlan, lineupStale, planningGameweek, selected, store.riskMode, weeklyEnginePlan.starterIds.length]);
-  const risk = useMemo(() => {
-    if (!selected.length) return undefined;
-    const values = selected.map((player) => weeklyPlayerMetrics(player, planningGameweek).pDNP);
-    return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 100) : undefined;
-  }, [planningGameweek, selected]);
   const bestXIKey = `${planningGameweek}|${store.budgetTenths}`;
   const [bestPossibleXI, setBestPossibleXI] = useState<{ key: string; projectedTotal: number } | null>(null);
   useEffect(() => {
@@ -857,6 +836,10 @@ export default function TerminalApp() {
     return byId;
   }, [data.players, planningGameweek]);
 
+  const inSquadIds = useMemo(() => new Set(store.playerIds), [store.playerIds]);
+  const clubs = useMemo(() => [...new Set(data.players.map((player) => player.teamShortName).filter((club) => club !== "—"))].sort(), [data.players]);
+  const activeFilterCount = countActiveFilters(store.filters);
+
   const filteredPlayers = useMemo(() => {
     const query = normalizeName(store.search);
     const filters = store.filters;
@@ -894,11 +877,13 @@ export default function TerminalApp() {
         price: (player) => player.priceTenths,
         nextGW: (player) => week(player)?.xp ?? 0,
         form: (player) => player.current.form ?? 0,
+        next3: (player) => week(player)?.next3 ?? 0,
         next5: (player) => week(player)?.next5 ?? 0,
         value: (player) => week(player)?.value ?? 0,
         next10: (player) => week(player)?.next10 ?? 0,
         value10: (player) => week(player)?.value10 ?? 0,
-        xgi: (player) => expectedInvolvementPer90Value(player) ?? 0,
+        xgi: (player) => expectedInvolvementPer90(player) ?? 0,
+        start: (player) => startChanceOf(player) ?? 0,
         ownership: (player) => player.ownership,
       };
       const left = values[store.sortKey](a);
@@ -1009,18 +994,20 @@ export default function TerminalApp() {
       setNotice(`Select a ${role === "starter" ? "substitute" : "starter"} to complete the swap.`);
       return;
     }
-    if (store.captainId === starterId || store.viceCaptainId === starterId) {
-      setNotice("Choose a different captain or vice-captain before moving that starter to the bench.");
-      setGWSwapSelection({});
-      return;
-    }
+    swapGW(starterId, benchId);
+  };
+
+  /** Swap a starter with a bench player through the store, with a notice. Shared by tap and drag. */
+  const swapGW = (starterId: number, benchId: number) => {
+    // A benched captain or vice-captain passes the badge to the incoming player (the store does it).
+    const badge = currentGWPlan?.captainId === starterId ? " as captain" : currentGWPlan?.viceCaptainId === starterId ? " as vice-captain" : "";
     if (!store.swapStarterBench(starterId, benchId)) {
-      setNotice("That swap would leave an invalid starting formation. Pick a compatible player.");
+      setNotice(FORMATION_REASON);
       setGWSwapSelection({});
       return;
     }
     setGWSwapSelection({});
-    setNotice(`${playerById.get(benchId)?.displayName ?? "Player"} moved into the starting XI.`);
+    setNotice(`${playerById.get(benchId)?.displayName ?? "Player"} moved into the starting XI${badge}.`);
   };
 
   const moveGWBench = (id: number, direction: -1 | 1) => {
@@ -1034,6 +1021,38 @@ export default function TerminalApp() {
     [bench[index], bench[nextIndex]] = [bench[nextIndex], bench[index]];
     if (store.reorderBench(bench)) setNotice("Bench order updated.");
   };
+
+  /** Swap two outfield substitutes' places in the bench order. */
+  const swapBenchPlaces = (aId: number, bId: number) => {
+    if (!currentGWPlan) return;
+    const currentOrder = lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan.benchOrder;
+    const order = [...currentOrder];
+    const a = order.indexOf(aId);
+    const b = order.indexOf(bId);
+    if (a < 0 || b < 0) return;
+    if (!lineupApplied && !applyWeeklyPlan(currentGWPlan)) return;
+    [order[a], order[b]] = [order[b], order[a]];
+    if (store.reorderBench(order)) setNotice("Bench order updated.");
+  };
+
+  const dragLineup = currentGWPlan
+    ? { starterIds: currentGWPlan.starterIds, benchGoalkeeperId: currentGWPlan.benchGoalkeeperId, benchOrder: currentGWPlan.benchOrder, captainId: currentGWPlan.captainId, viceCaptainId: currentGWPlan.viceCaptainId }
+    : null;
+  const positionOfPlayer = (id: number) => playerById.get(id)?.position;
+  const pitchDrag = dragLineup ? {
+    canDrop: (sourceId: number, targetId: number) => {
+      const move = checkLineupMove(dragLineup, sourceId, targetId, positionOfPlayer);
+      return { legal: move.legal, reason: move.legal ? null : move.reason };
+    },
+    onDrop: (sourceId: number, targetId: number) => {
+      const move = checkLineupMove(dragLineup, sourceId, targetId, positionOfPlayer);
+      if (!move.legal || !currentGWPlan) return;
+      if (!lineupApplied && !applyWeeklyPlan(currentGWPlan)) return;
+      if (move.kind === "swap") swapGW(move.starterId, move.benchId);
+      else swapBenchPlaces(sourceId, targetId);
+    },
+    onReject: (reason: string) => setNotice(reason),
+  } : undefined;
 
   const applyCaptaincy = (captainId: number, viceCaptainId: number) => {
     if (!currentGWPlan || captainId === viceCaptainId) return false;
@@ -1190,8 +1209,7 @@ export default function TerminalApp() {
 
   const reset = () => {
     if (window.confirm("Reset the current squad and saved terminal state?")) {
-      store.reset();
-      window.localStorage.removeItem("fpl-terminal-state");
+      resetTerminalState(store);
       setNotice("Terminal state reset.");
     }
   };
@@ -1222,32 +1240,13 @@ export default function TerminalApp() {
     const value = collapsedPanels[panel] ? "52px" : store.panelRatios[panel] ? `${store.panelRatios[panel]}fr` : undefined;
     return value ? [[`--${panel}-column`, value]] : [];
   })) as CSSProperties;
+  // Search is not a filter here: it stays in the search box, so resetting the filters leaves it alone.
   const resetFilters = () => {
-    store.setSearch("");
     store.setFilters({ position: "ALL", club: "", minPrice: "", maxPrice: "", minOwnership: "", maxOwnership: "", availability: "ALL", confidence: "ALL", risk: "ALL", affordableOnly: false, excludeSelected: false, quick: "ALL" });
   };
   const openPlayer = (playerId: number) => {
     store.setMobileTab("MARKET");
     store.setSelectedPlayer(playerId);
-  };
-  const activateSquadSlot = (player: TerminalPlayer, starter: boolean) => {
-    if (!isMobileLineup) {
-      openPlayer(player.id);
-      return;
-    }
-    if (currentGWPlan) {
-      if (starter && gwSwapSelection.benchId !== undefined && gwSwapSelection.starterId === undefined) {
-        selectGWSwapPlayer("starter", player.id);
-        setMobilePickedId(null);
-        return;
-      }
-      if (!starter && gwSwapSelection.starterId !== undefined && gwSwapSelection.benchId === undefined) {
-        selectGWSwapPlayer("bench", player.id);
-        setMobilePickedId(null);
-        return;
-      }
-    }
-    setMobilePickedId((current) => (current === player.id ? null : player.id));
   };
   const removeSquadPlayer = (player: TerminalPlayer) => {
     if (store.lockedPlayerIds.includes(player.id)) {
@@ -1256,11 +1255,34 @@ export default function TerminalApp() {
     }
     return store.removePlayer(player.id);
   };
-  const renderSquadPlayer = (player: TerminalPlayer, starter: boolean, benchLabel?: string) => {
-    const benchIndex = (lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(player.id);
-    const swapSelected = benchLabel ? gwSwapSelection.benchId === player.id : gwSwapSelection.starterId === player.id;
-    return <SquadSlot key={player.id} player={player} gameweek={planningGameweek} locked={store.lockedPlayerIds.includes(player.id)} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === player.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === player.id} starter={starter} benchLabel={benchLabel} benchIndex={benchIndex} lineupActive={Boolean(currentGWPlan)} swapSelected={swapSelected} picked={mobilePickedId === player.id} chip={store.chip} sellingPriceTenths={store.entryId !== undefined ? weekFinance?.sellingPricesTenths[player.id] : undefined} onRemove={() => removeSquadPlayer(player)} onToggleLock={() => store.toggleLock(player.id)} onActivate={() => activateSquadSlot(player, starter)} onSwap={() => selectGWSwapPlayer(benchLabel ? "bench" : "starter", player.id)} onCaptain={() => makeGWCaptain(player.id)} onViceCaptain={() => makeGWViceCaptain(player.id)} onMoveBench={(direction) => moveGWBench(player.id, direction)} />;
+  // A pending swap holds one side; the next tap on the other side completes it from that side's sheet.
+  const pendingStarterId = gwSwapSelection.starterId !== undefined && gwSwapSelection.benchId === undefined ? gwSwapSelection.starterId : undefined;
+  const pendingBenchId = gwSwapSelection.benchId !== undefined && gwSwapSelection.starterId === undefined ? gwSwapSelection.benchId : undefined;
+  /** Opens the action sheet. Rail and alert taps pass no element, so the pitch token or table button is looked up. */
+  const openActions = (playerId: number, anchor?: HTMLElement) => {
+    const name = playerById.get(playerId)?.displayName ?? "";
+    actionAnchor.current = anchor
+      ?? document.querySelector<HTMLElement>(`.pitch-token[data-player-id="${playerId}"]`)
+      ?? Array.from(document.querySelectorAll<HTMLElement>('table[aria-label="Squad table"] tr[data-player] .sq-row-button')).find((button) => button.closest("tr")?.dataset.player === name)
+      ?? null;
+    setActionPlayerId(playerId);
   };
+  const renderSquadPlayer = (player: Player, role: "starter" | "bench", benchLabel?: string) => <PitchToken
+    key={player.id}
+    player={player}
+    gameweek={planningGameweek}
+    role={role}
+    benchLabel={benchLabel}
+    captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === player.id}
+    vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === player.id}
+    locked={store.lockedPlayerIds.includes(player.id)}
+    chip={store.chip}
+    selected={actionPlayerId === player.id || gwSwapSelection.starterId === player.id || gwSwapSelection.benchId === player.id}
+    swapTarget={Boolean(currentGWPlan) && (pendingStarterId !== undefined ? role === "bench" : pendingBenchId !== undefined && role === "starter")}
+    showRun
+    onOpen={(anchor) => openActions(player.id, anchor)}
+    onToggleLock={() => store.toggleLock(player.id)}
+  />;
   const choosePlayer = (position: Position) => {
     const maxPriceTenths = slotMaxPrices[position];
     store.setFilters({ position, maxPrice: (maxPriceTenths / 10).toFixed(1) });
@@ -1268,82 +1290,179 @@ export default function TerminalApp() {
     searchRef.current?.focus();
   };
   const draftBenchSlots: Array<{ id?: number; position: Position; label: string }> = [
-    { id: store.byPosition.GK[1], position: "GK", label: "BGK" },
+    { id: store.byPosition.GK[1], position: "GK", label: "GK" },
     { id: store.byPosition.DEF[3], position: "DEF", label: "B1" },
     { id: store.byPosition.DEF[4], position: "DEF", label: "B2" },
     { id: store.byPosition.MID[4], position: "MID", label: "B3" },
   ];
   const benchSlots = currentGWPlan
-    ? [currentGWPlan.benchGoalkeeperId, ...currentGWPlan.benchOrder].map((id, index) => ({ id, position: playerById.get(id)?.position ?? (index === 0 ? "GK" : "DEF"), label: index === 0 ? "BGK" : `B${index}` } as const))
+    ? [currentGWPlan.benchGoalkeeperId, ...currentGWPlan.benchOrder].map((id, index) => ({ id, position: playerById.get(id)?.position ?? (index === 0 ? "GK" : "DEF"), label: index === 0 ? "GK" : `B${index}` } as const))
     : draftBenchSlots;
   const draftStarterCount = POSITIONS.reduce((sum, position) => sum + Math.min(store.byPosition[position].length, DRAFT_XI_COUNTS[position]), 0);
-  const mobilePickedPlayer = mobilePickedId === null ? undefined : playerById.get(mobilePickedId);
-  const mobilePickedBenchSlot = mobilePickedPlayer ? benchSlots.find((slot) => slot.id === mobilePickedPlayer.id) : undefined;
-  const mobilePickedStarter = mobilePickedPlayer ? !mobilePickedBenchSlot && (currentGWPlan ? currentGWPlan.starterIds.includes(mobilePickedPlayer.id) : true) : false;
-  const mobilePickedBenchIndex = mobilePickedPlayer ? (lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(mobilePickedPlayer.id) : -1;
+  const actionPlayer = actionPlayerId === null ? undefined : playerById.get(actionPlayerId);
+  const actionBenchSlot = actionPlayer ? benchSlots.find((slot) => slot.id === actionPlayer.id) : undefined;
+  const actionStarter = actionPlayer ? !actionBenchSlot && (currentGWPlan ? currentGWPlan.starterIds.includes(actionPlayer.id) : true) : false;
+  const actionBenchIndex = actionPlayer ? (lineupApplied && store.benchOrder.length === 3 ? store.benchOrder : currentGWPlan?.benchOrder ?? []).indexOf(actionPlayer.id) : -1;
+  const pendingSwapPlayer = playerById.get(pendingStarterId ?? pendingBenchId ?? -1);
+  const swapHint = pendingSwapPlayer && currentGWPlan ? `Tap a ${pendingStarterId !== undefined ? "bench player" : "starter"} to swap with ${pendingSwapPlayer.displayName}` : undefined;
+  const pitchRows = POSITIONS.map((position) => {
+    const players = currentGWPlan
+      ? (stableLines[position] ?? []).map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => player?.position === position)
+      : store.byPosition[position].slice(0, DRAFT_XI_COUNTS[position]).map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => Boolean(player));
+    return { position, players, slotCount: currentGWPlan ? players.length : DRAFT_XI_COUNTS[position] };
+  });
+  const pitchCaptain = playerById.get((lineupApplied ? store.captainId : currentGWPlan?.captainId) ?? -1);
+  const captainCaption = pitchCaptain
+    ? `Captain counts ${captainMultiplier(true, store.chip) === 3 ? "triple" : "double"}: ${pitchCaptain.displayName} ${points(pitchXp(pitchCaptain, planningGameweek, false))} → ${points(pitchXp(pitchCaptain, planningGameweek, true, store.chip))}`
+    : undefined;
   const allSquadPlayersLocked = store.playerIds.length > 0 && store.playerIds.every((id) => store.lockedPlayerIds.includes(id));
   return (
     <main className="terminal-app">
-      <header className="topbar">
-        <button className="brand" onClick={() => store.setMode(null)} aria-label="Return to mode chooser"><span className="brand-mark">FPL</span><span>TERMINAL</span></button>
-        <WorkspaceSwitcher />
-        <div className="topbar-stats" aria-label="Terminal status">
-          <StatusCell label="GW" value={data.gameweek ? String(data.gameweek) : "—"} />
-          <DeadlineStatus deadline={data.deadline} />
-          <DataStatusCell status={status} ageAnchor={ageAnchor} fetchedAt={data.fetchedAt} />
-        </div>
-        <div className="topbar-actions"><button className="text-button" onClick={refresh}>REFRESH</button><button className="text-button" onClick={() => exportState(store)}>EXPORT</button><button className="text-button" onClick={() => importRef.current?.click()}>IMPORT</button><button className="text-button danger-text" onClick={reset}>RESET</button><input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, store, setNotice)} /></div>
-      </header>
+      <TopBar
+        planningGameweek={planningGameweek}
+        liveGameweek={liveCurrentGW}
+        onGameweek={changePlanningGameweek}
+        deadline={data.deadline}
+        statusSlot={<DataStatusCell status={status} ageAnchor={ageAnchor} fetchedAt={data.fetchedAt} />}
+        onRefresh={refresh}
+        more={<button type="button" aria-haspopup="dialog" aria-expanded={moreOpen} onClick={() => setMoreOpen(true)}>More</button>}
+      />
+      <input ref={importRef} type="file" accept="application/json" hidden onChange={(event) => importState(event, store, setNotice)} />
       {savedStateNotice && <p className="live-notice" role="alert">{savedStateNotice}</p>}
-
-      <nav className="mobile-tabs" aria-label="Terminal panels">{(["SQUAD", "MARKET"] as const).map((tab) => <button key={tab} className={store.activeMobileTab === tab ? "active" : ""} onClick={() => store.setMobileTab(tab)}>{tab}</button>)}</nav>
 
       <div className="terminal-grid" style={gridStyle}>
         <section id="terminal-panel-market" data-panel="market" className={`market-column ${collapsedPanels.market ? "panel-collapsed" : ""} ${store.activeMobileTab === "MARKET" ? "mobile-visible" : ""}`} aria-label="Player universe">
-          <div className="panel-header"><div><span className="section-kicker">PLAYER UNIVERSE</span><span className="panel-count">{data.players.length || "—"} records</span></div><div className="header-actions"><span className={`data-badge ${status.toLowerCase()}`}>{status === "LIVE" ? "LIVE FPL" : status === "SYNCING" ? "SYNCING" : "NO LIVE DATA"}</span><PanelToggle panel="market" collapsed={collapsedPanels.market} onToggle={() => togglePanel("market")} /></div></div>
-          <div className="search-wrap"><span aria-hidden="true">/</span><input ref={searchRef} value={store.search} onChange={(event) => store.setSearch(event.target.value)} placeholder="Search player, club..." aria-label="Search players" /><kbd>/</kbd></div>
-          <FilterBar filters={store.filters} setFilters={store.setFilters} players={data.players} onReset={resetFilters} />
-          <div className="table-wrap"><table className="player-table"><thead><tr><SortableHead label="PLAYER" sortKey="name" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>POS</th><SortableHead label="PRICE" sortKey="price" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="OWN%" sortKey="ownership" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="FORM" sortKey="form" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP GW" sortKey="nextGW" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP5" sortKey="next5" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP5/£" sortKey="value" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP10" sortKey="next10" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XP10/£" sortKey="value10" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><SortableHead label="XGI/90" sortKey="xgi" active={store.sortKey} direction={store.sortDirection} onSort={store.setSort} /><th>FIXTURES</th><th>ADD</th></tr></thead><tbody>{filteredPlayers.slice(0, 250).map((player) => <PlayerRow key={player.id} player={player} week={universeWeeks.get(player.id) ?? universeWeekFor(player, planningGameweek)} gameweek={planningGameweek} selected={store.playerIds.includes(player.id)} onSelect={() => openPlayer(player.id)} onAdd={() => addPlayer(player)} />)}</tbody></table>{status === "SYNCING" && <div className="empty-state">SYNCING FPL MARKET…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>
+          <div className="panel-header"><div><span className="panel-title">Players</span><span className="panel-count">{data.players.length || "—"} records</span></div><div className="header-actions"><ColumnsMenu columns={store.playerColumns} onChange={store.setPlayerColumns} />{status !== "LIVE" && <span className={`data-badge ${status.toLowerCase()}`}>{status === "SYNCING" ? "Syncing" : "No live data"}</span>}<PanelToggle panel="market" collapsed={collapsedPanels.market} onToggle={() => togglePanel("market")} /></div></div>
+          <div className="market-filters">
+            <div className="market-search-row">
+              <div className="search-wrap"><span aria-hidden="true">/</span><input ref={searchRef} value={store.search} onChange={(event) => store.setSearch(event.target.value)} placeholder="Search player, club..." aria-label="Search players" /><kbd>/</kbd></div>
+              <button ref={filtersButton} type="button" className="filters-button" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(true)}>Filters · {activeFilterCount}</button>
+            </div>
+            <div className="market-filter-row">
+              <div className="position-filter" role="group" aria-label="Filter by position">
+                {(["ALL", ...POSITIONS] as const).map((position) => <button type="button" key={position} aria-pressed={store.filters.position === position} onClick={() => store.setFilters({ position })}>{position === "ALL" ? "All" : position}</button>)}
+              </div>
+              {!isMobileLineup && <div className="filter-desktop">
+                <select className="filter-control" value={store.filters.club} onChange={(event) => store.setFilters({ club: event.target.value })} aria-label="Filter by club"><option value="">All clubs</option>{clubs.map((club) => <option value={club} key={club}>{club}</option>)}</select>
+                <input className="filter-control" inputMode="decimal" value={store.filters.maxPrice} onChange={(event) => store.setFilters({ maxPrice: event.target.value })} placeholder="Max £" aria-label="Maximum price" />
+              </div>}
+            </div>
+            <ActiveFilters filters={store.filters} setFilters={store.setFilters} />
+            {isMobileLineup && <PlayerSortLine sortKey={store.sortKey} sortDirection={store.sortDirection} onSort={store.setSort} />}
+          </div>
+          <FilterSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} variant={isMobileLineup ? "bottom" : "popover"} anchor={filtersButton} rowHoldsClubAndMaxPrice={!isMobileLineup} filters={store.filters} setFilters={store.setFilters} clubs={clubs} onReset={resetFilters} />
+          <div className="table-wrap">{isMobileLineup
+            ? <PlayerList rows={filteredPlayers.slice(0, 250)} weeks={universeWeeks} gameweek={planningGameweek} sortKey={store.sortKey} inSquadIds={inSquadIds} onOpen={openPlayer} onAdd={addPlayer} />
+            : <PlayersTable rows={filteredPlayers.slice(0, 250)} weeks={universeWeeks} gameweek={planningGameweek} columns={store.playerColumns} sortKey={store.sortKey} sortDirection={store.sortDirection} onSort={store.setSort} inSquadIds={inSquadIds} onOpen={openPlayer} onAdd={addPlayer} />}{status === "SYNCING" && <div className="empty-state">Loading players…</div>}{status !== "SYNCING" && filteredPlayers.length === 0 && <div className="empty-state">{data.players.length ? "No players match these filters." : message ?? "FPL data is unavailable."}</div>}</div>
           {selectedPlayer && <PlayerDetail key={selectedPlayer.id} player={selectedPlayer} gameweek={planningGameweek} inSquad={store.playerIds.includes(selectedPlayer.id)} locked={store.lockedPlayerIds.includes(selectedPlayer.id)} onClose={() => store.setSelectedPlayer(undefined)} onAdd={() => addPlayer(selectedPlayer)} onToggleLock={() => store.toggleLock(selectedPlayer.id)} />}
           <PanelResizer panel="market" onResizeStart={beginPanelResize} />
         </section>
 
-        <section id="terminal-panel-squad" data-panel="squad" className={`squad-column ${collapsedPanels.squad ? "panel-collapsed" : ""} ${store.activeMobileTab === "SQUAD" ? "mobile-visible" : ""}`} aria-label="Squad builder and analysis">
-          <div className="panel-header"><div><span className="section-kicker">SQUAD BUILDER</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><details className="strategy-settings" ref={settingsRef}><summary className="compact-action">SETTINGS</summary><div className="strategy-popover"><button type="button" className="icon-button strategy-close" aria-label="Close optimizer settings" onClick={() => { if (settingsRef.current) settingsRef.current.open = false; }}>×</button><StrategyControls horizon={store.horizon} benchStrategy={store.benchStrategy} setStrategy={store.setStrategy} /><div className="settings-divider" /><button type="button" className="settings-danger" disabled={!store.entryId || reverseBusy} onClick={() => void reverseAllChanges()}>{reverseBusy ? "RESTORING…" : "REVERSE ALL CHANGES"}</button>{!store.entryId && <span className="settings-note">Import an FPL team to restore official picks.</span>}</div></details><button type="button" className="compact-action squad-lock-all" disabled={store.playerIds.length === 0} aria-label={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} aria-pressed={allSquadPlayersLocked} title={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} onClick={store.toggleAllLocks}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={allSquadPlayersLocked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M12 7V5a4 4 0 0 0-7.7-1.5"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button><button className="compact-action" disabled={optimizing} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "OPTIMIZING…" : selected.length < 15 ? "COMPLETE SQUAD" : "OPTIMIZE"}</button><button className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "PICK TEAM · OUTDATED" : "PICK TEAM"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
-          <div className="planning-stack">
-          <div className="planning-toolbar" aria-label="Squad planning Gameweek"><span className="section-kicker">PLAN</span><div className="planning-switcher" role="group" aria-label="Select planning Gameweek"><button type="button" className="planning-arrow" disabled={planningGameweek <= liveCurrentGW} onClick={() => changePlanningGameweek(planningGameweek - 1)} aria-label="Previous planning Gameweek">←</button><span aria-live="polite">GW {planningGameweek}</span><button type="button" className="planning-arrow" disabled={planningGameweek >= 38} onClick={() => changePlanningGameweek(planningGameweek + 1)} aria-label="Next planning Gameweek">→</button></div><span className="planning-live">LIVE GW {liveCurrentGW}</span><ChipSelector gameweek={planningGameweek} onNotice={setNotice} /></div>
-          {store.planNotice && <div className="plan-notice" role="status"><span>{store.planNotice}</span><button type="button" className="toast-button" aria-label="Dismiss plan notice" onClick={() => store.clearPlanNotice()}>×</button></div>}
-          </div>
-          <div className="squad-sections lineup-roster" data-testid="squad-roster">
-            <section className="starting-xi" aria-label="Starting XI"><div className="lineup-roster-heading"><span>STARTING XI</span><span>{currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · {currentGWPlan ? 11 : draftStarterCount}/11</span></div>
-              {POSITIONS.map((position) => {
-                const players = currentGWPlan
-                  ? currentGWPlan.starterIds.map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => player?.position === position)
-                  : store.byPosition[position].slice(0, DRAFT_XI_COUNTS[position]).map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => Boolean(player));
-                const slotCount = currentGWPlan ? players.length : DRAFT_XI_COUNTS[position];
-                return <div className="position-section starting-position" key={position}><div className="position-heading"><span>{position}</span><span>{players.length}/{slotCount}</span></div><div className="slot-grid starting-slot-grid" style={{ "--slot-count": slotCount } as CSSProperties}>{Array.from({ length: slotCount }, (_, index) => players[index] ? renderSquadPlayer(players[index], true) : <EmptySlot key={`${position}-${index}`} position={position} maxPriceTenths={slotMaxPrices[position]} onChoose={() => choosePlayer(position)} />)}</div></div>;
-              })}
-            </section>
-            <section className="bench-section" aria-label="Bench"><div className="lineup-roster-heading"><span>BENCH</span><span>BGK · B1 · B2 · B3</span></div><div className="slot-grid bench-slot-grid">{benchSlots.map((slot) => { const player = slot.id ? playerById.get(slot.id) : undefined; return player ? renderSquadPlayer(player, false, slot.label) : <EmptySlot key={slot.label} position={slot.position} maxPriceTenths={slotMaxPrices[slot.position]} onChoose={() => choosePlayer(slot.position)} />; })}</div></section>
-          </div>
-          <MetricStrip spent={spent} bankTenths={bankTenths} sellingValue={store.entryId === undefined ? undefined : weekFinance?.squadSellingValueTenths} costLabel={store.entryId === undefined ? "COST" : "VALUE"} confidence={weekFinance?.confidence ?? "ESTIMATED"} handBuilt={store.entryId === undefined} onBankChange={(tenths) => store.setBankTenths(tenths, { spentTenths: spent, priceById: marketPriceById })} projected={{ ...projected, nextGW: chipNetXp ?? projected.nextGW }} risk={risk} teamRating={teamRating} />
-          <TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />
-          <ChipStrategyPanel players={data.players} planningGameweek={planningGameweek} onNotice={setNotice} />
-          {isMobileLineup && mobilePickedPlayer && <MobileLineupBar player={mobilePickedPlayer} starter={mobilePickedStarter} benchLabel={mobilePickedBenchSlot?.label} benchIndex={mobilePickedBenchIndex} captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === mobilePickedPlayer.id} vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === mobilePickedPlayer.id} locked={store.lockedPlayerIds.includes(mobilePickedPlayer.id)} lineupActive={Boolean(currentGWPlan)} onClose={() => setMobilePickedId(null)} onInfo={() => openPlayer(mobilePickedPlayer.id)} onCaptain={() => makeGWCaptain(mobilePickedPlayer.id)} onViceCaptain={() => makeGWViceCaptain(mobilePickedPlayer.id)} onSwap={() => selectGWSwapPlayer(mobilePickedStarter ? "starter" : "bench", mobilePickedPlayer.id)} onMoveBench={(direction) => moveGWBench(mobilePickedPlayer.id, direction)} onToggleLock={() => store.toggleLock(mobilePickedPlayer.id)} onRemove={() => { if (removeSquadPlayer(mobilePickedPlayer)) setMobilePickedId(null); }} />}
-          {simulation && simulationMoves && simulationMoves.length > 0 && <div className="squad-overlay"><SimulationPanel result={simulation} moves={simulationMoves} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMoves(null); }} /></div>}
-          <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
-        </section>
+        <div className="squad-stack">
+          <section id="terminal-panel-squad" data-panel="squad" className={`squad-column ${collapsedPanels.squad ? "panel-collapsed" : ""} ${store.activeMobileTab === "SQUAD" ? "mobile-visible" : ""}`} aria-label="Squad builder and analysis">
+            <div className="panel-header"><div><span className="panel-title">Squad</span><span className="panel-count">{selected.length}/15 selected</span></div><div className="header-actions"><div className="squad-view-switch" role="group" aria-label="Squad view"><button type="button" aria-pressed={store.squadView === "PITCH"} onClick={() => store.setSquadView("PITCH")}>Pitch</button><button type="button" aria-pressed={store.squadView === "TABLE"} onClick={() => store.setSquadView("TABLE")}>Table</button></div><button type="button" className="compact-action squad-lock-all" disabled={store.playerIds.length === 0} aria-label={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} aria-pressed={allSquadPlayersLocked} title={`${allSquadPlayersLocked ? "Unlock" : "Lock"} all squad players`} onClick={store.toggleAllLocks}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={allSquadPlayersLocked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M12 7V5a4 4 0 0 0-7.7-1.5"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button><button type="button" className={`compact-action pick-team-action ${lineupStale ? "stale" : ""}`} onClick={pickGWTeam}>{lineupStale ? "Pick team · outdated" : "Pick team"}</button><button type="button" className="compact-action primary-action" disabled={optimizing} aria-label={!optimizing && selected.length < 15 ? "Complete squad" : undefined} title={!optimizing && selected.length < 15 ? "Fill the empty slots with the best legal picks" : undefined} onClick={() => void runOptimize(selected.length < 15)}>{optimizing ? "Optimizing…" : selected.length < 15 ? "Complete" : "Optimize"}</button><PanelToggle panel="squad" collapsed={collapsedPanels.squad} onToggle={() => togglePanel("squad")} /></div></div>
+            <div className="squad-body">
+              <SquadKpis
+                projected={chipNetXp ?? projected.nextGW}
+                gameweek={planningGameweek}
+                value={(store.entryId === undefined ? undefined : weekFinance?.squadSellingValueTenths) ?? spent}
+                valueLabel={store.entryId === undefined ? "COST" : "VALUE"}
+                bankSlot={<BankMetric bankTenths={bankTenths} confidence={weekFinance?.confidence ?? "ESTIMATED"} handBuilt={store.entryId === undefined} onBankChange={(tenths) => store.setBankTenths(tenths, { spentTenths: spent, priceById: marketPriceById })} />}
+                freeTransfers={weekFinance?.freeTransfersBefore}
+                rating={teamRating}
+              />
+              {store.planNotice && <div className="plan-notice" role="status"><span>{store.planNotice}</span><button type="button" className="toast-button" aria-label="Dismiss plan notice" onClick={() => store.clearPlanNotice()}>×</button></div>}
+              {store.squadView === "TABLE" ? <>
+                {swapHint && <p className="swap-hint">{swapHint}</p>}
+                <SquadTable
+                  starters={pitchRows.flatMap((row) => row.players)}
+                  bench={benchSlots.map((slot) => ({ player: slot.id ? playerById.get(slot.id) : undefined, label: slot.label }))}
+                  gameweek={planningGameweek}
+                  captainId={lineupApplied ? store.captainId : currentGWPlan?.captainId}
+                  viceCaptainId={lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId}
+                  chip={store.chip}
+                  onOpen={(player) => openActions(player.id)}
+                />
+              </> : <SquadPitch
+                startingMeta={`${currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · ${currentGWPlan ? 11 : draftStarterCount}/11`}
+                captainCaption={captainCaption}
+                rows={pitchRows}
+                bench={benchSlots.map((slot) => ({ player: slot.id ? playerById.get(slot.id) : undefined, position: slot.position, label: slot.label }))}
+                hint={swapHint}
+                renderPlayer={renderSquadPlayer}
+                drag={pitchDrag}
+                renderEmpty={(position, key) => <EmptySlot key={key} position={position} maxPriceTenths={slotMaxPrices[position]} onChoose={() => choosePlayer(position)} />}
+              />}
+            </div>
+            {simulation && simulationMoves && simulationMoves.length > 0 && <div className="squad-overlay" ref={simulationRef}><SimulationPanel result={simulation} moves={simulationMoves} playerById={playerById} onApply={applySimulation} onDiscard={() => { setSimulation(null); setSimulationMoves(null); }} /></div>}
+            <PanelResizer panel="squad" onResizeStart={beginPanelResize} />
+          </section>
+
+          <DecisionRail
+            mobileVisible={store.activeMobileTab === "SQUAD"}
+            captain={<CaptainSection
+              starters={pitchRows.flatMap((row) => row.players)}
+              gameweek={planningGameweek}
+              captainId={lineupApplied ? store.captainId : currentGWPlan?.captainId}
+              viceCaptainId={lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId}
+              onOpen={(playerId) => openActions(playerId)}
+            />}
+            alerts={<AlertsSection alerts={planAlerts} onOpen={(playerId) => openActions(playerId)} />}
+            transfers={<TransferSuggestionsPanel suggestions={transferSuggestions} state={transferSuggestionState} message={transferSuggestionMessage} horizon={store.transferHorizon} onHorizon={(transferHorizon) => store.setStrategy({ transferHorizon })} bankedTransfers={bankedTransfers} onBankedTransfers={setBankedTransfersChoice} playerById={playerById} onSimulate={simulateSuggestion} onDismiss={dismissSuggestion} />}
+            chips={<RailSection title="Chips">
+              <ChipSelector gameweek={planningGameweek} onNotice={setNotice} />
+              <ChipStrategyPanel players={data.players} planningGameweek={planningGameweek} onNotice={setNotice} />
+            </RailSection>}
+          />
+        </div>
 
       </div>
       {notice && (noticeMinimized
         ? <button type="button" className="toast toast-pill" aria-label="Show notification" onClick={() => setNoticeMinimized(false)}>{notice}</button>
         : <div className="toast" role="status"><span className="toast-message">{notice}</span><span className="toast-actions"><button type="button" className="toast-button" aria-label="Minimize" onClick={() => setNoticeMinimized(true)}>–</button><button type="button" className="toast-button" aria-label="Dismiss" onClick={() => setNotice(null)}>×</button></span></div>)}
+      {actionPlayer && <PlayerActions
+        player={actionPlayer}
+        starter={actionStarter}
+        benchLabel={actionBenchSlot?.label}
+        benchIndex={actionBenchIndex}
+        captain={(lineupApplied ? store.captainId : currentGWPlan?.captainId) === actionPlayer.id}
+        vice={(lineupApplied ? store.viceCaptainId : currentGWPlan?.viceCaptainId) === actionPlayer.id}
+        locked={store.lockedPlayerIds.includes(actionPlayer.id)}
+        lineupActive={Boolean(currentGWPlan)}
+        sellingPriceTenths={store.entryId !== undefined ? weekFinance?.sellingPricesTenths[actionPlayer.id] : undefined}
+        gameweek={planningGameweek}
+        chip={store.chip}
+        variant={isMobileLineup ? "bottom" : "popover"}
+        anchor={actionAnchor}
+        onClose={() => setActionPlayerId(null)}
+        onInfo={() => openPlayer(actionPlayer.id)}
+        onCaptain={() => makeGWCaptain(actionPlayer.id)}
+        onViceCaptain={() => makeGWViceCaptain(actionPlayer.id)}
+        onSwap={() => selectGWSwapPlayer(actionStarter ? "starter" : "bench", actionPlayer.id)}
+        onMoveBench={(direction) => moveGWBench(actionPlayer.id, direction)}
+        onToggleLock={() => store.toggleLock(actionPlayer.id)}
+        onRemove={() => removeSquadPlayer(actionPlayer)}
+      />}
+      <BottomTabBar active={store.activeMobileTab === "MARKET" ? "PLAYERS" : "SQUAD"} onSquad={() => store.setMobileTab("SQUAD")} onPlayers={() => store.setMobileTab("MARKET")} onMore={() => setMoreOpen(true)} />
+      <MoreSheet
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        onRefresh={refresh}
+        onExport={() => exportState(store)}
+        onImportClick={() => importRef.current?.click()}
+        onReset={reset}
+        onReverse={() => void reverseAllChanges()}
+        reverseBusy={reverseBusy}
+        reverseDisabled={!store.entryId}
+        settings={<StrategyControls horizon={store.horizon} benchStrategy={store.benchStrategy} setStrategy={store.setStrategy} />}
+        onModeChooser={() => store.setMode(null)}
+      />
     </main>
   );
 }
 
 function ModeChooser({ status, message, gameweek, notice, onChoose }: { status: DataState; message?: string; gameweek: number | null; notice?: string | null; onChoose: (mode: TerminalMode) => void }) {
-  return <main className="mode-screen"><div className="mode-brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></div><p className="mode-tagline">QUANTITATIVE FPL SQUAD INTELLIGENCE</p>{notice && <p className="live-notice" role="alert">{notice}</p>}<div className="mode-grid"><button className="mode-card" onClick={() => onChoose("BUILD")}><span className="mode-index">MODE A</span><strong>BUILD FROM SCRATCH</strong><span>Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.</span></button><button className="mode-card" onClick={() => onChoose("ANALYZE")}><span className="mode-index">MODE B</span><strong>IMPORT A TEAM <small>(RECOMMENDED)</small></strong><span>Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities.</span></button></div><p className="mode-leagues-link"><Link href="/leagues" prefetch={false}>TRACK A MINI-LEAGUE LIVE →</Link></p><div className="mode-footer"><span className={`status-pip ${status.toLowerCase()}`} />{status === "LIVE" ? `LIVE DATA · GAMEWEEK ${gameweek ?? "—"} · MODEL ESTIMATES · SQUAD RULES ENFORCED LOCALLY` : status === "SNAPSHOT" ? `SNAPSHOT DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "STALE" ? `STALE DATA · GAMEWEEK ${gameweek ?? "—"}` : status === "SYNCING" ? "SYNCING FPL MARKET…" : message ?? "FPL data is unavailable."}</div><p className="mode-disclaimer">Not affiliated with, endorsed by, or connected to the Premier League or Fantasy Premier League. Player data comes from public FPL endpoints; projections are estimates, not advice.</p></main>;
+  return <main className="mode-screen"><div className="mode-brand"><span className="brand-mark">FPL</span><span className="brand-name">Terminal</span></div><p className="mode-tagline">Expected points, an exact squad optimizer and live mini-leagues.</p>{notice && <p className="live-notice" role="alert">{notice}</p>}<div className="mode-grid"><button className="mode-card" onClick={() => onChoose("BUILD")}><span className="mode-index">Mode A</span><strong>Build from scratch</strong><span>Start with £100.0m and construct your squad player by player, with live projections reacting to every pick.</span></button><button className="mode-card" onClick={() => onChoose("ANALYZE")}><span className="mode-index">Mode B · recommended</span><strong>Import a team</strong><span>Enter an existing 15-player squad and get immediate analysis: weakest links, budget inefficiencies, and upgrade opportunities.</span></button></div><p className="mode-leagues-link"><Link href="/leagues" prefetch={false}>Track a mini-league live →</Link></p><div className="mode-footer"><span className={`status-pip ${status.toLowerCase()}`} />{status === "LIVE" ? `Live FPL data · Gameweek ${gameweek ?? "—"}` : status === "SNAPSHOT" ? `Snapshot data · Gameweek ${gameweek ?? "—"}` : status === "STALE" ? `Stale data · Gameweek ${gameweek ?? "—"}` : status === "SYNCING" ? "Loading FPL data…" : message ?? "FPL data is unavailable."}</div><p className="mode-disclaimer">Not affiliated with, endorsed by, or connected to the Premier League or Fantasy Premier League. Player data comes from public FPL endpoints; projections are estimates, not advice.</p></main>;
 }
 
 type ImportedTeam = { entryId: number; budgetTenths: number; teamName?: string; managerName?: string; squad: SquadState; lineup: Omit<ApplyLineupInput, "lineupProjectionFingerprint">; transferBaseline?: TransferBaseline | null; usedChips?: Array<{ kind: ChipKind; gameweek: number }>; financialConfidence?: "EXACT" | "ESTIMATED"; importWarnings?: string[]; chip?: ChipKind | null };
@@ -1371,10 +1490,8 @@ function TeamImportScreen({ players, gameweek, notice, onImport, onBack }: { pla
       setBusy(false);
     }
   };
-  return <main className="mode-screen import-screen"><button type="button" className="import-back" onClick={onBack}>← BACK</button><div className="mode-brand"><span className="brand-mark">FPL</span><span>TERMINAL</span></div><p className="mode-tagline">IMPORT YOUR OFFICIAL FPL TEAM</p>{notice && <p className="live-notice" role="alert">{notice}</p>}<form className="import-card" onSubmit={submit}><label htmlFor="fpl-entry-id">ENTER FPL ID</label><div className="import-controls"><input id="fpl-entry-id" inputMode="numeric" pattern="[0-9]*" autoFocus value={entryId} onChange={(event) => setEntryId(event.target.value)} placeholder="4827193" /><button className="primary-button" type="submit" disabled={busy || !players.length}>{busy ? "IMPORTING…" : "IMPORT TEAM"}</button></div><p>We’ll load Gameweek {gameweek} picks from the official FPL API and fill all 15 squad positions.</p><details className="import-guide"><summary>Where do I get my Team ID?</summary><ol><li>Sign in at <a href="https://fantasy.premierleague.com/" target="_blank" rel="noreferrer">Fantasy Premier League</a>.</li><li>Open your Points page.</li><li>Find <code>/entry/1234567/event/3</code> in the address bar. Your Team ID is the number after <code>/entry/</code>.</li><li>Paste that number above and select Import Team.</li></ol></details>{!players.length && <span className="import-error" role="status">Waiting for the FPL player list…</span>}{error && <span className="import-error" role="alert">{error}</span>}</form></main>;
+  return <main className="mode-screen import-screen"><button type="button" className="import-back" onClick={onBack}>← Back</button><div className="mode-brand"><span className="brand-mark">FPL</span><span className="brand-name">Terminal</span></div><p className="mode-tagline">Import your FPL team</p>{notice && <p className="live-notice" role="alert">{notice}</p>}<form className="import-card" onSubmit={submit}><label htmlFor="fpl-entry-id">Enter FPL ID</label><div className="import-controls"><input id="fpl-entry-id" inputMode="numeric" pattern="[0-9]*" autoFocus value={entryId} onChange={(event) => setEntryId(event.target.value)} placeholder="4827193" /><button className="primary-button" type="submit" disabled={busy || !players.length}>{busy ? "Importing…" : "Import team"}</button></div><p>We’ll load Gameweek {gameweek} picks from the official FPL API and fill all 15 squad positions.</p><details className="import-guide"><summary>Where do I get my Team ID?</summary><ol><li>Sign in at <a href="https://fantasy.premierleague.com/" target="_blank" rel="noreferrer">Fantasy Premier League</a>.</li><li>Open your Points page.</li><li>Find <code>/entry/1234567/event/3</code> in the address bar. Your Team ID is the number after <code>/entry/</code>.</li><li>Paste that number above and select Import Team.</li></ol></details>{!players.length && <span className="import-error" role="status">Waiting for the FPL player list…</span>}{error && <span className="import-error" role="alert">{error}</span>}</form></main>;
 }
-
-function StatusCell({ label, value, tone }: { label: string; value: string; tone?: "amber" | "green" | "red" | "cyan" }) { return <div className="status-cell"><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
 
 function DataStatusCell({ status, ageAnchor, fetchedAt }: { status: DataState; ageAnchor: DataAgeAnchor | null; fetchedAt: string | null }) {
   const [now, setNow] = useState(Date.now);
@@ -1382,22 +1499,11 @@ function DataStatusCell({ status, ageAnchor, fetchedAt }: { status: DataState; a
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, []);
-  const value = status === "LIVE" ? "● LIVE" : status === "SNAPSHOT" ? "● SNAPSHOT" : status === "STALE" ? "● STALE" : status === "SYNCING" ? "● SYNC" : "● OFFLINE";
+  const value = status === "LIVE" ? "Live data" : status === "SNAPSHOT" ? "Snapshot data" : status === "STALE" ? "Stale data" : status === "SYNCING" ? "Syncing" : "Offline";
   const ageMs = computeDataAgeMs(now, ageAnchor, fetchedAt);
   const ageText = ageMs !== null ? formatDataAge(ageMs) : "";
-  return <div className="status-cell"><span>DATA</span><strong className={status === "LIVE" ? "green" : status === "ERROR" ? "red" : "amber"}>{value}{ageText ? ` · ${ageText}` : ""}</strong></div>;
-}
-
-function DeadlineStatus({ deadline }: { deadline: string | null }) {
-  const [countingDown, setCountingDown] = useState(true);
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    if (!countingDown) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
-    return () => window.clearInterval(timer);
-  }, [countingDown]);
-  if (!deadline) return <StatusCell label="DEADLINE" value="—" />;
-  return <button type="button" className="status-cell status-cell-button" aria-pressed={countingDown} title={countingDown ? "Show deadline date" : "Show deadline countdown"} onClick={() => { setNow(Date.now()); setCountingDown((value) => !value); }}><span>DEADLINE</span><strong>{countingDown ? formatDeadlineCountdown(deadline, now) : formatDeadline(deadline)}</strong></button>;
+  const tone = status === "LIVE" ? "live" : status === "ERROR" ? "error" : "stale";
+  return <div className={`status-cell data-status ${tone}`}><i aria-hidden="true" /><strong>{value}</strong>{ageText && <span>· {ageText}</span>}</div>;
 }
 
 function PanelToggle({ panel, collapsed, onToggle }: { panel: DesktopPanel; collapsed: boolean; onToggle: () => void }) {
@@ -1407,20 +1513,6 @@ function PanelToggle({ panel, collapsed, onToggle }: { panel: DesktopPanel; coll
 function PanelResizer({ panel, onResizeStart }: { panel: DesktopPanel; onResizeStart: (panel: DesktopPanel, event: ReactPointerEvent<HTMLButtonElement>) => void }) {
   return <button type="button" className="panel-resizer" role="separator" aria-orientation="vertical" aria-label={`Resize ${PANEL_LABELS[panel]}`} onPointerDown={(event) => onResizeStart(panel, event)} />;
 }
-
-function FilterBar({ filters, setFilters, players, onReset }: { filters: TerminalFilters; setFilters: (filters: Partial<TerminalFilters>) => void; players: TerminalPlayer[]; onReset: () => void }) {
-  const clubs = [...new Set(players.map((player) => player.teamShortName).filter((club) => club !== "—"))].sort();
-  return <div className="filters">
-    <div className="filter-row"><select value={filters.position} onChange={(event) => setFilters({ position: event.target.value as TerminalFilters["position"] })} aria-label="Filter by position"><option value="ALL">ALL POS</option>{POSITIONS.map((position) => <option value={position} key={position}>{position}</option>)}</select><select value={filters.club} onChange={(event) => setFilters({ club: event.target.value })} aria-label="Filter by club"><option value="">ALL CLUBS</option>{clubs.map((club) => <option value={club} key={club}>{club}</option>)}</select><input inputMode="decimal" value={filters.minPrice} onChange={(event) => setFilters({ minPrice: event.target.value })} placeholder="MIN £" aria-label="Minimum price" /><input inputMode="decimal" value={filters.maxPrice} onChange={(event) => setFilters({ maxPrice: event.target.value })} placeholder="MAX £" aria-label="Maximum price" /></div>
-    <div className="filter-row"><input inputMode="decimal" value={filters.minOwnership} onChange={(event) => setFilters({ minOwnership: event.target.value })} placeholder="MIN OWN%" aria-label="Minimum ownership" /><input inputMode="decimal" value={filters.maxOwnership} onChange={(event) => setFilters({ maxOwnership: event.target.value })} placeholder="MAX OWN%" aria-label="Maximum ownership" /><select value={filters.availability} onChange={(event) => setFilters({ availability: event.target.value as TerminalFilters["availability"] })} aria-label="Filter by availability"><option value="ALL">ALL STATUS</option><option value="AVAILABLE">AVAILABLE</option><option value="DOUBTFUL">DOUBTFUL</option><option value="UNAVAILABLE">UNAVAILABLE</option></select><select value={filters.confidence} onChange={(event) => setFilters({ confidence: event.target.value as TerminalFilters["confidence"] })} aria-label="Filter by confidence"><option value="ALL">ALL CONFIDENCE</option><option value="HIGH">HIGH CONF</option><option value="MEDIUM">MED CONF</option><option value="LOW">LOW CONF</option></select></div>
-    <div className="filter-row filter-row-last"><select value={filters.risk} onChange={(event) => setFilters({ risk: event.target.value as TerminalFilters["risk"] })} aria-label="Filter by risk"><option value="ALL">ALL RISK</option><option value="LOW">LOW RISK</option><option value="MEDIUM">MED RISK</option><option value="HIGH">HIGH RISK</option></select><div className="quick-filters">{(["ALL", "VALUE", "PREMIUM", "DIFFERENTIAL", "NAILED", "CHEAP"] as const).map((quick) => <button type="button" key={quick} className={filters.quick === quick ? "active" : ""} onClick={() => setFilters({ quick })}>{quick}</button>)}</div></div>
-    <div className="filter-actions"><label className="check-label"><input type="checkbox" checked={filters.affordableOnly} onChange={(event) => setFilters({ affordableOnly: event.target.checked })} /> affordable only</label><label className="check-label"><input type="checkbox" checked={filters.excludeSelected} onChange={(event) => setFilters({ excludeSelected: event.target.checked })} /> hide selected</label><button type="button" className="filter-reset" onClick={onReset}>RESET</button></div>
-  </div>;
-}
-
-function SortableHead({ label, sortKey, active, direction, onSort }: { label: string; sortKey: SortKey; active: SortKey; direction: "asc" | "desc"; onSort: (key: SortKey) => void }) { return <th><button className={`sort-button ${active === sortKey ? "active" : ""}`} onClick={() => onSort(sortKey)}>{label}{active === sortKey && <span>{direction === "asc" ? " ↑" : " ↓"}</span>}</button></th>; }
-
-function PlayerRow({ player, week, gameweek, selected, onSelect, onAdd }: { player: TerminalPlayer; week: UniverseWeekMetrics; gameweek: number; selected: boolean; onSelect: () => void; onAdd: () => void }) { return <tr className={selected ? "selected" : ""}><td><button className="player-name-button" onClick={onSelect}><strong>{player.displayName}</strong><small>· {player.teamShortName}</small></button></td><td><span className={`pos-tag ${player.position.toLowerCase()}`}>{player.position}</span></td><td>{player.priceTenths > 0 ? `${money(player.priceTenths)}m` : "—"}</td><td>{player.ownership > 0 ? `${player.ownership.toFixed(1)}%` : "—"}</td><td>{player.current.form === undefined ? "—" : player.current.form.toFixed(1)}</td><td className="cyan-text">{points(week.xp)}</td><td>{points(week.next5)}</td><td>{metric(week.value)}</td><td>{points(week.next10)}</td><td>{metric(week.value10)}</td><td>{expectedInvolvementPer90(player)}</td><td className="fixture-cell"><FixtureRun player={player} gameweek={gameweek} /></td><td><button className="add-button" onClick={onAdd} disabled={selected} aria-label={`Add ${player.displayName}`}>{selected ? "IN" : "+"}</button></td></tr>; }
 
 function PlayerDetail({ player, gameweek, inSquad, locked, onClose, onAdd, onToggleLock }: { player: TerminalPlayer; gameweek: number; inSquad: boolean; locked: boolean; onClose: () => void; onAdd: () => void; onToggleLock: () => void }) {
   const profile = usePlayerProfile(player.id);
@@ -1621,44 +1713,7 @@ function PreviousSeasonsTable({ seasons }: { seasons: PlayerProfileData["history
 
 function Metric({ label, value, tone, title }: { label: string; value: string; tone?: string; title?: string }) { return <div title={title}><span>{label}</span><strong className={tone ?? ""}>{value}</strong></div>; }
 
-function MobileLineupBar({ player, starter, benchLabel, benchIndex, captain, vice, locked, lineupActive, onClose, onInfo, onCaptain, onViceCaptain, onSwap, onMoveBench, onToggleLock, onRemove }: { player: TerminalPlayer; starter: boolean; benchLabel?: string; benchIndex: number; captain: boolean; vice: boolean; locked: boolean; lineupActive: boolean; onClose: () => void; onInfo: () => void; onCaptain: () => void; onViceCaptain: () => void; onSwap: () => void; onMoveBench: (direction: -1 | 1) => void; onToggleLock: () => void; onRemove: () => void }) {
-  return <div className="mobile-lineup-bar" role="toolbar" aria-label={`Lineup actions for ${player.displayName}`}>
-    <div className="mobile-bar-head"><span>{player.displayName} · {player.teamShortName}{starter ? "" : ` · ${benchLabel ?? "BENCH"}`}{captain ? " · ©" : vice ? " · VC" : ""}</span><button type="button" className="bar-close" onClick={onClose} aria-label={`Close actions for ${player.displayName}`}>×</button></div>
-    <div className="mobile-bar-actions">
-      {lineupActive && starter && <>
-        <button type="button" className={`bar-action ${captain ? "active-captain" : ""}`} onClick={onCaptain} aria-label={`Make ${player.displayName} captain`} aria-pressed={captain}>C</button>
-        <button type="button" className={`bar-action ${vice ? "active-vice" : ""}`} onClick={onViceCaptain} aria-label={`Make ${player.displayName} vice-captain`} aria-pressed={vice}>VC</button>
-        <button type="button" className="bar-action" onClick={onSwap} aria-label={`Select ${player.displayName} to move to bench`}>BENCH</button>
-      </>}
-      {lineupActive && !starter && <>
-        <button type="button" className="bar-action" onClick={onSwap} aria-label={`Select ${player.displayName} to move into the starting XI`}>START</button>
-        {benchIndex >= 0 && <>
-          <button type="button" className="bar-action" disabled={benchIndex === 0} onClick={() => onMoveBench(-1)} aria-label={`Move ${player.displayName} up the bench order`}>↑</button>
-          <button type="button" className="bar-action" disabled={benchIndex === 2} onClick={() => onMoveBench(1)} aria-label={`Move ${player.displayName} down the bench order`}>↓</button>
-        </>}
-      </>}
-      <button type="button" className="bar-action" onClick={onInfo} aria-label={`Open ${player.displayName} details`}>INFO</button>
-      <button type="button" className="bar-action" onClick={onToggleLock} aria-label={`${locked ? "Unlock" : "Lock"} ${player.displayName}`} aria-pressed={locked}>{locked ? "UNLOCK" : "LOCK"}</button>
-      <button type="button" className="bar-action bar-danger" onClick={onRemove} aria-label={`Remove ${player.displayName}`}>DROP</button>
-    </div>
-  </div>;
-}
-
-function SquadSlot({ player, gameweek, locked, captain, vice, starter, benchLabel, benchIndex, lineupActive, swapSelected, picked, chip, sellingPriceTenths, onRemove, onToggleLock, onActivate, onSwap, onCaptain, onViceCaptain, onMoveBench }: { player: TerminalPlayer; gameweek: number; locked: boolean; captain: boolean; vice: boolean; starter: boolean; benchLabel?: string; benchIndex: number; lineupActive: boolean; swapSelected: boolean; picked: boolean; chip?: ChipKind | null; sellingPriceTenths?: number; onRemove: () => void; onToggleLock: () => void; onActivate: () => void; onSwap: () => void; onCaptain: () => void; onViceCaptain: () => void; onMoveBench: (direction: -1 | 1) => void }) {
-  const benched = Boolean(benchLabel);
-  const benchCounting = chip === "bboost" && benched;
-  const captainMultiplier = captain ? (chip === "3xc" ? 3 : 2) : 1;
-  return <article className={`squad-slot filled ${locked ? "locked" : ""} ${benched ? "benched" : ""} ${swapSelected ? "lineup-selected" : ""} ${picked ? "picked" : ""} ${benchCounting ? "bench-counting" : ""}`}>
-    <SquadFixtureBadges player={player} gameweek={gameweek} />
-    {(captain || vice) && <span className={`slot-role ${captain ? "captain" : "vice"}`} aria-hidden="true">{captain ? (chip === "3xc" ? "3×" : "C") : "VC"}</span>}
-    {benched && benchLabel && <span className="slot-bench-tag" aria-hidden="true">{benchLabel}{benchCounting ? " · COUNTS" : ""}</span>}
-    <button className="slot-main" onClick={onActivate} aria-pressed={picked}><span className="slot-player">{player.displayName}</span><span className="slot-sub">{player.teamShortName} · {money(sellingPriceTenths ?? player.priceTenths)}m</span><span className="slot-xp">{points(weeklyPlayerMetrics(player, gameweek).points * captainMultiplier)} <small>xP</small></span></button>
-    <div className="slot-flags"><button className={`lock-flag ${locked ? "on" : ""}`} onClick={onToggleLock} aria-label={`${locked ? "Unlock" : "Lock"} ${player.displayName}`} aria-pressed={locked}><svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d="M4 7V5a4 4 0 0 1 8 0v2" /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg></button>{!locked && <button className="remove-flag" onClick={onRemove} aria-label={`Remove ${player.displayName}`}>×</button>}</div>
-    {lineupActive && <div className="lineup-controls">{starter ? <><button className={`role-button captain ${captain ? "active" : ""}`} onClick={onCaptain} aria-label={`Make ${player.displayName} captain`} aria-pressed={captain}>C</button><button className={`role-button vice ${vice ? "active" : ""}`} onClick={onViceCaptain} aria-label={`Make ${player.displayName} vice-captain`} aria-pressed={vice}>VC</button><button className="role-button bench-toggle" onClick={onSwap} aria-label={`Select ${player.displayName} to move to bench`} aria-pressed={swapSelected}>B</button></> : <><button className="role-button bench-toggle active" onClick={onSwap} aria-label={`Select ${player.displayName} to move into the starting XI`} aria-pressed={swapSelected}>{benchLabel}</button>{benchIndex >= 0 && <><button className="role-button bench-order" disabled={benchIndex === 0} onClick={() => onMoveBench(-1)} aria-label={`Move ${player.displayName} up the bench order`}>↑</button><button className="role-button bench-order" disabled={benchIndex === 2} onClick={() => onMoveBench(1)} aria-label={`Move ${player.displayName} down the bench order`}>↓</button></>}</>}</div>}
-  </article>;
-}
-
-function EmptySlot({ position, maxPriceTenths, onChoose }: { position: Position; maxPriceTenths: number; onChoose: () => void }) { return <button className="squad-slot empty-slot" onClick={onChoose}><span className="empty-plus">+</span><span className="slot-player">Open {position}</span><span className="slot-sub">Max {money(maxPriceTenths)}</span><span className="suggest-label">SUGGEST →</span></button>; }
+function EmptySlot({ position, maxPriceTenths, onChoose }: { position: Position; maxPriceTenths: number; onChoose: () => void }) { return <button type="button" className="pitch-empty" onClick={onChoose}><span className="empty-plus" aria-hidden="true">+</span><span className="token-name">Open {position}</span><span className="empty-max">Max {money(maxPriceTenths)}</span><span className="suggest-label">Suggest →</span></button>; }
 
 /**
  * Cash in the bank, editable.
@@ -1693,7 +1748,7 @@ function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankT
     onClick={() => step(deltaTenths)}
   >{glyph}</button>;
   return <div className={editing ? "metric-editable editing" : "metric-editable"}>
-    <span>ITB</span>
+    <span>Bank</span>
     <span className="metric-money">
       <span aria-hidden="true">£</span>
       <input
@@ -1725,9 +1780,9 @@ function BankMetric({ bankTenths, confidence, handBuilt, onBankChange }: { bankT
   </div>;
 }
 
-function MetricStrip({ spent, bankTenths, sellingValue, costLabel, confidence, handBuilt, onBankChange, projected, risk, teamRating }: { spent: number; bankTenths: number; sellingValue?: number; costLabel: "COST" | "VALUE"; confidence: "EXACT" | "ESTIMATED"; handBuilt: boolean; onBankChange: (tenths: number) => boolean; projected: { nextGW?: number }; risk?: number; teamRating?: number }) { return <div className="metric-strip" aria-label="Squad projection metrics"><Metric label={costLabel} value={sellingValue !== undefined ? money(sellingValue) : money(spent)} /><BankMetric bankTenths={bankTenths} confidence={confidence} handBuilt={handBuilt} onBankChange={onBankChange} /><Metric label="TEAM RATING" value={teamRating === undefined ? "—" : `${teamRating}%`} title={teamRating === undefined ? "Team rating needs a picked squad and live market data." : "Starting XI plus captain xP as a share of the best legal XI the market can field for the same budget."} tone={teamRating === undefined ? undefined : teamRating >= 90 ? "green" : teamRating >= 80 ? "bright-green" : teamRating >= 70 ? "yellow" : "red"} /><Metric label="GW xP" value={points(projected.nextGW)} tone="cyan" title="Chip-adjusted xP minus transfer hit costs." /><Metric label="RISK" value={risk === undefined ? "—" : risk < 30 ? "LOW" : risk < 60 ? "MED" : "HIGH"} tone={risk === undefined ? undefined : risk < 30 ? "green" : risk < 60 ? "yellow" : "red"} /></div>; }
+const BENCH_STRATEGY_LABELS = { CHEAP: "Cheap", BALANCED: "Balanced", STRONG: "Strong" } as const;
 
-function StrategyControls({ horizon, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="section-kicker">OPTIMIZER SETTINGS</span><div><span className="strategy-label">HORIZON</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button key={value} className={horizon === value ? "active" : ""} onClick={() => setStrategy({ horizon: value })}>{value === 1 ? "GW" : `${value}GW`}</button>)}</div></div><div><span className="strategy-label">BENCH</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button key={value} className={benchStrategy === value ? "active" : ""} onClick={() => setStrategy({ benchStrategy: value })}>{value}</button>)}</div></div></div>; }
+function StrategyControls({ horizon, benchStrategy, setStrategy }: { horizon: 1 | 3 | 5 | 10; benchStrategy: "CHEAP" | "BALANCED" | "STRONG"; setStrategy: (strategy: { horizon?: 1 | 3 | 5 | 10; benchStrategy?: "CHEAP" | "BALANCED" | "STRONG" }) => void }) { return <div className="strategy-panel"><span className="strategy-title">Optimizer settings</span><div><span className="strategy-label">Horizon</span><div className="segmented">{([1, 3, 5, 10] as const).map((value) => <button type="button" key={value} className={horizon === value ? "active" : ""} aria-pressed={horizon === value} onClick={() => setStrategy({ horizon: value })}>{value} GW</button>)}</div></div><div><span className="strategy-label">Bench</span><div className="segmented">{(["CHEAP", "BALANCED", "STRONG"] as const).map((value) => <button type="button" key={value} className={benchStrategy === value ? "active" : ""} aria-pressed={benchStrategy === value} onClick={() => setStrategy({ benchStrategy: value })}>{BENCH_STRATEGY_LABELS[value]}</button>)}</div></div></div>; }
 
 function TransferSuggestionsPanel({
   suggestions,
@@ -1752,142 +1807,86 @@ function TransferSuggestionsPanel({
   onSimulate: (suggestion: SingleTransferSuggestion) => void;
   onDismiss: (suggestion: SingleTransferSuggestion) => void;
 }) {
+  const name = (id: number) => playerById.get(id)?.displayName ?? `Player ${id}`;
+  const signedMoney = (tenths: number) => `${tenths >= 0 ? "+" : "−"}${money(Math.abs(tenths))}`;
   return (
     <section className="replacement-panel unified-replacements" aria-label="Transfer suggestions">
-      <div className="subsection-head">
-        <div>
-          <span className="section-kicker">TRANSFER SUGGESTIONS</span>
-          <span className="panel-count">{suggestions.length ? `${suggestions.length} FOUND` : "EXACT"}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <label style={{ fontSize: "11px", color: "var(--muted)", display: "flex", alignItems: "center", gap: "4px" }}>
-            <span>BANKED:</span>
-            <select
-              value={bankedTransfers}
-              onChange={(e) => onBankedTransfers(Number(e.target.value))}
-              aria-label="Banked transfers"
-              className="banked-transfers-select"
-              style={{
-                background: "rgba(0, 0, 0, 0.4)",
-                border: "1px solid var(--border)",
-                color: "var(--text)",
-                padding: "2px 6px",
-                borderRadius: "3px",
-                fontSize: "11px",
-                cursor: "pointer",
-              }}
+      <div className="rail-head">
+        <h2>Transfers</h2>
+        <span className="panel-count">{suggestions.length ? `${suggestions.length} found` : "Exact search"}</span>
+      </div>
+      <div className="transfer-controls">
+        <label className="banked-transfers">
+          <span>Free transfers</span>
+          <select value={bankedTransfers} onChange={(e) => onBankedTransfers(Number(e.target.value))} aria-label="Banked transfers">
+            {[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+        <div className="segmented transfer-horizon" role="group" aria-label="Transfer suggestion horizon">
+          {([1, 3, 5, 10] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={horizon === value ? "active" : ""}
+              aria-pressed={horizon === value}
+              onClick={() => onHorizon(value)}
             >
-              <option value={1}>1 Transfer</option>
-              <option value={2}>2 Transfers</option>
-              <option value={3}>3 Transfers</option>
-              <option value={4}>4 Transfers</option>
-              <option value={5}>5 Transfers</option>
-            </select>
-          </label>
-          <div className="segmented transfer-horizon" role="group" aria-label="Transfer suggestion horizon">
-            {([1, 3, 5, 10] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={horizon === value ? "active" : ""}
-                aria-pressed={horizon === value}
-                onClick={() => onHorizon(value)}
-              >
-                {value === 1 ? "GW" : `${value}GW`}
-              </button>
-            ))}
-          </div>
+              {value} GW
+            </button>
+          ))}
         </div>
       </div>
       <div className="replacement-scroll">
         {suggestions.length ? (
           suggestions.map((suggestion, sIdx) => {
-            const isMulti = suggestion.moves && suggestion.moves.length > 1;
-            const kind = suggestion.kind === "BOTH" ? "xP + CASH" : "xP UPGRADE";
-            const rowKey = isMulti
-              ? suggestion.moves!.map((m) => `${m.outgoingPlayerId}-${m.incomingPlayerId}`).join("_")
+            const moves = suggestion.moves && suggestion.moves.length > 1 ? suggestion.moves : undefined;
+            const kind = suggestion.kind === "BOTH" ? "More xP and cash" : "More xP";
+            const rowKey = moves
+              ? moves.map((m) => `${m.outgoingPlayerId}-${m.incomingPlayerId}`).join("_")
               : `${suggestion.outgoingPlayerId}-${suggestion.incomingPlayerId}`;
-
+            const incoming = playerById.get(suggestion.incomingPlayerId);
             return (
               <div className="replacement-row" key={`${rowKey}-${sIdx}`}>
-                <div>
-                  {isMulti ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                      {suggestion.moves!.map((m, mIdx) => {
-                        const outP = playerById.get(m.outgoingPlayerId);
-                        const inP = playerById.get(m.incomingPlayerId);
-                        const stepCash = m.cashReleasedTenths;
-                        return (
-                          <div key={mIdx} style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <span style={{ color: "var(--muted)", fontSize: "11px", minWidth: "14px" }}>{mIdx + 1}.</span>
-                            <strong>
-                              {outP?.displayName ?? `Player ${m.outgoingPlayerId}`} → {inP?.displayName ?? `Player ${m.incomingPlayerId}`}
-                            </strong>
-                            <small style={{ color: "var(--muted)" }}>
-                              ({inP?.position} · {inP ? money(inP.priceTenths) : "—"}
-                              {stepCash !== undefined && ` · ${stepCash >= 0 ? `+${money(stepCash)}` : `−${money(Math.abs(stepCash))}`}`})
-                            </small>
-                          </div>
-                        );
-                      })}
-                      <small style={{ color: "var(--accent-glow)", marginTop: "2px" }}>
-                        {suggestion.transfersCount ?? suggestion.moves!.length} TRANSFERS · {kind}
-                      </small>
-                    </div>
+                <div className="transfer-moves">
+                  {moves ? (
+                    <>
+                      {moves.map((m, mIdx) => (
+                        <div key={mIdx} className="transfer-step">
+                          <span className="transfer-step-index">{mIdx + 1}</span>
+                          <strong>{name(m.outgoingPlayerId)} → {name(m.incomingPlayerId)}</strong>
+                          {m.cashReleasedTenths !== undefined && <small>{signedMoney(m.cashReleasedTenths)}</small>}
+                        </div>
+                      ))}
+                      <small>{suggestion.transfersCount ?? moves.length} transfers · {kind}</small>
+                    </>
                   ) : (
                     <>
-                      {(() => {
-                        const outgoing = playerById.get(suggestion.outgoingPlayerId);
-                        const incoming = playerById.get(suggestion.incomingPlayerId);
-                        const outgoingName = outgoing?.displayName ?? `Player ${suggestion.outgoingPlayerId}`;
-                        const incomingName = incoming?.displayName ?? `Player ${suggestion.incomingPlayerId}`;
-                        return (
-                          <>
-                            <strong>
-                              {outgoingName} → {incomingName}
-                            </strong>
-                            <small>
-                              {kind} · {incoming?.teamShortName ?? "—"} · {incoming ? money(incoming.priceTenths) : "—"}
-                            </small>
-                          </>
-                        );
-                      })()}
+                      <strong>{name(suggestion.outgoingPlayerId)} → {name(suggestion.incomingPlayerId)}</strong>
+                      <small>{kind} · {incoming?.teamShortName ?? "—"} · {incoming ? money(incoming.priceTenths) : "—"}</small>
                     </>
                   )}
                 </div>
                 <div className="transfer-effects">
                   <span className="green">+{suggestion.projectedDelta.toFixed(1)} xP</span>
-                  <span>
-                    {suggestion.cashReleasedTenths >= 0 ? "+" : "−"}
-                    {money(Math.abs(suggestion.cashReleasedTenths))} ITB
-                  </span>
+                  <span>{signedMoney(suggestion.cashReleasedTenths)} bank</span>
                 </div>
                 <div className="transfer-actions">
-                  <button className="compact-action" onClick={() => onSimulate(suggestion)}>
-                    SIMULATE
-                  </button>
-                  <button
-                    className="transfer-dismiss"
-                    aria-label="Dismiss suggestion"
-                    title="Dismiss suggestion"
-                    onClick={() => onDismiss(suggestion)}
-                  >
-                    ×
-                  </button>
+                  <button type="button" className="compact-action" onClick={() => onSimulate(suggestion)}>Simulate</button>
+                  <button type="button" className="transfer-dismiss" aria-label="Dismiss suggestion" title="Dismiss suggestion" onClick={() => onDismiss(suggestion)}>×</button>
                 </div>
               </div>
             );
           })
         ) : (
-          <div className="empty-copy">
+          <p className="rail-empty">
             {state === "LOADING"
-              ? "CALCULATING LEGAL xP-INCREASING TRANSFERS…"
+              ? "Searching for legal transfers that raise xP…"
               : state === "INCOMPLETE"
-              ? "Complete a legal 15-player squad to calculate exact transfers."
+              ? "Complete a legal 15-player squad to see exact transfers."
               : state === "ERROR"
               ? message ?? "Exact transfer search is unavailable."
-              : `No legal ${bankedTransfers > 1 ? `${bankedTransfers}-transfer chain` : "single transfer"} increases optimized lineup xP.`}
-          </div>
+              : `No legal ${bankedTransfers > 1 ? `${bankedTransfers}-transfer chain` : "single transfer"} raises your best lineup's xP.`}
+          </p>
         )}
       </div>
     </section>
@@ -1911,8 +1910,8 @@ function SimulationPanel({
     <section className="panel simulation-panel">
       <div className="panel-header">
         <div>
-          <span className="section-kicker">SIMULATION</span>
-          <span className="panel-count">{result.legal ? "LEGAL" : "CHECK REQUIRED"}</span>
+          <span className="panel-title">Simulation</span>
+          <span className="panel-count">{result.legal ? "Legal squad" : "Check squad rules"}</span>
         </div>
         <button className="icon-button" onClick={onDiscard} aria-label="Close simulation">
           ×
@@ -1921,12 +1920,12 @@ function SimulationPanel({
       <div className="simulation-move" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
         {moves.map((m, idx) => (
           <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ color: "var(--muted)", fontSize: "11px", minWidth: "14px" }}>{idx + 1}.</span>
+            <span className="fs-small" style={{ color: "var(--muted)", minWidth: "14px" }}>{idx + 1}.</span>
             <span>{playerById.get(m.outId)?.displayName ?? "Outgoing"}</span>
             <span>→</span>
             <span>{playerById.get(m.inId)?.displayName ?? "Incoming"}</span>
             {m.cashReleasedTenths !== undefined && (
-              <small style={{ color: "var(--muted)", fontSize: "11px" }}>
+              <small className="fs-small" style={{ color: "var(--muted)" }}>
                 ({m.cashReleasedTenths >= 0 ? `+${money(m.cashReleasedTenths)}` : `−${money(Math.abs(m.cashReleasedTenths))}`})
               </small>
             )}
@@ -1935,22 +1934,22 @@ function SimulationPanel({
       </div>
       <div className="simulation-grid">
         <div>
-          <span>CURRENT {result.horizon}GW xP</span>
+          <span>Now, {result.horizon} GW xP</span>
           <strong>{points(result.optimizedBeforeXp)}</strong>
         </div>
         <div>
-          <span>SIMULATED {result.horizon}GW xP</span>
+          <span>After, {result.horizon} GW xP</span>
           <strong>{points(result.optimizedAfterXp)}</strong>
         </div>
         <div>
-          <span>BANK EFFECT</span>
+          <span>Bank</span>
           <strong className={(result.cashReleasedTenths ?? -result.priceDeltaTenths) >= 0 ? "green" : ""}>
             {(result.cashReleasedTenths ?? -result.priceDeltaTenths) >= 0 ? "+" : "−"}
-            {money(Math.abs(result.cashReleasedTenths ?? -result.priceDeltaTenths))} ITB
+            {money(Math.abs(result.cashReleasedTenths ?? -result.priceDeltaTenths))}
           </strong>
         </div>
         <div>
-          <span>xP EFFECT</span>
+          <span>xP change</span>
           <strong className={result.projectedDelta >= 0 ? "green" : "red"}>
             {result.projectedDelta >= 0 ? "+" : ""}
             {result.projectedDelta.toFixed(1)} xP
@@ -1962,11 +1961,11 @@ function SimulationPanel({
         {!result.legal && " The current selection still has a squad-rules issue."}
       </p>
       <div className="simulation-actions">
-        <button className="primary-button" onClick={onApply}>
-          APPLY CHANGES
+        <button type="button" className="primary-button" onClick={onApply}>
+          Apply changes
         </button>
-        <button className="secondary-button" onClick={onDiscard}>
-          DISCARD
+        <button type="button" className="secondary-button" onClick={onDiscard}>
+          Discard
         </button>
       </div>
     </section>
@@ -1981,7 +1980,7 @@ function profileXgi(stats: Player["current"]): number | undefined {
   if (stats.expectedGoals === undefined && stats.expectedAssists === undefined) return undefined;
   return (stats.expectedGoals ?? 0) + (stats.expectedAssists ?? 0);
 }
-function profileAvailabilityLabel(value: ReturnType<typeof availabilityOf>): string { return value === "AVAILABLE" ? "Available" : value === "DOUBTFUL" ? "Doubtful" : "Unavailable"; }
+function profileAvailabilityLabel(value: Availability): string { return value === "AVAILABLE" ? "Available" : value === "DOUBTFUL" ? "Doubtful" : "Unavailable"; }
 function formatProfileDate(value: string | undefined): string {
   if (!value) return "Date TBC";
   const date = new Date(value);
@@ -1999,22 +1998,5 @@ function matchScoreline(match: PlayerMatchPerformance, teamShortName: string): s
     ? `${teamShortName} ${match.teamHomeScore}–${match.teamAwayScore} ${match.opponentShortName}`
     : `${match.opponentShortName} ${match.teamHomeScore}–${match.teamAwayScore} ${teamShortName}`;
 }
-function formatDeadline(value: string): string { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); }
-export function formatDeadlineCountdown(value: string, now = Date.now()): string {
-  const deadline = Date.parse(value);
-  if (!Number.isFinite(deadline)) return "—";
-  const totalSeconds = Math.max(0, Math.ceil((deadline - now) / 1_000));
-  if (totalSeconds === 0) return "CLOSED";
-  const days = Math.floor(totalSeconds / 86_400);
-  const hours = Math.floor(totalSeconds % 86_400 / 3_600);
-  const minutes = Math.floor(totalSeconds % 3_600 / 60);
-  const seconds = totalSeconds % 60;
-  const clock = [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":");
-  return days ? `${days}d ${clock}` : clock;
-}
-
-function exportState(state: ReturnType<typeof useTerminalStore.getState>) { const blob = new Blob([JSON.stringify(exportTerminalState(state), null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "fpl-terminal-state.json"; anchor.click(); URL.revokeObjectURL(url); }
-
-function importState(event: React.ChangeEvent<HTMLInputElement>, state: ReturnType<typeof useTerminalStore.getState>, onNotice: (message: string) => void) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { const result = typeof reader.result === "string" ? parseSavedStateResult(reader.result) : { status: "refused", reason: "malformed" } as const; if (result.status === "accepted") { state.hydrate(result.state); onNotice("Saved terminal state imported."); } else { onNotice(result.status === "refused" ? savedStateRefusalNotice(result) : "That save file is empty. Choose a compatible FPL Terminal export."); } }; reader.readAsText(file); event.target.value = ""; }
 
 export function ModeChooserPreview() { return null; }

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { bootstrapStaticFixture } from "../fixtures/fpl";
 import { interceptFplData } from "../fixtures/network";
 
@@ -8,6 +8,11 @@ import { interceptFplData } from "../fixtures/network";
  * which mode a test picks is not what the test is about.
  */
 const IMPORT_MODE = /mode b/i;
+
+/** Chip choice and chip strategy live in the decision rail, beside the squad. */
+function railOf(page: Page) {
+  return page.getByRole("complementary", { name: "Decision rail" });
+}
 
 const chipSuggestions = {
   gameweek: 1,
@@ -64,18 +69,18 @@ test.describe("chip planning", () => {
       requestBody = route.request().postDataJSON() as { gameweek?: number; horizon?: number };
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(chipSuggestions) });
     });
-    const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    await expect(region.getByText("GW1–19", { exact: false }).first()).toBeVisible();
-    await region.getByRole("button", { name: /analyze chips/i }).click();
-    await expect(region.getByText("BB · GW1")).toBeVisible();
+    const rail = railOf(page);
+    await expect(rail.getByText("GW1–19", { exact: false }).first()).toBeVisible();
+    await rail.getByRole("button", { name: /analyze chips/i }).click();
+    await expect(rail.getByText("BB · GW1")).toBeVisible();
     // First-window chips expire at GW19, so GW1 plans a 19-gameweek horizon.
     await expect.poll(() => requestBody).toMatchObject({ gameweek: 1, horizon: 19 });
   });
 
-  test("selects each chip beside the gameweek switcher", async ({ page }) => {
+  test("selects each chip in the decision rail", async ({ page }) => {
     const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    const chips = region.getByRole("group", { name: /select chip/i });
-    await expect(chips.getByRole("button", { name: "NONE" })).toHaveAttribute("aria-pressed", "true");
+    const chips = railOf(page).getByRole("group", { name: /select chip/i });
+    await expect(chips.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
 
     await chips.getByRole("button", { name: "WC" }).click();
     await expect(chips.getByRole("button", { name: "WC" })).toHaveAttribute("aria-pressed", "true");
@@ -85,40 +90,40 @@ test.describe("chip planning", () => {
 
     await chips.getByRole("button", { name: "BB" }).click();
     const benchTags = await region.evaluate(() =>
-      Array.from(document.querySelectorAll(".slot-bench-tag")).map((el) => el.textContent?.trim()),
+      Array.from(document.querySelectorAll('[data-testid="token-bench"]')).map((el) => el.textContent?.trim()),
     );
-    expect(benchTags.filter((tag) => tag?.includes("COUNTS"))).toHaveLength(4);
+    expect(benchTags.filter((tag) => tag?.includes("Counts"))).toHaveLength(4);
 
     await chips.getByRole("button", { name: "TC" }).click();
     const captainMarker = await region.evaluate(() =>
-      Array.from(document.querySelectorAll(".slot-role")).map((el) => el.textContent?.trim()),
+      Array.from(document.querySelectorAll('[data-testid="token-role"]')).map((el) => el.textContent?.trim()),
     );
     expect(captainMarker).toContain("3×");
 
-    await chips.getByRole("button", { name: "NONE" }).click();
-    await expect(chips.getByRole("button", { name: "NONE" })).toHaveAttribute("aria-pressed", "true");
+    await chips.getByRole("button", { name: "None" }).click();
+    await expect(chips.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
   });
 
   test("applies chip advice and undoes it in one click", async ({ page }) => {
-    const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    await region.getByRole("button", { name: /analyze chips/i }).click();
-    const panel = region.getByRole("region", { name: /chip strategy/i }).or(region.locator(".chip-strategy"));
+    const rail = railOf(page);
+    await rail.getByRole("button", { name: /analyze chips/i }).click();
+    const panel = rail.getByRole("region", { name: /chip strategy/i }).or(rail.locator(".chip-strategy"));
     await expect(panel.getByText("BB · GW1")).toBeVisible();
-    await expect(panel.getByText("no projected edge")).toBeVisible();
+    await expect(panel.getByText("No projected gain")).toBeVisible();
 
-    await panel.getByRole("button", { name: "APPLY" }).first().click();
-    const chips = region.getByRole("group", { name: /select chip/i });
+    await panel.getByRole("button", { name: "Apply" }).first().click();
+    const chips = rail.getByRole("group", { name: /select chip/i });
     await expect(chips.getByRole("button", { name: "BB" })).toHaveAttribute("aria-pressed", "true");
-    await expect(panel.getByRole("button", { name: "UNDO" })).toBeVisible();
+    await expect(panel.getByRole("button", { name: "Undo" })).toBeVisible();
 
-    await panel.getByRole("button", { name: "UNDO" }).click();
-    await expect(chips.getByRole("button", { name: "NONE" })).toHaveAttribute("aria-pressed", "true");
+    await panel.getByRole("button", { name: "Undo" }).click();
+    await expect(chips.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
   });
 
   test("restores the permanent squad beyond a free hit and reloads persisted plans", async ({ page }) => {
-    const region = page.getByRole("region", { name: /squad builder and analysis/i });
-    await region.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" }).click();
-    await expect(region.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" })).toHaveAttribute("aria-pressed", "true");
+    const rail = railOf(page);
+    await rail.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" }).click();
+    await expect(rail.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" })).toHaveAttribute("aria-pressed", "true");
     // Wait for the chip choice to reach persisted storage before seeding.
     await expect.poll(() => page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");
@@ -145,12 +150,12 @@ test.describe("chip planning", () => {
     });
     await page.reload();
     await expect(page.getByPlaceholder(/search player, club/i)).toBeVisible();
-    const reloaded = page.getByRole("region", { name: /squad builder and analysis/i });
+    const reloaded = railOf(page);
     await expect(reloaded.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "FH" })).toHaveAttribute("aria-pressed", "true");
 
-    await reloaded.getByRole("group", { name: /select planning gameweek/i }).getByRole("button", { name: /next planning gameweek/i }).click();
-    await expect(reloaded.getByRole("group", { name: /select planning gameweek/i })).toContainText("GW 2");
-    await expect(reloaded.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "NONE" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("group", { name: /select planning gameweek/i }).getByRole("button", { name: /next planning gameweek/i }).click();
+    await expect(page.getByRole("group", { name: /select planning gameweek/i })).toContainText("GW 2");
+    await expect(reloaded.getByRole("group", { name: /select chip/i }).getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
     // GW2 holds the permanent squad: player 21 is back, temp pick 2 is gone.
     await expect.poll(() => page.evaluate(() => {
       const state = JSON.parse(window.localStorage.getItem("fpl-terminal-state") ?? "null");
@@ -187,21 +192,23 @@ test.describe("chip planning", () => {
     await page.reload();
     await expect(page.getByPlaceholder(/search player, club/i)).toBeVisible();
     const reloaded = page.getByRole("region", { name: /squad builder and analysis/i });
-    const slot = reloaded.locator("article.squad-slot", { hasText: "Rogers" }).first();
-    await slot.hover();
-    await slot.getByRole("button", { name: /unlock rogers/i }).click();
-    await slot.hover();
-    await slot.getByRole("button", { name: /remove rogers/i }).click();
+    await reloaded.locator('[data-testid="squad-token"][data-player="Rogers"]').click();
+    const sheet = page.getByRole("dialog", { name: "Rogers", exact: true });
+    await expect(sheet).toBeVisible();
+    await sheet.getByRole("button", { name: /unlock rogers/i }).click();
+    await sheet.getByRole("button", { name: /remove rogers/i }).click();
+    await expect(sheet).toBeHidden();
     await expect(reloaded.getByText(/14\s*\/\s*15 selected/i).first()).toBeVisible();
   });
 
   test("renders chip controls on desktop and mobile viewports", async ({ page }) => {
-    const region = page.getByRole("region", { name: /squad builder and analysis/i });
+    const rail = railOf(page);
     for (const size of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(size);
-      if (size.width < 901) await page.getByRole("button", { name: "SQUAD", exact: true }).click().catch(() => {});
-      await expect(region.getByRole("group", { name: /select chip/i })).toBeVisible();
-      await expect(region.locator(".chip-strategy")).toBeVisible();
+      // A fresh store opens on the Squad tab. The dev indicator sits over that tab's corner, so assert it rather than click it.
+      if (size.width < 901) await expect(page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: "Squad" })).toHaveAttribute("aria-current", "page");
+      await expect(rail.getByRole("group", { name: /select chip/i })).toBeVisible();
+      await expect(rail.locator(".chip-strategy")).toBeVisible();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);
     }

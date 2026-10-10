@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { feedAgeLabel, fixtureTag, kickoffLabel, playerValueLabel, roleMarkerFor } from "@/lib/leagues/display";
+import { activeChipLabel, feedAgeLabel, fixtureChip, fixtureTag, kickoffLabel, leagueTypeLabel, playerValueLabel, roleMarkerFor, sentenceCase, shouldShowLeagueImpact } from "@/lib/leagues/display";
 import type { LiveEntryPlayer } from "@/types/leagues";
 
 const SHORT_NAMES = new Map([[7, "CHE"], [8, "BOU"]]);
@@ -112,15 +112,80 @@ describe("feedAgeLabel", () => {
   const NOW = 1_700_000_000_000;
 
   it("reads a fresh event as brand new even when the clock has not caught up", () => {
-    expect(feedAgeLabel({ seeded: false, at: NOW + 4_000 }, NOW)).toBe("<1M");
+    expect(feedAgeLabel({ seeded: false, at: NOW + 4_000 }, NOW)).toBe("<1m");
   });
 
   it("counts whole minutes once they have passed", () => {
-    expect(feedAgeLabel({ seeded: false, at: NOW - 30_000 }, NOW)).toBe("<1M");
-    expect(feedAgeLabel({ seeded: false, at: NOW - 8 * 60_000 }, NOW)).toBe("8M");
+    expect(feedAgeLabel({ seeded: false, at: NOW - 30_000 }, NOW)).toBe("<1m");
+    expect(feedAgeLabel({ seeded: false, at: NOW - 8 * 60_000 }, NOW)).toBe("8m");
   });
 
   it("gives a reconstructed event no age, since its timestamp is when it was read", () => {
     expect(feedAgeLabel({ seeded: true, at: NOW - 8 * 60_000 }, NOW)).toBeNull();
+  });
+});
+
+describe("league impact line", () => {
+  it("is shown for any change that reads as a non-zero tenth", () => {
+    expect(shouldShowLeagueImpact(6.3)).toBe(true);
+    expect(shouldShowLeagueImpact(0.1)).toBe(true);
+    expect(shouldShowLeagueImpact(-0.1)).toBe(true);
+  });
+
+  it("is left off when the change reads as 0.0", () => {
+    expect(shouldShowLeagueImpact(0)).toBe(false);
+    expect(shouldShowLeagueImpact(-0)).toBe(false);
+    expect(shouldShowLeagueImpact(0.04)).toBe(false);
+    expect(shouldShowLeagueImpact(-0.04)).toBe(false);
+  });
+});
+
+describe("screen labels for model constants", () => {
+  it("writes constants in plain words", () => {
+    expect(sentenceCase("BONUS CHANGE")).toBe("Bonus change");
+    expect(sentenceCase("MY TEAM")).toBe("My team");
+    expect(sentenceCase("")).toBe("");
+  });
+
+  it("names a chip by its FPL short name, and an unknown chip in plain words", () => {
+    expect(activeChipLabel("bboost")).toBe("BB");
+    expect(activeChipLabel("3xc")).toBe("TC");
+    expect(activeChipLabel("freehit")).toBe("FH");
+    expect(activeChipLabel("wildcard")).toBe("WC");
+    expect(activeChipLabel("assistant_manager")).toBe("Assistant manager");
+    expect(activeChipLabel(null)).toBe("—");
+  });
+
+  it("keeps H2H in capitals and writes the other league types as words", () => {
+    expect(leagueTypeLabel("H2H")).toBe("H2H");
+    expect(leagueTypeLabel("CLASSIC")).toBe("Classic");
+    expect(leagueTypeLabel("OVERALL")).toBe("Overall");
+  });
+});
+
+describe("fixture chip", () => {
+  it("writes home fixtures upper case and away fixtures lower case", () => {
+    expect(fixtureChip({ fixtureId: 1, opponentTeamId: 7, isHome: true, state: "FINISHED" }, SHORT_NAMES).opponent).toBe("CHE");
+    expect(fixtureChip({ fixtureId: 1, opponentTeamId: 7, isHome: false, state: "FINISHED" }, SHORT_NAMES).opponent).toBe("che");
+  });
+
+  it("gives the minute while live, capped at 90", () => {
+    expect(fixtureChip({ fixtureId: 2, opponentTeamId: 7, isHome: true, state: "LIVE", minutes: 74.6 }, SHORT_NAMES).status).toBe("74'");
+    expect(fixtureChip({ fixtureId: 2, opponentTeamId: 7, isHome: true, state: "LIVE", minutes: 120 }, SHORT_NAMES).status).toBe("90'");
+  });
+
+  it("gives FT once finished", () => {
+    expect(fixtureChip({ fixtureId: 3, opponentTeamId: 7, isHome: true, state: "FINISHED", minutes: 90 }, SHORT_NAMES).status).toBe("FT");
+  });
+
+  it("gives the kickoff time before the match, and nothing when it is unknown", () => {
+    const upcoming = { fixtureId: 4, opponentTeamId: 8, isHome: false, state: "UPCOMING" as const };
+    expect(fixtureChip({ ...upcoming, kickoffTime: "2026-08-22T17:30:00Z" }, SHORT_NAMES).status).toBe(kickoffLabel("2026-08-22T17:30:00Z"));
+    expect(fixtureChip({ ...upcoming, kickoffTime: null }, SHORT_NAMES).status).toBe("");
+    expect(fixtureChip(upcoming, SHORT_NAMES).status).toBe("");
+  });
+
+  it("falls back to the team id when the name is unknown", () => {
+    expect(fixtureChip({ fixtureId: 5, opponentTeamId: 99, isHome: true, state: "FINISHED" }, SHORT_NAMES).opponent).toBe("99");
   });
 });

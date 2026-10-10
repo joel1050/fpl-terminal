@@ -128,7 +128,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(summary.locator(".live-metrics strong")).toHaveText(["—", "—", "—", "—", "—", "—", "—"]);
 
     const squadPanel = page.getByRole("region", { name: "Live squad" });
-    await expect(squadPanel).toContainText("NO LIVE SQUAD YET");
+    await expect(squadPanel).toContainText("No live squad yet");
     await expect(squadPanel).toContainText("Picks appear once the Gameweek deadline passes.");
     await expect(squadPanel.getByTestId("live-roster")).toHaveCount(0);
     await expect(squadPanel).not.toContainText("Saka");
@@ -177,8 +177,8 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
     const notice = page.locator(".live-notice");
     await expect(notice).toBeVisible();
-    await expect(notice).toContainText("LAST GOOD SNAPSHOT");
-    await expect(page.locator(".topbar-stats")).toContainText("STALE");
+    await expect(notice).toContainText("last good snapshot");
+    await expect(page.locator(".topbar-stats")).toContainText("Stale");
     // The squad it already loaded stays on screen rather than blanking to zero.
     await expect(page.getByTestId("live-roster")).toBeVisible();
   });
@@ -195,27 +195,29 @@ test.describe("FPL Terminal Leagues workspace", () => {
   test("renders a centered roster with opponent tags, xP versus P, and real captaincy markers only", async ({ page }) => {
     await importTeam(page);
 
-    // Position groups stay centred like the Planner Starting XI (GK 1, DEF 4, MID 4, FWD 2).
-    const centering = await page.getByTestId("live-roster").evaluate((roster) => {
+    // The live squad is drawn as the Planner pitch: one line per position (GK 1, DEF 4, MID 4, FWD 2), centred.
+    const pitch = await page.getByTestId("live-roster").evaluate((roster) => {
       const rosterRect = roster.getBoundingClientRect();
-      return [...roster.querySelectorAll<HTMLElement>(".starting-slot-grid")].map((grid) => {
-        const rect = grid.getBoundingClientRect();
+      return [...roster.querySelectorAll<HTMLElement>(".pitch .pitch-tokens")].map((line) => {
+        const rect = line.getBoundingClientRect();
         return {
-          columns: getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length,
+          tokens: line.querySelectorAll(".pitch-token").length,
           leftGap: Math.round(rect.left - rosterRect.left),
           rightGap: Math.round(rosterRect.right - rect.right),
         };
       });
     });
-    expect(centering.map((group) => group.columns)).toEqual([1, 4, 4, 2]);
-    for (const group of centering) {
-      expect(Math.abs(group.leftGap - group.rightGap), "position groups must be horizontally centred").toBeLessThan(24);
+    expect(pitch.map((line) => line.tokens)).toEqual([1, 4, 4, 2]);
+    for (const line of pitch) {
+      expect(Math.abs(line.leftGap - line.rightGap), "lines must be horizontally centred").toBeLessThan(24);
     }
+    await expect(page.getByRole("region", { name: "Live bench" }).locator(".pitch-token")).toHaveCount(4);
 
     // Every card carries an opponent tag; live and double-header states are labelled.
     const sakaCard = page.locator('[data-player="Saka"]');
-    await expect(sakaCard.locator('[data-testid="live-opponent-tag"]').filter({ hasText: "TUN(H) · 74'" })).toHaveCount(1);
-    await expect(sakaCard.locator('[data-testid="live-opponent-tag"]').filter({ hasText: /^TWA\(A\)/ })).toHaveCount(1);
+    await expect(sakaCard.locator('[data-testid="live-opponent-tag"]').filter({ hasText: "TUN 74'" })).toHaveCount(1);
+    await expect(sakaCard.locator('[data-testid="live-opponent-tag"]').filter({ hasText: "TUN 74'" })).toHaveAttribute("title", "TUN(H) · 74'");
+    await expect(sakaCard.locator('[data-testid="live-opponent-tag"]').filter({ hasText: /^twa / })).toHaveCount(1);
     await expect(page.locator('[data-player="Mbeumo"]').locator('[data-testid="live-opponent-tag"]').filter({ hasText: "FT" })).toHaveCount(1);
 
     // Unplayed players show model xP; started or finished players show actual points.
@@ -224,13 +226,66 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(page.locator('[data-player="Mbeumo"] [data-testid="live-player-value"] small')).toHaveText("P");
 
     // Only the two real captaincy holders carry markers; there are no role buttons.
-    await expect(page.getByTestId("live-roster").locator(".live-role.captain")).toHaveCount(1);
-    await expect(page.locator('[data-player="Saka"] .live-role.captain')).toHaveText("C");
-    await expect(page.getByTestId("live-roster").locator(".live-role.vice")).toHaveCount(1);
-    await expect(page.locator('[data-player="Watkins"] .live-role.vice')).toHaveText("VC");
+    await expect(page.getByTestId("live-roster").locator(".token-role.captain")).toHaveCount(1);
+    await expect(page.locator('[data-player="Saka"] .token-role.captain')).toHaveText("C");
+    await expect(page.getByTestId("live-roster").locator(".token-role.vice")).toHaveCount(1);
+    await expect(page.locator('[data-player="Watkins"] .token-role.vice')).toHaveText("VC");
     await expect(page.getByTestId("live-roster").getByRole("button")).toHaveCount(0);
     await expect(page.getByTestId("live-roster").locator("table")).toHaveCount(0);
     await expect(page.getByTestId("live-roster")).not.toContainText("BGK");
+  });
+
+  test("draws the live squad as a read-only pitch with price, fixtures, value and bench labels on every token", async ({ page }) => {
+    await importTeam(page);
+    const roster = page.getByTestId("live-roster");
+    await expect(roster.locator(".pitch .pitch-row")).toHaveCount(4);
+    await expect(roster.locator(".bench-strip .pitch-token")).toHaveCount(4);
+    await expect(roster.locator(".live-slot, .squad-slot")).toHaveCount(0);
+    await expect(roster.getByRole("button")).toHaveCount(0);
+    await expect(roster.locator(".token-lock-button")).toHaveCount(0);
+    await expect(roster.locator(".pitch-token").first()).toHaveCSS("cursor", "default");
+
+    // Bench strip: goalkeeper first, then B1..B3, each dimmed.
+    const labels = await roster.locator('.bench-strip [data-testid="token-bench"]').allTextContents();
+    expect(labels).toEqual(["GK", "B1", "B2", "B3"]);
+    await expect(roster.locator(".bench-strip .pitch-token.benched")).toHaveCount(4);
+    await expect(roster.locator(".pitch .token-bench")).toHaveCount(0);
+
+    // Every token carries a price and a fixture line; a started player shows points, an unstarted one xP.
+    const tokens = roster.locator('[data-testid="live-player-card"]');
+    const count = await tokens.count();
+    expect(count).toBe(15);
+    for (let index = 0; index < count; index += 1) {
+      const token = tokens.nth(index);
+      await expect(token.locator(".token-price")).toHaveText(/^£\d+\.\d$/);
+      await expect(token.locator(".live-opponent").first()).toBeVisible();
+      await expect(token.locator('[data-testid="live-player-value"]')).toBeVisible();
+    }
+    await expect(page.locator('[data-player="Saka"] [data-testid="live-player-value"]')).toHaveClass(/actual/);
+    await expect(page.locator('[data-player="Rogers"] [data-testid="live-player-value"]')).toHaveClass(/projected/);
+    await expect(page.locator('[data-player="Saka"] .token-role')).toHaveText("C");
+  });
+
+  test("fits the live pitch on a phone without sideways scrolling", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator(".leagues-mobile-tabs").getByRole("button", { name: "TEAM" }).click();
+    const roster = page.getByTestId("live-roster");
+    await expect(roster).toBeVisible();
+    await expect(roster.locator(".pitch")).toBeVisible();
+    await expect(roster.locator(".bench-strip .pitch-token")).toHaveCount(4);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    const rosterOverflow = await roster.evaluate((node) => node.scrollWidth - node.clientWidth);
+    expect(rosterOverflow).toBeLessThanOrEqual(0);
+    const tokenBox = await roster.locator(".pitch-token").first().boundingBox();
+    expect(tokenBox?.width ?? 0).toBeGreaterThan(40);
+    // A single-fixture token stays compact: shirt, name, one chip and value line, price.
+    const single = await roster.locator('[data-player="Palmer"]').boundingBox();
+    expect(single?.height ?? 999).toBeLessThanOrEqual(100);
+    await expect(roster.locator('[data-player="Watkins"] .token-role')).toHaveText("VC");
+    const chipWraps = await roster.locator(".live-opponent").evaluateAll((chips) => chips.filter((chip) => chip.getClientRects().length && chip.getBoundingClientRect().height > 20).length);
+    expect(chipWraps).toBe(0);
   });
 
   test("keeps the Live Feed as the whole right rail without a status footer", async ({ page }) => {
@@ -253,8 +308,8 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(goalEvent.first()).toBeVisible();
     // The goal is worth five; the armband is what makes it ten to this manager.
     await expect(goalEvent.first().locator(".feed-delta")).toHaveText("+5");
-    await expect(goalEvent.first()).toContainText("YOU +10 · CAPTAIN");
-    await expect(goalEvent.first()).toContainText("LEAGUE IMPACT +6.3");
+    await expect(goalEvent.first()).toContainText("You +10 · captain");
+    await expect(goalEvent.first()).toContainText("League impact +6.3");
   });
 
   test("shows the Gameweek so far the moment the page opens", async ({ page }) => {
@@ -265,12 +320,12 @@ test.describe("FPL Terminal Leagues workspace", () => {
     // scored before anyone opened the page is still on the feed.
     const goal = feed.locator('[data-testid="feed-event"]').filter({ hasText: "Mbeumo GOAL" });
     await expect(goal.first()).toBeVisible();
-    await expect(goal.first()).toContainText("YOU +5");
+    await expect(goal.first()).toContainText("You +5");
     // The row reports what the goal was worth, not everything the player has scored.
     await expect(goal.first().locator(".feed-delta")).toHaveText("+5");
-    // FPL says a goal happened, never when, so a reconstructed row is marked as
-    // belonging to the Gameweek rather than given a minute it cannot support.
-    await expect(goal.first().locator(".feed-minute")).toHaveText("GW");
+    // FPL says a goal happened, never when, so a reconstructed row is left without
+    // a minute rather than given one it cannot support.
+    await expect(goal.first().locator(".feed-minute")).toHaveText("");
   });
 
   test("keeps appearance points out of the default view but not out of the feed", async ({ page }) => {
@@ -278,10 +333,10 @@ test.describe("FPL Terminal Leagues workspace", () => {
     const feed = page.getByRole("complementary", { name: "Live feed" });
     const appearances = feed.locator('[data-testid="feed-event"]').filter({ hasText: "APPEARANCE" });
 
-    await expect(feed.getByRole("button", { name: "FOCUS", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(feed.getByRole("button", { name: "Focus", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(appearances).toHaveCount(0);
 
-    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+    await feed.getByRole("button", { name: "All", exact: true }).click();
     await expect(appearances.first()).toBeVisible();
   });
 
@@ -289,7 +344,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await importTeam(page);
     const feed = page.getByRole("complementary", { name: "Live feed" });
     await page.getByTestId("live-refresh").click();
-    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+    await feed.getByRole("button", { name: "All", exact: true }).click();
 
     const rows = feed.locator('[data-testid="feed-event"]');
     // The captain's goal is worth double to this manager, so it reads as a gain.
@@ -303,7 +358,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
   test("offers a way back to the top when events land out of sight", async ({ page }) => {
     await importTeam(page);
     const feed = page.getByRole("complementary", { name: "Live feed" });
-    await feed.getByRole("button", { name: "ALL", exact: true }).click();
+    await feed.getByRole("button", { name: "All", exact: true }).click();
     await expect(feed.locator('[data-testid="feed-event"]').first()).toBeVisible();
 
     // Nothing is unread while the newest row is already on screen.
@@ -323,7 +378,7 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await importTeam(page);
     const matchCentre = page.getByRole("region", { name: "Match centre" });
 
-    await matchCentre.getByRole("button", { name: "LIVE", exact: true }).click();
+    await matchCentre.getByRole("button", { name: "Live", exact: true }).click();
     const liveRow = matchCentre.getByTestId("match-row");
     await expect(liveRow).toHaveCount(1);
     await expect(liveRow).toContainText("TST");
@@ -331,34 +386,34 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
     // Every match starts collapsed, so the detail sections are out of the way
     // until the row is opened.
-    await expect(liveRow.getByText("GOALS", { exact: true })).toHaveCount(0);
-    await expect(liveRow).toContainText("YOU");
+    await expect(liveRow.getByText("Goals", { exact: true })).toHaveCount(0);
+    await expect(liveRow).toContainText("You");
 
     await liveRow.locator("summary").click();
-    await expect(liveRow.getByText("GOALS", { exact: true })).toBeVisible();
-    await expect(liveRow.getByText("ASSISTS", { exact: true })).toBeVisible();
+    await expect(liveRow.getByText("Goals", { exact: true })).toBeVisible();
+    await expect(liveRow.getByText("Assists", { exact: true })).toBeVisible();
     await expect(liveRow.getByText("BONUS POINTS · PROVISIONAL")).toBeVisible();
     await expect(liveRow).toContainText("Haaland");
 
     await liveRow.locator("summary").click();
-    await expect(liveRow.getByText("GOALS", { exact: true })).toHaveCount(0);
+    await expect(liveRow.getByText("Goals", { exact: true })).toHaveCount(0);
 
-    await matchCentre.getByRole("button", { name: "FINISHED", exact: true }).click();
+    await matchCentre.getByRole("button", { name: "Finished", exact: true }).click();
     const finishedRow = matchCentre.getByTestId("match-row");
     await expect(finishedRow).toHaveCount(1);
     await expect(finishedRow).toContainText("TRV");
 
     // A match FPL has settled shows its confirmed bonus, not a provisional read.
     await finishedRow.locator("summary").click();
-    await expect(finishedRow.getByText("BONUS POINTS", { exact: true })).toBeVisible();
+    await expect(finishedRow.getByText("Bonus points", { exact: true })).toBeVisible();
     await expect(finishedRow).toContainText("Mbeumo");
     await expect(finishedRow.locator(".match-bps li").first()).toContainText("+3");
 
-    await matchCentre.getByRole("button", { name: "UPCOMING", exact: true }).click();
+    await matchCentre.getByRole("button", { name: "Upcoming", exact: true }).click();
     await expect(matchCentre.getByTestId("match-row")).toHaveCount(1);
     await expect(matchCentre.getByTestId("match-row")).toContainText("TWA");
 
-    await matchCentre.getByRole("button", { name: "ALL", exact: true }).click();
+    await matchCentre.getByRole("button", { name: "All", exact: true }).click();
     await expect(matchCentre.getByTestId("match-row")).toHaveCount(3);
   });
 
@@ -381,6 +436,8 @@ test.describe("FPL Terminal Leagues workspace", () => {
     await expect(page.getByRole("complementary", { name: "Live feed" })).toBeVisible();
 
     await tabs.getByRole("button", { name: "LEAGUE" }).click();
+    // On a phone My leagues sits behind the drop-down, so open it first.
+    await page.getByRole("button", { name: /choose league/i }).click();
     await expect(page.getByText("MY LEAGUES").first()).toBeVisible();
   });
 
@@ -421,5 +478,84 @@ test.describe("FPL Terminal Leagues workspace", () => {
 
     await switcher.getByRole("link", { name: "PLANNER" }).click();
     await expect(page.getByPlaceholder(/search player, club/i)).toBeVisible();
+  });
+
+  test("puts the standings first on a phone, with the first row above the fold", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const firstRow = page.getByTestId("league-standings").locator("tbody tr").first();
+    await expect(firstRow).toBeVisible();
+    const box = await firstRow.boundingBox();
+    expect(box, "first standings row box").not.toBeNull();
+    expect(box!.y + box!.height, "first standings row bottom").toBeLessThan(844 - 56);
+    // The league list is behind the drop-down, not stacked above the standings.
+    await expect(page.getByRole("region", { name: "My leagues" })).toHaveCount(0);
+  });
+
+  test("opens My leagues from a drop-down in the phone header and closes on a pick", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const switcher = page.getByRole("button", { name: /choose league/i });
+    await expect(switcher).toContainText("UBC FPL");
+    await switcher.click();
+
+    const dialog = page.getByRole("dialog", { name: "Switch league" });
+    await expect(dialog).toBeVisible();
+    const leagues = dialog.getByRole("region", { name: "My leagues" });
+    await expect(leagues).toBeVisible();
+
+    await leagues.getByRole("button", { name: "Office League" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole("region", { name: "League standings" })).toContainText("Office League");
+    await expect(page.getByRole("button", { name: /choose league/i })).toContainText("Office League");
+  });
+
+  test("leaves one navigation on a phone: the bottom tab bar, with Leagues current", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const main = page.getByRole("navigation", { name: "Main" });
+    await expect(main.getByRole("link", { name: "Leagues" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("navigation", { name: "Workspace" })).toBeHidden();
+  });
+
+  test("leaves the league-impact line off a feed row whose impact is zero", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator(".leagues-mobile-tabs").getByRole("button", { name: "FEED" }).click();
+    const feed = page.getByRole("complementary", { name: "Live feed" });
+    await feed.getByRole("button", { name: "All", exact: true }).click();
+
+    // Haaland is in nobody's squad, so each of his events is worth 0.0 to the league.
+    const haaland = feed.locator('[data-testid="feed-event"]').filter({ hasText: "Haaland" });
+    await expect(haaland.first()).toBeVisible();
+    await expect(haaland.filter({ hasText: "LEAGUE IMPACT" })).toHaveCount(0);
+    // Rows with a real impact keep the line.
+    await expect(feed.locator('[data-testid="feed-event"]').filter({ hasText: "LEAGUE IMPACT" }).first()).toBeVisible();
+  });
+
+  test("gives the phone header and tabs targets at least 40px tall", async ({ page }) => {
+    await importTeam(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const targets = page.getByRole("button", { name: /choose league/i }).or(page.locator(".leagues-mobile-tabs button"));
+    const count = await targets.count();
+    expect(count).toBe(5);
+    for (let index = 0; index < count; index += 1) {
+      const box = await targets.nth(index).boundingBox();
+      expect(box, `target ${index} box`).not.toBeNull();
+      expect(box!.height, `target ${index} height`).toBeGreaterThanOrEqual(40);
+    }
+  });
+
+  test("keeps My leagues inline on desktop, with no drop-down and no dialog", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await importTeam(page);
+
+    await expect(page.getByRole("region", { name: "My leagues" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.locator(".leagues-mobile-tabs")).toBeHidden();
   });
 });

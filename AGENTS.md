@@ -207,9 +207,38 @@ app/
     └── transfer-suggestions/route.ts# Computes Pareto-optimal single transfers
 
 components/
+├── shell/
+│   ├── TopBar.tsx                   # Planner top bar: GW stepper, deadline, data status, Refresh, More
+│   ├── BottomTabBar.tsx             # Phone tab bar shared by Planner and Leagues
+│   ├── MoreSheet.tsx                # More menu: bottom sheet on phones, popover on wider screens
+│   ├── Sheet.tsx                    # Bottom sheet or popover: Escape, outside tap, focus return
+│   ├── deadline.ts                  # Deadline date and countdown text
+│   ├── stateFile.ts                 # Export, import and reset of saved state, for both More menus
+│   └── usePhoneLayout.ts            # True at the phone breakpoint (900px and below)
 ├── terminal/
 │   ├── TerminalApp.tsx              # Planner workstation: Player Universe & Squad Builder panels
-│   └── WorkspaceSwitcher.tsx        # Navigation header switching between Planner and Leagues
+│   ├── WorkspaceSwitcher.tsx        # Navigation header switching between Planner and Leagues
+│   ├── squad/
+│   │   ├── SquadKpis.tsx            # Projection, value, bank, transfers and rating strip
+│   │   ├── SquadPitch.tsx           # Starting XI by line on a pitch, with the bench strip
+│   │   ├── PitchToken.tsx           # One player on the pitch or bench: shirt, flags, fixture, xP
+│   │   ├── PitchLayout.tsx          # Generic pitch lines and bench strip, shared by Planner and Leagues
+│   │   ├── TokenShirt.tsx           # Club shirt with badge slots, shared by both token types
+│   │   ├── SquadTable.tsx           # Squad as one row per player, for the Table view
+│   │   └── PlayerActions.tsx        # Player action sheet: captaincy, bench order, lock, remove
+│   ├── rail/
+│   │   ├── DecisionRail.tsx         # Layout for the four decision sections
+│   │   ├── CaptainSection.tsx       # Four starters with the most GW xP, as bars
+│   │   └── AlertsSection.tsx        # "Needs a look" alerts, worst first
+│   ├── players/
+│   │   ├── PlayersTable.tsx         # Desktop player market table with sortable headers
+│   │   ├── PlayerList.tsx           # Phone player rows and sort line
+│   │   ├── FilterSheet.tsx          # Filters outside the filter row, in a sheet
+│   │   ├── ActiveFilters.tsx        # Removable chips for filters that are on
+│   │   ├── ColumnsMenu.tsx          # Checkboxes for the optional table columns
+│   │   └── columns.ts               # Optional column labels, sort keys and order
+│   └── fixtures/
+│       └── FixtureChips.tsx         # Fixture chip, run of chips, and run strip
 └── leagues/
     ├── LeagueScreen.tsx             # Live leagues container, state synchronization, and responsive tabs
     ├── MyLeaguesPanel.tsx           # Mini-league selector
@@ -217,6 +246,7 @@ components/
     ├── LiveGameweekPanel.tsx        # Gameweek summary, average score, and top score
     ├── MatchCentre.tsx              # Fixture tracker with match status and live BPS
     ├── LiveSquad.tsx                # Pitch view of any manager's live XI, bench, and autosubs
+    ├── LivePitchToken.tsx           # One live player on the pitch or bench: read-only shirt, price, fixtures, value
     ├── LiveFeed.tsx                 # Real-time event stream (goals, assists, cards, subs)
     ├── useLeaguesData.ts            # Polling hook for live standings, picks, and elements
     └── tableSort.tsx                # Table sorting primitives
@@ -252,19 +282,31 @@ lib/
 │   ├── diffLiveSnapshots.ts         # Compares live snapshots to produce human-readable explain blocks
 │   ├── feedEvents.ts                # Merges and deduplicates match feed events
 │   ├── leagueImpact.ts              # Effective ownership (EO) and net rank delta calculations
+│   ├── livePitch.ts                 # Live squad as pitch rows and bench slots (GK, B1-B3), with the formation
 │   └── leagueKey.ts & display.ts    # League storage keys, formatting, and display helpers
 ├── analysis/                        # Squad analytics and transfer engines
 │   ├── singleTransfers.ts           # Exact single transfer search with Pareto dominance
 │   ├── analyzeSquad.ts              # Squad summary, strengths, structural warnings
 │   ├── weakness.ts                  # Identifies underperforming or risky squad slots
 │   ├── simulateChange.ts            # Simulates additions, removals, or swaps on squad metrics
+│   ├── expectedInvolvement.ts       # In-season xGI per 90, with prior-season fallback
+│   ├── squadAlerts.ts               # Rail alert rules: availability, hard runs, blank and double Gameweeks
+│   ├── universeWeek.ts              # Planning-Gameweek market metrics, from the weekly-lineup engine
 │   └── context.ts                   # Shared analysis types, player universe wrappers, and utilities
 ├── availability/                    # Player availability and selection model
 │   ├── selection.ts                 # Combines RotoWire, history, and FPL status into P(start), P(cameo), P(DNP)
 │   ├── startRate.ts                 # Recursive alpha update (alpha=0.60) for current-season starts
 │   ├── rotowire.ts                  # Parses RotoWire lineups and availability labels
 │   ├── rotowireMapping.ts           # Maps RotoWire player identities to FPL element IDs
+│   ├── startChance.ts               # Start chance for display: 0 when unavailable, undefined without evidence
+│   ├── status.ts                    # availabilityOf: AVAILABLE, DOUBTFUL or UNAVAILABLE from FPL status
 │   └── refreshLineups.ts            # Validates and refreshes lineup snapshots
+├── display/                         # Shared display rules and formatting
+│   ├── clubColours.ts               # Club shirt colour and text colour on it, with a grey fallback
+│   ├── filterCount.ts               # Active filter count and removable filter chips
+│   ├── fixtureLabel.ts              # Home fixtures upper case, away fixtures lower case
+│   ├── fixtureRun.ts                # Gameweek slots and difficulty levels for a fixture run
+│   └── format.ts                    # Money from integer tenths; points to one decimal place
 ├── historical/                      # Prior-season inputs and in-season history
 │   ├── load.ts                      # Loads historical players and match stats
 │   ├── enrichPlayers.ts             # Enriches players with history, consensus team strength, and priors
@@ -366,6 +408,6 @@ LeagueScreen UI (Standings, Match Centre with live BPS, Live Squad, Net Rank Imp
 - **Preserve Working Tree**: Do not discard unrelated uncommitted changes.
 - **Never Hand-Edit Snapshots**: Do not hand-edit generated JSON files in `data/` or mock fixtures to make a test pass. Fix the underlying generator or normalization code.
 - **No Heavy Infrastructure**: Do not introduce a database, external authentication, background cron daemon, or official FPL submission mechanism unless explicitly requested.
-- **Responsive Terminal Design**: Test both desktop (1280×720) and mobile (390×844) viewports. Maintain the terminal aesthetic: dark palette, monospace accents, compact typography, thin scrollbars, clear status tones, and centered pitch layouts.
+- **Responsive Terminal Design**: Test both desktop (1280×720) and mobile (390×844) viewports. Maintain the dark, dense terminal look: design tokens in `app/globals.css`, Geist for labels, mono for numbers, a 12px text floor on phones, the squad drawn as a pitch with a table alternative, thin scrollbars, clear status tones.
 - **Math References**: When modifying projections, rates, form decay, or clean-sheet calculations, consult `calculations.md` (the comprehensive mathematical specification).
 <!-- codex-workflow-project-local-instructions-end -->

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { Player, Position } from "@/types";
 import type { ChipKind } from "@/types/chips";
 import { baselineWithMigrationFallback, useTerminalStore } from "@/store/terminalStore";
-import { chipLabel, validateChipSelection } from "@/lib/chips/seasonPolicy";
+import { chipLabel, validateChipSelection, windowForGameweek } from "@/lib/chips/seasonPolicy";
 import { replayTimeline } from "@/lib/chips/timeline";
 import { squadFinanceSnapshot } from "@/lib/chips/finance";
 import { pickWeeklyTeam } from "@/lib/squad/weeklyLineup";
@@ -23,14 +23,14 @@ export type ChipSuggestion = {
 };
 
 const CHIP_OPTIONS: Array<{ kind: ChipKind | null; label: string }> = [
-  { kind: null, label: "NONE" },
+  { kind: null, label: "None" },
   { kind: "wildcard", label: "WC" },
   { kind: "freehit", label: "FH" },
   { kind: "bboost", label: "BB" },
   { kind: "3xc", label: "TC" },
 ];
 
-/** Compact chip selector beside the Gameweek switcher. */
+/** Chip choice for one Gameweek. A used chip says which Gameweek it went in, as text. */
 export function ChipSelector({ gameweek, onNotice }: { gameweek: number; onNotice: (text: string) => void }) {
   const chip = useTerminalStore((state) => state.chip);
   const gameweekPlans = useTerminalStore((state) => state.gameweekPlans);
@@ -58,14 +58,19 @@ export function ChipSelector({ gameweek, onNotice }: { gameweek: number; onNotic
               Object.fromEntries(Object.entries(planned).filter(([key]) => Number(key) !== gameweek)),
               currentGameweek,
             );
+        const legal = validation.legal;
+        // The chip's official use in this chip window, shown as text so it does not depend on a tooltip.
+        const used = option.kind === null
+          ? undefined
+          : usedChips.find((entry) => entry.kind === option.kind && windowForGameweek(entry.gameweek) === windowForGameweek(gameweek));
         return (
           <button
             key={option.label}
             type="button"
-            className={`chip-option ${active ? "active" : ""}`}
-            aria-pressed={active}
-            disabled={!validation.legal}
-            title={validation.legal ? `${option.label} for GW${gameweek}` : ("reason" in validation ? validation.reason : "")}
+            className={`chip-option ${active && legal ? "active" : ""} ${used ? "used" : ""}`}
+            aria-pressed={active && legal}
+            disabled={!legal}
+            title={!legal && !used && "reason" in validation ? validation.reason : undefined}
             onClick={() => {
               if (option.kind === chip) return;
               if (!setChip(gameweek, option.kind)) {
@@ -75,7 +80,8 @@ export function ChipSelector({ gameweek, onNotice }: { gameweek: number; onNotic
               onNotice(option.kind ? `${chipLabel(option.kind)} planned for GW${gameweek}.` : `Chip cleared for GW${gameweek}.`);
             }}
           >
-            {option.label}
+            <span className="chip-name">{option.label}</span>
+            {used && <span className="chip-used"><span>Used</span> <span>GW {used.gameweek}</span></span>}
           </button>
         );
       })}
@@ -282,35 +288,35 @@ export function ChipStrategyPanel({
 
   if (!open) {
     return (
-      <section className="panel chip-strategy" aria-label="Chip strategy">
-      <div className="subsection-head">
-        <div><span className="section-kicker">CHIP STRATEGY</span><span className="panel-count">GW{planningGameweek}–{windowEnd}</span></div>
-          <button type="button" className="compact-action" onClick={() => { setOpen(true); void refresh(); }}>ANALYZE CHIPS</button>
+      <section className="chip-strategy" aria-label="Chip strategy">
+        <div className="chip-strategy-head">
+          <p>Best week for each chip, GW{planningGameweek}–{windowEnd}</p>
+          <button type="button" className="compact-action" onClick={() => { setOpen(true); void refresh(); }}>Analyze chips</button>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="panel chip-strategy" aria-label="Chip strategy">
-      <div className="subsection-head">
-        <div><span className="section-kicker">CHIP STRATEGY</span><span className="panel-count">GW{planningGameweek}–{windowEnd} · {suggestions.length} SUGGESTIONS</span></div>
+    <section className="chip-strategy" aria-label="Chip strategy">
+      <div className="chip-strategy-head">
+        <p>GW{planningGameweek}–{windowEnd} · {suggestions.length} {suggestions.length === 1 ? "idea" : "ideas"}</p>
         <div className="header-actions">
-          <button type="button" className="compact-action" onClick={() => void refresh()}>{state === "LOADING" ? "ANALYZING…" : "REFRESH"}</button>
-          <button type="button" className="compact-action" onClick={() => setOpen(false)}>CLOSE</button>
-          {preApplySnapshot && <button type="button" className="compact-action" onClick={() => { if (undoChipApply()) onNotice("Chip advice undone."); }}>UNDO</button>}
+          <button type="button" className="compact-action" onClick={() => void refresh()}>{state === "LOADING" ? "Analyzing…" : "Refresh"}</button>
+          <button type="button" className="compact-action" onClick={() => setOpen(false)}>Close</button>
+          {preApplySnapshot && <button type="button" className="compact-action" onClick={() => { if (undoChipApply()) onNotice("Chip advice undone."); }}>Undo</button>}
         </div>
       </div>
       <div className="replacement-scroll">
-        {state === "LOADING" && <div className="empty-copy">SOLVING CHIP PLANS (GW{planningGameweek}–{windowEnd})…</div>}
-        {state === "ERROR" && <div className="empty-copy">{message ?? "Chip advice is unavailable."}</div>}
-        {state === "READY" && !suggestions.length && <div className="empty-copy">No chips remain in this window.</div>}
+        {state === "LOADING" && <p className="rail-empty">Solving chip plans for GW{planningGameweek}–{windowEnd}…</p>}
+        {state === "ERROR" && <p className="rail-empty">{message ?? "Chip advice is unavailable."}</p>}
+        {state === "READY" && !suggestions.length && <p className="rail-empty">No chips remain in this window.</p>}
         {state === "READY" && suggestions.map((suggestion) => (
           <div className="replacement-row" key={`${suggestion.chip}-${suggestion.gameweek}`}>
             <div>
               <strong>{chipLabel(suggestion.chip)} · GW{suggestion.gameweek}</strong>
               <small>
-                {suggestion.incrementalXp > 0 ? `+${suggestion.incrementalXp.toFixed(1)} xP vs saved plan` : "no projected edge"}
+                {suggestion.incrementalXp > 0 ? `+${suggestion.incrementalXp.toFixed(1)} xP on your saved plan` : "No projected gain"}
               </small>
             </div>
             <div className="transfer-effects">
@@ -319,7 +325,7 @@ export function ChipStrategyPanel({
               </span>
             </div>
             <div className="transfer-actions">
-              <button type="button" className="compact-action" onClick={() => apply(suggestion)}>APPLY</button>
+              <button type="button" className="compact-action" onClick={() => apply(suggestion)}>Apply</button>
             </div>
             {!!suggestion.reasons.length && <small className="chip-reason">{suggestion.reasons[0]}</small>}
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { feedAgeLabel } from "@/lib/leagues/display";
+import { feedAgeLabel, sentenceCase, shouldShowLeagueImpact } from "@/lib/leagues/display";
 import { FEED_FILTERS, feedTone, matchesFeedFilter, type FeedFilter } from "@/lib/leagues/feedEvents";
 import {
   ownersOf,
@@ -20,13 +20,17 @@ function signed(points: number): string {
   return points > 0 ? `+${points}` : `${points}`;
 }
 
-/** Says what the number compares against, or why there is no number. */
-function impactLabel(readout: ImpactReadout): string {
-  if (readout.kind === "LOADING") return "LEAGUE IMPACT LOADING…";
-  if (readout.kind === "UNAVAILABLE") return "LEAGUE IMPACT UNAVAILABLE";
+/**
+ * Says what the number compares against, or why there is no number. A readout
+ * that reads as 0.0 has no line at all.
+ */
+function impactLabel(readout: ImpactReadout): string | null {
+  if (readout.kind === "LOADING") return "League impact loading…";
+  if (readout.kind === "UNAVAILABLE") return "League impact unavailable";
+  if (!shouldShowLeagueImpact(readout.impact)) return null;
   const value = readout.impact > 0 ? `+${readout.impact.toFixed(1)}` : readout.impact.toFixed(1);
-  const basis = readout.basis === "LEAGUE" ? "" : ` VS TOP ${readout.sampleSize}`;
-  return `LEAGUE IMPACT ${value}${basis}`;
+  const basis = readout.basis === "LEAGUE" ? "" : ` vs top ${readout.sampleSize}`;
+  return `League impact ${value}${basis}`;
 }
 
 /** Kinds whose stat change says something the row title does not. */
@@ -93,13 +97,13 @@ export default function LiveFeed({
   };
 
   const announcement = visible.length
-    ? `${visible.length} events. Newest: ${playerName(visible[0]!.playerId)} ${visible[0]!.kind}.`
+    ? `${visible.length} events. Newest: ${playerName(visible[0]!.playerId)} ${visible[0]!.kind.toLowerCase()}.`
     : "No events.";
 
   return (
     <section className="leagues-panel live-feed-panel" aria-label="Live feed">
       <div className="panel-header">
-        <span className="section-kicker">LIVE FEED</span>
+        <span className="section-kicker">Live feed</span>
         <span className="panel-count">{visible.length}</span>
       </div>
       <div className="segmented feed-filters" role="group" aria-label="Feed filter">
@@ -111,7 +115,7 @@ export default function LiveFeed({
             className={filter === value ? "active" : ""}
             onClick={() => setFilter(value)}
           >
-            {value}
+            {sentenceCase(value)}
           </button>
         ))}
       </div>
@@ -126,14 +130,14 @@ export default function LiveFeed({
       >
         {unreadCount > 0 && (
           <button type="button" className="feed-new" onClick={backToTop} data-testid="feed-new-pill">
-            {unreadCount} NEW ↑
+            {unreadCount} new ↑
           </button>
         )}
         {!visible.length && (
           <div className="empty-state">
             {events.length
-              ? `NO EVENTS MATCH THIS FILTER · ${hidden} HIDDEN`
-              : "NOTHING HAS SCORED IN THIS GAMEWEEK YET"}
+              ? `No events match this filter · ${hidden} hidden`
+              : "Nothing has scored in this Gameweek yet"}
           </div>
         )}
         <ul className="feed-list">
@@ -149,26 +153,28 @@ export default function LiveFeed({
               pointsDelta: event.pointsDelta,
               userMultiplier,
             });
-            const role = mine?.isCaptain ? " · CAPTAIN" : mine?.isViceCaptain ? " · VICE" : "";
+            const role = mine?.isCaptain ? " · captain" : mine?.isViceCaptain ? " · vice" : "";
             const age = feedAgeLabel(event, now);
             const toneClass = feedTone(yourPoints);
+            // A reconstructed row has no minute to give, so its column stays blank
+            // and the title keeps its place.
+            const minute = event.minute ?? (event.seeded ? "" : "--'");
+            const impactLine = [impactLabel(impact), age].filter(Boolean).join(" · ");
             return (
               <li key={event.id} className={`feed-event ${toneClass}`} data-testid="feed-event" title={event.detail}>
                 <div className="feed-head">
-                  <span className="feed-minute">{event.minute ?? (event.seeded ? "GW" : "--'")}</span>
-                  <strong className="feed-title">{playerName(event.playerId)} {event.kind}</strong>
+                  <span className="feed-minute">{minute}</span>
+                  <strong className="feed-title">{playerName(event.playerId)} {event.kind.toLowerCase()}</strong>
                   <span className="feed-delta">{signed(event.pointsDelta)}</span>
                 </div>
                 <div className="feed-sub">
                   {mine
-                    ? <>YOU {userMultiplier > 0 ? signed(yourPoints) : "— · BENCH"}{role}</>
-                    : owners > 0 ? `MY LEAGUE ×${owners}` : "LEAGUE WATCH"}
+                    ? <>You {userMultiplier > 0 ? signed(yourPoints) : "— · bench"}{role}</>
+                    : owners > 0 ? `My league ×${owners}` : "League watch"}
                 </div>
-                <div className="feed-sub">
-                  {impactLabel(impact)}{age ? ` · ${age}` : ""}
-                </div>
+                {impactLine && <div className="feed-sub">{impactLine}</div>}
                 {showsDetail(event) && event.detail && (
-                  <div className="feed-sub feed-detail">{event.detail.toUpperCase()}</div>
+                  <div className="feed-sub feed-detail">{event.detail}</div>
                 )}
               </li>
             );
