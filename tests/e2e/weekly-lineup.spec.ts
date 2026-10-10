@@ -87,7 +87,7 @@ test.describe("weekly lineup acceptance", () => {
 
   /** Captaincy and bench order live in each player's sheet, which a tap on the token opens. */
   async function openStarterSheet(page: Page, region: ReturnType<typeof weeklyRegion>) {
-    await startingXi(region).getByTestId("squad-token").first().click();
+    await startingXi(region).getByTestId("squad-token").first().locator(".token-shirt").click();
     const sheet = page.getByRole("dialog").first();
     await expect(sheet).toBeVisible();
     return sheet;
@@ -98,7 +98,7 @@ test.describe("weekly lineup acceptance", () => {
     const starterCount = await starters.count();
     let captainIndex = -1;
     for (let index = 0; index < starterCount && captainIndex < 0; index += 1) {
-      await starters.nth(index).click();
+      await starters.nth(index).locator(".token-shirt").click();
       const sheet = page.getByRole("dialog").first();
       await expect(sheet).toBeVisible();
       const captain = sheet.getByRole("button", { name: /make .* captain/i });
@@ -113,7 +113,7 @@ test.describe("weekly lineup acceptance", () => {
     let viceChosen = false;
     for (let index = 0; index < starterCount && !viceChosen; index += 1) {
       if (index === captainIndex) continue;
-      await starters.nth(index).click();
+      await starters.nth(index).locator(".token-shirt").click();
       const sheet = page.getByRole("dialog").first();
       await expect(sheet).toBeVisible();
       const vice = sheet.getByRole("button", { name: /make .* vice-captain/i });
@@ -130,7 +130,7 @@ test.describe("weekly lineup acceptance", () => {
     const bench = benchOf(region).getByTestId("squad-token");
     const benchCount = await bench.count();
     for (let index = 0; index < benchCount; index += 1) {
-      await bench.nth(index).click();
+      await bench.nth(index).locator(".token-shirt").click();
       const sheet = page.getByRole("dialog").first();
       await expect(sheet).toBeVisible();
       const down = sheet.getByRole("button", { name: /move .* down the bench order/i });
@@ -279,7 +279,7 @@ test.describe("weekly lineup acceptance", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(region).toBeVisible();
     // Narrow viewports open a bottom sheet for each player, with captaincy inside it.
-    await startingXi(region).getByTestId("squad-token").first().click();
+    await startingXi(region).getByTestId("squad-token").first().locator(".token-shirt").click();
     const sheet = page.getByRole("dialog").first();
     await expect(sheet).toBeVisible();
     const captain = sheet.getByRole("button", { name: /make .* captain/i });

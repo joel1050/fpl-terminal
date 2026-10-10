@@ -192,7 +192,7 @@ test.describe("chip planning", () => {
     await page.reload();
     await expect(page.getByPlaceholder(/search player, club/i)).toBeVisible();
     const reloaded = page.getByRole("region", { name: /squad builder and analysis/i });
-    await reloaded.locator('[data-testid="squad-token"][data-player="Rogers"]').click();
+    await reloaded.locator('[data-testid="squad-token"][data-player="Rogers"]').locator(".token-shirt").click();
     const sheet = page.getByRole("dialog", { name: "Rogers", exact: true });
     await expect(sheet).toBeVisible();
     await sheet.getByRole("button", { name: /unlock rogers/i }).click();

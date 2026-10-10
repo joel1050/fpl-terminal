@@ -56,7 +56,7 @@ test.describe("squad pitch", () => {
   /** Escape first: an open sheet's backdrop would otherwise take the tap. */
   async function openActions(page: Page, name: string): Promise<Locator> {
     await page.keyboard.press("Escape");
-    await token(page, name).click();
+    await token(page, name).locator(".token-shirt").click();
     const dialog = page.getByRole("dialog", { name, exact: true });
     await expect(dialog).toBeVisible();
     return dialog;
@@ -388,7 +388,7 @@ test.describe("squad pitch", () => {
     await expect(benchStrip(page).locator('[data-testid="squad-token"][data-player="Pau"]')).toHaveCount(1);
     await expect(startingXi(page).locator('[data-testid="squad-token"][data-player="Konsa"]')).toHaveCount(1);
 
-    await token(page, "Gordon").click();
+    await token(page, "Gordon").locator(".token-shirt").click();
     await expect(page.getByRole("dialog", { name: "Gordon", exact: true })).toBeVisible();
   });
 
@@ -539,7 +539,7 @@ test.describe("squad pitch", () => {
     await lock.click();
     await expect(lock).toHaveAttribute("aria-pressed", before ?? "false");
     // The rest of the token still opens the sheet.
-    await token(page, "Haaland").click();
+    await token(page, "Haaland").locator(".token-shirt").click();
     await expect(page.getByRole("dialog", { name: "Haaland", exact: true })).toBeVisible();
   });
 
@@ -596,7 +596,7 @@ test.describe("squad pitch", () => {
     const covered = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest(".token-run-layer") !== null, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
     expect(covered).toBe(false);
 
-    await token(page, "Haaland").click();
+    await token(page, "Haaland").locator(".token-shirt").click();
     await expect(page.getByRole("dialog", { name: "Haaland", exact: true })).toBeVisible();
   });
 

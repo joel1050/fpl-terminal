@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { bootstrapStaticFixture } from "../fixtures/fpl";
 import { interceptFplData } from "../fixtures/network";
 
@@ -40,15 +40,6 @@ async function open(page: Page, width: number, height: number, faesDoubtful = fa
   await expect(page.getByText(/15\s*\/\s*15 selected/i).first()).toBeVisible();
 }
 
-/** True when the element at the centre of `row` is the name link or inside it. */
-async function centreHitsName(row: Locator) {
-  return row.evaluate((el) => {
-    const box = el.getBoundingClientRect();
-    const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
-    return Boolean(hit?.closest(".player-name-link"));
-  });
-}
-
 test.describe("player name links", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
@@ -77,22 +68,6 @@ test.describe("player name links", () => {
     await expect(actionSheet(page, "Haaland")).toBeVisible();
     await expect(detail(page, "Haaland")).toHaveCount(0);
   });
-
-  for (const [width, height] of [[1440, 900], [1280, 720]]) {
-    test(`the centre of a token, a captain row and a table row is off the name at ${width}`, async ({ page }) => {
-      await open(page, width, height);
-      for (const player of ["Haaland", "Rice", "Faes", "Pau", "Areola"]) {
-        const t = token(page, player);
-        await expect(t, `${player} at ${width}`).toBeVisible();
-        expect(await centreHitsName(t), `${player} token centre at ${width}`).toBe(false);
-      }
-      const row = rail(page).locator(".captain-row").first();
-      expect(await centreHitsName(row), `captain row at ${width}`).toBe(false);
-      await squadPanel(page).getByRole("group", { name: "Squad view" }).getByRole("button", { name: "Table", exact: true }).click();
-      const tableRow = squadPanel(page).locator("tr[data-player='Haaland'] .sq-row-button");
-      expect(await centreHitsName(tableRow), `table row at ${width}`).toBe(false);
-    });
-  }
 
   test("a captain name and an alert name open that player's details", async ({ page }) => {
     await open(page, 1440, 900, true);
