@@ -3,10 +3,12 @@ import type { Player } from "@/types/player";
 import {
   aggregateFixturePointsByGameweek,
   calculateFixtureAdjustment,
+  calculateRiskScore,
   estimateExpectedMinutes,
   fixturePointsForGameweek,
   projectPlayer,
   projectedPointsForGameweeks,
+  projectionConfidence,
   regressPer90,
 } from "@/lib/projections";
 
@@ -147,6 +149,15 @@ describe("transparent projection model", () => {
   it("discounts an unavailable player without a selection model as severely as officialAvailability does with one", () => {
     const injured = { ...player([]), status: "i" as const };
     expect(estimateExpectedMinutes(injured)).toBeLessThan(1);
+  });
+
+  it("scores a suspended player's risk like an injured one when FPL gives no percentage", () => {
+    const available = { ...player([]), chanceOfPlaying: null };
+    const injured = { ...available, status: "i" as const };
+    const suspended = { ...available, status: "s" as const };
+    expect(calculateRiskScore(suspended, 80)).toBe(calculateRiskScore(injured, 80));
+    expect(calculateRiskScore(suspended, 80)).toBeGreaterThan(calculateRiskScore(available, 80));
+    expect(projectionConfidence(suspended)).toBe(projectionConfidence(injured));
   });
 
   it("aggregates doubles for nextGW and counts distinct gameweeks for horizons", () => {

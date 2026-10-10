@@ -219,7 +219,7 @@ export async function POST(request: Request) {
         // Free Hit: exact one-week solve with selling value + bank.
         const prior = gw > gameweek ? timeline[gw - 1] : null;
         const permanentIds = prior ? prior.permanentSquadIds : baseline.squadPlayerIds;
-        const bank = prior ? prior.bankTenths : baseline.bankTenths;
+        const bank = prior ? prior.bankAfterTenths : baseline.bankTenths;
         const purchasePrices = (prior ? prior.purchasePricesTenths : baseline.purchasePricesTenths) as Record<number, number>;
         let sellingValue = bank;
         let priced = true;

@@ -7,7 +7,7 @@ function clamp(value: number, minimum: number, maximum: number): number {
 function availability(player: Player): number {
   if (typeof player.chanceOfPlaying === "number") return clamp(player.chanceOfPlaying, 0, 100) / 100;
   const status = player.status.toLowerCase();
-  if (/injur|suspend|unavail|out|not.?squad/.test(status) || ["i", "u", "n"].includes(status)) return 0.25;
+  if (/injur|suspend|unavail|out|not.?squad/.test(status) || ["i", "u", "n", "s"].includes(status)) return 0.25;
   if (/doubt|knock|ill/.test(status) || status === "d") return 0.75;
   return 1;
 }

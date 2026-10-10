@@ -2,7 +2,7 @@
 
 This document describes how every metric in FPL Terminal is calculated. It keeps three things separate on purpose: **facts** (live FPL data), **evidence** (history, RotoWire), and **estimates** (projections, risk, confidence). Each estimate is traceable to the inputs that produced it.
 
-Source files are referenced as `path:line`.
+Source files are cited by path and function or constant name. Line numbers are left out because they drift with every edit.
 
 ---
 
@@ -23,7 +23,7 @@ Live FPL bootstrap data is normalized in `lib/fpl/normalize.ts`.
 
 ### 2.1 `current` stats (facts)
 
-From `normalizePlayer` (`lib/fpl/normalize.ts:207`):
+From `normalizePlayer` (`lib/fpl/normalize.ts`):
 
 | Field | Source |
 |---|---|
@@ -115,13 +115,13 @@ consensus = 0.76 + tier * 0.08        // tier in 1..5
 
 `0.76 + tier * 0.08` isn't an arbitrary rescale: it lands tier 1-5 exactly on `0.84, 0.92, 1.00, 1.08, 1.16` - the same five anchors the clean-sheet probability table (§7.4) was calibrated against. A raw 1-5 integer would both break every multiplier that assumes "1.0 = average" and make `nearestStrengthTier` (§7.4) snap almost every team to the wrong table row.
 
-`consensusRatio` (`lib/historical/enrichPlayers.ts:60`) applies this to `rating` (overall), `attackRating`, and `defenceRating` independently (`lib/fpl/normalize.ts:34`, `NormalizedTeam.strength`). If a club has an overall tier but no separate attack/defence split yet, attack and defence both fall back to the overall tier rather than being left undefined.
+`consensusRatio` (`lib/historical/enrichPlayers.ts`) applies this to `rating` (overall), `attackRating`, and `defenceRating` independently (`lib/fpl/normalize.ts`, `NormalizedTeam.strength`). If a club has an overall tier but no separate attack/defence split yet, attack and defence both fall back to the overall tier rather than being left undefined.
 
 If no consensus tier exists at all for a dimension, the raw home/away/attack/defence strengths from the bootstrap payload are used instead (falling back to 1.0).
 
 ### 3.2 Normalization by source
 
-`deriveTeamStrengths` (`lib/historical/enrichPlayers.ts:80`) divides each team's value by a **league average**, but consensus ratios (~0.84-1.16) and raw FPL fallback fields (which can run in the hundreds) are never averaged into the same pool - `normalizeBySource` (`lib/historical/enrichPlayers.ts:73`) computes the mean separately within the consensus group and within the fallback group, per dimension, so a club without a manual tier can't crush every other club's ratio onto its scale:
+`deriveTeamStrengths` (`lib/historical/enrichPlayers.ts`) divides each team's value by a **league average**, but consensus ratios (~0.84-1.16) and raw FPL fallback fields (which can run in the hundreds) are never averaged into the same pool - `normalizeBySource` (`lib/historical/enrichPlayers.ts`) computes the mean separately within the consensus group and within the fallback group, per dimension, so a club without a manual tier can't crush every other club's ratio onto its scale:
 
 ```
 attackHome = attackHome.value / mean(attackHome values from the same source: consensus or fallback)
@@ -185,11 +185,11 @@ This is the reason §7.4 carries its own level rather than re-levelling section 
 
 ## 4. Selection / availability model
 
-`buildPlayerSelections` (`lib/availability/selection.ts:237`) produces a `PlayerSelection` for every player. It blends three signals: historical starts, RotoWire lineups, and official FPL status.
+`buildPlayerSelections` (`lib/availability/selection.ts`) produces a `PlayerSelection` for every player. It blends three signals: historical starts, RotoWire lineups, and official FPL status.
 
 ### 4.1 Historical signal
 
-`historicalSignal` (`lib/availability/selection.ts:63`) computes:
+`historicalSignal` (`lib/availability/selection.ts`) computes:
 
 ```
 sample    = max(matches, starts, ceil(minutes / 90))
@@ -229,22 +229,26 @@ Backtested in `scripts/backtest/start-rate-alpha.ts` across 2023/24, 2024/25, an
 
 ### 4.2 Fallbacks
 
-When there is no historical sample (`lib/availability/selection.ts:102`):
+When there is no historical sample (`fallbackStartRate` / `fallbackCameoRate`, `lib/availability/selection.ts`):
 
 ```
 fallbackStartRate = current.minutes <= 0 ? 0.15 : clamp(0.1 + minutes / 1800, 0.15, 0.8)
 fallbackCameoRate = current.minutes > 0 ? 0.12 : 0.08
 ```
 
-For a player with **no previous season at all** — a promoted club's squad or a new signing — the seed is a flat `0.15` start / `0.08` cameo (`UNKNOWN_START_SEED = 0.15`, `UNKNOWN_CAMEO_SEED = 0.08`, `lib/availability/selection.ts:126`) once this season has match observations (`observations.length > 0`), rather than `fallbackStartRate`. The fallbacks read `player.current.minutes`, which is the running total the recursion is about to replay match by match; seeding from it would count this season twice at two different speeds. The `fallbackStartRate` terms still apply when there are zero current-season observations, where they are the only evidence there is.
+For a player with **no previous season at all** — a promoted club's squad or a new signing — the seed is a flat `0.15` start / `0.08` cameo (`UNKNOWN_START_SEED = 0.15`, `UNKNOWN_CAMEO_SEED = 0.08`, `lib/availability/selection.ts`) once this season has match observations (`observations.length > 0`), rather than `fallbackStartRate`. The fallbacks read `player.current.minutes`, which is the running total the recursion is about to replay match by match; seeding from it would count this season twice at two different speeds. The `fallbackStartRate` terms still apply when there are zero current-season observations, where they are the only evidence there is.
 
 ### 4.3 Blending
 
 ```
+roleStart  = blendStartRate(seedStart, observations)            // §4.1.1
+roleCameo  = blendCameoRate(seedStart, seedCameo, observations)  // or the current frequency, see below
 seedWeight = observations.length > 0 ? 0 : 0.25
-start      = historicalStart * (1 - seedWeight) + fallbackStartRate * seedWeight
-cameo      = historicalCameo * (1 - seedWeight) + fallbackCameoRate * seedWeight
+start      = roleStart * (1 - seedWeight) + fallbackStartRate * seedWeight
+cameo      = roleCameo * (1 - seedWeight) + fallbackCameoRate * seedWeight
 ```
+
+`seedStart` and `seedCameo` are the §4.1 historical rates, or the §4.2 seeds when there is no history. With no observations the recursion returns the seed unchanged.
 
 The `0.25` fallback term applies only while the player has no current-season observations (`observations.length === 0`). It existed to temper an estimate whose sole evidence was last season; once this season's own matches are in the estimate that term only dilutes them, since `fallbackStartRate` is clamped to 0.15–0.80 and would drag a measured 0.99 down to 0.94 and push a measured 0.02 up to 0.05.
 
@@ -263,15 +267,15 @@ the RotoWire signal dominates:
 ```
 rotowireStart = starter ? (confirmed ? 0.96 : 0.90) : 0.10
 rotowireCameo = starter ? 0.05 : 0.12
-start         = rotowireStart * 0.75 + historicalStart * 0.25
-cameo         = rotowireCameo * 0.75 + historicalCameo * 0.25
+start         = rotowireStart * 0.75 + roleStart * 0.25
+cameo         = rotowireCameo * 0.75 + roleCameo * 0.25
 ```
 
-RotoWire's own `UNAVAILABLE` records then apply. `OUT` and `SUS` are rulings, not doubts, and gate as hard as FPL's unavailable codes (§4.4) - start and cameo are capped at `0.01`. Only `QUES` is soft, and it is resolved against FPL's status rather than multiplied with it.
+RotoWire's own `UNAVAILABLE` records then apply. `OUT` and `SUS` are rulings, not doubts, and gate as hard as FPL's unavailable codes (§4.4) - start and cameo are capped at `0.01`. Only `QUES` is soft: it discounts start by `0.65` and cameo by `0.75`, and it is resolved against FPL's status rather than multiplied with it (§4.4.1).
 
 ### 4.4 Official status gate
 
-`officialAvailability` (`lib/availability/selection.ts:143`) applies a final factor, based only on `player.status`'s short FPL code (`i`, `d`, `s`, `u`, `n`, …) - never free text, so there is no separate wording-based path:
+`officialAvailability` (`lib/availability/selection.ts`) applies a final factor, based only on `player.status`'s short FPL code (`i`, `d`, `s`, `u`, `n`, …) - never free text, so there is no separate wording-based path:
 
 - Unavailable (`i`, `u`, `n`, `s`): `factor = 0.01`, then multiplied by `chanceOfPlaying / 100` when present; start/cameo are additionally capped at `0.01`.
 - Doubtful (`d`): `factor = chanceOfPlaying / 100` directly when FPL has supplied a percentage - `chanceOfPlaying` is already FPL's specific estimate for this player, so it is used as-is rather than discounted further. `factor = 0.7` only when no percentage is available.
@@ -282,17 +286,17 @@ RotoWire's own `UNAVAILABLE` records then apply. `OUT` and `SUS` are rulings, no
 FPL's doubtful flag and RotoWire's `QUES` are usually the same injury reported twice, so they are never multiplied together. Two rules apply:
 
 - **The hard gate always wins.** If FPL rules a player out (`i`, `u`, `n`, `s`), or RotoWire records `OUT`/`SUS`, start and cameo are capped at `0.01` and nothing below runs. A predicted XI is a forecast published before the news: on the snapshot taken 21 August 2026, **53 of 310** RotoWire starters were players FPL had already given a 0% chance of playing. RotoWire never overrides that.
-- **Otherwise the single most severe discount applies**, not the product. A predicted starter carrying both RotoWire `QUES` and FPL's 75% used to land near `0.43` - reading as a rotation risk rather than the likely starter RotoWire had named.
+- **Otherwise the single most severe discount applies**, not the product: `startFactor = min(QUES ? 0.65 : 1, officialFactor)`, and the same for cameo with `0.75`. A predicted starter carrying both RotoWire `QUES` and FPL's 75% used to land near `0.43` - reading as a rotation risk rather than the likely starter RotoWire had named.
 
 When RotoWire still names a doubtful player in the XI, that lineup is the later and more specific judgement and sets a floor rather than being multiplied away: `0.62` for a predicted XI, `0.80` for a confirmed team sheet (`ROTOWIRE_PREDICTED_FLOOR`/`ROTOWIRE_CONFIRMED_FLOOR`). Neither floor applies on the hard-gate path.
 
 None of this is backtested - there is no RotoWire archive for a past season, only the current snapshot - so it is held in place by deterministic tests in `tests/data/rotowire-precedence.test.ts` instead.
 
-`evidenceFor` (`lib/availability/selection.ts:183`) also surfaces `player.news` - FPL's free-text injury/return note - as an `FPL_STATUS` evidence entry when present, so it is visible even though it does not adjust any probability.
+`evidenceFor` (`lib/availability/selection.ts`) also surfaces `player.news` - FPL's free-text injury/return note - as an `FPL_STATUS` evidence entry when present, so it is visible even though it does not adjust any probability.
 
 ### 4.5 Scenario normalization
 
-`normalizeScenarios` (`lib/availability/selection.ts:214`) produces `startProbability`, `cameoProbability`, and `noAppearanceProbability`. If `start + cameo <= 1`, the remainder is "no appearance"; otherwise both are rescaled by their sum and no-appearance is 0.
+`normalizeScenarios` (`lib/availability/selection.ts`) produces `startProbability`, `cameoProbability`, and `noAppearanceProbability`. If `start + cameo <= 1`, the remainder is "no appearance"; otherwise both are rescaled by their sum and no-appearance is 0.
 
 ### 4.6 Expected minutes (selection model)
 
@@ -310,7 +314,7 @@ Each update is `duration_n = duration_(n-1) * (1 - 0.40) + observedMinutes_n * 0
 the position default applies only when neither source exists. At or above the
 threshold, the current-season start average replaces this blend.
 
-Position defaults (`lib/availability/selection.ts:45`):
+Position defaults (`START_MINUTES` / `CAMEO_MINUTES`, `lib/availability/selection.ts`):
 
 | Position | START_MINUTES | CAMEO_MINUTES |
 |---|---|---|
@@ -321,7 +325,7 @@ Position defaults (`lib/availability/selection.ts:45`):
 
 ### 4.7 Nailed rating
 
-`rating` (`lib/availability/selection.ts:164`) maps start probability to a 1–5 scale:
+`rating` (`lib/availability/selection.ts`) maps start probability to a 1–5 scale:
 
 ```
 >= 0.85 → 5     >= 0.70 → 4     >= 0.45 → 3     >= 0.15 → 2     else → 1
@@ -329,7 +333,7 @@ Position defaults (`lib/availability/selection.ts:45`):
 
 ### 4.8 Selection confidence
 
-`confidence` (`lib/availability/selection.ts:205`):
+`confidence` (`lib/availability/selection.ts`):
 
 - A RotoWire signal, a covered team, `history.matches >= 10`, or `observations.length >= 5` → `HIGH`.
 - Any history (`history.matches > 0`), any current-season observation (`observations.length > 0`), current minutes (`player.current.minutes > 0`), or a known `chanceOfPlaying` → `MEDIUM`.
@@ -341,7 +345,7 @@ Five matches take the EWMA most of the way from its seed to what this season say
 
 ## 5. Expected minutes (standalone)
 
-`estimateExpectedMinutes` (`lib/projections/expectedMinutes.ts:76`) short-circuits before any of the formula below runs: if `player.selection` already exists and carries a finite `expectedMinutes`, that value is returned immediately (`lib/projections/expectedMinutes.ts:81`). `enrichPlayersWithHistory` always attaches a selection to every player before projecting, so in the enriched pipeline this function's own logic never actually executes - it exists for any caller that hands it a player without a selection model (for example, a hand-built player in a test), not as a live fallback within the app's own request path.
+`estimateExpectedMinutes` (`lib/projections/expectedMinutes.ts`) short-circuits before any of the formula below runs: if `player.selection` already exists and carries a finite `expectedMinutes`, that value is returned immediately. `enrichPlayersWithHistory` always attaches a selection to every player before projecting, so in the enriched pipeline this function's own logic never actually executes - it exists for any caller that hands it a player without a selection model (for example, a hand-built player in a test), not as a live fallback within the app's own request path.
 
 For such a player, without a selection:
 
@@ -353,7 +357,7 @@ estimate = prior * (1 - weight) + recent * weight
 estimate *= statusAvailability(player)
 ```
 
-`statusAvailability` (`lib/projections/expectedMinutes.ts:21`) mirrors `officialAvailability` (§4.4) exactly, so a player without a selection model is discounted identically to one with a selection model for the same underlying fact:
+`statusAvailability` (`lib/projections/expectedMinutes.ts`) mirrors `officialAvailability` (§4.4) exactly, so a player without a selection model is discounted identically to one with a selection model for the same underlying fact:
 
 - Unavailable (`i`, `u`, `n`, `s`): `factor = 0.01`, then multiplied by `chanceOfPlaying / 100` when present.
 - Doubtful (`d`): `factor = chanceOfPlaying / 100` directly when supplied, else `0.7`.
@@ -365,11 +369,11 @@ estimate *= statusAvailability(player)
 
 ### 6.1 Rate extraction
 
-`historicalRate` / `currentRate` (`lib/projections/projectPlayer.ts:49`) convert a raw count to a per-90 rate: `value / minutes * 90`.
+`historicalRate` / `currentRate` (`lib/projections/projectPlayer.ts`) convert a raw count to a per-90 rate: `value / minutes * 90`.
 
 ### 6.2 Regression toward a prior
 
-`regressPer90` (`lib/projections/regression.ts:2`):
+`regressPer90` (`lib/projections/regression.ts`):
 
 ```
 rate = (observedPer90 * sampleMinutes + priorPer90 * 900) / (sampleMinutes + 900)
@@ -379,39 +383,68 @@ rate = (observedPer90 * sampleMinutes + priorPer90 * 900) / (sampleMinutes + 900
 
 ### 6.3 Blending current + historical, then regressing
 
-`regressedPlayerRate` (`lib/projections/projectPlayer.ts:78`) is used for bonus, saves, and defensive contributions:
+`regressedPlayerRate` (`lib/projections/projectPlayer.ts`) is used for bonus, saves, defensive contributions, yellow cards and red cards:
 
 ```
 rate   = historicalRate ?? prior
 sample = historicalMinutes
 if current exists:
-    currentWeight = clamp(currentGameweek / 10, 0, 0.6)
+    currentWeight = matches / (matches + W)              // with a match history
+                  | clamp(currentGameweek / 10, 0, 0.6)  // without one
+    anchor        = rate > 0 ? rate : prior
+    currentRate   = min(currentRate, anchor * 3.0)       // PLAYER_FORM_WINSOR_RATIO, upper side only
     rate   = rate * (1 - currentWeight) + currentRate * currentWeight
     sample += currentMinutes * currentWeight
 rate = clamp(regressPer90(rate, sample, prior, 900), 0, ceiling)
 ```
 
-The current season earns up to 60% weight as the season progresses.
+`matches` is the number of finished gameweeks the player featured in (`options.playerForm`, §6.3.1). `currentSeasonWeight` counts the player's own appearances rather than the calendar: the old `currentGameweek / 10` ramp gave a player with one appearance the same weight as one with ten. Counting appearances was worth 2.2-10.9% rest-of-season rate RMSE on yellow cards and 0.9-3.3% on bonus across three held-out seasons, most of it before GW15. The calendar ramp still applies to a caller that has not loaded match history.
+
+`W` is the prior weight in matches:
+
+| Stat | W |
+|---|---|
+| Bonus, defensive contributions | 6 (`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`) |
+| Saves | 6, unless a backtest passes `savesPriorWeight` |
+| Yellow and red cards | 40 (`PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS`) |
+
+A yellow card comes about once in five matches, so last season is worth far more against this season's few cards than it is for xG. Leaving each of 2023/24-2025/26 out in turn, `W = 40` beat `W = 10` on all three held-out seasons (+2.7%, +10.9%, +4.3% RMSE). The comment on the constant names `scripts/backtest/changes.mjs` as the sweep, but that script was never committed, so this result cannot be re-run from the repository.
 
 ### 6.3.1 xG and xA: recency-weighted match history
 
-xG and xA use a different current-season blend, `regressedFormRate` (`lib/projections/projectPlayer.ts:110`). A player's regressed historical (or neutral price-tier prior) rate anchors the blend, while the current-season half comes from `blendPlayerRate` (`lib/projections/playerForm.ts:32`), a recency-weighted average of the player's own match-by-match xG/xA this season, rather than a flat season-to-date average:
+xG and xA use a different current-season blend, `regressedFormRate` (`lib/projections/projectPlayer.ts`). A player's regressed historical (or neutral price-tier prior) rate anchors the blend. The current-season half comes from `blendPlayerRateByMinutes` (`lib/projections/playerForm.ts`), which weights each match by recency and by the minutes played in it:
 
 ```
 weight(i matches before the most recently played) = decay^i
-observedRate     = Σ(weight_i * matchRate_i) / Σ(weight_i)
+observedRate     = 90 * Σ(weight_i * value_i) / Σ(weight_i * minutes_i)
 effectiveMatches = Σ(weight_i)
 cappedRate       = clamp(observedRate, basePrior / 3.0, basePrior * 3.0)
 blended          = (basePrior * priorWeightMatches + cappedRate * effectiveMatches)
                    / (priorWeightMatches + effectiveMatches)
 ```
 
-`decay = 0.95`, `priorWeightMatches = 6`, and winsor ratio `PLAYER_FORM_WINSOR_RATIO = 3.0` (`lib/projections/playerForm.ts`) come from multi-season backtests. Capping the form/anchor ratio at 3.0x bounds extreme single-match divergences that dominate the sum of squares and revert hardest, so winsorising protects projections against outlier rate spikes (e.g. fluke hat-tricks). (`PLAYER_FORM_DECAY`/`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`, `lib/projections/playerForm.ts`) come from walk-forward sweeps: decay 0.93-0.95 was effectively tied on actual-points RMSE and 0.95 won the main split (`scripts/backtest/evidence-weights.ts`), and a three-season (2023/24-2025/26) sweep of the prior weight against next-match xG/xA, scored separately with genuine previous-season anchors, bottomed at 6 for xG and 4 for xA (flat across 4-8), so 6 covers both within noise. After 38 appearances the current season contributes 17.15 effective matches, or 74.1% of the blend against the six-match historical anchor; after two appearances it contributes 1.95 effective matches, or 24.5%.
+`value_i` is the raw xG or xA from match `i`. Averaging per-90 rates match by match, as `blendPlayerRate` does, gives an eight-minute cameo the same say as a full match; dividing the decayed sum of values by the decayed sum of minutes gives a cameo only a cameo's worth of evidence. That was worth 2.0-6.3% rest-of-season rate RMSE on xG across three held-out seasons, and 1.1-1.4% on xA. The anchor's weight is still counted in matches, so `priorWeightMatches` keeps its meaning.
 
-This only applies once a player has an in-season match history (`options.playerForm`, populated by `loadInSeasonPlayerRates` in `lib/historical/loadInSeasonForm.ts` from FPL's live per-gameweek stats, one entry per finished gameweek the player actually featured in). Before any gameweek has finished, or for a caller that hasn't wired up the loader, xG/xA fall back to the §6.3 mechanism (cumulative `Player.current.expectedGoals`/`expectedAssists`, blended by calendar gameweek and regressed toward the prior at a 900-minute weight).
+A defender's xG is capped at `0.35` per 90 in each match before the blend. No backtest note records a test of this cap.
 
-The historical xG/xA anchor is regressed toward the neutral price-tier prior
-before it enters `blendPlayerRate`:
+`decay = 0.95` (`PLAYER_FORM_DECAY`), `priorWeightMatches = 6` (`PLAYER_FORM_PRIOR_WEIGHT_MATCHES`), and the `3.0` cap (`PLAYER_FORM_WINSOR_RATIO`) come from walk-forward backtests. Decay 0.93-0.95 tied on actual-points RMSE and 0.95 won the main split (`scripts/backtest/evidence-weights.ts`). A three-season (2023/24-2025/26) sweep of the prior weight against next-match xG/xA, scored with genuine previous-season anchors, bottomed at 6 for xG and 4 for xA (flat across 4-8), so 6 covers both within noise. The cap bounds single-match spikes, such as a fluke hat-trick, which dominate squared error and revert hardest. After 38 appearances the current season contributes 17.15 effective matches, or 74.1% of the blend; after two it contributes 1.95, or 24.5%.
+
+This path needs an in-season match history (`options.playerForm`, filled by `loadInSeasonPlayerRates` in `lib/historical/loadInSeasonForm.ts` with one entry per finished gameweek the player featured in). Without one - before any gameweek has finished, or for a caller that has not loaded it - xG and xA use cumulative `Player.current.expectedGoals` / `expectedAssists`:
+
+```
+rate   = historicalRate / sourceAttack      (or pricePrior with no history)
+sample = historicalMinutes
+if current exists:
+    currentWeight = clamp(currentGameweek / 10, 0, 0.6)
+    rate   = rate * (1 - currentWeight) + (currentRate / ownAttack) * currentWeight
+    sample += currentMinutes * currentWeight
+rate = clamp(regressPer90(rate, sample, pricePrior, 900), 0, 3)
+```
+
+Unlike §6.3, this fallback has no cap on the current rate, and it divides each side by the attack of the club that produced it.
+
+On the match-history path, the historical xG/xA anchor is regressed toward the
+neutral price-tier prior before it enters the blend:
 
 ```
 historicalAnchor = regressPer90(historicalRate, historicalMinutes, pricePrior, 900)
@@ -428,13 +461,13 @@ club's attack.
 
 A match played against a weak defence produced a higher rate *for that reason*,
 and §7's multiplier for the upcoming fixture is about to be applied on top. Left
-alone, fixture quality is counted twice. `regressedFormRate`
-(`lib/projections/projectPlayer.ts:150`) divides it back out before blending:
+alone, fixture quality is counted twice. `regressedFormRate` divides it back out
+before blending, using `pastFixtureMultiplier` (`lib/projections/projectPlayer.ts`):
 
 ```
 m_i          = attackMultiplier(opponent_i, venue_i)    // base = 1; see below
 sourceAttack = historical source club attack, when available
-rate         = blendPlayerRate(matchRate_i / m_i, historicalAnchor / sourceAttack)
+rate         = blendPlayerRateByMinutes({ value_i / m_i, minutes_i }, historicalAnchor / sourceAttack)
 ```
 
 When there is no historical sample, `pricePrior` is passed as the neutral
@@ -492,13 +525,13 @@ Players with no usable historical goal/assist sample use price-tiered attacking 
 - **MID**: `0.05` xG / `0.06` xA for holding/defensive mids (≤ £4.5m); `0.09` xG / `0.08` xA for box-to-box (£5.0m); `0.16` xG / `0.14` xA for mid-tier wingers/creators (£5.5m–£6.5m); `0.25` xG / `0.20` xA for secondary talismans (£7.0m–£8.5m); `0.38` xG / `0.26` xA for premiums (≥ £9.0m).
 - **FWD**: `0.20` xG / `0.06` xA for bench enablers (≤ £5.0m); `0.36` xG / `0.09` xA for mid-table starters (£5.5m–£6.5m); `0.45` xG / `0.14` xA for upper-tier strikers (£7.0m–£8.5m); `0.70` xG / `0.16` xA for super-premiums (≥ £9.0m).
 
-Ceilings (`lib/projections/projectPlayer.ts:34`): goal involvement 3, saves 10, defensive contributions 30, bonus 3 (all per 90).
+Ceilings (`RATE_CEILING`, `lib/projections/projectPlayer.ts`): goal involvement 3, saves 10, defensive contributions 30, bonus 3, yellow cards 0.8, red cards 0.1 (all per 90).
 
 ---
 
 ## 7. Fixture adjustment
 
-`calculateFixtureAdjustment` (`lib/projections/fixtureAdjustment.ts:97`) returns one attacking multiplier and the fixture's clean-sheet pair (§7.5).
+`calculateFixtureAdjustment` (`lib/projections/fixtureAdjustment.ts`) returns one attacking multiplier and the fixture's clean-sheet pair (§7.5).
 
 ### 7.1 Base difficulty and venue
 
@@ -627,7 +660,7 @@ The probability is then P(0 goals) under a negative binomial:
 ```
 goalsAgainst = LEAGUE_MEAN_XG * (attack'_opponent / defence'_own) * venue
              venue = 0.898 at home, 1.102 away        LEAGUE_MEAN_XG = 1.408
-cleanSheetProbability = (phi / (phi + goalsAgainst))^phi     phi = 12
+cleanSheetProbability = clamp((phi / (phi + goalsAgainst))^phi, 0.02, 0.9)     phi = 12
 ```
 
 `phi` is swept on realized clean sheets over 760 team-fixtures: Brier is flat from 10 to 15 (0.18569) and worse either side, with the Poisson limit the worst of the sweep at 0.18601. A Poisson understates clean sheets because goals arrive lumpier than the xG the rates are fitted on - it puts the 2025/26 league rate at 0.249 against an actual 0.270.
@@ -660,7 +693,7 @@ The earlier negative-binomial versus table comparison was unresolved (Brier 0.18
 
 ### 7.4.1 Clean-sheet probability table (fallback)
 
-Rows are the defending team's tier; columns are the opponent's attacking tier (`lib/projections/fixtureAdjustment.ts:62`). Home first, then away:
+Rows are the defending team's tier; columns are the opponent's attacking tier (`cleanSheetProbabilities`, `lib/projections/fixtureAdjustment.ts`). Home first, then away:
 
 | home | tier 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|
@@ -685,7 +718,7 @@ Rather than snapping continuous team strength ratios onto discrete integer tiers
 r = clamp((ownDefence - 0.84) / 0.08, 0, 4)
 c = clamp((opponentAttack - 0.84) / 0.08, 0, 4)
 ```
-This produces smooth, continuous probability transitions as team form shifts throughout the season, eliminating artificial jump discontinuities while preserving exact values on integer tier coordinates. In walk-forward testing over 660 team-fixtures, continuous bilinear interpolation lowers clean sheet Brier score to 0.18469 and logloss to 0.55321 (vs 0.18527 and 0.55452 for discrete snapping). When combined with schedule-adjusted team form (§3.3), this lowered walk-forward xP RMSE to 2.69866 (-0.00162 vs discrete baseline, winning 19 of 33 gameweeks).
+The result is clamped to `0.02`-`0.9`. This produces smooth, continuous probability transitions as team form shifts throughout the season, eliminating artificial jump discontinuities while preserving exact values on integer tier coordinates. In walk-forward testing over 660 team-fixtures, continuous bilinear interpolation lowers clean sheet Brier score to 0.18469 and logloss to 0.55321 (vs 0.18527 and 0.55452 for discrete snapping). When combined with schedule-adjusted team form (§3.3), this lowered walk-forward xP RMSE to 2.69866 (-0.00162 vs discrete baseline, winning 19 of 33 gameweeks).
 
 Reads above the long-run clean-sheet rate (0.25) are compressed one-sided toward it, retaining 75% of the excess (`CLEAN_SHEET_RETAINED_WEIGHT`, `lib/projections/fixtureAdjustment.ts`). The table's top quintile over-projected defender clean-sheet-plus-conceded points by +0.20 per appearance over 2023/24-2024/25 while the bottom two quintiles calibrated, so the bottom is left alone; weights 0.70-0.90 all beat the unshrunk table on team-level Brier in both seasons. Full-xP dRMSE -0.00163 with the paired gameweek-cluster interval excluding zero.
 
@@ -702,7 +735,7 @@ the three remaining values directly.
 
 ## 8. Expected points (xP) components
 
-`fixtureComponents` (`lib/projections/projectPlayer.ts:252`) computes the expected points for one fixture, decomposed into `ProjectionComponents` (`types/projection.ts:29`).
+`fixtureComponents` (`lib/projections/projectPlayer.ts`) computes the expected points for one fixture, decomposed into `ProjectionComponents` (`types/projection.ts`).
 
 The selection model is reconstructed as scenarios (§4.5): a **start** scenario and a **cameo** scenario. For each scenario with `weight = probability` and `minutesShare = clamp(minutes, 0, 90) / 90`:
 
@@ -775,7 +808,7 @@ cleanSheets += weight * cleanSheetProbability * CLEAN_SHEET_POINTS[position]
 
 ### 8.5 Goals conceded (GK/DEF only)
 
-One point is lost per two goals conceded while on the pitch. This is a threshold rule, so its expectation is summed over a Poisson count distribution rather than taken linearly (`expectedFloorDivision`, `lib/projections/distributions.ts:18`):
+One point is lost per two goals conceded while on the pitch. This is a threshold rule, so its expectation is summed over a Poisson count distribution rather than taken linearly (`expectedFloorDivision`, `lib/projections/distributions.ts`):
 
 ```
 goalsConceded -= weight * E[ floor(expectedGoalsAgainst * minutesShare / 2) ]
@@ -800,7 +833,7 @@ Two points once the count reaches a threshold (10 for DEF, 12 for MID/FWD, none 
 defensiveContribution += weight * 2 * P(count >= threshold)
 ```
 
-`P(count >= threshold)` uses a **negative binomial** (`thresholdProbability`, `lib/projections/distributions.ts:47`) with mean `defContRate * minutesShare` and `dispersion = 8`, because match-by-match contributions are more spread out than a Poisson allows.
+`P(count >= threshold)` uses a **negative binomial** (`thresholdProbability`, `lib/projections/distributions.ts`) with mean `defContRate * minutesShare` and `dispersion = 8`, because match-by-match contributions are more spread out than a Poisson allows.
 
 ### 8.8 Bonus
 
@@ -830,7 +863,9 @@ rate times minutes - which also stops a full match implying more than one card.
 Yellows and reds are added separately; a red arriving via a second yellow is
 rare enough (0.005 per 90 at its highest) that the overlap is not modelled.
 
-Rates are measured, not assumed. Across every 2025/26 appearance:
+`yellowRate` and `redRate` are the player's own rates from §6.3, with a prior
+weight of 40 matches and ceilings of 0.8 and 0.1 per 90. The position priors are
+measured, not assumed. Across every 2025/26 appearance:
 
 | Position | yellow / 90 | red / 90 | points per appearance |
 |---|---|---|---|
@@ -843,7 +878,8 @@ League-wide that is **-0.135 points per appearance**, and it is differential: a
 defender loses roughly twice what a forward does, so omitting cards flattered
 defenders and held midfielders against the forwards they compete with. No
 forward was sent off in the sample, so their red prior is a floor rather than
-the observed zero.
+the observed zero. The code rounds the red priors to GK 0.001, DEF 0.008, MID
+0.005 and FWD 0.002.
 
 Adding this term took overall bias from **+0.174 to +0.045** points per
 appearance, and started midfielders from +0.175 to +0.001, measured with a
@@ -853,11 +889,19 @@ per-player anchor (`npx tsx scripts/backtest/anchor.ts`).
 
 `total` is the sum of all components. The `penalties` field exists in the type but is not populated (always 0).
 
+### 8.11 Breakdown display
+
+`lib/projections/breakdown.ts` shows one gameweek's xP split into its components. It adds no calculation of its own.
+
+- `packComponents` sends each fixture's components as nine numbers rounded to 0.01, in the fixed order of `BREAKDOWN_COMPONENT_KEYS` (appearance, goals, assists, cleanSheets, goalsConceded, saves, defensiveContribution, bonus, cards). `penalties` and `total` are left out. `unpackComponents` rebuilds the object and recomputes `total` from the parts. New keys must be appended, since the order is the format.
+- `gameweekBreakdown` sums the components of every fixture in the gameweek (a double gameweek reports `matches = 2`) and returns `null` when the player has no fixture or no components. A row is hidden only when the position cannot score it and its value is zero, so the shown rows always add up to the shown total.
+- Each row cites the player's recorded per-90 figures for this season and last. A sample under 90 minutes reads "not enough minutes yet" rather than a number.
+
 ---
 
 ## 9. Aggregation: nextGW, next3, next5, next10, value
 
-`projectPlayer` (`lib/projections/projectPlayer.ts:477`) projects every upcoming fixture (from `currentGameweek` out to `fixtureHorizon`, defaulting to the season's remaining weeks) and aggregates.
+`projectPlayer` (`lib/projections/projectPlayer.ts`) projects every upcoming fixture (from `currentGameweek` out to `fixtureHorizon`, defaulting to the season's remaining weeks) and aggregates.
 
 ```
 nextGW = sum of expectedPoints for fixtures in currentGameweek        (0 if blank)
@@ -866,48 +910,48 @@ next5  = sum over gameweeks [current, ..., current+4]
 next10 = sum over gameweeks [current, ..., current+9]
 ```
 
-Aggregation is per **distinct gameweek** (`aggregateFixturePointsByGameweek`, `lib/projections/projectPlayer.ts:400`): a double gameweek sums all its fixtures, a blank gameweek contributes zero, and multi-gameweek totals never double-count a fixture row.
+Aggregation is per **distinct gameweek** (`aggregateFixturePointsByGameweek`, `lib/projections/projectPlayer.ts`): a double gameweek sums all its fixtures, a blank gameweek contributes zero, and multi-gameweek totals never double-count a fixture row.
 
 ```
 valueNext5 = next5 / (priceTenths / 10)
 ```
 
-`factors` (`lib/projections/projectPlayer.ts:314`) produces the display-only factor list (expected minutes, average fixture difficulty, confidence, position model).
+`factors` (`lib/projections/projectPlayer.ts`) produces the display-only factor list (expected minutes, average fixture difficulty, confidence, position model).
 
 ---
 
 ## 10. Risk score
 
-`calculateRiskScore` (`lib/projections/metrics.ts:26`):
+`calculateRiskScore` (`lib/projections/metrics.ts`):
 
 ```
-minutesRisk      = expectedMinutes === undefined ? 25 : (90 - expectedMinutes) / 90 * 38
+minutesRisk      = expectedMinutes === undefined ? 25 : clamp((90 - expectedMinutes) / 90, 0, 1) * 38
 availabilityRisk = (1 - availability(player)) * 35
 sampleRisk       = clamp(1 - sampleMinutes / 1800, 0, 1) * 17
 confidenceRisk   = LOW ? 10 : MEDIUM ? 5 : 0
 riskScore        = round(clamp(minutesRisk + availabilityRisk + sampleRisk + confidenceRisk, 0, 100))
 ```
 
-`sampleMinutes` is `historical.minutes ?? current.minutes`. `availability` here is the simpler `availability` helper in `lib/projections/metrics.ts:7` (0.25 unavailable, 0.75 doubtful, else 1).
+`sampleMinutes` is `historical.minutes ?? current.minutes`. `availability` here is the simpler `availability` helper in `lib/projections/metrics.ts`: `chanceOfPlaying / 100` when FPL supplies a percentage; otherwise `0.25` for an unavailable status (`i`, `s`, `u`, `n`), `0.75` for doubtful (`d`), else `1`.
 
-Higher is riskier. A score of 100 means: no projected minutes, fully unavailable, no sample, and low confidence.
+Higher is riskier. A score of 100 means: no projected minutes, a 0% chance of playing, no sample, and low confidence.
 
 ---
 
 ## 11. Confidence
 
-`projectionConfidence` (`lib/projections/metrics.ts:15`):
+`projectionConfidence` (`lib/projections/metrics.ts`):
 
 - If a selection model exists, use `selection.confidence` (§4.8).
 - Otherwise: `available < 0.6` or `sample < 360` → `LOW`; `available < 0.85` or `sample < 900` or no history → `MEDIUM`; else `HIGH`.
 
-`confidenceWeight` (`lib/analysis/context.ts:90`) converts confidence to a scalar: `HIGH → 1`, `MEDIUM → 0.85`, `LOW → 0.7`.
+`confidenceWeight` (`lib/analysis/context.ts`) converts confidence to a scalar: `HIGH → 1`, `MEDIUM → 0.85`, `LOW → 0.7`.
 
 ---
 
 ## 12. Value per million
 
-`valuePerMillion` (`lib/projections/metrics.ts:44`):
+`valuePerMillion` (`lib/projections/metrics.ts`):
 
 ```
 valuePerMillion = projectedPoints / (priceTenths / 10)
@@ -917,7 +961,7 @@ valuePerMillion = projectedPoints / (priceTenths / 10)
 
 ## 13. Utility value
 
-`utilityValue` (`lib/analysis/context.ts:111`) is the optimizer and analysis ranking scalar. It is *not* xP; it wraps xP with risk and confidence.
+`utilityValue` (`lib/analysis/context.ts`) is the optimizer and analysis ranking scalar. It is *not* xP; it wraps xP with risk and confidence.
 
 ```
 projection    = horizonValue(player, horizon)
@@ -928,9 +972,9 @@ riskMultiplier= SAFE ? 0.72 : AGGRESSIVE ? 1.08 : 0.90
 utility       = projection * (0.62 + 0.16*minutes + 0.12*confidence + 0.10*availability) * riskMultiplier
 ```
 
-`availabilityRisk` (`lib/analysis/context.ts:94`) is its own helper: status `i`/`s` adds `0.75`, `d`/`u` adds `0.35`, and `chanceOfPlaying` adds `max(0, 1 - chance/100) * 0.65`, capped at 1.
+`availabilityRisk` (`lib/analysis/context.ts`) is its own helper: status `i`/`s` adds `0.75`, `d`/`u` adds `0.35`, and `chanceOfPlaying` adds `max(0, 1 - chance/100) * 0.65`, capped at 1.
 
-`windowUtility` (`lib/analysis/context.ts:144`) evaluates utility for an explicit planning window `[gameweek, gameweek + horizon - 1]` rather than always starting from the live gameweek:
+`windowUtility` (`lib/analysis/context.ts`) evaluates utility for an explicit planning window `[gameweek, gameweek + horizon - 1]` rather than always starting from the live gameweek:
 
 ```
 windowValue   = sum over g in [gameweek, ..., gameweek + horizon - 1] of gameweekValue(player, g)
@@ -947,35 +991,39 @@ where `gameweekValue` returns fixture-projected points for that specific gamewee
 
 ### 14.1 Per-player weekly metrics
 
-`basePoints` (`lib/squad/weeklyLineup.ts:58`) returns a player's points for one gameweek:
+`basePoints` (`lib/squad/weeklyLineup.ts`) returns a player's points for one gameweek:
 
 - If the player has fixture-level projections for that gameweek, sum their `expectedPoints` (blank gameweek returns 0).
 - If the player has a fixture schedule but no entry for this gameweek, return 0 (never reuse `nextGW` from another week).
 - Otherwise fall back to `projection.nextGW`, then to `pointsPer90 * minutes / 90`.
 
-`minutes` (`lib/squad/weeklyLineup.ts:70`) sums fixture `expectedMinutes` (each clamped 0–90) for the gameweek.
+`minutes` (`lib/squad/weeklyLineup.ts`) sums fixture `expectedMinutes` (each clamped 0–90) for the gameweek.
 
 ### 14.2 Probability did not play (pDNP)
 
-`probabilityDidNotPlay` (`lib/squad/weeklyLineup.ts:78`):
+`probabilityDidNotPlay` (`lib/squad/weeklyLineup.ts`):
 
 ```
 if (fixture schedule exists and no fixture this gameweek) → 1
 if (fixtures exist but 0 minutes)                        → 1
-availabilityRisk = unavailable status ? 1 : doubtful status ? 0.5 : 0
+if (status is i, u, n or s)                              → 1
+if (selection.noAppearanceProbability is finite)         → clamp(noAppearanceProbability, 0, 1)
+// fallback, for a player without a selection model:
+availabilityRisk = status d ? 0.5 : 0
 availabilityRisk = max(availabilityRisk, 1 - chanceOfPlaying/100)
-if (availabilityRisk >= 1) → 1
-minutesRisk = clamp((45 - minutes) / 45, 0, 1)
-pDNP        = clamp(availabilityRisk * 0.75 + minutesRisk * 0.25, 0, 1)
+minutesRisk      = clamp((45 - minutes) / 45, 0, 1)
+pDNP             = clamp(availabilityRisk * 0.75 + minutesRisk * 0.25, 0, 1)
 ```
+
+`enrichPlayersWithHistory` attaches a selection to every player, so in the app pDNP is the selection model's no-appearance probability (§4.5). The `0.75 / 0.25` formula runs only for a player built without one, such as in a test.
 
 ### 14.3 Legal starting XIs
 
-`enumerateLegalStartingXIs` (`lib/squad/weeklyLineup.ts:127`) enumerates every 11-player subset satisfying: 1 GK, ≥3 DEF, ≥2 MID, ≥1 FWD, and 10 outfield players. A malformed squad yields no candidates rather than corrupting state.
+`enumerateLegalStartingXIs` (`lib/squad/weeklyLineup.ts`) enumerates every 11-player subset satisfying: 1 GK, ≥3 DEF, ≥2 MID, ≥1 FWD, and 10 outfield players. A malformed squad yields no candidates rather than corrupting state.
 
 ### 14.4 Selecting the XI and risk modes
 
-Candidates are scored on `projectedXI` (sum of starter points), `risk` (sum of pDNP), and `minutes` (sum of minutes). A **near-equal window** of `0.25` points keeps candidates whose projected XI is within 0.25 of the best. The winner is chosen by `compareCandidates` (`lib/squad/weeklyLineup.ts:166`):
+Candidates are scored on `projectedXI` (sum of starter points), `risk` (sum of pDNP), and `minutes` (sum of minutes). A **near-equal window** of `0.25` points keeps candidates whose projected XI is within 0.25 of the best. The winner is chosen by `compareCandidates` (`lib/squad/weeklyLineup.ts`):
 
 - `SAFE`: minimize total risk (pDNP).
 - `BALANCED`: maximize total minutes.
@@ -983,7 +1031,7 @@ Candidates are scored on `projectedXI` (sum of starter points), `risk` (sum of p
 
 ### 14.5 Bench order and autosubs
 
-The four bench players are one GK plus three ordered outfield substitutes. `expectedAutosubValue` (`lib/squad/weeklyLineup.ts:242`) computes the expected points recovered by a bench order across all appearance masks:
+The four bench players are one GK plus three ordered outfield substitutes. `expectedAutosubValue` (`lib/squad/weeklyLineup.ts`) computes the expected points recovered by a bench order across all appearance masks:
 
 - Goalkeeper: `P(starting GK out) * P(bench GK plays) * benchGK.points`.
 - Outfield: for each starting/bench appearance state, substitutes play in bench order for absent starters **only where FPL formation rules still hold** (`legalFormation`), adding the substitute's points.
@@ -992,7 +1040,7 @@ The bench order that maximizes this value wins.
 
 ### 14.6 Captain and vice-captain
 
-`captainPair` (`lib/squad/weeklyLineup.ts:298`):
+`captainPair` (`lib/squad/weeklyLineup.ts`):
 
 - Captain: the starter with the highest points (ties broken by lowest pDNP, then id).
 - Vice-captain: the highest `points * (1 - pDNP)` among the rest.
@@ -1000,15 +1048,22 @@ The bench order that maximizes this value wins.
 ### 14.7 Weekly totals
 
 ```
-projectedXI   = sum of starter points
-captainBonus  = captain's points                       (double-counts the captain)
-autosubValue  = expected autosub value (§14.5)
+projectedXI    = sum of starter points
+captainBonus   = (1 - pDNP_C) * points_C + pDNP_C * (1 - pDNP_V) * points_V
+autosubValue   = expected autosub value (§14.5)
 projectedTotal = projectedXI + captainBonus + autosubValue
 ```
 
+`expectedCaptainBonus` pays the armband's extra points: the captain's when the captain plays, else the vice-captain's when the vice-captain plays. Chips change the totals:
+
+- **Triple Captain** (`3xc`): `captainBonus` is doubled, so the armband pays two extra multiples.
+- **Bench Boost** (`bboost`): all 15 players score. `projectedXI` sums all 15, the captain and vice-captain are chosen from all 15, and `autosubValue` is 0 because no one comes off the bench.
+
+Free Hit and Wildcard change the squad, not the lineup scoring (§19.3).
+
 ### 14.8 Projection fingerprint
 
-`fingerprint` (`lib/squad/weeklyLineup.ts:269`) is an FNV-1a hash of the gameweek plus every player's `basePoints` and `pDNP` (to 3 decimals). A stale fingerprint on a persisted lineup produces a warning rather than a silent overwrite.
+`fingerprint` (`lib/squad/weeklyLineup.ts`) is an FNV-1a hash of the gameweek plus every player's `basePoints` and `pDNP` (to 3 decimals). A stale fingerprint on a persisted lineup produces a warning rather than a silent overwrite.
 
 ---
 
@@ -1018,11 +1073,11 @@ projectedTotal = projectedXI + captainBonus + autosubValue
 
 ### 15.1 horizonValue
 
-`horizonValue` (`lib/analysis/context.ts:67`) returns `projection.nextGW` / `next3` / `next5`; if absent it recomputes a projection, and if that is unavailable it falls back to `pointsPer90 * minutes / 90 * horizon`.
+`horizonValue` (`lib/analysis/context.ts`) returns `projection.nextGW` / `next3` / `next5`; if absent it recomputes a projection, and if that is unavailable it falls back to `pointsPer90 * minutes / 90 * horizon`.
 
 ### 15.2 Fixture difficulty (normalized)
 
-`fixtureDifficulty` (`lib/analysis/context.ts:104`):
+`fixtureDifficulty` (`lib/analysis/context.ts`):
 
 ```
 avg = mean(fixture.difficulty ?? 3) over the first `horizon` fixtures
@@ -1031,7 +1086,7 @@ fixtureDifficulty = clamp((avg - 1) / 4, 0, 1)      // empty schedule → 0.5
 
 ### 15.3 Weakness score
 
-`scoreWeakness` (`lib/analysis/weakness.ts:45`) compares a player to same-position peers. `percentileDeficit` is `1 - (#peers strictly below) / (peers.length - 1)`.
+`scoreWeakness` (`lib/analysis/weakness.ts`) compares a player to same-position peers. `percentileDeficit` is `1 - (#peers strictly below) / (peers.length - 1)`.
 
 Components and weights:
 
@@ -1048,18 +1103,20 @@ Components and weights:
 
 ### 15.4 Strengths
 
-`buildStrengths` (`lib/analysis/analyzeSquad.ts:85`) surfaces: the share of the squad with `expectedMinutes >= 80` (≥70% is positive), a favourable average fixture run (`fixtureDifficulty <= 0.45`), and total projected points.
+`buildStrengths` (`lib/analysis/analyzeSquad.ts`) surfaces: the share of the squad with `expectedMinutes >= 80` (≥70% is positive), a favourable average fixture run (`fixtureDifficulty <= 0.45`), and total projected points.
 
 ### 15.5 Team rating
 
-`teamRating` measures the quality of a starting lineup against the theoretical market ceiling for the same squad budget:
+`teamRating` (computed in `components/terminal/TerminalApp.tsx`) measures the quality of a starting lineup against the theoretical market ceiling for the same squad budget:
 
 ```
 lineupXp   = currentGWPlan.projectedXI + currentGWPlan.captainBonus
 teamRating = clamp(round(lineupXp / bestPossibleXI.projectedTotal * 100), 0, 100)
 ```
 
-where `bestPossibleXI` is computed by `exactBestPossibleXI` (`lib/optimizer/bestPossibleXI.ts`, via `/api/best-xi`). It solves an exact MILP using HiGHS for the highest-scoring legal starting XI that the entire player universe could field within the team's `budgetTenths` and club limits (max 3/club), scoring players using the exact same weekly lineup metric (`weeklyPlayerMetrics(player, gameweek).points`) and captain bonus without bench or autosub on either side.
+where `bestPossibleXI` is computed by `exactBestPossibleXI` (`lib/optimizer/bestPossibleXI.ts`, via `/api/best-xi`). It solves an exact MILP using HiGHS for the highest-scoring legal starting XI that the entire player universe could field within the team's `budgetTenths` and club limits (max 3/club), scoring players using the same weekly lineup metric (`weeklyPlayerMetrics(player, gameweek).points`), without bench or autosub on either side.
+
+The two sides do not price the armband the same way. The ceiling adds its captain's full points. The lineup adds `captainBonus` from §14.7, which is discounted by the captain's and vice-captain's chance of not playing. With a saved lineup and a chip active, the lineup side also carries the chip: Triple Captain doubles its `captainBonus`, and Bench Boost puts all 15 players in `projectedXI`. The ceiling never plays a chip. So the rating reads slightly low for a lineup with any doubt over its captain, and high under a chip, where the clamp at 100 can bind.
 
 ---
 
@@ -1067,7 +1124,7 @@ where `bestPossibleXI` is computed by `exactBestPossibleXI` (`lib/optimizer/best
 
 ### 16.1 Replacements
 
-`findReplacements` (`lib/analysis/replacements.ts:169`) ranks same-position candidates by:
+`findReplacements` (`lib/analysis/replacements.ts`) ranks same-position candidates by:
 
 ```
 score = projectedDelta + (SAFE ? expectedMinutes / 100 : 0) + bankDelta / 100
@@ -1077,17 +1134,31 @@ where `projectedDelta = candidate.nextN - outgoing.nextN` and `bankDelta = outgo
 
 ### 16.2 Single transfers
 
-`findBestSingleTransfers` (`lib/analysis/singleTransfers.ts:92`) exhaustively evaluates every legal one-player swap that improves xP, keeping the Pareto frontier on (xP-per-gameweek, cash-released):
+`findBestSingleTransfers` (`lib/analysis/singleTransfers.ts`) exhaustively evaluates every legal one-player swap that improves xP, keeping the Pareto frontier on (xP-per-gameweek, cash-released):
 
 ```
-score = projectedDeltaPerGW + 0.25 * (cashReleasedTenths / 10)
+cashReleasedTenths = sellingPrice(outgoing) - incoming.priceTenths
+score              = projectedDeltaPerGW + 0.25 * (cashReleasedTenths / 10)   // CASH_XP_PER_MILLION
 ```
 
-A transfer is `XP_UPGRADE`, or `BOTH` when it also releases cash. Dominated moves are dropped.
+`projectedDelta` is the change in the §14 weekly lineup total summed over the horizon, so it counts bench order, captaincy and autosubs, not just the two players. The selling price follows the official rule (§19.1) when purchase prices are supplied, and equals the market price otherwise. With a real bank the owned squad is not checked against the budget, since team value is selling value plus bank; each swap must instead fit within `bank + sellingPrice(outgoing)`.
+
+A transfer is `XP_UPGRADE`, or `BOTH` when it also releases cash. Dominated moves are dropped, and the route returns the top five.
 
 ### 16.3 Simulate a change
 
-`simulateChange` (`lib/analysis/simulateChange.ts:50`) computes before/after squad analyses and, for legal full squads, uses the weekly lineup engine (§14) to produce optimized `projectedDeltaGW/3/5`.
+`simulateChange` (`lib/analysis/simulateChange.ts`) computes before/after squad analyses and, for legal full squads, uses the weekly lineup engine (§14) to produce optimized `projectedDeltaGW/3/5`.
+
+### 16.4 Multi-transfer plans
+
+When a request to `/api/transfer-suggestions` sets `maxTransfers` (1-5), `findMilpTransferSuggestions` (`lib/optimizer/milpTransfers.ts`) replaces §16.2 with an exact HiGHS solve:
+
+- **Candidates:** the top 25 per position from `candidatePool`, plus every owned player. Incoming players must have status `a` or `d`, must not be excluded, and under `SAFE` must not carry availability risk.
+- **Variables and constraints:** the same squad, weekly XI and captain variables as §17.3, with 15 players, 2/5/5/3, at most 3 per club, locked players kept, and for each `k` exactly `15 - k` owned players retained.
+- **Budget:** `Σ cost ≤ bank + Σ sellingPrice(owned)`, where an owned player costs their selling price and an incoming player their market price. `bank` defaults to 0.
+- **Objective:** each gameweek's starter and captain xP, plus a flat reserve value of `0.15 ×` xP for an outfield reserve and `0.05 ×` for a goalkeeper. This is simpler than §17.3's pDNP-based reserve weights.
+
+For each `k` from 1 to `maxTransfers` it finds up to `max(2, min(3, 5 - k))` distinct plans (five when `maxTransfers = 1`), adding a cut after each so the next solve must differ. Every plan is then rescored with the full §14 weekly lineup total over the horizon; a plan with no xP gain is dropped. Outgoing and incoming players are paired by position and ordered so the moves that release the most cash come first. The five best plans are returned, ranked by xP gain, then fewer transfers, then more cash released, then lower incoming risk.
 
 ---
 
@@ -1095,7 +1166,7 @@ A transfer is `XP_UPGRADE`, or `BOTH` when it also releases cash. Dominated move
 
 ### 17.1 Objective
 
-`objectiveScore` (`lib/optimizer/optimizer.ts:181`) scores a completed squad in the heuristic beam search:
+`objectiveScore` (`lib/optimizer/optimizer.ts`) scores a completed squad in the heuristic beam search:
 
 - Every starting XI player: full `utilityValue`.
 - Backup GK: `utility * 0.05 - price / 20`.
@@ -1108,11 +1179,11 @@ The backup goalkeeper is biased toward the £4.0m tier (the `price / 20` penalty
 
 ### 17.2 Construction (beam search)
 
-`beamConstruct` (`lib/optimizer/optimizer.ts:129`) grows a squad slot by slot with a beam of candidate states, pruning states that cannot afford a legal completion (`minimumCheapCost`, a lower bound on the remaining spend). Finalists are ranked by `objectiveScore`.
+`beamConstruct` (`lib/optimizer/optimizer.ts`) grows a squad slot by slot with a beam of candidate states, pruning states that cannot afford a legal completion (`minimumCheapCost`, a lower bound on the remaining spend). Finalists are ranked by `objectiveScore`.
 
 ### 17.3 Exact optimizer (HiGHS MILP)
 
-`exactOptimizeFullSquad` and `exactCompletePartialSquad` (`lib/optimizer/exactOptimizer.ts`) formulate and solve an exact Mixed Integer Linear Program via HiGHS WebAssembly. The squad is planned for `planGameweek` across `horizon` (1, 3, 5, or 10 gameweeks), maximizing raw projected points from `gameweekValue(player, gameweek)`:
+`exactOptimizeFullSquad` and `exactCompletePartialSquad` (`lib/optimizer/exactOptimizer.ts`) formulate and solve an exact Mixed Integer Linear Program via HiGHS WebAssembly. The squad is planned for `planGameweek` across `horizon` (1, 3, 5, or 10 gameweeks), maximizing raw projected points from `gameweekValue(player, gameweek)`. Chip planning can instead pass an explicit list of `gameweeks` (one gameweek for a Free Hit, §19.3):
 
 1. **Decision variables**:
    - Squad membership: $x_i \in \{0, 1\}$
@@ -1130,7 +1201,7 @@ For a normal solve, reserve coefficients come from the same $P(\mathrm{DNP})$ us
 3. **Constraints**:
    - Weekly membership: $s_{g,i} \le x_i$
    - Squad and XI counts: $\sum x_i = 15$ and $\sum_i s_{g,i} = 11$ for every gameweek
-   - Budget: $\sum \text{priceTenths}_i x_i \le \text{budgetTenths}$
+   - Budget: $\sum \text{cost}_i x_i \le \text{budget}$. Without finance inputs, $\text{cost}_i$ is the market price and the budget is `budgetTenths`. When both `bankTenths` and `purchasePricesTenths` are supplied, `financeContext` prices each owned player at their selling price (§19.1), each incoming player at market price, and sets the budget to bank plus the owned squad's selling value. The owned squad's own market cost is then not checked against `budgetTenths`.
    - Position legality: 2 GK, 5 DEF, 5 MID, 3 FWD in squad; starting formation requires 1 GK, $\ge 3$ DEF, $\ge 2$ MID, $\ge 1$ FWD
    - Club limit: $\sum_{i \in \text{club}} x_i \le 3$ (or configured max)
    - Locked players: $x_i = 1$ for all fixed/locked player IDs
@@ -1138,7 +1209,7 @@ For a normal solve, reserve coefficients come from the same $P(\mathrm{DNP})$ us
 
 ### 17.4 Best possible XI (market ceiling)
 
-`exactBestPossibleXI` (`lib/optimizer/bestPossibleXI.ts:64`) solves a MILP for the highest-scoring legal 11-player starting XI that the entire player universe could field within the team's `budgetTenths` and club limits ($\le 3$ per club):
+`exactBestPossibleXI` (`lib/optimizer/bestPossibleXI.ts`) solves a MILP for the highest-scoring legal 11-player starting XI that the entire player universe could field within the team's `budgetTenths` and club limits ($\le 3$ per club):
 
 - Evaluates each player with `weeklyPlayerMetrics(player, gameweek).points`.
 - Selects 11 starters ($1 \text{ GK}, \ge 3 \text{ DEF}, \ge 2 \text{ MID}, \ge 1 \text{ FWD}$, max 1 GK) and 1 captain ($c_i \le s_i$, $\sum c_i = 1$).
@@ -1151,16 +1222,66 @@ For a normal solve, reserve coefficients come from the same $P(\mathrm{DNP})$ us
 
 `lib/squad/budget.ts` answers "can this partial squad still be completed within budget?"
 
-- `minimumRemainingSpend` (`lib/squad/budget.ts:94`) runs an exact min-cost flow: each position sends its missing slots to distinct players, and each club caps total flow at three players. The cheapest completions per club are the only candidates considered, which is exact because no club can contribute more than three players.
-- `calculateBudgetFeasibility` (`lib/squad/budget.ts:205`) returns spent, bank, minimum required spend, and flexible headroom (`bank - minimum`).
-- `maxSafePriceForPosition` (`lib/squad/budget.ts:237`) returns the highest price that keeps the squad completable.
-- `explainIllegalSelection` (`lib/squad/budget.ts:279`) explains the shortfall in pounds when an add breaks feasibility.
+- `minimumRemainingSpend` (`lib/squad/budget.ts`) runs an exact min-cost flow: each position sends its missing slots to distinct players, and each club caps total flow at three players. The cheapest completions per club are the only candidates considered, which is exact because no club can contribute more than three players.
+- `calculateBudgetFeasibility` (`lib/squad/budget.ts`) returns spent, bank, minimum required spend, and flexible headroom (`bank - minimum`).
+- `maxSafePriceForPosition` (`lib/squad/budget.ts`) returns the highest price that keeps the squad completable.
+- `explainIllegalSelection` (`lib/squad/budget.ts`) explains the shortfall in pounds when an add breaks feasibility.
 
-The analysis layer has a lighter-weight `cheapCompletionCost` (`lib/analysis/replacements.ts:95`) that approximates the same completion cost via depth-first search over the 12 cheapest players per position.
+The analysis layer has a lighter-weight `cheapCompletionCost` (`lib/analysis/replacements.ts`) that approximates the same completion cost via depth-first search over the 12 cheapest players per position.
 
 ---
 
-## 19. Constant tables
+## 19. Selling prices, transfers and chips
+
+`lib/chips/` holds the money and chip rules shared by the planner, the optimizer (§17.3), transfer search (§16) and chip suggestions.
+
+### 19.1 Selling price
+
+`sellingPriceTenths` (`lib/chips/finance.ts`) applies the official rule:
+
+```
+sellingPrice = current <= purchase ? current
+             : purchase + floor((current - purchase) * 0.5)      // sellProfitFraction
+```
+
+A player who has risen sells for less than the market price; a player who has fallen sells at the market price. `squadFinanceSnapshot` prices a whole squad this way and returns `spendableBudget = bank + Σ sellingPrice`. Without a purchase price, the market price stands in for it, so selling price equals market price.
+
+### 19.2 Transfer accounting
+
+`accountNormalTransfers` counts a normal week's transfers against the free-transfer balance:
+
+```
+transfers      = min(transferCount, 20)                  // maxTransfersPerGameweek
+freeUsed       = min(transfers, min(freeBefore, 5))      // maxFreeTransfers
+paid           = transfers - freeUsed
+hitCost        = paid * 4                                // hitCostPerTransferPoints
+freeAfter      = min(5, freeBefore - freeUsed + 1)
+```
+
+Each transfer beyond the free-transfer balance costs four points (`hitCostPerTransferPoints` in `SEASON_CHIP_POLICY`, `lib/chips/seasonPolicy.ts`); transfers within the balance cost nothing. The planner warns about each hit, and the squad panel's GW xP subtracts it. A sale or purchase without its pair is not yet a transfer, so it costs no points. A Wildcard or Free Hit week is free and unlimited; it uses up that week's new free transfer, and saved transfers carry on (`freeTransfersAfterChipWeek`).
+
+`replayTimeline` (`lib/chips/timeline.ts`) replays a saved plan week by week from the imported baseline, pairing each sale with a purchase, moving money in integer tenths, and keeping a purchase-price ledger so later sales use the right selling price. Under a Wildcard the new squad becomes permanent. Under a Free Hit the scoring squad is temporary: the permanent squad, its purchase prices and the bank all revert the next week. Each week records `bankTenths`, the bank while its squad is active, and `bankAfterTenths`, the bank carried into the next week; the two differ only in a Free Hit week.
+
+### 19.3 Chip rules and suggestions
+
+`validateChipSelection` (`lib/chips/seasonPolicy.ts`) allows one of each chip (Wildcard, Free Hit, Bench Boost, Triple Captain) in each half of the season (GW1-19 and GW20-38), one chip per gameweek, and no Free Hits in consecutive gameweeks. First-half chips expire unused.
+
+`projectTimeline` (`lib/chips/timelineProjections.ts`) scores each planned week with the §14 lineup engine, with and without its chip:
+
+```
+chipEffect = lineupTotal(with chip) - lineupTotal(without chip)
+netTotal   = lineupTotal(with chip) - hitCost
+```
+
+`/api/chip-suggestions` tries each legal gameweek in the planning window and returns the best week for each chip, ranked by `incrementalXp`:
+
+- **Bench Boost and Triple Captain:** the §14.7 chip total minus the saved lineup's total for that week.
+- **Free Hit:** an exact §17.3 solve for that one gameweek, with a budget of bank plus the permanent squad's selling value, scored with the §14 lineup engine and compared with the saved plan's net total for that week.
+- **Wildcard:** never suggested. Its timing turns on fixture swings and news, and a deterministic model always answers "play it now".
+
+---
+
+## 20. Constant tables
 
 Team strength constants (`lib/historical/inSeasonForm.ts`):
 
@@ -1178,6 +1299,8 @@ Player form constants (`lib/projections/playerForm.ts`):
 | xG/xA in-season form decay (per match) | 0.95 |
 | xG/xA in-season form prior weight | 6 "matches worth" |
 | Player form winsor ratio (`PLAYER_FORM_WINSOR_RATIO`) | 3.0 |
+| Card prior weight (`PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS`) | 40 matches |
+| Defender per-match xG cap (`projectPlayer.ts`) | 0.35 per 90 |
 
 Start rate and availability constants (`lib/availability/startRate.ts`, `lib/availability/selection.ts`):
 
@@ -1189,6 +1312,7 @@ Start rate and availability constants (`lib/availability/startRate.ts`, `lib/ava
 | Unknown cameo seed without history (`UNKNOWN_CAMEO_SEED`) | 0.08 |
 | RotoWire predicted XI floor | 0.62 |
 | RotoWire confirmed XI floor | 0.80 |
+| RotoWire `QUES` discount (start / cameo) | 0.65 / 0.75 |
 | Seed weight with zero observations | 0.25 |
 
 Scoring constants (`lib/projections/projectPlayer.ts`):
@@ -1206,6 +1330,7 @@ Scoring constants (`lib/projections/projectPlayer.ts`):
 | Card deductions | yellow 1, red 3 |
 | Yellow prior per 90 | GK 0.072, DEF 0.182, MID 0.188, FWD 0.149 |
 | Red prior per 90 | GK 0.001, DEF 0.008, MID 0.005, FWD 0.002 |
+| Rate ceilings per 90 (`RATE_CEILING`) | goal involvement 3, saves 10, defensive contributions 30, bonus 3, yellow 0.8, red 0.1 |
 
 Fixture constants (`lib/clubElo.ts`, `lib/projections/fixtureAdjustment.ts`, `lib/projections/cleanSheetStrength.ts`):
 
@@ -1216,6 +1341,7 @@ Fixture constants (`lib/clubElo.ts`, `lib/projections/fixtureAdjustment.ts`, `li
 | Clean-sheet skew weight | 0.6 |
 | Clean-sheet level prior | 12 played matches |
 | Rated clean-sheet mean / NB dispersion | 1.408 / 12 |
+| Clean-sheet probability clamp (rated and table paths) | 0.02 – 0.9 |
 | League average goals against | 1.35 |
 | Difficulty multipliers | 1→1.14, 2→1.07, 3→1.00, 4→0.92, 5→0.84 |
 | Home / away attack venue | 1.102 / 0.898 (measured) |
@@ -1228,24 +1354,44 @@ Lineup constants (`lib/squad/weeklyLineup.ts`):
 | Constant | Value |
 |---|---|
 | Near-equal XI window | 0.25 points |
-| pDNP availability / minutes split | 0.75 / 0.25 |
-| pDNP minutes knee | 45 minutes |
+| pDNP availability / minutes split (fallback only, §14.2) | 0.75 / 0.25 |
+| pDNP minutes knee (fallback only) | 45 minutes |
+| Triple Captain extra armband multiple | 2 |
 
-Optimizer constants (`lib/optimizer/exactOptimizer.ts`, `lib/optimizer/optimizer.ts`):
+Beam-search objective constants (`objectiveScore`, `lib/optimizer/optimizer.ts`):
 
 | Constant | Value |
 |---|---|
-| Backup GK utility weight | 0.05 |
-| Backup GK price divisor | 20 |
+| Backup GK utility weight (`BACKUP_GOALKEEPER_WEIGHT`) | 0.05 |
+| Backup GK price divisor (`BACKUP_GOALKEEPER_PRICE_DIVISOR`) | 20 |
 | Outfield bench utility weights | 0.25, 0.15, 0.10 |
-| Cash xP per tenth per gameweek (`CASH_XP_PER_TENTH_PER_GAMEWEEK`) | 0.025 (£0.25m xP/tenth/GW) |
-| Bench strength bonus (`BENCH_STRENGTH_BONUS`) | 0.04 |
+| `STRONG` bench bonus (inline) | 0.04 × bench utility |
+| `CHEAP` bench penalty (inline) | bench price / 10000 |
 | High-confidence starter bonus (tie-break) | 0.01 |
+
+Transfer constants (`lib/analysis/singleTransfers.ts`, `lib/optimizer/milpTransfers.ts`):
+
+| Constant | Value |
+|---|---|
+| Cash value in single-transfer score (`CASH_XP_PER_MILLION`) | 0.25 score per £1m released, added to xP gain per gameweek |
+| Multi-transfer reserve weight (outfield / GK) | 0.15 / 0.05 |
+| Multi-transfer candidates per position | 25 |
+| Maximum transfers per multi-transfer request | 5 |
+
+Finance and chip constants (`SEASON_CHIP_POLICY`, `lib/chips/seasonPolicy.ts`):
+
+| Constant | Value |
+|---|---|
+| Selling profit kept (`sellProfitFraction`) | 0.5, rounded down |
+| Maximum saved free transfers | 5 |
+| Maximum transfers per gameweek | 20 |
+| Points per paid transfer (`hitCostPerTransferPoints`) | 4 |
+| Chip windows | GW1-19, GW20-38; one of each chip per window |
 
 
 ---
 
-## 20. Validation and research status
+## 21. Validation and research status
 
 The three Tier C production changes are the 300-point ClubElo difficulty
 step (§2.2), retaining the start-probability EWMA after 240 observed minutes

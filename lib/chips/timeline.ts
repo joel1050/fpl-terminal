@@ -17,7 +17,10 @@ export interface TimelineWeek {
   /** Squad that scores this gameweek (temporary under FH). */
   activeSquadIds: number[];
   transfers: PlannedTransfer[];
+  /** Bank while this gameweek's squad is active. */
   bankTenths: number;
+  /** Bank carried into the next gameweek: a Free Hit's bank reverts. */
+  bankAfterTenths: number;
   freeTransfersBefore: number;
   freeTransfersAfter: number;
   hitCost: number;
@@ -164,6 +167,8 @@ export function replayTimeline(input: ReplayTimelineInput): Record<number, Timel
       const freeAfter = freeTransfersAfterChipWeek(freeTransfers);
       const active = [...target];
       const nextPermanent = chip === "wildcard" ? [...target] : [...permanent];
+      // A Free Hit squad and its bank both revert after the week.
+      const bankAfter = chip === "wildcard" ? nextBank : bank;
       // Wildcard permanence: purchase prices follow the new permanent squad.
       // Free Hit: permanent purchase prices only change for the permanent squad
       // (unchanged), while the temporary squad is priced separately next week.
@@ -182,6 +187,7 @@ export function replayTimeline(input: ReplayTimelineInput): Record<number, Timel
         activeSquadIds: active,
         transfers: costed,
         bankTenths: nextBank,
+        bankAfterTenths: bankAfter,
         freeTransfersBefore: freeTransfers,
         freeTransfersAfter: freeAfter,
         hitCost: 0,
@@ -190,7 +196,7 @@ export function replayTimeline(input: ReplayTimelineInput): Record<number, Timel
         isChipFree,
       };
       permanent = nextPermanent;
-      bank = nextBank;
+      bank = bankAfter;
       purchasePrices = permanentPrices;
       freeTransfers = freeAfter;
       continue;
@@ -224,6 +230,7 @@ export function replayTimeline(input: ReplayTimelineInput): Record<number, Timel
       activeSquadIds: [...target],
       transfers: costed,
       bankTenths: nextBank,
+      bankAfterTenths: nextBank,
       freeTransfersBefore: freeTransfers,
       freeTransfersAfter: accounting.freeTransfersAfter,
       hitCost: accounting.hitCost,

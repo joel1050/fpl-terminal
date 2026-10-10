@@ -40,7 +40,8 @@ export interface SeasonChipPolicy {
   secondWindow: { from: number; to: number };
   maxFreeTransfers: number;
   maxTransfersPerGameweek: number;
-  hitCostPerTransferTenthsPoints: number;
+  /** Points deducted for each transfer beyond the free-transfer allowance. */
+  hitCostPerTransferPoints: number;
   /** Fraction of price rise kept on sale, e.g. 0.5. */
   sellProfitFraction: number;
   chipsPerWindow: Record<ChipKind, number>;

@@ -65,7 +65,8 @@ export interface TransferCountResult {
 
 /**
  * Normal transfer accounting: at most five saved free transfers, at most 20
- * normal transfers per gameweek, four points per transfer beyond the allowance.
+ * normal transfers per gameweek, and four points per transfer beyond the
+ * allowance.
  * Wildcard and Free Hit gameweeks are unlimited and free: the week's new free
  * transfer is consumed while previously saved transfers remain available after.
  */
@@ -82,7 +83,7 @@ export function accountNormalTransfers(
   return {
     normalTransfers: capped,
     paidTransfers: paid,
-    hitCost: paid * SEASON_CHIP_POLICY.hitCostPerTransferTenthsPoints,
+    hitCost: paid * SEASON_CHIP_POLICY.hitCostPerTransferPoints,
     freeTransfersAfter: Math.max(0, after),
   };
 }

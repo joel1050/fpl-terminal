@@ -9,7 +9,7 @@ export const SEASON_CHIP_POLICY: SeasonChipPolicy = {
   secondWindow: { from: 20, to: 38 },
   maxFreeTransfers: 5,
   maxTransfersPerGameweek: 20,
-  hitCostPerTransferTenthsPoints: 0,
+  hitCostPerTransferPoints: 4,
   sellProfitFraction: 0.5,
   chipsPerWindow: { wildcard: 1, freehit: 1, bboost: 1, "3xc": 1 },
 };

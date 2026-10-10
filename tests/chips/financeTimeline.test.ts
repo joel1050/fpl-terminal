@@ -25,10 +25,10 @@ describe("transfer finance", () => {
     expect(Number.isInteger(sellingPriceTenths(53, 68))).toBe(true);
   });
 
-  it("banks one free transfer when idle and charges zero hit cost per extra transfer", () => {
+  it("banks one free transfer when idle and charges four points per extra transfer", () => {
     expect(accountNormalTransfers(0, 1)).toMatchObject({ paidTransfers: 0, hitCost: 0, freeTransfersAfter: 2 });
     expect(accountNormalTransfers(1, 1)).toMatchObject({ paidTransfers: 0, hitCost: 0, freeTransfersAfter: 1 });
-    expect(accountNormalTransfers(2, 1)).toMatchObject({ paidTransfers: 1, hitCost: 0, freeTransfersAfter: 1 });
+    expect(accountNormalTransfers(2, 1)).toMatchObject({ paidTransfers: 1, hitCost: 4, freeTransfersAfter: 1 });
     expect(accountNormalTransfers(0, 5)).toMatchObject({ freeTransfersAfter: 5 });
   });
 
@@ -37,7 +37,7 @@ describe("transfer finance", () => {
     const capped = accountNormalTransfers(25, 5);
     expect(capped.normalTransfers).toBe(20);
     expect(capped.paidTransfers).toBe(15);
-    expect(capped.hitCost).toBe(0);
+    expect(capped.hitCost).toBe(60);
   });
 
   it("preserves saved transfers across wildcard and free hit weeks", () => {
@@ -150,13 +150,14 @@ describe("timeline replay", () => {
   it("charges hits beyond the allowance", () => {
     const timeline = replayTimeline({
       baseline: baselineOf(1),
-      plans: { 1: { playerIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16], chip: null } },
+      plans: { 1: { playerIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 16, 17], chip: null } },
       priceById: prices(),
       fromGameweek: 1,
       toGameweek: 2,
     });
-    // GW1 uses the single free transfer; GW2 has one free transfer again.
-    expect(timeline[1].hitCost).toBe(0);
+    // GW1 makes two transfers on one free transfer: one hit. GW2 makes none.
+    expect(timeline[1].hitCost).toBe(4);
+    expect(timeline[1].freeTransfersAfter).toBe(1);
     expect(timeline[2].hitCost).toBe(0);
   });
 
@@ -174,8 +175,11 @@ describe("timeline replay", () => {
     expect(timeline[5].permanentSquadIds).toEqual(wcSquad);
     expect(timeline[5].activeSquadIds).toEqual(wcSquad);
     expect(timeline[5].freeTransfersAfter).toBe(2);
-    // The wildcard squad persists into the following week.
+    // The wildcard squad and its bank persist into the following week:
+    // selling 15 (50) for 17 (70) spends the 20 in the bank.
     expect(timeline[6].permanentSquadIds).toEqual(wcSquad);
+    expect(timeline[5].bankTenths).toBe(0);
+    expect(timeline[6].bankTenths).toBe(0);
   });
 
   it("keeps free hit squads temporary and restores the permanent squad", () => {
@@ -193,6 +197,10 @@ describe("timeline replay", () => {
     expect(timeline[5].freeTransfersAfter).toBe(2);
     expect(timeline[6].permanentSquadIds).toEqual(SQUAD);
     expect(timeline[6].activeSquadIds).toEqual(SQUAD);
+    // Selling 15 (50) for 17 (70) spends the bank for the Free Hit week only.
+    expect(timeline[5].bankTenths).toBe(0);
+    expect(timeline[5].bankAfterTenths).toBe(20);
+    expect(timeline[6].bankTenths).toBe(20);
   });
 
   it("records market price when a sold player is bought back", () => {
