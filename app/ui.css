@@ -388,7 +388,7 @@
 .pitch-head h3 { margin: 0; color: var(--text); font: 600 14px/1.2 var(--font-ui); }
 .pitch-head h3 span { margin-left: 6px; color: var(--muted); font: 12px/1.2 var(--font-num); }
 
-.pitch { --token-ring: var(--pitch); position: relative; display: grid; gap: 6px; padding: 16px 8px 12px; overflow: hidden; border-radius: 12px; background: repeating-linear-gradient(180deg, var(--pitch) 0 52px, #173c26 52px 104px); }
+.pitch { --token-ring: var(--pitch); position: relative; display: grid; gap: 6px; padding: 16px 8px 12px; border-radius: 12px; background: repeating-linear-gradient(180deg, var(--pitch) 0 52px, #173c26 52px 104px); }
 /* Touch line and the penalty box at the goalkeeper's end. Drawn behind the tokens. */
 .pitch::before,
 .pitch::after { content: ""; position: absolute; border: 1px solid rgb(255 255 255 / 0.1); pointer-events: none; }
@@ -425,8 +425,30 @@
 .token-blank { color: var(--muted); font-size: 12px; }
 .token-xp { color: var(--text); font: 600 12px/16px var(--font-num); white-space: nowrap; }
 .token-xp small { color: var(--muted); font: 500 12px/1 var(--font-ui); }
+/* Planner tokens: a single fixture and its xP share a row on a five-man line. A double may still wrap. */
+.pitch-token:not(.live-token) .token-line { column-gap: 3px; }
+.pitch-token:not(.live-token) .token-fixture .fc { padding: 0 2px; }
+.pitch-token:not(.live-token) .token-xp small { margin-left: -1px; }
 .token-bench { color: var(--muted); font: 12px/1.2 var(--font-ui); }
 .pitch-token .run { margin-top: 1px; }
+
+/* Hover or focus on a token opens its next five opponents under the bars. The layer floats, so no token moves. */
+.token-run-layer { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .token-run-layer { position: absolute; top: calc(100% - 6px); left: 50%; z-index: 5; display: block; padding: 3px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface-2); box-shadow: 0 12px 32px rgb(0 0 0 / 0.45); white-space: nowrap; pointer-events: none; visibility: hidden; transform: translateX(-50%); }
+  .token-run-layer .fixture-chips { flex-wrap: nowrap; }
+  .token-run-layer .fc { min-width: 0; padding: 0 3px; font-size: 12px; line-height: 16px; }
+  .token-cell:hover > .token-run-layer,
+  .token-cell:focus-within > .token-run-layer { visibility: visible; }
+  .pitch-tokens > .token-cell:first-child:not(:last-child) > .token-run-layer,
+  .bench-strip > .token-cell:first-child > .token-run-layer { left: 0; transform: none; }
+  .pitch-tokens > .token-cell:last-child:not(:first-child) > .token-run-layer,
+  .bench-strip > .token-cell:last-child > .token-run-layer { right: 0; left: auto; transform: none; }
+  /* The bench card is the last thing in the stack, so its layer covers the bench label and bars instead of hanging below. */
+  .bench-strip .token-run-layer { top: auto; bottom: -2px; }
+  .pitch > .pitch-row:has(.token-cell:hover, .token-cell:focus-within) { z-index: 3; }
+  body.pitch-dragging .token-run-layer { visibility: hidden; }
+}
 
 /* Bench: its own card under the pitch. Benched players are dimmed unless Bench Boost makes them count. */
 .terminal-app .bench-section { --token-ring: var(--surface); display: block; padding: 10px 6px 8px; border: 0; border-radius: 12px; background: var(--surface); }

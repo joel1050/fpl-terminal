@@ -1,4 +1,4 @@
-import { FixtureChip, RunStrip } from "@/components/terminal/fixtures/FixtureChips";
+import { FixtureChip, FixtureRun, RunStrip } from "@/components/terminal/fixtures/FixtureChips";
 import { availabilityOf } from "@/lib/availability/status";
 import { points } from "@/lib/display/format";
 import { weeklyPlayerMetrics } from "@/lib/squad/weeklyLineup";
@@ -86,6 +86,7 @@ export function PitchToken({ player, gameweek, role, benchLabel, captain, vice, 
     >
       <svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true"><path className="lock-shackle" d={locked ? "M4 7V5a4 4 0 0 1 8 0v2" : "M4 7V5a4 4 0 0 1 7.4-2.1"} /><rect className="lock-body" x="2.5" y="7" width="11" height="7" /></svg>
     </button>
+    {showRun && <span className="token-run-layer" data-testid="token-run-layer" aria-hidden="true"><FixtureRun fixtures={player.fixtures} fromGameweek={gameweek} count={5} /></span>}
     </div>
   );
 }
