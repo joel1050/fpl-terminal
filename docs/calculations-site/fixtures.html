@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture adjustment · FPL Terminal calculations</title>
+<link rel="stylesheet" href="style.css">
+<script src="site.js"></script>
+<style>
+  .out-card .big { font-family: var(--font-num); font-size: 15px; color: var(--accent); margin: 0 0 4px; }
+  .out-card p { margin: 4px 0; font-size: 13px; }
+  .heat caption { caption-side: top; }
+  .heat th { white-space: nowrap; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin: 6px 0; }
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 5px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sitenav" aria-label="Pages">
+    <a class="brand" href="index.html">FPL <span>Terminal</span></a>
+    <p class="tagline">How every number is made</p>
+    <ol>
+      <li><a href="index.html"><span class="sec">00</span>Overview</a></li>
+      <li><a href="foundations.html"><span class="sec">§1–3</span>Inputs &amp; team strength</a></li>
+      <li><a href="availability.html"><span class="sec">§4–5</span>Who plays, and for how long</a></li>
+      <li><a href="rates.html"><span class="sec">§6</span>Per-90 rates</a></li>
+      <li><a href="fixtures.html" aria-current="page"><span class="sec">§7</span>Fixture adjustment</a></li>
+      <li><a href="points.html"><span class="sec">§8–9</span>Expected points</a></li>
+      <li><a href="scores-lineup.html"><span class="sec">§10–14</span>Risk, value &amp; weekly lineup</a></li>
+      <li><a href="squad-tools.html"><span class="sec">§15–19</span>Analysis, transfers &amp; optimizer</a></li>
+      <li><a href="reference.html"><span class="sec">§20–21</span>Constants &amp; validation</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="page-head">
+      <div class="eyebrow">§7</div>
+      <h1>Fixture adjustment</h1>
+      <p class="lede">A player scores more against a weak side at home. This stage turns one fixture into three numbers: how much it lifts or cuts attack, how likely a clean sheet is, and how many goals the team should concede.</p>
+    </header>
+
+    <section id="s7">
+      <h2><span class="secno">§7</span>Fixture adjustment</h2>
+      <p class="tldr"><strong>In short:</strong> each fixture yields exactly three numbers, and every later points calculation reads them.</p>
+      <p><code>calculateFixtureAdjustment</code> returns one attacking multiplier and the fixture's clean-sheet pair.</p>
+
+      <div class="flow">
+        <div class="step"><b>Difficulty</b>Elo-based fixture rating <span class="tag estimate">estimate</span></div>
+        <div class="arrow">+</div>
+        <div class="step"><b>Venue</b>home or away <span class="tag fact">fact</span></div>
+        <div class="arrow">+</div>
+        <div class="step"><b>Team strengths</b>attack, defence, Elo <span class="tag estimate">estimate</span></div>
+        <div class="arrow">→</div>
+        <div class="step hi"><b>§7</b>three outputs</div>
+      </div>
+
+      <div class="grid-3" data-anim-group>
+        <div class="card out-card" data-anim="fade" style="--d:0ms"><p class="big">attackMultiplier</p><p>Scales a player's attacking rates (goals, assists) for this fixture. 1.00 means no change. From §7.1 and §7.2.</p></div>
+        <div class="card out-card" data-anim="fade" style="--d:150ms"><p class="big">cleanSheetProbability</p><p>Chance the team concedes nothing. From §7.4, or the table in §7.4.1 as a fallback.</p></div>
+        <div class="card out-card" data-anim="fade" style="--d:300ms"><p class="big">expectedGoalsAgainst</p><p>Goals the team should concede. Feeds the goals-conceded deduction in §8.</p></div>
+      </div>
+      <p class="src">lib/projections/fixtureAdjustment.ts · calculateFixtureAdjustment</p>
+
+      <section id="s7-1">
+        <h3><span class="secno">§7.1</span>Base difficulty and venue</h3>
+        <p class="tldr"><strong>In short:</strong> an easy fixture lifts attack by up to 14%, a hard one cuts it by up to 16%, and playing at home adds about 10% on top.</p>
+
+        <svg style="--vbw:600px" class="diagram wide" viewBox="0 0 600 250" role="img" aria-label="Base multiplier falls from 1.14 at difficulty 1 to 0.84 at difficulty 5">
+<line data-anim="fade" x1="60" y1="110.5" x2="540" y2="110.5" stroke="rgba(232,239,234,.16)" stroke-dasharray="4 4"/>
+<text x="548" y="114.5" font-size="12" fill="#93a69c">1.00</text>
+<polyline data-anim="draw" style="--d:700ms" points="60.0,47.9 180.0,79.2 300.0,110.5 420.0,146.3 540.0,182.1" fill="none" stroke="#f5b301" stroke-width="2"/><circle data-anim="pop" style="--d:0ms" cx="60.0" cy="47.9" r="4" fill="#f5b301"/><text data-anim="pop" style="--d:0ms" class="num" x="60.0" y="37.9" text-anchor="middle" font-size="12">1.14</text><text data-anim="pop" style="--d:0ms" class="num" x="60.0" y="222" text-anchor="middle" font-size="12" fill="#93a69c">1</text><circle data-anim="pop" style="--d:120ms" cx="180.0" cy="79.2" r="4" fill="#f5b301"/><text data-anim="pop" style="--d:120ms" class="num" x="180.0" y="69.2" text-anchor="middle" font-size="12">1.07</text><text data-anim="pop" style="--d:120ms" class="num" x="180.0" y="222" text-anchor="middle" font-size="12" fill="#93a69c">2</text><circle data-anim="pop" style="--d:240ms" cx="300.0" cy="110.5" r="4" fill="#f5b301"/><text data-anim="pop" style="--d:240ms" class="num" x="300.0" y="100.5" text-anchor="middle" font-size="12">1.00</text><text data-anim="pop" style="--d:240ms" class="num" x="300.0" y="222" text-anchor="middle" font-size="12" fill="#93a69c">3</text><circle data-anim="pop" style="--d:360ms" cx="420.0" cy="146.3" r="4" fill="#f5b301"/><text data-anim="pop" style="--d:360ms" class="num" x="420.0" y="136.3" text-anchor="middle" font-size="12">0.92</text><text data-anim="pop" style="--d:360ms" class="num" x="420.0" y="222" text-anchor="middle" font-size="12" fill="#93a69c">4</text><circle data-anim="pop" style="--d:480ms" cx="540.0" cy="182.1" r="4" fill="#f5b301"/><text data-anim="pop" style="--d:480ms" class="num" x="540.0" y="172.1" text-anchor="middle" font-size="12">0.84</text><text data-anim="pop" style="--d:480ms" class="num" x="540.0" y="222" text-anchor="middle" font-size="12" fill="#93a69c">5</text>
+<text x="300" y="244" text-anchor="middle" font-size="12" fill="#93a69c">difficulty (1 easiest, 5 hardest)</text>
+<text x="8" y="16" font-size="12" fill="#93a69c">base multiplier</text></svg>
+        <p>The five anchor values sit at difficulty 1 to 5, and <code>continuousDifficultyMultiplier</code> joins them with straight lines. Difficulty 2.5, for example, falls halfway between 1.07 and 1.00.</p>
+
+        <div class="formula"><span class="v">difficulty</span>       = <span class="v">fixture.exactDifficulty</span> ?? <span class="v">fixture.difficulty</span> ?? <span class="k">3</span>  <span class="c">// Continuous ClubElo FDR from §2.2</span>
+<span class="v">base</span>             = continuousDifficultyMultiplier(<span class="v">difficulty</span>)  <span class="c">// Linear interpolation over [1.14, 1.07, 1.00, 0.92, 0.84]</span>
+<span class="v">venue</span>            = home ? <span class="k">1.102</span> : <span class="k">0.898</span>
+<span class="v">attackMultiplier</span> = <span class="v">base</span> * <span class="v">venue</span>
+<span class="v">expectedGoalsAgainst</span> = <span class="k">1.35</span> * (home ? <span class="k">0.9</span> : <span class="k">1.1</span>)    <span class="c">// fallback only - see §7.3</span></div>
+        <p class="src">lib/projections/fixtureAdjustment.ts</p>
+
+        <div class="example illustration">
+          <p>Made-up fixtures, real formula.</p>
+          <ul>
+            <li>Difficulty 2, home: 1.07 * 1.102 = <span class="num">1.17914</span></li>
+            <li>Difficulty 2.5, home: 1.035 * 1.102 = <span class="num">1.14057</span></li>
+            <li>Difficulty 3, away: 1.00 * 0.898 = <span class="num">0.898</span></li>
+          </ul>
+        </div>
+
+        <h4>The home edge, measured <span class="tag evidence">evidence</span></h4>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-label">Home xG</span><span class="bar-track"><span class="bar-fill good" style="width:100%"></span></span><span class="bar-val">1.551</span></div>
+          <div class="bar-row"><span class="bar-label">League mean</span><span class="bar-track"><span class="bar-fill info" style="width:90.8%"></span></span><span class="bar-val">1.408</span></div>
+          <div class="bar-row"><span class="bar-label">Away xG</span><span class="bar-track"><span class="bar-fill bad" style="width:81.5%"></span></span><span class="bar-val">1.264</span></div>
+        </div>
+        <p>Over all 380 fixtures of 2025/26, home sides averaged 1.551 xG and away sides 1.264. Against the 1.408 league mean, that gives <code>1.102</code> and <code>0.898</code>.</p>
+
+        <details>
+          <summary>Evidence and caveats</summary>
+          <ul>
+            <li>Actual goals agree: 1.453 at home against 1.203 away.</li>
+            <li>The earlier pair <code>1.03 / 0.97</code> held about a third of the real spread. It also contradicted the <code>0.9 / 1.1</code> on the goals-against side of the same fixture.</li>
+            <li>Re-derive the pair with <code>npx tsx scripts/backtest/sweep.ts</code>.</li>
+            <li><code>base</code> now reflects the ClubElo scale, not a live FPL label. The neutral fallback stays <code>3</code>, so a club with no mapping keeps <code>base = 1.00</code>.</li>
+            <li>The older walk-forward test in <code>scripts/backtest/fdr.ts</code> measured FPL's own FDR, so it does not validate this replacement.</li>
+            <li>ClubElo difficulty and the strength ratio (§7.2) both describe the matchup, and the model still multiplies them. That weighting is an explicit model assumption.</li>
+            <li>Real historical ClubElo is now available (§2.2.1), but the earlier FDR studies keep their original proxy or FPL inputs.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section id="s7-2">
+        <h3><span class="secno">§7.2</span>Strength-based adjustment</h3>
+        <p class="tldr"><strong>In short:</strong> when both teams have strengths, the model also multiplies by how well this attack matches that defence, held between 0.70 and 1.35.</p>
+
+        <svg style="--vbw:600px" class="diagram wide" viewBox="0 0 600 190" role="img" aria-label="Two number lines. The ratio is held between 0.70 and 1.35. The multiplier is held between 0.55 and 1.60.">
+<text data-anim="fade" style="--d:0ms" x="40" y="36" font-size="12" fill="#e8efea">1. ratio = ownAttack / opponentDefence, held to 0.70 to 1.35</text><line data-anim="draw" style="--d:100ms" x1="40" y1="50" x2="560" y2="50" stroke="#5d7268" stroke-width="2"/><rect data-anim="grow-x" style="--d:450ms" x="151.4" y="41" width="241.4" height="18" fill="#4ade80" fill-opacity="0.28"/><line data-anim="draw" style="--d:650ms" x1="151.4" y1="36" x2="151.4" y2="64" stroke="#4ade80" stroke-width="2"/><text data-anim="pop" style="--d:700ms" class="num" x="151.4" y="80" text-anchor="middle" font-size="12" fill="#4ade80">0.70</text><line data-anim="draw" style="--d:800ms" x1="392.9" y1="36" x2="392.9" y2="64" stroke="#4ade80" stroke-width="2"/><text data-anim="pop" style="--d:850ms" class="num" x="392.9" y="80" text-anchor="middle" font-size="12" fill="#4ade80">1.35</text><circle data-anim="pop" style="--d:1000ms" cx="66.0" cy="50" r="3.5" fill="#e8efea"/><text data-anim="pop" style="--d:1000ms" class="num" x="66.0" y="42" text-anchor="middle" font-size="12" fill="#93a69c">0.47</text><circle data-anim="pop" style="--d:1000ms" cx="493.1" cy="50" r="3.5" fill="#e8efea"/><text data-anim="pop" style="--d:1100ms" class="num" x="493.1" y="42" text-anchor="middle" font-size="12" fill="#93a69c">1.62</text>
+<text data-anim="fade" style="--d:1000ms" x="40" y="126" font-size="12" fill="#e8efea">2. attackMultiplier, held to 0.55 to 1.60 (catches only absurd input)</text><line data-anim="draw" style="--d:1100ms" x1="40" y1="140" x2="560" y2="140" stroke="#5d7268" stroke-width="2"/><rect data-anim="grow-x" style="--d:1450ms" x="95.7" y="131" width="390.0" height="18" fill="#f97316" fill-opacity="0.28"/><line data-anim="draw" style="--d:1650ms" x1="95.7" y1="126" x2="95.7" y2="154" stroke="#f97316" stroke-width="2"/><text data-anim="pop" style="--d:1700ms" class="num" x="95.7" y="170" text-anchor="middle" font-size="12" fill="#f97316">0.55</text><line data-anim="draw" style="--d:1800ms" x1="485.7" y1="126" x2="485.7" y2="154" stroke="#f97316" stroke-width="2"/><text data-anim="pop" style="--d:1850ms" class="num" x="485.7" y="170" text-anchor="middle" font-size="12" fill="#f97316">1.60</text>
+</svg>
+        <p>Two clamps work in turn. The ratio clamp does the real work. The outer clamp is wider on purpose, so it catches only an absurd input.</p>
+
+        <div class="formula"><span class="v">attackMultiplier</span> *= clamp(<span class="v">ownAttack</span> / <span class="v">opponentDefence</span>, <span class="k">0.70</span>, <span class="k">1.35</span>)
+<span class="v">attackMultiplier</span>  = clamp(<span class="v">attackMultiplier</span>, <span class="k">0.55</span>, <span class="k">1.60</span>)
+
+<span class="c">// Without strengths: expectedGoalsAgainst is divided by base^2.</span></div>
+        <p><code>cleanSheetProbability</code> no longer comes from this ratio. See §7.4.</p>
+        <p class="src">lib/projections/fixtureAdjustment.ts</p>
+
+        <details>
+          <summary>Why 0.70 to 1.35 <span class="tag evidence">evidence</span></summary>
+          <ul>
+            <li>The old ratio window was <code>0.78</code>-<code>1.22</code>. Walk-forward strengths for 2025/26 gave ratios from <code>0.47</code> to <code>1.62</code>, so the old clamp bit on 24.5% of team-fixtures and could not tell a good matchup from a great one.</li>
+            <li>Widening it to <code>0.70</code>-<code>1.35</code> cut expected-points RMSE by 0.0008. The paired confidence interval excludes zero, and the change won 24 of 33 gameweeks.</li>
+            <li>The gain stays flat from there to unclamped, so this is the narrowest window that keeps all of it. A window is still needed: <code>blendInSeasonForm</code> floors a defence ratio at <code>0.05</code>, which would let an unclamped ratio reach about 25.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Why the outer clamp is 0.55 to 1.60: the Haaland case</summary>
+          <p>It used to be <code>0.7</code>-<code>1.3</code>, which bound on 14% of forward-fixtures. Over 2025/26 it flattened Erling Haaland's 30 fixtures onto a <code>0.89</code>-<code>1.30</code> range when the inputs said <code>0.89</code>-<code>1.57</code>. <strong>11 of the 30 sat pinned on the ceiling</strong>, so the model could not tell his best fixture from his median one. Forwards' modelled swing between their easiest and hardest fixtures came to 0.73 points against an observed 1.07.</p>
+          <div class="callout warn"><span class="label">Calibration fix, not an accuracy win</span>
+            <p>Widening this clamp left match-level RMSE unchanged (+0.0006, interval spanning zero) and top-30 selection flat. Single-match points are too noisy to reward the right slope. The case for the change is that a ceiling that erases a third of a player's fixture variation misleads anyone who plans a fixture run.</p></div>
+        </details>
+
+        <details>
+          <summary>What happens without either clamp <span class="tag evidence">evidence</span></summary>
+          <p><strong>Removing either clamp is worse, and the margin grows with the spread of the level.</strong> Over 660 walk-forward team-fixtures, opening both windows costs +0.0121 team-xG RMSE, with the paired interval excluding zero. On top of a widened level (§3.4) it costs +0.1283. The two shipped windows together bite on 16.4% of team-fixtures.</p>
+          <p class="src">scripts/backtest/team-level.ts</p>
+        </details>
+      </section>
+
+      <section id="s7-3">
+        <h3><span class="secno">§7.3</span>Consistent goals-against</h3>
+        <p class="tldr"><strong>In short:</strong> the model turns the clean-sheet probability back into goals against, so both numbers tell the same story.</p>
+
+        <div class="flow">
+          <div class="step"><b>P(no goals)</b>= exp(−xGA) for a Poisson count</div>
+          <div class="arrow">⇄</div>
+          <div class="step"><b>xGA</b>= −ln(p)</div>
+        </div>
+
+        <p>This inversion runs after a table lookup (§7.4.1) and when no lookup happened. On the Elo path (§7.4), <code>expectedGoalsAgainst</code> is the fitted mean instead. If no table lookup happened, the clean-sheet probability is <code>clamp(exp(-expectedGoalsAgainst), 0.03, 0.65)</code>. The model then re-derives the goals-against number from the clean-sheet probability:</p>
+        <div class="formula"><span class="v">expectedGoalsAgainst</span> = -ln(clamp(<span class="v">cleanSheetProbability</span>, <span class="k">0.03</span>, <span class="k">0.9</span>))</div>
+        <p>This is the single Poisson parameter that the goals-conceded deduction (§8) uses.</p>
+
+        <div class="example illustration">
+          <p>Made-up probability: <code>cleanSheetProbability = 0.30</code>. Then <code>expectedGoalsAgainst = -ln(0.30) = 1.204</code>. The fallback in §7.1 gives 1.35 * 0.9 = <span class="num">1.215</span> at home and 1.35 * 1.1 = <span class="num">1.485</span> away, before this step.</p>
+        </div>
+        <details>
+          <summary>Where this applies</summary>
+          <p>The spec words this as the case where no table lookup happened. On the Elo path (§7.4), <code>expectedGoalsAgainst</code> is the fitted mean and not this inversion.</p>
+        </details>
+        <p class="src">lib/projections/fixtureAdjustment.ts</p>
+      </section>
+
+      <section id="s7-4">
+        <h3><span class="secno">§7.4</span>Clean sheets from Elo and goal lean</h3>
+        <p class="tldr"><strong>In short:</strong> the model rates each team by Elo, shifts toward this season's xG as matches pile up, and reads the chance of zero goals off a negative binomial curve.</p>
+        <p>The table in §7.4.1 stays as the fallback for any fixture where either side has no ClubElo rating.</p>
+
+        <div class="flow">
+          <div class="step"><b>1. Split</b>level = log(attack) + log(defence)<br>skew = log(attack) − log(defence)</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>2. Level</b>Elo level, blended with the fitted level by matches played</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>3. Skew</b>shrunk to 0.6 of its size</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>4. Goals against</b>1.408 × attack′<sub>opponent</sub> / defence′<sub>own</sub> × venue</div>
+          <div class="arrow">→</div>
+          <div class="step hi"><b>5. P(0 goals)</b>negative binomial, phi 12</div>
+        </div>
+
+        <p><code>deriveCleanSheetStrengths</code> splits each team's §3 strengths into two parts:</p>
+        <div class="formula"><span class="v">level_i</span> = log(<span class="v">attack_i</span>) + log(<span class="v">defence_i</span>)
+<span class="v">skew_i</span>  = log(<span class="v">attack_i</span>) - log(<span class="v">defence_i</span>)</div>
+        <p>The level says how good the team is overall. The skew says whether it leans to attack or defence.</p>
+
+        <h4>Level and skew</h4>
+        <div class="formula"><span class="v">eloLevel_i</span>   = <span class="k">ELO_LEVEL_SLOPE</span> * (<span class="v">elo_i</span> - <span class="v">meanElo</span>)           <span class="c">// ELO_LEVEL_SLOPE = 0.0034</span>
+<span class="v">fitLevel_i</span>   = log(<span class="v">attack_i</span>) + log(<span class="v">defence_i</span>)
+<span class="v">stretch</span>      = sd(<span class="v">eloLevel</span>) / sd(<span class="v">fitLevel</span>)               <span class="c">// 0 when sd(fitLevel) &lt;= 1e-9</span>
+<span class="v">fitWeight_i</span>  = <span class="v">matchesPlayed_i</span> / (<span class="v">matchesPlayed_i</span> + <span class="k">12</span>)
+<span class="v">level'_i</span>     = (1 - <span class="v">fitWeight_i</span>) * <span class="v">eloLevel_i</span>
+               + <span class="v">fitWeight_i</span> * (<span class="v">fitLevel_i</span> - <span class="v">meanFitLevel</span>) * <span class="v">stretch</span>
+<span class="v">skew'_i</span>      = <span class="k">0.6</span> * (log(<span class="v">attack_i</span>) - log(<span class="v">defence_i</span>))
+<span class="v">attack'_i</span>    = exp((<span class="v">level'_i</span> + <span class="v">skew'_i</span>) / 2)
+<span class="v">defence'_i</span>   = exp((<span class="v">level'_i</span> - <span class="v">skew'_i</span>) / 2)</div>
+        <p>The means and standard deviations use the rated teams in the call. With no matches-played map, every fit weight is zero. <code>CLEAN_SHEET_LEVEL_PRIOR_MATCHES</code> is 12, so after 12 played matches Elo and the fitted level weigh the same.</p>
+
+        <div class="bars">
+          <div class="bar-row"><span class="bar-label">0 matches</span><span class="bar-track"><span class="bar-fill info" style="width:0%"></span></span><span class="bar-val">fit 0.00</span></div>
+          <div class="bar-row"><span class="bar-label">6 matches</span><span class="bar-track"><span class="bar-fill info" style="width:33.3%"></span></span><span class="bar-val">fit 0.33</span></div>
+          <div class="bar-row"><span class="bar-label">12 matches</span><span class="bar-track"><span class="bar-fill info" style="width:50%"></span></span><span class="bar-val">fit 0.50</span></div>
+          <div class="bar-row"><span class="bar-label">38 matches</span><span class="bar-track"><span class="bar-fill info" style="width:76%"></span></span><span class="bar-val">fit 0.76</span></div>
+        </div>
+        <p>Bars show <code>fitWeight</code> = matches / (matches + 12), the share of the level that comes from this season's xG fit. The 6, 12 and 38 match rows apply the spec formula to those counts.</p>
+
+        <p>The calculation takes an explicit <code>Map&lt;teamId, elo&gt;</code>. It does not resolve club names or read a snapshot. Normalization supplies ClubElo ratings in production, and backtests can supply dated ratings through the same interface. A missing or non-finite rating leaves that club out of the rated path. Production keeps <code>ELO_LEVEL_SLOPE = 0.0034</code>; a backtest can pass another slope.</p>
+
+        <h4>From strengths to a probability</h4>
+        <p>The probability is P(0 goals) under a negative binomial:</p>
+        <div class="formula"><span class="v">goalsAgainst</span> = <span class="k">LEAGUE_MEAN_XG</span> * (<span class="v">attack'_opponent</span> / <span class="v">defence'_own</span>) * <span class="v">venue</span>
+             <span class="v">venue</span> = <span class="k">0.898</span> at home, <span class="k">1.102</span> away        <span class="k">LEAGUE_MEAN_XG</span> = <span class="k">1.408</span>
+<span class="v">cleanSheetProbability</span> = clamp((<span class="k">phi</span> / (<span class="k">phi</span> + <span class="v">goalsAgainst</span>))^<span class="k">phi</span>, <span class="k">0.02</span>, <span class="k">0.9</span>)     <span class="k">phi</span> = <span class="k">12</span></div>
+        <p class="src">lib/projections/cleanSheetStrength.ts · deriveCleanSheetStrengths</p>
+
+        <svg style="--vbw:600px" class="diagram wide" viewBox="0 0 600 262" role="img" aria-label="Clean-sheet probability falls as expected goals against rise; the negative binomial sits above the Poisson curve">
+<line x1="60" y1="167.8" x2="560" y2="167.8" stroke="rgba(232,239,234,.08)"/><text class="num" x="52" y="171.8" text-anchor="end" font-size="12" fill="#93a69c">0.2</text><line x1="60" y1="125.6" x2="560" y2="125.6" stroke="rgba(232,239,234,.08)"/><text class="num" x="52" y="129.6" text-anchor="end" font-size="12" fill="#93a69c">0.4</text><line x1="60" y1="83.3" x2="560" y2="83.3" stroke="rgba(232,239,234,.08)"/><text class="num" x="52" y="87.3" text-anchor="end" font-size="12" fill="#93a69c">0.6</text><line x1="60" y1="41.1" x2="560" y2="41.1" stroke="rgba(232,239,234,.08)"/><text class="num" x="52" y="45.1" text-anchor="end" font-size="12" fill="#93a69c">0.8</text><text class="num" x="60.0" y="230" text-anchor="middle" font-size="12" fill="#93a69c">0</text><text class="num" x="202.9" y="230" text-anchor="middle" font-size="12" fill="#93a69c">1</text><text class="num" x="345.7" y="230" text-anchor="middle" font-size="12" fill="#93a69c">2</text><text class="num" x="488.6" y="230" text-anchor="middle" font-size="12" fill="#93a69c">3</text><line x1="60" y1="210" x2="560" y2="210" stroke="#5d7268"/>
+<polyline data-anim="fade" style="--d:1100ms" points="60.0,20.0 74.3,20.0 88.6,37.2 102.9,53.6 117.1,68.5 131.4,82.0 145.7,94.1 160.0,105.2 174.3,115.1 188.6,124.2 202.9,132.3 217.1,139.7 231.4,146.4 245.7,152.5 260.0,157.9 274.3,162.9 288.6,167.4 302.9,171.4 317.1,175.1 331.4,178.4 345.7,181.4 360.0,184.1 374.3,186.6 388.6,188.8 402.9,190.8 417.1,192.7 431.4,194.3 445.7,195.8 460.0,197.2 474.3,198.4 488.6,199.5 502.9,200.5 517.1,201.4 531.4,202.2 545.7,203.0 560.0,203.6" fill="none" stroke="#93a69c" stroke-width="2" stroke-dasharray="5 4"/>
+<polyline data-anim="draw" style="--d:0ms" points="60.0,20.0 74.3,20.0 88.6,36.9 102.9,53.0 117.1,67.6 131.4,80.7 145.7,92.4 160.0,103.1 174.3,112.7 188.6,121.4 202.9,129.2 217.1,136.3 231.4,142.7 245.7,148.6 260.0,153.8 274.3,158.6 288.6,163.0 302.9,166.9 317.1,170.5 331.4,173.8 345.7,176.8 360.0,179.5 374.3,182.0 388.6,184.3 402.9,186.3 417.1,188.2 431.4,189.9 445.7,191.5 460.0,193.0 474.3,194.3 488.6,195.5 502.9,196.6 517.1,197.6 531.4,198.6 545.7,199.4 560.0,200.2" fill="none" stroke="#f5b301" stroke-width="2.5"/>
+<text x="300" y="252" text-anchor="middle" font-size="12" fill="#93a69c">goalsAgainst (expected goals the side concedes)</text>
+<text x="8" y="14" font-size="12" fill="#93a69c">clean-sheet probability</text>
+<line data-anim="fade" style="--d:1300ms" x1="330" y1="40" x2="352" y2="40" stroke="#f5b301" stroke-width="2.5"/><text data-anim="fade" style="--d:1300ms" x="358" y="44" font-size="12">negative binomial, phi 12</text>
+<line data-anim="fade" style="--d:1300ms" x1="330" y1="60" x2="352" y2="60" stroke="#93a69c" stroke-width="2" stroke-dasharray="5 4"/><text data-anim="fade" style="--d:1300ms" x="358" y="64" font-size="12">Poisson, exp(-goalsAgainst)</text>
+</svg>
+        <p>The curve is the formula above, drawn for goalsAgainst from 0 to 3.5. The dashed line is the Poisson curve, which sits lower for the typical range of goals against.</p>
+
+        <div class="example illustration">
+          <p>Take two evenly matched teams (attack′ / defence′ = 1, a made-up case).</p>
+          <ul>
+            <li>Home: goalsAgainst = 1.408 * 1 * 0.898 = <span class="num">1.264</span>. Then (12 / 13.264)^12 = <span class="num">0.3006</span>. The Poisson value is exp(−1.264) = 0.282.</li>
+            <li>Away: goalsAgainst = 1.408 * 1 * 1.102 = <span class="num">1.552</span>. Then (12 / 13.552)^12 = <span class="num">0.2324</span>.</li>
+          </ul>
+        </div>
+
+        <h4>What changes downstream</h4>
+        <ul>
+          <li><strong>No compression.</strong> <code>CLEAN_SHEET_RETAINED_WEIGHT</code> corrects a top-end error that the table makes and this read does not. It applies only on the table path (§7.4.1).</li>
+          <li><strong><code>expectedGoalsAgainst</code> is the fitted mean</strong>, not the Poisson inversion of the probability. Inverting a negative binomial as if it were a Poisson understates the mean by about 5% at a typical goals-against.</li>
+        </ul>
+
+        <details>
+          <summary>Why Elo supplies the level <span class="tag evidence">evidence</span></summary>
+          <p>Elo measures a team's overall level with years of memory, not a few gameweeks of xG. It rates promoted clubs on the same scale as everyone else: Coventry, Hull and Ipswich have no top-flight goal history at all. It cannot tell an attacking side from a defensive one at the same rating. The xG fit does that well, so the model keeps the lean from §3.</p>
+        </details>
+
+        <details>
+          <summary>Why <code>ELO_LEVEL_SLOPE</code> is fixed, not refitted <span class="tag evidence">evidence</span></summary>
+          <p>An independent Poisson fitted to all 380 fixtures of 2025/26 xG gives 0.00340 log units of level per Elo point, r = 0.949. The §3 strengths are normalized ratios whose level spread is 1.69x narrower than that fit (sd 0.189 against 0.319). Regressing against them would copy the narrowness, so Elo would re-order teams that it should also spread apart.</p>
+        </details>
+
+        <details>
+          <summary>Why phi is 12 <span class="tag evidence">evidence</span></summary>
+          <p>The model sweeps <code>phi</code> on realized clean sheets over 760 team-fixtures. Brier is flat from 10 to 15 (0.18569) and worse on either side. The Poisson limit is the worst of the sweep at 0.18601.</p>
+          <p>A Poisson understates clean sheets because goals arrive in lumps, more than the xG that the rates are fitted on suggests. It puts the 2025/26 league rate at 0.249 against an actual 0.270.</p>
+        </details>
+
+        <details>
+          <summary>Market comparison <span class="tag evidence">evidence</span></summary>
+          <p>Against the gameweek-4 2026/27 bookmaker clean-sheet market, with no parameter fitted to that market, this reads MAE 2.97 against the table's 5.67. The spread is sd 9.23, against the market's 10.27 and the table's 7.25.</p>
+          <p><strong>How much of that is ClubElo, and how much is the scale.</strong> Mostly the scale. The next table holds everything else fixed and varies only the level term, against the same market:</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>level term</th><th class="num">MAE</th><th class="num">sd</th></tr></thead>
+            <tbody>
+              <tr><td>ClubElo (shipped)</td><td class="num">2.97</td><td class="num">9.23</td></tr>
+              <tr><td>the strengths' own level, unchanged</td><td class="num">4.48</td><td class="num">6.23</td></tr>
+              <tr><td>the strengths' own level x1.69</td><td class="num">2.90</td><td class="num">9.00</td></tr>
+              <tr><td>half rescaled, half ClubElo</td><td class="num">2.53</td><td class="num">8.96</td></tr>
+            </tbody>
+          </table></div>
+          <p>Rescaling the app's own level matches ClubElo without using it. ClubElo adds something as a complement, since the blend is the best arm, but it does not carry the result.</p>
+        </details>
+
+        <details>
+          <summary>Scope of the earlier evidence</summary>
+          <ul>
+            <li>The walk-forward arm in <code>scripts/backtest/cleansheets.ts</code> could not resolve a gain against realized clean sheets, and neither could <code>team-level.ts</code>. Taking the level from ClubElo scores Brier 0.18287 against 0.18237 for the strengths' own level. Both sit inside a corpus that resolves nothing below +/-0.0025. These tests did not resolve an incremental gain from the Elo term.</li>
+            <li>Those arms read the synthetic ratings in <code>elo-history.ts</code>, not ClubElo's. Real dated ClubElo values now come from the embedded charts on public club pages (§2.2.1). The earlier results still measure their original proxy input and have not been rerun on the new archive.</li>
+            <li>The gameweek-4 market table has 20 values, and matching it is not evidence about outcomes. Twice, a change that improved market agreement did worse against realized results: the grid extrapolation arm in the backtest README, and the level rescale in §3.4. The market's clean-sheet odds look like a wide surface derived from ratings, so a ratings-driven model agrees with them partly by sharing their construction.</li>
+          </ul>
+          <p>The earlier negative-binomial versus table comparison was unresolved (Brier 0.1824 versus 0.1847). The later Tier C held-out distribution test also supports the current mix. Switching clean sheets to Poisson raised pooled whole-xP RMSE by 0.00153 [95% gameweek-cluster interval 0.00058, 0.00247]. Using negative binomial for both clean sheets and conceded deductions did not resolve an xP gain and worsened conceded-count likelihood. Those tests used proxy Elo and observed player minutes. See <code>scripts/backtest/results/tier-c-conceded.md</code>. The live ClubElo source and both distribution choices stay unchanged.</p>
+        </details>
+
+        <section id="s7-4-1">
+          <h4><span class="secno">§7.4.1</span>Clean-sheet probability table (fallback)</h4>
+          <p class="tldr"><strong>In short:</strong> when either side of a fixture has no ClubElo rating, the model looks up the clean-sheet chance in a 5-by-5 grid and blends between neighbouring cells.</p>
+          <p>Rows are the defending team's tier. Columns are the opponent's attacking tier. Home first, then away. Redder cells mean a lower chance, greener a higher one.</p>
+
+          <div class="table-wrap"><table class="heat"><caption style="text-align:left;color:var(--muted);font-size:13px;padding:4px 0">Home: clean-sheet probability, rows = defending team's tier, columns = opponent's attacking tier</caption><thead><tr><th>defending tier</th><th class="num">atk 1</th><th class="num">atk 2</th><th class="num">atk 3</th><th class="num">atk 4</th><th class="num">atk 5</th></tr></thead><tbody><tr><th>tier 1</th><td class="num" style="background:hsl(62 65% 58%)">0.26</td><td class="num" style="background:hsl(57 65% 58%)">0.24</td><td class="num" style="background:hsl(46 65% 58%)">0.20</td><td class="num" style="background:hsl(32 65% 58%)">0.15</td><td class="num" style="background:hsl(21 65% 58%)">0.11</td></tr><tr><th>tier 2</th><td class="num" style="background:hsl(89 65% 58%)">0.36</td><td class="num" style="background:hsl(76 65% 58%)">0.31</td><td class="num" style="background:hsl(65 65% 58%)">0.27</td><td class="num" style="background:hsl(57 65% 58%)">0.24</td><td class="num" style="background:hsl(38 65% 58%)">0.17</td></tr><tr><th>tier 3</th><td class="num" style="background:hsl(98 65% 58%)">0.39</td><td class="num" style="background:hsl(81 65% 58%)">0.33</td><td class="num" style="background:hsl(68 65% 58%)">0.28</td><td class="num" style="background:hsl(57 65% 58%)">0.24</td><td class="num" style="background:hsl(38 65% 58%)">0.17</td></tr><tr><th>tier 4</th><td class="num" style="background:hsl(106 65% 58%)">0.42</td><td class="num" style="background:hsl(89 65% 58%)">0.36</td><td class="num" style="background:hsl(76 65% 58%)">0.31</td><td class="num" style="background:hsl(65 65% 58%)">0.27</td><td class="num" style="background:hsl(43 65% 58%)">0.19</td></tr><tr><th>tier 5</th><td class="num" style="background:hsl(128 65% 58%)">0.50</td><td class="num" style="background:hsl(106 65% 58%)">0.42</td><td class="num" style="background:hsl(98 65% 58%)">0.39</td><td class="num" style="background:hsl(81 65% 58%)">0.33</td><td class="num" style="background:hsl(65 65% 58%)">0.27</td></tr></tbody></table></div>
+          <div class="table-wrap"><table class="heat"><caption style="text-align:left;color:var(--muted);font-size:13px;padding:4px 0">Away: same layout</caption><thead><tr><th>defending tier</th><th class="num">atk 1</th><th class="num">atk 2</th><th class="num">atk 3</th><th class="num">atk 4</th><th class="num">atk 5</th></tr></thead><tbody><tr><th>tier 1</th><td class="num" style="background:hsl(54 65% 58%)">0.23</td><td class="num" style="background:hsl(35 65% 58%)">0.16</td><td class="num" style="background:hsl(32 65% 58%)">0.15</td><td class="num" style="background:hsl(24 65% 58%)">0.12</td><td class="num" style="background:hsl(8 65% 58%)">0.06</td></tr><tr><th>tier 2</th><td class="num" style="background:hsl(76 65% 58%)">0.31</td><td class="num" style="background:hsl(59 65% 58%)">0.25</td><td class="num" style="background:hsl(46 65% 58%)">0.20</td><td class="num" style="background:hsl(38 65% 58%)">0.17</td><td class="num" style="background:hsl(21 65% 58%)">0.11</td></tr><tr><th>tier 3</th><td class="num" style="background:hsl(81 65% 58%)">0.33</td><td class="num" style="background:hsl(65 65% 58%)">0.27</td><td class="num" style="background:hsl(51 65% 58%)">0.22</td><td class="num" style="background:hsl(40 65% 58%)">0.18</td><td class="num" style="background:hsl(27 65% 58%)">0.13</td></tr><tr><th>tier 4</th><td class="num" style="background:hsl(89 65% 58%)">0.36</td><td class="num" style="background:hsl(73 65% 58%)">0.30</td><td class="num" style="background:hsl(59 65% 58%)">0.25</td><td class="num" style="background:hsl(48 65% 58%)">0.21</td><td class="num" style="background:hsl(32 65% 58%)">0.15</td></tr><tr><th>tier 5</th><td class="num" style="background:hsl(106 65% 58%)">0.42</td><td class="num" style="background:hsl(87 65% 58%)">0.35</td><td class="num" style="background:hsl(84 65% 58%)">0.34</td><td class="num" style="background:hsl(73 65% 58%)">0.30</td><td class="num" style="background:hsl(40 65% 58%)">0.18</td></tr></tbody></table></div>
+          <p class="src">cleanSheetProbabilities · lib/projections/fixtureAdjustment.ts</p>
+
+          <p>Tiers are anchored at <code>consensusStrengthTiers = [0.84, 0.92, 1.00, 1.08, 1.16]</code> with <code>TIER_STEP = 0.08</code>.</p>
+
+          <p><code>interpolatedCleanSheet</code> does not snap a continuous strength onto a whole tier. It reads the grid with a <strong>2D bilinear interpolation</strong>: it finds a point between four neighbouring cells and weights each by how close the point lies.</p>
+          <div class="formula"><span class="v">r</span> = clamp((<span class="v">ownDefence</span>     - <span class="k">0.84</span>) / <span class="k">0.08</span>, <span class="k">0</span>, <span class="k">4</span>)
+<span class="v">c</span> = clamp((<span class="v">opponentAttack</span> - <span class="k">0.84</span>) / <span class="k">0.08</span>, <span class="k">0</span>, <span class="k">4</span>)
+<span class="c">// then clamp the result to 0.02 - 0.9</span></div>
+          <p>This gives smooth changes in probability as team form shifts through the season. It removes artificial jumps and keeps the exact values on whole tier coordinates.</p>
+
+          <div class="example illustration">
+            <p>Made-up team: home, <code>ownDefence = 0.88</code>, <code>opponentAttack = 1.00</code>.</p>
+            <ol>
+              <li>r = (0.88 − 0.84) / 0.08 = <span class="num">0.5</span> and c = (1.00 − 0.84) / 0.08 = <span class="num">2</span>.</li>
+              <li>c = 2 is column tier 3 exactly. r = 0.5 lies halfway between tier 1 and tier 2 rows.</li>
+              <li>Home table: tier 1 gives 0.20 and tier 2 gives 0.27, so the result is (0.20 + 0.27) / 2 = <span class="num">0.235</span>.</li>
+            </ol>
+          </div>
+
+          <h4>Compression at the top</h4>
+          <p>Reads above the long-run clean-sheet rate (<code>0.25</code>) are compressed one-sided toward it. They keep 75% of the excess (<code>CLEAN_SHEET_RETAINED_WEIGHT</code>). The bottom is left alone.</p>
+          <div class="callout"><span class="label">Made-up read</span>
+            <p>A table read of 0.50 sits 0.25 above 0.25. It keeps 75% of that, 0.1875, so it becomes 0.25 + 0.1875 = <span class="num">0.4375</span>. A read of 0.20 stays 0.20.</p></div>
+          <p class="src">CLEAN_SHEET_RETAINED_WEIGHT · lib/projections/fixtureAdjustment.ts</p>
+
+          <details>
+            <summary>Backtest evidence <span class="tag evidence">evidence</span></summary>
+            <ul>
+              <li>Over 660 walk-forward team-fixtures, continuous bilinear interpolation lowers clean-sheet Brier to 0.18469 and logloss to 0.55321 (against 0.18527 and 0.55452 for discrete snapping).</li>
+              <li>With schedule-adjusted team form (§3.3), it lowered walk-forward xP RMSE to 2.69866 (-0.00162 against the discrete baseline), winning 19 of 33 gameweeks.</li>
+              <li>The table's top quintile over-projected defender clean-sheet-plus-conceded points by +0.20 per appearance over 2023/24-2024/25. The bottom two quintiles calibrated, so the bottom stays as it is.</li>
+              <li>Weights 0.70-0.90 all beat the unshrunk table on team-level Brier in both seasons. Full-xP dRMSE is -0.00163, with the paired gameweek-cluster interval excluding zero.</li>
+            </ul>
+          </details>
+        </section>
+      </section>
+
+      <section id="s7-5">
+        <h3><span class="secno">§7.5</span>What section 7 returns</h3>
+        <p class="tldr"><strong>In short:</strong> three values, and nothing else.</p>
+        <div class="grid-3">
+          <div class="card"><h4>attackMultiplier</h4><p>§7.1 and §7.2</p></div>
+          <div class="card"><h4>cleanSheetProbability</h4><p>§7.4 or §7.4.1</p></div>
+          <div class="card"><h4>expectedGoalsAgainst</h4><p>§7.3 or §7.4</p></div>
+        </div>
+        <p>The component projection (§8) reads these three values directly. A <code>defenceMultiplier</code>, an <code>overallMultiplier</code> and the <code>fixtureAdjustment</code> / <code>fixtureMultiplier</code> / <code>adjustFixture</code> wrappers used to come back too. None had a consumer anywhere in the app, so the code dropped them.</p>
+      </section>
+    </section>
+
+    <nav class="pager" aria-label="Previous and next">
+      <a class="prev" href="rates.html"><small>← Previous</small>Per-90 rates</a>
+      <a class="next" href="points.html"><small>Next →</small>Expected points</a>
+    </nav>
+  </main>
+</div>
+</body>
+</html>

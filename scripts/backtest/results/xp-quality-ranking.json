@@ -1,0 +1,3998 @@
+{
+  "methodology": {
+    "inputUniverse": "Only matched source player-gameweeks with all three finite predictions are included in model-to-baseline comparisons; current-production coverage and paired coverage are both reported.",
+    "ranking": "Within each season/gameweek, Spearman rank correlation compares each model's predicted xP with actual FPL points. Tied prediction and outcome ranks use average ranks.",
+    "starterRule": "A plausible starter has production per-fixture expectedMinutes >= 60, before target-gameweek outcomes are observed.",
+    "captainCandidateRule": "The captain candidate pool is plausible DEF/MID/FWD starters (all outfield positions; goalkeepers excluded). Top-1, top-5 and top-10 predicted candidates are evaluated by their mean actual points per gameweek; these are ranking diagnostics, not legal squad or captain decisions.",
+    "weighting": "Pooled metrics give each eligible gameweek equal weight, then average the season/gameweek values. Per-season summaries use the same equal-gameweek weighting.",
+    "confidenceIntervals": "95% percentile intervals use a paired bootstrap that resamples whole gameweeks within each season and keeps each season's matched gameweek count fixed. Undefined Spearman gameweeks are excluded from both arms of that paired comparison.",
+    "baselineDefinitions": "Rolling baseline is prior points divided by prior recorded fixture rows over the latest five recorded player-gameweeks, multiplied by the target gameweek's fixture count. The P90 baseline is prior points divided by prior actual minutes over the same five recorded player-gameweeks, multiplied by production expected minutes summed across target fixtures. DNPs count as zero-point fixture outcomes; missing player-gameweeks are not imputed. Baselines require at least three prior recorded gameweeks and 180 prior actual minutes.",
+    "tieBreak": "When predicted xP ties at a top-k cutoff, lower playerId is selected first so reruns are deterministic.",
+    "limitations": [
+      "The source archive does not provide complete historical event-time player rosters, so missing players are not inferred and these are not full-market captain or transfer replays.",
+      "Historical lineups and availability use reconstructed fallback inputs; this tests ranking on the matched archive, not an exact replay of everything known at each deadline.",
+      "2024/25 and 2025/26 have informed earlier model development and are reused evaluation seasons, not a fresh untouched holdout.",
+      "Top-k returns are descriptive realized outcomes and remain noisy over the 66 evaluated gameweeks; xP targets expected returns, not exact gameweek scores."
+    ],
+    "bootstrapDraws": 10000,
+    "seed": 1592598566
+  },
+  "coverage": {
+    "sourceRows": 49212,
+    "rowsWithCurrentPrediction": 49212,
+    "pairedRows": 16249,
+    "missingEitherBaselineRows": 32963,
+    "seasons": [
+      "2024-25",
+      "2025-26"
+    ],
+    "pairedGameweeks": 66,
+    "rowsBySeason": {
+      "2024-25": {
+        "sourceRows": 23575,
+        "pairedRows": 8141,
+        "gameweeks": 33
+      },
+      "2025-26": {
+        "sourceRows": 25637,
+        "pairedRows": 8108,
+        "gameweeks": 33
+      }
+    }
+  },
+  "scopes": {
+    "allPlayers": {
+      "name": "allPlayers",
+      "bySeason": {
+        "2024-25": {
+          "rowCount": 8141,
+          "gameweekCount": 33,
+          "spearman": {
+            "production": {
+              "mean": 0.3718956812012959,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "rolling": {
+              "mean": 0.28331399228035214,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "minutes": {
+              "mean": 0.3152301386213138,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            }
+          },
+          "spearmanDeltas": {
+            "productionMinusRolling": {
+              "meanDelta": 0.0885816889209439,
+              "ci95": [
+                0.0664383825900354,
+                0.11068012088449783
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            },
+            "productionMinusMinutes": {
+              "meanDelta": 0.05666554257998213,
+              "ci95": [
+                0.03866842950897406,
+                0.07489064464947143
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            }
+          }
+        },
+        "2025-26": {
+          "rowCount": 8108,
+          "gameweekCount": 33,
+          "spearman": {
+            "production": {
+              "mean": 0.3515265245724369,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "rolling": {
+              "mean": 0.21873499880756633,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "minutes": {
+              "mean": 0.27721404122749554,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            }
+          },
+          "spearmanDeltas": {
+            "productionMinusRolling": {
+              "meanDelta": 0.13279152576487055,
+              "ci95": [
+                0.10543400245780313,
+                0.15999770469783017
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            },
+            "productionMinusMinutes": {
+              "meanDelta": 0.0743124833449413,
+              "ci95": [
+                0.05284297161019825,
+                0.09518036578101527
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            }
+          }
+        }
+      },
+      "pooled": {
+        "rowCount": 16249,
+        "gameweekCount": 66,
+        "spearman": {
+          "production": {
+            "mean": 0.3617111028868664,
+            "definedGameweeks": 66,
+            "skippedUndefinedVariance": 0
+          },
+          "rolling": {
+            "mean": 0.2510244955439592,
+            "definedGameweeks": 66,
+            "skippedUndefinedVariance": 0
+          },
+          "minutes": {
+            "mean": 0.29622208992440474,
+            "definedGameweeks": 66,
+            "skippedUndefinedVariance": 0
+          }
+        },
+        "spearmanDeltas": {
+          "productionMinusRolling": {
+            "meanDelta": 0.11068660734290722,
+            "ci95": [
+              0.0930385577186759,
+              0.12801663336782648
+            ],
+            "matchedGameweeks": 66,
+            "bootstrapDraws": 10000
+          },
+          "productionMinusMinutes": {
+            "meanDelta": 0.06548901296246172,
+            "ci95": [
+              0.051554683727331053,
+              0.07938901864469511
+            ],
+            "matchedGameweeks": 66,
+            "bootstrapDraws": 10000
+          }
+        }
+      },
+      "gameweeks": [
+        {
+          "season": "2024-25",
+          "gameweek": 6,
+          "rows": 247,
+          "spearman": {
+            "production": 0.3647057922777448,
+            "rolling": 0.21207417430835282,
+            "minutes": 0.27402140751897286
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 7,
+          "rows": 248,
+          "spearman": {
+            "production": 0.3745468525832668,
+            "rolling": 0.20774964204195331,
+            "minutes": 0.278637368915051
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 8,
+          "rows": 243,
+          "spearman": {
+            "production": 0.2566698919100473,
+            "rolling": 0.272732447184254,
+            "minutes": 0.2610103241970399
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 9,
+          "rows": 246,
+          "spearman": {
+            "production": 0.2816322763990177,
+            "rolling": 0.25477908030013235,
+            "minutes": 0.2631599862428446
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 10,
+          "rows": 249,
+          "spearman": {
+            "production": 0.39167648008522865,
+            "rolling": 0.25830503505488284,
+            "minutes": 0.31075280250633686
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 11,
+          "rows": 254,
+          "spearman": {
+            "production": 0.3397343466783915,
+            "rolling": 0.1683791606244803,
+            "minutes": 0.22381565350114488
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 12,
+          "rows": 255,
+          "spearman": {
+            "production": 0.27268465173570583,
+            "rolling": 0.22071877890289335,
+            "minutes": 0.2570154282251835
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 13,
+          "rows": 250,
+          "spearman": {
+            "production": 0.4048269559506946,
+            "rolling": 0.3156783057765834,
+            "minutes": 0.3254278957532415
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 14,
+          "rows": 249,
+          "spearman": {
+            "production": 0.4175944497032242,
+            "rolling": 0.2476091809215214,
+            "minutes": 0.2945646902943749
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 15,
+          "rows": 221,
+          "spearman": {
+            "production": 0.3323265352624342,
+            "rolling": 0.28949167464474984,
+            "minutes": 0.2996522247850803
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 16,
+          "rows": 258,
+          "spearman": {
+            "production": 0.38049835853965236,
+            "rolling": 0.4335608911784639,
+            "minutes": 0.4418270685088904
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 17,
+          "rows": 255,
+          "spearman": {
+            "production": 0.32145468546197703,
+            "rolling": 0.2765773171211823,
+            "minutes": 0.332991075583103
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 18,
+          "rows": 255,
+          "spearman": {
+            "production": 0.4099579839889047,
+            "rolling": 0.3013441318165353,
+            "minutes": 0.3856068511657411
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 19,
+          "rows": 253,
+          "spearman": {
+            "production": 0.3605553616049539,
+            "rolling": 0.23097722301071932,
+            "minutes": 0.2636803924317421
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 20,
+          "rows": 248,
+          "spearman": {
+            "production": 0.4121272188816464,
+            "rolling": 0.3600479967178723,
+            "minutes": 0.36606111559442855
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 21,
+          "rows": 250,
+          "spearman": {
+            "production": 0.4474140799112555,
+            "rolling": 0.2906175966844889,
+            "minutes": 0.3193236598993098
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 22,
+          "rows": 250,
+          "spearman": {
+            "production": 0.35501923826764475,
+            "rolling": 0.35234647184403534,
+            "minutes": 0.3394391970239757
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 23,
+          "rows": 247,
+          "spearman": {
+            "production": 0.39246465340603215,
+            "rolling": 0.1798702819452434,
+            "minutes": 0.21584374557258595
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 24,
+          "rows": 247,
+          "spearman": {
+            "production": 0.38936954815616925,
+            "rolling": 0.323206000269126,
+            "minutes": 0.3555698211285419
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 25,
+          "rows": 243,
+          "spearman": {
+            "production": 0.3981944435929584,
+            "rolling": 0.36254325107782237,
+            "minutes": 0.37521738518302516
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 26,
+          "rows": 246,
+          "spearman": {
+            "production": 0.36689044926856884,
+            "rolling": 0.35115717956285275,
+            "minutes": 0.4008704537115766
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 27,
+          "rows": 247,
+          "spearman": {
+            "production": 0.5634271276246323,
+            "rolling": 0.3557385801318399,
+            "minutes": 0.4212209974954151
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 28,
+          "rows": 253,
+          "spearman": {
+            "production": 0.3909608709873833,
+            "rolling": 0.28360208180431656,
+            "minutes": 0.3447854568517556
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 29,
+          "rows": 199,
+          "spearman": {
+            "production": 0.3292623367288632,
+            "rolling": 0.293681340209071,
+            "minutes": 0.2880517656415098
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 30,
+          "rows": 250,
+          "spearman": {
+            "production": 0.23953369421005655,
+            "rolling": 0.19974406885095206,
+            "minutes": 0.20045418422616265
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 31,
+          "rows": 251,
+          "spearman": {
+            "production": 0.32708882417606816,
+            "rolling": 0.19564789457273218,
+            "minutes": 0.22378421736833942
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 32,
+          "rows": 257,
+          "spearman": {
+            "production": 0.4166661198410499,
+            "rolling": 0.3180505968547961,
+            "minutes": 0.355397908988392
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 33,
+          "rows": 254,
+          "spearman": {
+            "production": 0.5215364802065534,
+            "rolling": 0.42146381556230683,
+            "minutes": 0.44279104615567444
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 34,
+          "rows": 195,
+          "spearman": {
+            "production": 0.5152800408995694,
+            "rolling": 0.45638889341397143,
+            "minutes": 0.47841540734620513
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 35,
+          "rows": 252,
+          "spearman": {
+            "production": 0.25559714173616205,
+            "rolling": 0.169472223900413,
+            "minutes": 0.20418636096265427
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 36,
+          "rows": 258,
+          "spearman": {
+            "production": 0.3402832300103602,
+            "rolling": 0.1960830842279429,
+            "minutes": 0.2545846461959915
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 37,
+          "rows": 251,
+          "spearman": {
+            "production": 0.37689645767653285,
+            "rolling": 0.2587244021829508,
+            "minutes": 0.26741617978908333
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 38,
+          "rows": 260,
+          "spearman": {
+            "production": 0.3256809018800163,
+            "rolling": 0.29099894255218,
+            "minutes": 0.3370178557399821
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 6,
+          "rows": 240,
+          "spearman": {
+            "production": 0.3212419665694844,
+            "rolling": 0.2998925546211253,
+            "minutes": 0.34635488272876597
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 7,
+          "rows": 251,
+          "spearman": {
+            "production": 0.34449889039638604,
+            "rolling": 0.20451496089352222,
+            "minutes": 0.2854818628800706
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 8,
+          "rows": 240,
+          "spearman": {
+            "production": 0.4306675267617165,
+            "rolling": 0.2158838821234544,
+            "minutes": 0.2766640908970431
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 9,
+          "rows": 244,
+          "spearman": {
+            "production": 0.3516000261277265,
+            "rolling": 0.329601240871663,
+            "minutes": 0.36369357638986866
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 10,
+          "rows": 240,
+          "spearman": {
+            "production": 0.40482117832719633,
+            "rolling": 0.192148124070878,
+            "minutes": 0.2121794997585146
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 11,
+          "rows": 237,
+          "spearman": {
+            "production": 0.3150015601103747,
+            "rolling": 0.19523207635669154,
+            "minutes": 0.23193659030210997
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 12,
+          "rows": 240,
+          "spearman": {
+            "production": 0.24342025731368705,
+            "rolling": 0.15996970012066872,
+            "minutes": 0.1898733119705192
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 13,
+          "rows": 239,
+          "spearman": {
+            "production": 0.26717562688818486,
+            "rolling": 0.18372924787072342,
+            "minutes": 0.20939106473479624
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 14,
+          "rows": 238,
+          "spearman": {
+            "production": 0.24042915204975468,
+            "rolling": 0.018107566695681036,
+            "minutes": 0.07825736624526998
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 15,
+          "rows": 255,
+          "spearman": {
+            "production": 0.2698807176457849,
+            "rolling": 0.29836235043364684,
+            "minutes": 0.2768861399343536
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 16,
+          "rows": 257,
+          "spearman": {
+            "production": 0.3385064765258327,
+            "rolling": 0.22212338971089668,
+            "minutes": 0.2557407189176398
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 17,
+          "rows": 255,
+          "spearman": {
+            "production": 0.3624358905848271,
+            "rolling": 0.10310501613054189,
+            "minutes": 0.17864635075957544
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 18,
+          "rows": 256,
+          "spearman": {
+            "production": 0.36792020673975134,
+            "rolling": 0.103179198310803,
+            "minutes": 0.257971717686455
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 19,
+          "rows": 250,
+          "spearman": {
+            "production": 0.4656173985484563,
+            "rolling": 0.24333786786550696,
+            "minutes": 0.371028656258133
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 20,
+          "rows": 244,
+          "spearman": {
+            "production": 0.41624816587091346,
+            "rolling": 0.14564346988687935,
+            "minutes": 0.22821695744848347
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 21,
+          "rows": 248,
+          "spearman": {
+            "production": 0.28608026681286314,
+            "rolling": 0.2696983984045741,
+            "minutes": 0.3180413324402611
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 22,
+          "rows": 246,
+          "spearman": {
+            "production": 0.2295102816773399,
+            "rolling": 0.11246670174598357,
+            "minutes": 0.18969218295575668
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 23,
+          "rows": 249,
+          "spearman": {
+            "production": 0.2686721777484296,
+            "rolling": 0.12197243757313725,
+            "minutes": 0.19647147604663331
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 24,
+          "rows": 253,
+          "spearman": {
+            "production": 0.39914860691090076,
+            "rolling": 0.17939419159300135,
+            "minutes": 0.24284361483755518
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 25,
+          "rows": 247,
+          "spearman": {
+            "production": 0.42686916245114337,
+            "rolling": 0.21980194009258777,
+            "minutes": 0.3405296934004246
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 26,
+          "rows": 243,
+          "spearman": {
+            "production": 0.5069374706023966,
+            "rolling": 0.3182157598836517,
+            "minutes": 0.4035298864209037
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 27,
+          "rows": 243,
+          "spearman": {
+            "production": 0.40095759199137215,
+            "rolling": 0.2836626321190634,
+            "minutes": 0.3621445027298142
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 28,
+          "rows": 240,
+          "spearman": {
+            "production": 0.3799304516142749,
+            "rolling": 0.26736027101647847,
+            "minutes": 0.3119833137540161
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 29,
+          "rows": 242,
+          "spearman": {
+            "production": 0.3780035941173549,
+            "rolling": 0.27544689021202284,
+            "minutes": 0.34401590382146857
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 30,
+          "rows": 248,
+          "spearman": {
+            "production": 0.24218106873801273,
+            "rolling": 0.1833337435187037,
+            "minutes": 0.2033976717505981
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 31,
+          "rows": 208,
+          "spearman": {
+            "production": 0.28964261662845064,
+            "rolling": 0.1317855785687142,
+            "minutes": 0.20736882482348878
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 32,
+          "rows": 264,
+          "spearman": {
+            "production": 0.33809321620476024,
+            "rolling": 0.3707177645017476,
+            "minutes": 0.38718569365171
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 33,
+          "rows": 257,
+          "spearman": {
+            "production": 0.5577630960908558,
+            "rolling": 0.384076951192746,
+            "minutes": 0.4718476315897063
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 34,
+          "rows": 183,
+          "spearman": {
+            "production": 0.3997288876083459,
+            "rolling": 0.24785351032524927,
+            "minutes": 0.32349202174390285
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 35,
+          "rows": 268,
+          "spearman": {
+            "production": 0.4047931805757456,
+            "rolling": 0.24298576914796344,
+            "minutes": 0.2687247483916152
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 36,
+          "rows": 257,
+          "spearman": {
+            "production": 0.42201053889404755,
+            "rolling": 0.32104871211683983,
+            "minutes": 0.35629719144021854
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 37,
+          "rows": 260,
+          "spearman": {
+            "production": 0.3535444078617048,
+            "rolling": 0.2801271820505346,
+            "minutes": 0.3484297709456418
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 38,
+          "rows": 266,
+          "spearman": {
+            "production": 0.17704365390234136,
+            "rolling": 0.0934758806240071,
+            "minutes": 0.10974511285204006
+          }
+        }
+      ]
+    },
+    "plausibleStarters": {
+      "name": "plausibleStarters",
+      "bySeason": {
+        "2024-25": {
+          "rowCount": 5008,
+          "gameweekCount": 33,
+          "spearman": {
+            "production": {
+              "mean": 0.2702169229821303,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "rolling": {
+              "mean": 0.21139228979937913,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "minutes": {
+              "mean": 0.20641771896748445,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            }
+          },
+          "spearmanDeltas": {
+            "productionMinusRolling": {
+              "meanDelta": 0.058824633182751086,
+              "ci95": [
+                0.028606038035566866,
+                0.0881155259149115
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            },
+            "productionMinusMinutes": {
+              "meanDelta": 0.06379920401464576,
+              "ci95": [
+                0.03493843479795584,
+                0.09329623841379496
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            }
+          }
+        },
+        "2025-26": {
+          "rowCount": 5007,
+          "gameweekCount": 33,
+          "spearman": {
+            "production": {
+              "mean": 0.19236669014100347,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "rolling": {
+              "mean": 0.11537125478802995,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "minutes": {
+              "mean": 0.11448184280767751,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            }
+          },
+          "spearmanDeltas": {
+            "productionMinusRolling": {
+              "meanDelta": 0.07699543535297351,
+              "ci95": [
+                0.039180476844212546,
+                0.11506534507670049
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            },
+            "productionMinusMinutes": {
+              "meanDelta": 0.07788484733332594,
+              "ci95": [
+                0.03833390802218147,
+                0.11781322938785448
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            }
+          }
+        }
+      },
+      "pooled": {
+        "rowCount": 10015,
+        "gameweekCount": 66,
+        "spearman": {
+          "production": {
+            "mean": 0.23129180656156684,
+            "definedGameweeks": 66,
+            "skippedUndefinedVariance": 0
+          },
+          "rolling": {
+            "mean": 0.1633817722937045,
+            "definedGameweeks": 66,
+            "skippedUndefinedVariance": 0
+          },
+          "minutes": {
+            "mean": 0.16044978088758097,
+            "definedGameweeks": 66,
+            "skippedUndefinedVariance": 0
+          }
+        },
+        "spearmanDeltas": {
+          "productionMinusRolling": {
+            "meanDelta": 0.0679100342678623,
+            "ci95": [
+              0.043623803762847024,
+              0.0923657677185045
+            ],
+            "matchedGameweeks": 66,
+            "bootstrapDraws": 10000
+          },
+          "productionMinusMinutes": {
+            "meanDelta": 0.07084202567398586,
+            "ci95": [
+              0.046282132676553,
+              0.09633478925288841
+            ],
+            "matchedGameweeks": 66,
+            "bootstrapDraws": 10000
+          }
+        }
+      },
+      "gameweeks": [
+        {
+          "season": "2024-25",
+          "gameweek": 6,
+          "rows": 153,
+          "spearman": {
+            "production": 0.249260375762751,
+            "rolling": 0.09947787643485398,
+            "minutes": 0.11336173173479264
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 7,
+          "rows": 160,
+          "spearman": {
+            "production": 0.2765658856513472,
+            "rolling": 0.16258827543236998,
+            "minutes": 0.163854644971177
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 8,
+          "rows": 161,
+          "spearman": {
+            "production": 0.10955814118067882,
+            "rolling": 0.23222800662752846,
+            "minutes": 0.2057701489669026
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 9,
+          "rows": 160,
+          "spearman": {
+            "production": 0.15358585228114993,
+            "rolling": 0.14914557899304798,
+            "minutes": 0.15291995815572537
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 10,
+          "rows": 152,
+          "spearman": {
+            "production": 0.18419305173964554,
+            "rolling": 0.11236328366942325,
+            "minutes": 0.11394490873353114
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 11,
+          "rows": 160,
+          "spearman": {
+            "production": 0.13242962825736554,
+            "rolling": 0.003914296996848507,
+            "minutes": 0.0021604577472710946
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 12,
+          "rows": 166,
+          "spearman": {
+            "production": 0.1749688070263845,
+            "rolling": 0.1450225107500754,
+            "minutes": 0.15954421929474583
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 13,
+          "rows": 150,
+          "spearman": {
+            "production": 0.31864955855905863,
+            "rolling": 0.21623158593856542,
+            "minutes": 0.21223950682714998
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 14,
+          "rows": 149,
+          "spearman": {
+            "production": 0.41271089703704883,
+            "rolling": 0.19960965746374917,
+            "minutes": 0.2441138455961852
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 15,
+          "rows": 120,
+          "spearman": {
+            "production": 0.37334600040772775,
+            "rolling": 0.24181933725837804,
+            "minutes": 0.24460066869642144
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 16,
+          "rows": 152,
+          "spearman": {
+            "production": 0.26488758056266914,
+            "rolling": 0.37791790713133794,
+            "minutes": 0.3411240859906671
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 17,
+          "rows": 158,
+          "spearman": {
+            "production": 0.16394537051615596,
+            "rolling": 0.2280469101586808,
+            "minutes": 0.23738006910896375
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 18,
+          "rows": 152,
+          "spearman": {
+            "production": 0.27653901582614354,
+            "rolling": 0.2852274785516277,
+            "minutes": 0.2863913632454543
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 19,
+          "rows": 157,
+          "spearman": {
+            "production": 0.24318681947042178,
+            "rolling": 0.14694639117333586,
+            "minutes": 0.13353286213450255
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 20,
+          "rows": 147,
+          "spearman": {
+            "production": 0.37962355498352557,
+            "rolling": 0.3309910376667883,
+            "minutes": 0.3202326317158144
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 21,
+          "rows": 153,
+          "spearman": {
+            "production": 0.3207731140078363,
+            "rolling": 0.21813385903891164,
+            "minutes": 0.1747744168711151
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 22,
+          "rows": 161,
+          "spearman": {
+            "production": 0.21700357685470897,
+            "rolling": 0.27360987966400213,
+            "minutes": 0.23922546695479432
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 23,
+          "rows": 160,
+          "spearman": {
+            "production": 0.2709832358236347,
+            "rolling": 0.05667826427472116,
+            "minutes": 0.04606196155792503
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 24,
+          "rows": 173,
+          "spearman": {
+            "production": 0.3696872877433595,
+            "rolling": 0.39242508977836604,
+            "minutes": 0.38724525809462645
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 25,
+          "rows": 158,
+          "spearman": {
+            "production": 0.437210864437655,
+            "rolling": 0.3025235058649799,
+            "minutes": 0.29378661680800283
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 26,
+          "rows": 151,
+          "spearman": {
+            "production": 0.23330474082422564,
+            "rolling": 0.28640678139318326,
+            "minutes": 0.2867385160271636
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 27,
+          "rows": 148,
+          "spearman": {
+            "production": 0.41649888424909237,
+            "rolling": 0.19580382695910775,
+            "minutes": 0.1730396525883873
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 28,
+          "rows": 153,
+          "spearman": {
+            "production": 0.10568828593989499,
+            "rolling": 0.08143911626127831,
+            "minutes": 0.11644761429580575
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 29,
+          "rows": 128,
+          "spearman": {
+            "production": 0.2136814802421367,
+            "rolling": 0.17634432621539975,
+            "minutes": 0.11407912913689373
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 30,
+          "rows": 167,
+          "spearman": {
+            "production": 0.18012771061335994,
+            "rolling": 0.09444958173938478,
+            "minutes": 0.09294524453434354
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 31,
+          "rows": 148,
+          "spearman": {
+            "production": 0.25208867513564737,
+            "rolling": 0.1594269171325687,
+            "minutes": 0.16267128761780583
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 32,
+          "rows": 153,
+          "spearman": {
+            "production": 0.3286108871281176,
+            "rolling": 0.2861411114593215,
+            "minutes": 0.27620978275004565
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 33,
+          "rows": 153,
+          "spearman": {
+            "production": 0.4090725373446346,
+            "rolling": 0.3848627635783959,
+            "minutes": 0.3773653186899661
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 34,
+          "rows": 122,
+          "spearman": {
+            "production": 0.4550414325965836,
+            "rolling": 0.4371894081331843,
+            "minutes": 0.43470599879723076
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 35,
+          "rows": 151,
+          "spearman": {
+            "production": 0.08056891127530774,
+            "rolling": 0.10384690926661597,
+            "minutes": 0.09802709109639446
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 36,
+          "rows": 142,
+          "spearman": {
+            "production": 0.17685455441898584,
+            "rolling": 0.12048547382069287,
+            "minutes": 0.12833518626955814
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 37,
+          "rows": 146,
+          "spearman": {
+            "production": 0.37301918046644256,
+            "rolling": 0.21721748756760934,
+            "minutes": 0.17882610768662108
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 38,
+          "rows": 144,
+          "spearman": {
+            "production": 0.36349256004659963,
+            "rolling": 0.257431126985177,
+            "minutes": 0.3001289732310034
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 6,
+          "rows": 150,
+          "spearman": {
+            "production": 0.0617834393143688,
+            "rolling": 0.2393816280621319,
+            "minutes": 0.24261813890145464
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 7,
+          "rows": 154,
+          "spearman": {
+            "production": 0.1630218911249896,
+            "rolling": 0.06824706072372505,
+            "minutes": 0.10449363299593915
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 8,
+          "rows": 157,
+          "spearman": {
+            "production": 0.25228722408920967,
+            "rolling": 0.03603465522142148,
+            "minutes": 0.01871134459245755
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 9,
+          "rows": 157,
+          "spearman": {
+            "production": 0.18557585772542856,
+            "rolling": 0.2534315888868066,
+            "minutes": 0.2471897930102028
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 10,
+          "rows": 157,
+          "spearman": {
+            "production": 0.34546835862925296,
+            "rolling": -0.01094105560787608,
+            "minutes": -0.034274589790285845
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 11,
+          "rows": 166,
+          "spearman": {
+            "production": 0.13348092337242212,
+            "rolling": 0.03374235565553294,
+            "minutes": 0.02981313022958523
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 12,
+          "rows": 169,
+          "spearman": {
+            "production": 0.10739342316300693,
+            "rolling": 0.0441481697642203,
+            "minutes": 0.04678316126530155
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 13,
+          "rows": 159,
+          "spearman": {
+            "production": 0.1270214401479443,
+            "rolling": 0.07310319910338635,
+            "minutes": 0.06235382704456789
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 14,
+          "rows": 147,
+          "spearman": {
+            "production": 0.16592765443748783,
+            "rolling": 0.004280839243318058,
+            "minutes": 0.04000260576935909
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 15,
+          "rows": 147,
+          "spearman": {
+            "production": 0.36053940154939934,
+            "rolling": 0.2978097347419629,
+            "minutes": 0.29206336974860125
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 16,
+          "rows": 157,
+          "spearman": {
+            "production": 0.3201668002025401,
+            "rolling": 0.16621027165118393,
+            "minutes": 0.14268955716910112
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 17,
+          "rows": 158,
+          "spearman": {
+            "production": 0.33692399479742113,
+            "rolling": 0.1144007545196365,
+            "minutes": 0.14586062089286325
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 18,
+          "rows": 144,
+          "spearman": {
+            "production": 0.026059452184467993,
+            "rolling": -0.007832583474979673,
+            "minutes": -0.013587052147482301
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 19,
+          "rows": 156,
+          "spearman": {
+            "production": 0.14539137280128545,
+            "rolling": 0.14232312841945616,
+            "minutes": 0.09972804733939106
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 20,
+          "rows": 149,
+          "spearman": {
+            "production": 0.28631745572401823,
+            "rolling": 0.029979366657524188,
+            "minutes": -0.00013554677085742158
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 21,
+          "rows": 149,
+          "spearman": {
+            "production": 0.08830759639567322,
+            "rolling": 0.081802101193792,
+            "minutes": 0.1140949333876421
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 22,
+          "rows": 162,
+          "spearman": {
+            "production": -0.07593415113331167,
+            "rolling": -0.1301818418911899,
+            "minutes": -0.0786796811066063
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 23,
+          "rows": 150,
+          "spearman": {
+            "production": -0.07841212243727062,
+            "rolling": -0.11403678328899788,
+            "minutes": -0.09799133833184087
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 24,
+          "rows": 147,
+          "spearman": {
+            "production": 0.23786584577983777,
+            "rolling": 0.04729026068946549,
+            "minutes": 0.06043776864340905
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 25,
+          "rows": 150,
+          "spearman": {
+            "production": 0.19135947371839196,
+            "rolling": 0.0909709303984497,
+            "minutes": 0.10055992215489162
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 26,
+          "rows": 156,
+          "spearman": {
+            "production": 0.330623983762989,
+            "rolling": 0.1934684656310129,
+            "minutes": 0.23375008305243922
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 27,
+          "rows": 151,
+          "spearman": {
+            "production": 0.15555711928807492,
+            "rolling": 0.17589138188538306,
+            "minutes": 0.17902679879355407
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 28,
+          "rows": 161,
+          "spearman": {
+            "production": 0.23472546785642026,
+            "rolling": 0.1836394270785079,
+            "minutes": 0.1321242961663324
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 29,
+          "rows": 160,
+          "spearman": {
+            "production": 0.15481201708638,
+            "rolling": 0.21768450979325824,
+            "minutes": 0.21609633927039448
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 30,
+          "rows": 152,
+          "spearman": {
+            "production": 0.1687454813650846,
+            "rolling": 0.020886250851656858,
+            "minutes": 0.035857236400000034
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 31,
+          "rows": 120,
+          "spearman": {
+            "production": 0.08593383534893166,
+            "rolling": -0.022821812048722332,
+            "minutes": -0.017714430858169813
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 32,
+          "rows": 161,
+          "spearman": {
+            "production": 0.2282581534880255,
+            "rolling": 0.3437721870663164,
+            "minutes": 0.31683355423994386
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 33,
+          "rows": 156,
+          "spearman": {
+            "production": 0.4063932576527511,
+            "rolling": 0.3217126570168443,
+            "minutes": 0.3387773265272953
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 34,
+          "rows": 106,
+          "spearman": {
+            "production": 0.18105306492078774,
+            "rolling": 0.1636273316086361,
+            "minutes": 0.13255836862022302
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 35,
+          "rows": 154,
+          "spearman": {
+            "production": 0.33493516090663095,
+            "rolling": 0.07309161169113869,
+            "minutes": 0.05478591620514722
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 36,
+          "rows": 143,
+          "spearman": {
+            "production": 0.3939588730949914,
+            "rolling": 0.35018348827366275,
+            "minutes": 0.33410127905452147
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 37,
+          "rows": 149,
+          "spearman": {
+            "production": 0.27520449150262183,
+            "rolling": 0.34262951345448,
+            "minutes": 0.3691839733920604
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 38,
+          "rows": 153,
+          "spearman": {
+            "production": 0.017354536792861894,
+            "rolling": -0.01667738496615547,
+            "minutes": -0.07021157320807823
+          }
+        }
+      ]
+    },
+    "outfieldStarters": {
+      "name": "outfieldStarters",
+      "bySeason": {
+        "2024-25": {
+          "rowCount": 4439,
+          "gameweekCount": 33,
+          "spearman": {
+            "production": {
+              "mean": 0.2789801043689223,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "rolling": {
+              "mean": 0.2223851620749181,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "minutes": {
+              "mean": 0.21521060852292984,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            }
+          },
+          "spearmanDeltas": {
+            "productionMinusRolling": {
+              "meanDelta": 0.0565949422940042,
+              "ci95": [
+                0.02522159980026296,
+                0.08784548201624119
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            },
+            "productionMinusMinutes": {
+              "meanDelta": 0.06376949584599242,
+              "ci95": [
+                0.03387983466632631,
+                0.0944188210100102
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            }
+          },
+          "topKReturns": {
+            "top1": {
+              "production": {
+                "mean": 8.818181818181818,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "rolling": {
+                "mean": 8.151515151515152,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "minutes": {
+                "mean": 8.333333333333334,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "deltas": {
+                "productionMinusRolling": {
+                  "meanDelta": 0.6666666666666666,
+                  "ci95": [
+                    -0.9696969696969697,
+                    2.4242424242424243
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                },
+                "productionMinusMinutes": {
+                  "meanDelta": 0.48484848484848486,
+                  "ci95": [
+                    -0.8181818181818182,
+                    1.8484848484848484
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                }
+              }
+            },
+            "top5": {
+              "production": {
+                "mean": 6.557575757575758,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "rolling": {
+                "mean": 5.56969696969697,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "minutes": {
+                "mean": 5.824242424242425,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "deltas": {
+                "productionMinusRolling": {
+                  "meanDelta": 0.9878787878787877,
+                  "ci95": [
+                    0.4000000000000001,
+                    1.6122727272727255
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                },
+                "productionMinusMinutes": {
+                  "meanDelta": 0.7333333333333334,
+                  "ci95": [
+                    0.04227272727272727,
+                    1.4060606060606058
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                }
+              }
+            },
+            "top10": {
+              "production": {
+                "mean": 5.672727272727273,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "rolling": {
+                "mean": 4.936363636363635,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "minutes": {
+                "mean": 5.127272727272727,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "deltas": {
+                "productionMinusRolling": {
+                  "meanDelta": 0.7363636363636364,
+                  "ci95": [
+                    0.2757575757575759,
+                    1.212121212121212
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                },
+                "productionMinusMinutes": {
+                  "meanDelta": 0.5454545454545453,
+                  "ci95": [
+                    0.14545454545454545,
+                    0.9666666666666661
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                }
+              }
+            }
+          }
+        },
+        "2025-26": {
+          "rowCount": 4414,
+          "gameweekCount": 33,
+          "spearman": {
+            "production": {
+              "mean": 0.19821761592988277,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "rolling": {
+              "mean": 0.11676662429672115,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            },
+            "minutes": {
+              "mean": 0.1155982598943893,
+              "definedGameweeks": 33,
+              "skippedUndefinedVariance": 0
+            }
+          },
+          "spearmanDeltas": {
+            "productionMinusRolling": {
+              "meanDelta": 0.08145099163316159,
+              "ci95": [
+                0.04537953749825499,
+                0.11817081704452094
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            },
+            "productionMinusMinutes": {
+              "meanDelta": 0.08261935603549347,
+              "ci95": [
+                0.04544320299657627,
+                0.12015307306757228
+              ],
+              "matchedGameweeks": 33,
+              "bootstrapDraws": 10000
+            }
+          },
+          "topKReturns": {
+            "top1": {
+              "production": {
+                "mean": 6.575757575757576,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "rolling": {
+                "mean": 4.848484848484849,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "minutes": {
+                "mean": 4.636363636363637,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "deltas": {
+                "productionMinusRolling": {
+                  "meanDelta": 1.7272727272727273,
+                  "ci95": [
+                    0.09090909090909091,
+                    3.4545454545454546
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                },
+                "productionMinusMinutes": {
+                  "meanDelta": 1.9393939393939394,
+                  "ci95": [
+                    0.30303030303030304,
+                    3.6363636363636362
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                }
+              }
+            },
+            "top5": {
+              "production": {
+                "mean": 5.406060606060606,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "rolling": {
+                "mean": 4.272727272727272,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "minutes": {
+                "mean": 4.460606060606059,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "deltas": {
+                "productionMinusRolling": {
+                  "meanDelta": 1.1333333333333333,
+                  "ci95": [
+                    0.43636363636363623,
+                    1.8181818181818183
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                },
+                "productionMinusMinutes": {
+                  "meanDelta": 0.9454545454545453,
+                  "ci95": [
+                    0.2727272727272728,
+                    1.6060606060606062
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                }
+              }
+            },
+            "top10": {
+              "production": {
+                "mean": 4.784848484848484,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "rolling": {
+                "mean": 4.251515151515151,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "minutes": {
+                "mean": 4.309090909090909,
+                "gameweeks": 33,
+                "skippedInsufficientCandidates": 0
+              },
+              "deltas": {
+                "productionMinusRolling": {
+                  "meanDelta": 0.5333333333333334,
+                  "ci95": [
+                    0.0575757575757576,
+                    0.9666666666666668
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                },
+                "productionMinusMinutes": {
+                  "meanDelta": 0.4757575757575758,
+                  "ci95": [
+                    0.030227272727272696,
+                    0.8818939393939387
+                  ],
+                  "matchedGameweeks": 33,
+                  "bootstrapDraws": 10000
+                }
+              }
+            }
+          }
+        }
+      },
+      "pooled": {
+        "rowCount": 8853,
+        "gameweekCount": 66,
+        "spearman": {
+          "production": {
+            "mean": 0.2385988601494025,
+            "definedGameweeks": 66,
+            "skippedUndefinedVariance": 0
+          },
+          "rolling": {
+            "mean": 0.1695758931858196,
+            "definedGameweeks": 66,
+            "skippedUndefinedVariance": 0
+          },
+          "minutes": {
+            "mean": 0.16540443420865958,
+            "definedGameweeks": 66,
+            "skippedUndefinedVariance": 0
+          }
+        },
+        "spearmanDeltas": {
+          "productionMinusRolling": {
+            "meanDelta": 0.06902296696358287,
+            "ci95": [
+              0.04569548891029232,
+              0.09291388229880244
+            ],
+            "matchedGameweeks": 66,
+            "bootstrapDraws": 10000
+          },
+          "productionMinusMinutes": {
+            "meanDelta": 0.07319442594074298,
+            "ci95": [
+              0.04919447143510277,
+              0.09727175869909917
+            ],
+            "matchedGameweeks": 66,
+            "bootstrapDraws": 10000
+          }
+        },
+        "topKReturns": {
+          "top1": {
+            "production": {
+              "mean": 7.696969696969697,
+              "gameweeks": 66,
+              "skippedInsufficientCandidates": 0
+            },
+            "rolling": {
+              "mean": 6.5,
+              "gameweeks": 66,
+              "skippedInsufficientCandidates": 0
+            },
+            "minutes": {
+              "mean": 6.484848484848484,
+              "gameweeks": 66,
+              "skippedInsufficientCandidates": 0
+            },
+            "deltas": {
+              "productionMinusRolling": {
+                "meanDelta": 1.196969696969697,
+                "ci95": [
+                  0,
+                  2.4393939393939394
+                ],
+                "matchedGameweeks": 66,
+                "bootstrapDraws": 10000
+              },
+              "productionMinusMinutes": {
+                "meanDelta": 1.2121212121212122,
+                "ci95": [
+                  0.16666666666666666,
+                  2.272727272727273
+                ],
+                "matchedGameweeks": 66,
+                "bootstrapDraws": 10000
+              }
+            }
+          },
+          "top5": {
+            "production": {
+              "mean": 5.981818181818182,
+              "gameweeks": 66,
+              "skippedInsufficientCandidates": 0
+            },
+            "rolling": {
+              "mean": 4.921212121212122,
+              "gameweeks": 66,
+              "skippedInsufficientCandidates": 0
+            },
+            "minutes": {
+              "mean": 5.142424242424245,
+              "gameweeks": 66,
+              "skippedInsufficientCandidates": 0
+            },
+            "deltas": {
+              "productionMinusRolling": {
+                "meanDelta": 1.0606060606060606,
+                "ci95": [
+                  0.6121212121212118,
+                  1.5242424242424242
+                ],
+                "matchedGameweeks": 66,
+                "bootstrapDraws": 10000
+              },
+              "productionMinusMinutes": {
+                "meanDelta": 0.8393939393939391,
+                "ci95": [
+                  0.3666666666666666,
+                  1.3242424242424242
+                ],
+                "matchedGameweeks": 66,
+                "bootstrapDraws": 10000
+              }
+            }
+          },
+          "top10": {
+            "production": {
+              "mean": 5.228787878787881,
+              "gameweeks": 66,
+              "skippedInsufficientCandidates": 0
+            },
+            "rolling": {
+              "mean": 4.593939393939393,
+              "gameweeks": 66,
+              "skippedInsufficientCandidates": 0
+            },
+            "minutes": {
+              "mean": 4.718181818181819,
+              "gameweeks": 66,
+              "skippedInsufficientCandidates": 0
+            },
+            "deltas": {
+              "productionMinusRolling": {
+                "meanDelta": 0.6348484848484847,
+                "ci95": [
+                  0.2969318181818182,
+                  0.966666666666666
+                ],
+                "matchedGameweeks": 66,
+                "bootstrapDraws": 10000
+              },
+              "productionMinusMinutes": {
+                "meanDelta": 0.5106060606060605,
+                "ci95": [
+                  0.21515151515151515,
+                  0.8121212121212121
+                ],
+                "matchedGameweeks": 66,
+                "bootstrapDraws": 10000
+              }
+            }
+          }
+        }
+      },
+      "gameweeks": [
+        {
+          "season": "2024-25",
+          "gameweek": 6,
+          "rows": 135,
+          "spearman": {
+            "production": 0.2685198689813756,
+            "rolling": 0.10750230346010879,
+            "minutes": 0.12861172044525085
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 9.4,
+              "rolling": 8,
+              "minutes": 8
+            },
+            "top10": {
+              "production": 6.6,
+              "rolling": 5.7,
+              "minutes": 6
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 7,
+          "rows": 140,
+          "spearman": {
+            "production": 0.297580956788532,
+            "rolling": 0.1699453634727522,
+            "minutes": 0.17616505090817527
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 6,
+              "minutes": 6
+            },
+            "top5": {
+              "production": 4.2,
+              "rolling": 2.8,
+              "minutes": 2.8
+            },
+            "top10": {
+              "production": 5.7,
+              "rolling": 3.8,
+              "minutes": 3.8
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 8,
+          "rows": 141,
+          "spearman": {
+            "production": 0.10605471048053802,
+            "rolling": 0.2493659138392372,
+            "minutes": 0.21881351898159548
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 12,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 4.4,
+              "rolling": 5.2,
+              "minutes": 4.8
+            },
+            "top10": {
+              "production": 3,
+              "rolling": 4.1,
+              "minutes": 4.6
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 9,
+          "rows": 142,
+          "spearman": {
+            "production": 0.17025446090974378,
+            "rolling": 0.15975988434271052,
+            "minutes": 0.16879545821507672
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 6,
+              "rolling": 10,
+              "minutes": 10
+            },
+            "top5": {
+              "production": 10,
+              "rolling": 5.2,
+              "minutes": 6.6
+            },
+            "top10": {
+              "production": 8.2,
+              "rolling": 5.8,
+              "minutes": 5.8
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 10,
+          "rows": 134,
+          "spearman": {
+            "production": 0.17892417144156847,
+            "rolling": 0.1369702816820681,
+            "minutes": 0.13750651931066474
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 9,
+              "rolling": 3,
+              "minutes": 3
+            },
+            "top5": {
+              "production": 3.8,
+              "rolling": 4.6,
+              "minutes": 4.6
+            },
+            "top10": {
+              "production": 5.3,
+              "rolling": 4.5,
+              "minutes": 4.5
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 11,
+          "rows": 142,
+          "spearman": {
+            "production": 0.13824918875030054,
+            "rolling": 0.012008840861095651,
+            "minutes": 0.0029329595957781696
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 14,
+              "rolling": 2,
+              "minutes": 14
+            },
+            "top5": {
+              "production": 8,
+              "rolling": 4.8,
+              "minutes": 4.8
+            },
+            "top10": {
+              "production": 6.2,
+              "rolling": 3.4,
+              "minutes": 3
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 12,
+          "rows": 147,
+          "spearman": {
+            "production": 0.1695321870958127,
+            "rolling": 0.17289258815482364,
+            "minutes": 0.17467151814027426
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 13,
+              "minutes": 13
+            },
+            "top5": {
+              "production": 6.4,
+              "rolling": 7,
+              "minutes": 6.8
+            },
+            "top10": {
+              "production": 5.8,
+              "rolling": 5.6,
+              "minutes": 5.6
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 13,
+          "rows": 131,
+          "spearman": {
+            "production": 0.310610042012786,
+            "rolling": 0.23565952426964437,
+            "minutes": 0.23497225692180582
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 13,
+              "rolling": 13,
+              "minutes": 13
+            },
+            "top5": {
+              "production": 6.4,
+              "rolling": 6.2,
+              "minutes": 10.8
+            },
+            "top10": {
+              "production": 7.4,
+              "rolling": 5.4,
+              "minutes": 7
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 14,
+          "rows": 133,
+          "spearman": {
+            "production": 0.4337491930308489,
+            "rolling": 0.21771790947486253,
+            "minutes": 0.2693940698784205
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 18,
+              "rolling": 18,
+              "minutes": 18
+            },
+            "top5": {
+              "production": 9,
+              "rolling": 5.4,
+              "minutes": 5.4
+            },
+            "top10": {
+              "production": 5.3,
+              "rolling": 5.3,
+              "minutes": 5.8
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 15,
+          "rows": 106,
+          "spearman": {
+            "production": 0.3993678076299326,
+            "rolling": 0.2733039615848796,
+            "minutes": 0.26982822943471285
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 7,
+              "rolling": 9,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 6,
+              "rolling": 4.4,
+              "minutes": 3.6
+            },
+            "top10": {
+              "production": 6.8,
+              "rolling": 3.8,
+              "minutes": 5.7
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 16,
+          "rows": 133,
+          "spearman": {
+            "production": 0.2921151684431868,
+            "rolling": 0.3892910430462948,
+            "minutes": 0.35364559957155395
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 5,
+              "rolling": 5,
+              "minutes": 5
+            },
+            "top5": {
+              "production": 4.8,
+              "rolling": 5,
+              "minutes": 4.4
+            },
+            "top10": {
+              "production": 4.1,
+              "rolling": 5.5,
+              "minutes": 5.5
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 17,
+          "rows": 144,
+          "spearman": {
+            "production": 0.1534975967408783,
+            "rolling": 0.25015667890156457,
+            "minutes": 0.2608457836487573
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 21,
+              "rolling": 21,
+              "minutes": 21
+            },
+            "top5": {
+              "production": 8.8,
+              "rolling": 6.8,
+              "minutes": 9.6
+            },
+            "top10": {
+              "production": 5.9,
+              "rolling": 6.7,
+              "minutes": 6.2
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 18,
+          "rows": 137,
+          "spearman": {
+            "production": 0.2705794029300347,
+            "rolling": 0.2853488560426452,
+            "minutes": 0.28814890392657805
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 9,
+              "rolling": 9,
+              "minutes": 9
+            },
+            "top5": {
+              "production": 6,
+              "rolling": 7.4,
+              "minutes": 7
+            },
+            "top10": {
+              "production": 4.3,
+              "rolling": 4.8,
+              "minutes": 4.8
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 19,
+          "rows": 140,
+          "spearman": {
+            "production": 0.29987515423993183,
+            "rolling": 0.15337384600465662,
+            "minutes": 0.11987250100557924
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 16,
+              "rolling": 16,
+              "minutes": 16
+            },
+            "top5": {
+              "production": 7,
+              "rolling": 5.6,
+              "minutes": 5.6
+            },
+            "top10": {
+              "production": 4.1,
+              "rolling": 5,
+              "minutes": 4.7
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 20,
+          "rows": 131,
+          "spearman": {
+            "production": 0.40580442207794526,
+            "rolling": 0.3462392971575725,
+            "minutes": 0.3445171283966344
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 7,
+              "rolling": 7,
+              "minutes": 7
+            },
+            "top5": {
+              "production": 11.2,
+              "rolling": 6.8,
+              "minutes": 6.8
+            },
+            "top10": {
+              "production": 6.9,
+              "rolling": 6.7,
+              "minutes": 7.2
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 21,
+          "rows": 137,
+          "spearman": {
+            "production": 0.31478187570546384,
+            "rolling": 0.2387374268518376,
+            "minutes": 0.1945726708868849
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 7.8,
+              "rolling": 5.8,
+              "minutes": 6.4
+            },
+            "top10": {
+              "production": 6.5,
+              "rolling": 5,
+              "minutes": 5.4
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 22,
+          "rows": 144,
+          "spearman": {
+            "production": 0.22297909305863883,
+            "rolling": 0.2876516019055374,
+            "minutes": 0.2558793022166611
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 3,
+              "rolling": 3,
+              "minutes": 3
+            },
+            "top5": {
+              "production": 5,
+              "rolling": 5.6,
+              "minutes": 6
+            },
+            "top10": {
+              "production": 5.4,
+              "rolling": 3.7,
+              "minutes": 3.7
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 23,
+          "rows": 143,
+          "spearman": {
+            "production": 0.255600840439358,
+            "rolling": 0.05644543295884051,
+            "minutes": 0.05013248210924526
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 8,
+              "rolling": 7,
+              "minutes": 7
+            },
+            "top5": {
+              "production": 8,
+              "rolling": 8.6,
+              "minutes": 7.2
+            },
+            "top10": {
+              "production": 6.6,
+              "rolling": 6.2,
+              "minutes": 6
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 24,
+          "rows": 156,
+          "spearman": {
+            "production": 0.3993115293711593,
+            "rolling": 0.38895964561641383,
+            "minutes": 0.38610659775578887
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 29,
+              "rolling": 29,
+              "minutes": 29
+            },
+            "top5": {
+              "production": 10.6,
+              "rolling": 9.4,
+              "minutes": 10
+            },
+            "top10": {
+              "production": 8.4,
+              "rolling": 9.1,
+              "minutes": 8.6
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 25,
+          "rows": 143,
+          "spearman": {
+            "production": 0.43171492084292024,
+            "rolling": 0.3218116092147616,
+            "minutes": 0.3046191494871288
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 20,
+              "rolling": 20,
+              "minutes": 20
+            },
+            "top5": {
+              "production": 10,
+              "rolling": 7.4,
+              "minutes": 9
+            },
+            "top10": {
+              "production": 6.5,
+              "rolling": 6.8,
+              "minutes": 6.8
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 26,
+          "rows": 136,
+          "spearman": {
+            "production": 0.2579308325530607,
+            "rolling": 0.30516082742343886,
+            "minutes": 0.30381182836471854
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 14,
+              "rolling": 2,
+              "minutes": 5
+            },
+            "top5": {
+              "production": 8.6,
+              "rolling": 5.6,
+              "minutes": 5.6
+            },
+            "top10": {
+              "production": 6.8,
+              "rolling": 5.8,
+              "minutes": 5.4
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 27,
+          "rows": 131,
+          "spearman": {
+            "production": 0.43570990213601274,
+            "rolling": 0.18516389292961596,
+            "minutes": 0.15249846536410797
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 6,
+              "rolling": 6,
+              "minutes": 6
+            },
+            "top5": {
+              "production": 4.8,
+              "rolling": 5.6,
+              "minutes": 6.4
+            },
+            "top10": {
+              "production": 4.8,
+              "rolling": 3.8,
+              "minutes": 4.2
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 28,
+          "rows": 135,
+          "spearman": {
+            "production": 0.11219119879984105,
+            "rolling": 0.06028903471711932,
+            "minutes": 0.09802722766763322
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 15,
+              "rolling": 15,
+              "minutes": 15
+            },
+            "top5": {
+              "production": 4,
+              "rolling": 4.8,
+              "minutes": 5.4
+            },
+            "top10": {
+              "production": 3.3,
+              "rolling": 3.9,
+              "minutes": 3.8
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 29,
+          "rows": 113,
+          "spearman": {
+            "production": 0.21301549965094357,
+            "rolling": 0.21686709294973097,
+            "minutes": 0.14696914117363163
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 7,
+              "rolling": 2,
+              "minutes": 1
+            },
+            "top5": {
+              "production": 6.4,
+              "rolling": 5.6,
+              "minutes": 5.4
+            },
+            "top10": {
+              "production": 4.8,
+              "rolling": 3.9,
+              "minutes": 4.5
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 30,
+          "rows": 149,
+          "spearman": {
+            "production": 0.21186749432400043,
+            "rolling": 0.11718686074082162,
+            "minutes": 0.099977788624216
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 3,
+              "rolling": 3,
+              "minutes": 3
+            },
+            "top5": {
+              "production": 2.6,
+              "rolling": 2.8,
+              "minutes": 2.8
+            },
+            "top10": {
+              "production": 2.9,
+              "rolling": 4.6,
+              "minutes": 3.2
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 31,
+          "rows": 130,
+          "spearman": {
+            "production": 0.254379878505473,
+            "rolling": 0.14480581001279272,
+            "minutes": 0.13729378430999323
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 3.2,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top10": {
+              "production": 3.6,
+              "rolling": 2.2,
+              "minutes": 2.2
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 32,
+          "rows": 134,
+          "spearman": {
+            "production": 0.33627547984650064,
+            "rolling": 0.34153369567328457,
+            "minutes": 0.33472564114934844
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 11,
+              "rolling": -1,
+              "minutes": 11
+            },
+            "top5": {
+              "production": 10.6,
+              "rolling": 8.4,
+              "minutes": 7
+            },
+            "top10": {
+              "production": 8.9,
+              "rolling": 5.7,
+              "minutes": 7.4
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 33,
+          "rows": 135,
+          "spearman": {
+            "production": 0.4349890651514367,
+            "rolling": 0.39329745770918684,
+            "minutes": 0.38463288943330665
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 4,
+              "rolling": 7,
+              "minutes": 7
+            },
+            "top5": {
+              "production": 5.8,
+              "rolling": 5,
+              "minutes": 5
+            },
+            "top10": {
+              "production": 8,
+              "rolling": 5.6,
+              "minutes": 6.7
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 34,
+          "rows": 107,
+          "spearman": {
+            "production": 0.45078314397099845,
+            "rolling": 0.40641064175713365,
+            "minutes": 0.4052638987611998
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 8,
+              "rolling": 6,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 3.8,
+              "rolling": 5.6,
+              "minutes": 6.4
+            },
+            "top10": {
+              "production": 5.5,
+              "rolling": 6.1,
+              "minutes": 6
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 35,
+          "rows": 131,
+          "spearman": {
+            "production": 0.09443012317240289,
+            "rolling": 0.1217839930930178,
+            "minutes": 0.09957436782918559
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 1,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 6.4,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top10": {
+              "production": 6.4,
+              "rolling": 3.1,
+              "minutes": 2.9
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 36,
+          "rows": 124,
+          "spearman": {
+            "production": 0.15394992363692814,
+            "rolling": 0.08082030662945694,
+            "minutes": 0.0834387797347185
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 8,
+              "minutes": 0
+            },
+            "top5": {
+              "production": 4,
+              "rolling": 3,
+              "minutes": 3
+            },
+            "top10": {
+              "production": 3.7,
+              "rolling": 3.6,
+              "minutes": 4.6
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 37,
+          "rows": 128,
+          "spearman": {
+            "production": 0.37282473826744383,
+            "rolling": 0.2353798979333543,
+            "minutes": 0.20688568200136354
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 8,
+              "minutes": 6
+            },
+            "top5": {
+              "production": 4.6,
+              "rolling": 5.8,
+              "minutes": 5.8
+            },
+            "top10": {
+              "production": 4.4,
+              "rolling": 4.1,
+              "minutes": 4.2
+            }
+          }
+        },
+        {
+          "season": "2024-25",
+          "gameweek": 38,
+          "rows": 127,
+          "spearman": {
+            "production": 0.35889357318843856,
+            "rolling": 0.2768688280610369,
+            "minutes": 0.3088191660066965
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 10,
+              "rolling": 13,
+              "minutes": 13
+            },
+            "top5": {
+              "production": 4.8,
+              "rolling": 5.6,
+              "minutes": 5.2
+            },
+            "top10": {
+              "production": 5.1,
+              "rolling": 3.6,
+              "minutes": 3.4
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 6,
+          "rows": 134,
+          "spearman": {
+            "production": 0.058220679662059946,
+            "rolling": 0.2488720927504148,
+            "minutes": 0.2504178272729842
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 16,
+              "rolling": 16,
+              "minutes": 16
+            },
+            "top5": {
+              "production": 4.2,
+              "rolling": 6.8,
+              "minutes": 5.8
+            },
+            "top10": {
+              "production": 4.9,
+              "rolling": 4.7,
+              "minutes": 4.3
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 7,
+          "rows": 135,
+          "spearman": {
+            "production": 0.16349572528165318,
+            "rolling": 0.0192713697409314,
+            "minutes": 0.06686201915412382
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 8,
+              "rolling": 8,
+              "minutes": 8
+            },
+            "top5": {
+              "production": 5.6,
+              "rolling": 5,
+              "minutes": 3.2
+            },
+            "top10": {
+              "production": 6.7,
+              "rolling": 4.9,
+              "minutes": 5.8
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 8,
+          "rows": 139,
+          "spearman": {
+            "production": 0.23577720703506402,
+            "rolling": 0.02163728411031427,
+            "minutes": 0.008863840381478794
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 13,
+              "rolling": 13,
+              "minutes": 13
+            },
+            "top5": {
+              "production": 7.2,
+              "rolling": 7,
+              "minutes": 7
+            },
+            "top10": {
+              "production": 5.4,
+              "rolling": 4.8,
+              "minutes": 4.8
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 9,
+          "rows": 139,
+          "spearman": {
+            "production": 0.19750432741491572,
+            "rolling": 0.22333203581193506,
+            "minutes": 0.21631710508958527
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 6,
+              "rolling": 3.2,
+              "minutes": 3.2
+            },
+            "top10": {
+              "production": 4.7,
+              "rolling": 2.2,
+              "minutes": 2.9
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 10,
+          "rows": 138,
+          "spearman": {
+            "production": 0.336947685863511,
+            "rolling": 0.05160448048587869,
+            "minutes": 0.030565617660619316
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 13,
+              "rolling": 13,
+              "minutes": 13
+            },
+            "top5": {
+              "production": 7.8,
+              "rolling": 8.4,
+              "minutes": 6.6
+            },
+            "top10": {
+              "production": 6.5,
+              "rolling": 5.8,
+              "minutes": 5.7
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 11,
+          "rows": 147,
+          "spearman": {
+            "production": 0.1600551672984322,
+            "rolling": 0.07229304091686833,
+            "minutes": 0.068538601500121
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 4,
+              "rolling": 1,
+              "minutes": 1
+            },
+            "top5": {
+              "production": 5,
+              "rolling": 1.8,
+              "minutes": 2.8
+            },
+            "top10": {
+              "production": 3.6,
+              "rolling": 2.4,
+              "minutes": 3.9
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 12,
+          "rows": 149,
+          "spearman": {
+            "production": 0.1072912874298735,
+            "rolling": 0.05217101454765329,
+            "minutes": 0.05244896675185666
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 0,
+              "minutes": 0
+            },
+            "top5": {
+              "production": 1.6,
+              "rolling": 2,
+              "minutes": 3.8
+            },
+            "top10": {
+              "production": 1.6,
+              "rolling": 4.9,
+              "minutes": 4.6
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 13,
+          "rows": 140,
+          "spearman": {
+            "production": 0.1461713896822475,
+            "rolling": 0.05677613571508622,
+            "minutes": 0.04669942715738928
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 0,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 5.4,
+              "rolling": 1.4,
+              "minutes": 1.4
+            },
+            "top10": {
+              "production": 5.4,
+              "rolling": 3.1,
+              "minutes": 3.2
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 14,
+          "rows": 128,
+          "spearman": {
+            "production": 0.1825278619396363,
+            "rolling": 0.019207161932688073,
+            "minutes": 0.056228229137895505
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 14,
+              "rolling": 1,
+              "minutes": 1
+            },
+            "top5": {
+              "production": 5.4,
+              "rolling": 2,
+              "minutes": 4
+            },
+            "top10": {
+              "production": 3.9,
+              "rolling": 3.3,
+              "minutes": 2.9
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 15,
+          "rows": 129,
+          "spearman": {
+            "production": 0.3522270526588325,
+            "rolling": 0.3053133414697505,
+            "minutes": 0.30068159503194475
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 0,
+              "minutes": 0
+            },
+            "top5": {
+              "production": 10.4,
+              "rolling": 6.4,
+              "minutes": 6.4
+            },
+            "top10": {
+              "production": 6.8,
+              "rolling": 5,
+              "minutes": 5.5
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 16,
+          "rows": 137,
+          "spearman": {
+            "production": 0.33789289400038613,
+            "rolling": 0.20549459462751246,
+            "minutes": 0.17378001168260834
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 13,
+              "rolling": 11,
+              "minutes": 1
+            },
+            "top5": {
+              "production": 8.4,
+              "rolling": 5.4,
+              "minutes": 5.4
+            },
+            "top10": {
+              "production": 6.4,
+              "rolling": 5.1,
+              "minutes": 4.2
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 17,
+          "rows": 140,
+          "spearman": {
+            "production": 0.3311476112831056,
+            "rolling": 0.09923026923012919,
+            "minutes": 0.13146752595616346
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 16,
+              "rolling": 3,
+              "minutes": 3
+            },
+            "top5": {
+              "production": 6,
+              "rolling": 4.8,
+              "minutes": 4.8
+            },
+            "top10": {
+              "production": 4.9,
+              "rolling": 6.1,
+              "minutes": 6.6
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 18,
+          "rows": 126,
+          "spearman": {
+            "production": 0.008646442519887438,
+            "rolling": 0.0326980006318256,
+            "minutes": 0.029932012039943497
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 3,
+              "rolling": 3.6,
+              "minutes": 3.6
+            },
+            "top10": {
+              "production": 2,
+              "rolling": 4.2,
+              "minutes": 4.2
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 19,
+          "rows": 137,
+          "spearman": {
+            "production": 0.15553237184229646,
+            "rolling": 0.10211957753348286,
+            "minutes": 0.05679024570155501
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 2.8,
+              "rolling": 1.8,
+              "minutes": 2
+            },
+            "top10": {
+              "production": 3.5,
+              "rolling": 2.2,
+              "minutes": 2.5
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 20,
+          "rows": 130,
+          "spearman": {
+            "production": 0.3240900504225698,
+            "rolling": 0.05383016130993822,
+            "minutes": 0.024856198576722666
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 0,
+              "minutes": 1
+            },
+            "top5": {
+              "production": 3.8,
+              "rolling": 2.4,
+              "minutes": 2.8
+            },
+            "top10": {
+              "production": 3.8,
+              "rolling": 3.2,
+              "minutes": 2.9
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 21,
+          "rows": 131,
+          "spearman": {
+            "production": 0.0878036608026492,
+            "rolling": 0.04389592215271181,
+            "minutes": 0.0855054350644731
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 6,
+              "rolling": 3,
+              "minutes": 6
+            },
+            "top5": {
+              "production": 5.6,
+              "rolling": 4.8,
+              "minutes": 6
+            },
+            "top10": {
+              "production": 3.8,
+              "rolling": 4.9,
+              "minutes": 4.6
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 22,
+          "rows": 144,
+          "spearman": {
+            "production": -0.054980349662333006,
+            "rolling": -0.1115954661342237,
+            "minutes": -0.06157351591647697
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 1,
+              "minutes": 1
+            },
+            "top5": {
+              "production": 5.8,
+              "rolling": 1.6,
+              "minutes": 3
+            },
+            "top10": {
+              "production": 3.8,
+              "rolling": 3,
+              "minutes": 2.7
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 23,
+          "rows": 131,
+          "spearman": {
+            "production": -0.059308910623730525,
+            "rolling": -0.10681321070055236,
+            "minutes": -0.10448409989670254
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 1,
+              "rolling": 8,
+              "minutes": 1
+            },
+            "top5": {
+              "production": 3,
+              "rolling": 2.8,
+              "minutes": 1.6
+            },
+            "top10": {
+              "production": 3.6,
+              "rolling": 2.6,
+              "minutes": 2.3
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 24,
+          "rows": 128,
+          "spearman": {
+            "production": 0.23461765833709183,
+            "rolling": 0.06778295992571214,
+            "minutes": 0.08457130564455868
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 8,
+              "rolling": 8,
+              "minutes": 8
+            },
+            "top5": {
+              "production": 6,
+              "rolling": 3.8,
+              "minutes": 5.8
+            },
+            "top10": {
+              "production": 4.4,
+              "rolling": 3.1,
+              "minutes": 4.9
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 25,
+          "rows": 131,
+          "spearman": {
+            "production": 0.22025853828758038,
+            "rolling": 0.10116738514923011,
+            "minutes": 0.1074111923709318
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 10,
+              "rolling": 2,
+              "minutes": 10
+            },
+            "top5": {
+              "production": 6.4,
+              "rolling": 2.2,
+              "minutes": 3.8
+            },
+            "top10": {
+              "production": 4.8,
+              "rolling": 4.3,
+              "minutes": 4.1
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 26,
+          "rows": 138,
+          "spearman": {
+            "production": 0.31825771322922125,
+            "rolling": 0.18353260445718309,
+            "minutes": 0.2242347699611552
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 7,
+              "rolling": 7,
+              "minutes": 7
+            },
+            "top5": {
+              "production": 5.6,
+              "rolling": 3.8,
+              "minutes": 3.8
+            },
+            "top10": {
+              "production": 5.3,
+              "rolling": 5.1,
+              "minutes": 5.2
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 27,
+          "rows": 132,
+          "spearman": {
+            "production": 0.14301933934909028,
+            "rolling": 0.1775514867915973,
+            "minutes": 0.1724036179481446
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 3,
+              "rolling": 7,
+              "minutes": 3
+            },
+            "top5": {
+              "production": 2.4,
+              "rolling": 4.2,
+              "minutes": 4.2
+            },
+            "top10": {
+              "production": 3.3,
+              "rolling": 5,
+              "minutes": 4.6
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 28,
+          "rows": 141,
+          "spearman": {
+            "production": 0.259084568071212,
+            "rolling": 0.16646238300048477,
+            "minutes": 0.12114362419281348
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 2,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 4.6,
+              "rolling": 3.6,
+              "minutes": 4.8
+            },
+            "top10": {
+              "production": 5.8,
+              "rolling": 3.9,
+              "minutes": 4.2
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 29,
+          "rows": 142,
+          "spearman": {
+            "production": 0.20117914994231126,
+            "rolling": 0.19230825992982417,
+            "minutes": 0.1860681793908229
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 9,
+              "rolling": 1,
+              "minutes": 1
+            },
+            "top5": {
+              "production": 7,
+              "rolling": 7.4,
+              "minutes": 8.8
+            },
+            "top10": {
+              "production": 7.8,
+              "rolling": 5.7,
+              "minutes": 5.5
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 30,
+          "rows": 135,
+          "spearman": {
+            "production": 0.17349071295063687,
+            "rolling": 0.08333798650574151,
+            "minutes": 0.09523956180367475
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 1,
+              "rolling": 2,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 3.4,
+              "rolling": 3.6,
+              "minutes": 3.6
+            },
+            "top10": {
+              "production": 4,
+              "rolling": 4.2,
+              "minutes": 3.7
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 31,
+          "rows": 106,
+          "spearman": {
+            "production": 0.10732257835204959,
+            "rolling": 0.030889755065759486,
+            "minutes": 0.028288624183345993
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 13,
+              "rolling": 2,
+              "minutes": 3
+            },
+            "top5": {
+              "production": 5.8,
+              "rolling": 4.6,
+              "minutes": 4.6
+            },
+            "top10": {
+              "production": 4.3,
+              "rolling": 2.8,
+              "minutes": 3.2
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 32,
+          "rows": 143,
+          "spearman": {
+            "production": 0.24045552388464916,
+            "rolling": 0.32539714348225346,
+            "minutes": 0.31038409457617644
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 4,
+              "rolling": 4,
+              "minutes": 4
+            },
+            "top5": {
+              "production": 2.6,
+              "rolling": 5.2,
+              "minutes": 4.8
+            },
+            "top10": {
+              "production": 4.5,
+              "rolling": 3.8,
+              "minutes": 4
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 33,
+          "rows": 140,
+          "spearman": {
+            "production": 0.4188655383737364,
+            "rolling": 0.31921218831472153,
+            "minutes": 0.3364663693201701
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 13,
+              "rolling": 13,
+              "minutes": 13
+            },
+            "top5": {
+              "production": 5.6,
+              "rolling": 6.8,
+              "minutes": 8.8
+            },
+            "top10": {
+              "production": 7.6,
+              "rolling": 5.8,
+              "minutes": 7.7
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 34,
+          "rows": 95,
+          "spearman": {
+            "production": 0.14580531543400663,
+            "rolling": 0.1358466660551357,
+            "minutes": 0.12978399426190934
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 5,
+              "rolling": 4,
+              "minutes": 4
+            },
+            "top5": {
+              "production": 5,
+              "rolling": 7,
+              "minutes": 5.6
+            },
+            "top10": {
+              "production": 4,
+              "rolling": 6,
+              "minutes": 4.8
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 35,
+          "rows": 136,
+          "spearman": {
+            "production": 0.3364680978512206,
+            "rolling": 0.027362843940987102,
+            "minutes": 0.005414098632469909
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 5,
+              "rolling": 4,
+              "minutes": 4
+            },
+            "top5": {
+              "production": 5.2,
+              "rolling": 2.2,
+              "minutes": 2.2
+            },
+            "top10": {
+              "production": 4.2,
+              "rolling": 2.9,
+              "minutes": 2.8
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 36,
+          "rows": 126,
+          "spearman": {
+            "production": 0.38426421253950815,
+            "rolling": 0.338451696106354,
+            "minutes": 0.30004955574141146
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 11,
+              "rolling": 4,
+              "minutes": 4
+            },
+            "top5": {
+              "production": 9.8,
+              "rolling": 6.8,
+              "minutes": 6.8
+            },
+            "top10": {
+              "production": 7.3,
+              "rolling": 6.5,
+              "minutes": 7.6
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 37,
+          "rows": 132,
+          "spearman": {
+            "production": 0.2820141545266233,
+            "rolling": 0.34750365335127004,
+            "minutes": 0.3753612559466858
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 6,
+              "rolling": 3,
+              "minutes": 2
+            },
+            "top5": {
+              "production": 5.2,
+              "rolling": 5.2,
+              "minutes": 2.8
+            },
+            "top10": {
+              "production": 5.3,
+              "rolling": 5.6,
+              "minutes": 3.6
+            }
+          }
+        },
+        {
+          "season": "2025-26",
+          "gameweek": 38,
+          "rows": 135,
+          "spearman": {
+            "production": 0.0050360697061364885,
+            "rolling": -0.0328462164168004,
+            "minutes": -0.09597470980570941
+          },
+          "topKReturns": {
+            "top1": {
+              "production": 0,
+              "rolling": 13,
+              "minutes": 13
+            },
+            "top5": {
+              "production": 6.8,
+              "rolling": 3.4,
+              "minutes": 3.4
+            },
+            "top10": {
+              "production": 4,
+              "rolling": 3.2,
+              "minutes": 2.7
+            }
+          }
+        }
+      ]
+    }
+  },
+  "input": "/Users/joel/Developer/fpl test/chatgpt/output/xp-quality/rows.json",
+  "inputMetadata": {
+    "currentModel": "current production projectPlayer() via candidate arm, 300-point Elo FDR and actual dated ClubElo ratings",
+    "rollingBaseline": "sum of points / sum of recorded player-fixture rows over latest 5 prior recorded player-GWs, multiplied by target fixture count",
+    "minutesBaseline": "sum of points / sum of actual minutes over latest 5 prior recorded player-GWs, multiplied by production expected minutes per fixture and target fixture count",
+    "recentWindowGameweeks": 5,
+    "minimumPriorGameweeksForRolling": 3,
+    "minimumPriorMinutesForMinutesBaseline": 180,
+    "zeroMinuteOutcome": "explicit recorded fixture row, zero minutes retained; absent rows are not imputed",
+    "doubleGameweeks": "points and minutes sum across the player fixtures; forecast expected minutes are multiplied by target fixture count",
+    "interval": "10,000 paired gameweek-cluster bootstrap draws, stratified by season; delta is production RMSE minus baseline RMSE",
+    "commonCohortRows": 16249,
+    "bootstrapSeed": 20261008,
+    "seasons": [
+      "2024-25",
+      "2025-26"
+    ],
+    "gameweeks": [
+      6,
+      38
+    ],
+    "coverage": {
+      "seasons": {
+        "2024-25": {
+          "productionRows": 23575,
+          "zeroMinuteOutcomes": 13708,
+          "doubleGameweekRows": 359,
+          "rollingAvailable": 23320,
+          "minutesAvailable": 8147,
+          "commonBaselineRows": 8141,
+          "excludedFromCommonCohort": 15434
+        },
+        "2025-26": {
+          "productionRows": 25637,
+          "zeroMinuteOutcomes": 15824,
+          "doubleGameweekRows": 408,
+          "rollingAvailable": 25411,
+          "minutesAvailable": 8112,
+          "commonBaselineRows": 8108,
+          "excludedFromCommonCohort": 17529
+        }
+      },
+      "pooled": {
+        "productionRows": 49212,
+        "zeroMinuteOutcomes": 29532,
+        "doubleGameweekRows": 767,
+        "rollingAvailable": 48731,
+        "minutesAvailable": 16259,
+        "commonBaselineRows": 16249,
+        "excludedFromCommonCohort": 32963
+      },
+      "commonBaselineRowsBySeason": {
+        "2024-25": 8141,
+        "2025-26": 8108
+      }
+    },
+    "caveats": [
+      "Historical availability is reconstructed: every projected player is marked available, with no archived injury status or RotoWire lineup evidence, so forecast minutes are less informed than live production minutes.",
+      "Historical market prices are unavailable; every player receives the common £5.0m price prior.",
+      "The corpus does not contain a complete event-time FPL roster. Rows with no recorded player-fixture outcome are not scored or imputed, and incomplete target fixture rows are excluded by the production backtest harness.",
+      "The 2024/25 and 2025/26 seasons were used in earlier model tuning, so results are historical validation rather than a new untouched holdout.",
+      "The previous model is 74ceff2 rerun using the same actual ClubElo ratings and prepared inputs. Its old clean-sheet helper accepts a club snapshot rather than a ratings map; the temporary runner adapts only that input signature, leaving its production code intact."
+    ],
+    "predictionSources": {
+      "2024-25": {
+        "sha256": "77de010eaf443c429b9e59478a990d994492fefa6de09376df4e6376741680c0",
+        "ratingHistorySha256": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+        "previous": {
+          "sha256": "af4583c6ecfaa9ace99147f96c718279d4a7adaaae62c82c053ff874a27efc0a",
+          "productionHashes": {
+            "lib/clubElo.ts": "61d88d89e36f2602bd92db8dd94ce54d91b45a2de09425cb7af35cc4b894608c",
+            "lib/availability/selection.ts": "cd44144c5b6ed6f3130eb9cf12f9d76bf6c71967f1cbbb461c69278a3c4115b3",
+            "lib/projections/projectPlayer.ts": "ba268c7742930393c817022a7706602bfe76876aa6de7064f68fee0cb78a90b6"
+          }
+        },
+        "productionHashes": {
+          "lib/clubElo.ts": "580f83afffb1e48bf771a05565ae2c8263e3ea99e72b35959c000641042c2858",
+          "lib/availability/selection.ts": "58b184318076bededde85abcb7e52425415b473a0b7311c3d020fdf23481906a",
+          "lib/projections/projectPlayer.ts": "ad18675c0524de7bdbd8f65d5e804f10a603ad5d9e29e9e29de8ecd9efbf2e99"
+        },
+        "inputHashes": {
+          "historical-match-stats.json": "ad0f8ad14b7b0568b25489574f5c5c09c133ba469395f55a33938996105043c9",
+          "historical-players.json": "de202338162b484ae4036f4e33741d8c0f96a921783082a4c4abc149191160fc",
+          "previous-player-anchors.json": "9ee668bcff8214be930ffdaf85b63e239f7cca759e60eed0f26525dc27b6be75",
+          "preseason-team-strength.json": "469f20ea0360d42a4c48181f6c6ee0e08173217328ad36263d57fa74d23d6279",
+          "fixture-difficulty.json": "e5ccd6cb47a429c2fe829a844414ddfa3e10fcc997914404ecca7432f1d577aa",
+          "clubelo-history.json": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+          "previous-historical-match-stats.json": "96212d6538c7ab62f83f10f096cbece46e45672022ef55451b767a061ab43684",
+          "previous-historical-players.json": "173b9a4a04b5bfa7b28f45785272935bd3252a2ac6a675be955eb9a03fc0380a",
+          "previous-team-strength.json": "9e3225a64f415e59b8e6fa71cc24958950e8492ab17e6753f3726137c893fcee"
+        }
+      },
+      "2025-26": {
+        "sha256": "f5c132f0e69c3131711eb58f40f546eefed5cae88caeeaf7d1630ecee34c54f8",
+        "ratingHistorySha256": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+        "previous": {
+          "sha256": "524b7a96f9500a6e88ff8fc44e73ad788c64ccfb5ca9b372bea438df6a563422",
+          "productionHashes": {
+            "lib/clubElo.ts": "61d88d89e36f2602bd92db8dd94ce54d91b45a2de09425cb7af35cc4b894608c",
+            "lib/availability/selection.ts": "cd44144c5b6ed6f3130eb9cf12f9d76bf6c71967f1cbbb461c69278a3c4115b3",
+            "lib/projections/projectPlayer.ts": "ba268c7742930393c817022a7706602bfe76876aa6de7064f68fee0cb78a90b6"
+          }
+        },
+        "productionHashes": {
+          "lib/clubElo.ts": "580f83afffb1e48bf771a05565ae2c8263e3ea99e72b35959c000641042c2858",
+          "lib/availability/selection.ts": "58b184318076bededde85abcb7e52425415b473a0b7311c3d020fdf23481906a",
+          "lib/projections/projectPlayer.ts": "ad18675c0524de7bdbd8f65d5e804f10a603ad5d9e29e9e29de8ecd9efbf2e99"
+        },
+        "inputHashes": {
+          "historical-match-stats.json": "fceef346112d4ae57a118e37da7305ee1cadc5f5ea130a4434fbf392461009cd",
+          "historical-players.json": "246ff4f6cbabf6494dd5e366d194a616b377f63d3a3f34e18728f520b184aeac",
+          "previous-player-anchors.json": "9e01258e9e9c0bbb0f865beff8a8b3ee91e50cc2ff76732061956288252f3f6f",
+          "preseason-team-strength.json": "eeb68409b56542bb9a47c97bc1567ec1024bb7ebb6c661dc448dc539e24c1614",
+          "fixture-difficulty.json": "6cae2ce752a41dd351d649bbbb4bc402a70143be507b241da68ee05d97a52e34",
+          "clubelo-history.json": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+          "previous-historical-match-stats.json": "ad0f8ad14b7b0568b25489574f5c5c09c133ba469395f55a33938996105043c9",
+          "previous-historical-players.json": "de202338162b484ae4036f4e33741d8c0f96a921783082a4c4abc149191160fc",
+          "previous-team-strength.json": "901e7fc05709d07b2dec3c40559e273d2ab383d80c0a8d58facc83958a11ed1b"
+        }
+      }
+    }
+  }
+}

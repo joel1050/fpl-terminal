@@ -1,0 +1,1688 @@
+{
+  "metadata": {
+    "input": "output/xp-quality/rows.json",
+    "inputSha256": "e9b2a2f534c3347923a2998ce022cd9a652b1cf7ac42c2a63aecae960354cf08",
+    "sourceRowCount": 49212,
+    "rowCount": 16249,
+    "excludedFromCommonCohort": 32963,
+    "seasons": [
+      "2024-25",
+      "2025-26"
+    ],
+    "sourceMetadata": {
+      "currentModel": "current production projectPlayer() via candidate arm, 300-point Elo FDR and actual dated ClubElo ratings",
+      "rollingBaseline": "sum of points / sum of recorded player-fixture rows over latest 5 prior recorded player-GWs, multiplied by target fixture count",
+      "minutesBaseline": "sum of points / sum of actual minutes over latest 5 prior recorded player-GWs, multiplied by production expected minutes per fixture and target fixture count",
+      "recentWindowGameweeks": 5,
+      "minimumPriorGameweeksForRolling": 3,
+      "minimumPriorMinutesForMinutesBaseline": 180,
+      "zeroMinuteOutcome": "explicit recorded fixture row, zero minutes retained; absent rows are not imputed",
+      "doubleGameweeks": "points and minutes sum across the player fixtures; forecast expected minutes are multiplied by target fixture count",
+      "interval": "10,000 paired gameweek-cluster bootstrap draws, stratified by season; delta is production RMSE minus baseline RMSE",
+      "commonCohortRows": 16249,
+      "bootstrapSeed": 20261008,
+      "seasons": [
+        "2024-25",
+        "2025-26"
+      ],
+      "gameweeks": [
+        6,
+        38
+      ],
+      "coverage": {
+        "seasons": {
+          "2024-25": {
+            "productionRows": 23575,
+            "zeroMinuteOutcomes": 13708,
+            "doubleGameweekRows": 359,
+            "rollingAvailable": 23320,
+            "minutesAvailable": 8147,
+            "commonBaselineRows": 8141,
+            "excludedFromCommonCohort": 15434
+          },
+          "2025-26": {
+            "productionRows": 25637,
+            "zeroMinuteOutcomes": 15824,
+            "doubleGameweekRows": 408,
+            "rollingAvailable": 25411,
+            "minutesAvailable": 8112,
+            "commonBaselineRows": 8108,
+            "excludedFromCommonCohort": 17529
+          }
+        },
+        "pooled": {
+          "productionRows": 49212,
+          "zeroMinuteOutcomes": 29532,
+          "doubleGameweekRows": 767,
+          "rollingAvailable": 48731,
+          "minutesAvailable": 16259,
+          "commonBaselineRows": 16249,
+          "excludedFromCommonCohort": 32963
+        },
+        "commonBaselineRowsBySeason": {
+          "2024-25": 8141,
+          "2025-26": 8108
+        }
+      },
+      "caveats": [
+        "Historical availability is reconstructed: every projected player is marked available, with no archived injury status or RotoWire lineup evidence, so forecast minutes are less informed than live production minutes.",
+        "Historical market prices are unavailable; every player receives the common £5.0m price prior.",
+        "The corpus does not contain a complete event-time FPL roster. Rows with no recorded player-fixture outcome are not scored or imputed, and incomplete target fixture rows are excluded by the production backtest harness.",
+        "The 2024/25 and 2025/26 seasons were used in earlier model tuning, so results are historical validation rather than a new untouched holdout.",
+        "The previous model is 74ceff2 rerun using the same actual ClubElo ratings and prepared inputs. Its old clean-sheet helper accepts a club snapshot rather than a ratings map; the temporary runner adapts only that input signature, leaving its production code intact."
+      ],
+      "predictionSources": {
+        "2024-25": {
+          "sha256": "77de010eaf443c429b9e59478a990d994492fefa6de09376df4e6376741680c0",
+          "ratingHistorySha256": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+          "previous": {
+            "sha256": "af4583c6ecfaa9ace99147f96c718279d4a7adaaae62c82c053ff874a27efc0a",
+            "productionHashes": {
+              "lib/clubElo.ts": "61d88d89e36f2602bd92db8dd94ce54d91b45a2de09425cb7af35cc4b894608c",
+              "lib/availability/selection.ts": "cd44144c5b6ed6f3130eb9cf12f9d76bf6c71967f1cbbb461c69278a3c4115b3",
+              "lib/projections/projectPlayer.ts": "ba268c7742930393c817022a7706602bfe76876aa6de7064f68fee0cb78a90b6"
+            }
+          },
+          "productionHashes": {
+            "lib/clubElo.ts": "580f83afffb1e48bf771a05565ae2c8263e3ea99e72b35959c000641042c2858",
+            "lib/availability/selection.ts": "58b184318076bededde85abcb7e52425415b473a0b7311c3d020fdf23481906a",
+            "lib/projections/projectPlayer.ts": "ad18675c0524de7bdbd8f65d5e804f10a603ad5d9e29e9e29de8ecd9efbf2e99"
+          },
+          "inputHashes": {
+            "historical-match-stats.json": "ad0f8ad14b7b0568b25489574f5c5c09c133ba469395f55a33938996105043c9",
+            "historical-players.json": "de202338162b484ae4036f4e33741d8c0f96a921783082a4c4abc149191160fc",
+            "previous-player-anchors.json": "9ee668bcff8214be930ffdaf85b63e239f7cca759e60eed0f26525dc27b6be75",
+            "preseason-team-strength.json": "469f20ea0360d42a4c48181f6c6ee0e08173217328ad36263d57fa74d23d6279",
+            "fixture-difficulty.json": "e5ccd6cb47a429c2fe829a844414ddfa3e10fcc997914404ecca7432f1d577aa",
+            "clubelo-history.json": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+            "previous-historical-match-stats.json": "96212d6538c7ab62f83f10f096cbece46e45672022ef55451b767a061ab43684",
+            "previous-historical-players.json": "173b9a4a04b5bfa7b28f45785272935bd3252a2ac6a675be955eb9a03fc0380a",
+            "previous-team-strength.json": "9e3225a64f415e59b8e6fa71cc24958950e8492ab17e6753f3726137c893fcee"
+          }
+        },
+        "2025-26": {
+          "sha256": "f5c132f0e69c3131711eb58f40f546eefed5cae88caeeaf7d1630ecee34c54f8",
+          "ratingHistorySha256": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+          "previous": {
+            "sha256": "524b7a96f9500a6e88ff8fc44e73ad788c64ccfb5ca9b372bea438df6a563422",
+            "productionHashes": {
+              "lib/clubElo.ts": "61d88d89e36f2602bd92db8dd94ce54d91b45a2de09425cb7af35cc4b894608c",
+              "lib/availability/selection.ts": "cd44144c5b6ed6f3130eb9cf12f9d76bf6c71967f1cbbb461c69278a3c4115b3",
+              "lib/projections/projectPlayer.ts": "ba268c7742930393c817022a7706602bfe76876aa6de7064f68fee0cb78a90b6"
+            }
+          },
+          "productionHashes": {
+            "lib/clubElo.ts": "580f83afffb1e48bf771a05565ae2c8263e3ea99e72b35959c000641042c2858",
+            "lib/availability/selection.ts": "58b184318076bededde85abcb7e52425415b473a0b7311c3d020fdf23481906a",
+            "lib/projections/projectPlayer.ts": "ad18675c0524de7bdbd8f65d5e804f10a603ad5d9e29e9e29de8ecd9efbf2e99"
+          },
+          "inputHashes": {
+            "historical-match-stats.json": "fceef346112d4ae57a118e37da7305ee1cadc5f5ea130a4434fbf392461009cd",
+            "historical-players.json": "246ff4f6cbabf6494dd5e366d194a616b377f63d3a3f34e18728f520b184aeac",
+            "previous-player-anchors.json": "9e01258e9e9c0bbb0f865beff8a8b3ee91e50cc2ff76732061956288252f3f6f",
+            "preseason-team-strength.json": "eeb68409b56542bb9a47c97bc1567ec1024bb7ebb6c661dc448dc539e24c1614",
+            "fixture-difficulty.json": "6cae2ce752a41dd351d649bbbb4bc402a70143be507b241da68ee05d97a52e34",
+            "clubelo-history.json": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+            "previous-historical-match-stats.json": "ad0f8ad14b7b0568b25489574f5c5c09c133ba469395f55a33938996105043c9",
+            "previous-historical-players.json": "de202338162b484ae4036f4e33741d8c0f96a921783082a4c4abc149191160fc",
+            "previous-team-strength.json": "901e7fc05709d07b2dec3c40559e273d2ab383d80c0a8d58facc83958a11ed1b"
+          }
+        }
+      }
+    },
+    "method": {
+      "bias": "mean(prediction - actual)",
+      "bins": [
+        "0–<1",
+        "1–<2",
+        "2–<3",
+        "3–<4",
+        "4–<5",
+        "5–<6",
+        "6–<7",
+        "7–<8",
+        "8–<9",
+        "9–<10",
+        "10+"
+      ],
+      "starterThreshold": "expectedMinutes >= 60",
+      "bootstrap": "2,000-replicate season-stratified gameweek-cluster bootstrap over every cohort gameweek including zero-count band clusters; empty replicates omitted; deterministic seed per slice and bin",
+      "sparseBand": {
+        "fewerThanRows": 30,
+        "orFewerThanGameweekClusters": 10
+      },
+      "weightedCalibrationGap": "sum(bin row share * abs(bin mean prediction - bin mean actual))"
+    }
+  },
+  "analysis": {
+    "pooled": {
+      "n": 16249,
+      "gameweekClusters": 66,
+      "meanPredicted": 2.742082158902089,
+      "meanActual": 2.7435534494430427,
+      "bias": -0.0014712905409542132,
+      "biasCI95": [
+        -0.038015365402629835,
+        0.03466816807947125
+      ],
+      "bootstrapValidReplicates": 2000,
+      "weightedCalibrationGap": 0.05361431472705843,
+      "sparse": false,
+      "bins": [
+        {
+          "label": "0–<1",
+          "lower": 0,
+          "upper": 1,
+          "n": 667,
+          "gameweekClusters": 66,
+          "meanPredicted": 0.782073463268366,
+          "meanActual": 0.9175412293853074,
+          "bias": -0.1354677661169413,
+          "biasCI95": [
+            -0.32323415917554116,
+            0.03093177395209577
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "1–<2",
+          "lower": 1,
+          "upper": 2,
+          "n": 3208,
+          "gameweekClusters": 66,
+          "meanPredicted": 1.5574725685785538,
+          "meanActual": 1.625935162094763,
+          "bias": -0.06846259351620938,
+          "biasCI95": [
+            -0.15741723995517184,
+            0.0150203998156391
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "2–<3",
+          "lower": 2,
+          "upper": 3,
+          "n": 6277,
+          "gameweekClusters": 66,
+          "meanPredicted": 2.5229125378365502,
+          "meanActual": 2.532897881153417,
+          "bias": -0.009985343316867042,
+          "biasCI95": [
+            -0.08403550942697843,
+            0.05988145185524946
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "3–<4",
+          "lower": 3,
+          "upper": 4,
+          "n": 4583,
+          "gameweekClusters": 66,
+          "meanPredicted": 3.418206633209689,
+          "meanActual": 3.4191577569277767,
+          "bias": -0.0009511237180874801,
+          "biasCI95": [
+            -0.10418557235931489,
+            0.10269277100477496
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "4–<5",
+          "lower": 4,
+          "upper": 5,
+          "n": 1044,
+          "gameweekClusters": 66,
+          "meanPredicted": 4.360386015325673,
+          "meanActual": 4.096743295019157,
+          "bias": 0.2636427203065164,
+          "biasCI95": [
+            0.07540918335748807,
+            0.4425058533220744
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "5–<6",
+          "lower": 5,
+          "upper": 6,
+          "n": 229,
+          "gameweekClusters": 63,
+          "meanPredicted": 5.401366812227079,
+          "meanActual": 5.03056768558952,
+          "bias": 0.3707991266375596,
+          "biasCI95": [
+            -0.2226584233509538,
+            0.9908596356055113
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "6–<7",
+          "lower": 6,
+          "upper": 7,
+          "n": 127,
+          "gameweekClusters": 45,
+          "meanPredicted": 6.4428740157480275,
+          "meanActual": 6.425196850393701,
+          "bias": 0.017677165354327163,
+          "biasCI95": [
+            -0.6025104166666666,
+            0.8251441372549012
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "7–<8",
+          "lower": 7,
+          "upper": 8,
+          "n": 70,
+          "gameweekClusters": 35,
+          "meanPredicted": 7.453042857142858,
+          "meanActual": 8.2,
+          "bias": -0.7469571428571418,
+          "biasCI95": [
+            -2.2388851836734696,
+            1.1665917046193883
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "8–<9",
+          "lower": 8,
+          "upper": 9,
+          "n": 28,
+          "gameweekClusters": 18,
+          "meanPredicted": 8.361107142857142,
+          "meanActual": 6.964285714285714,
+          "bias": 1.3968214285714282,
+          "biasCI95": null,
+          "bootstrapValidReplicates": 0,
+          "sparse": true,
+          "sparseReason": "fewer than 30 rows"
+        },
+        {
+          "label": "9–<10",
+          "lower": 9,
+          "upper": 10,
+          "n": 10,
+          "gameweekClusters": 9,
+          "meanPredicted": 9.412400000000002,
+          "meanActual": 7.2,
+          "bias": 2.212400000000001,
+          "biasCI95": null,
+          "bootstrapValidReplicates": 0,
+          "sparse": true,
+          "sparseReason": "fewer than 30 rows"
+        },
+        {
+          "label": "10+",
+          "lower": 10,
+          "upper": null,
+          "n": 6,
+          "gameweekClusters": 5,
+          "meanPredicted": 13.127666666666665,
+          "meanActual": 16.166666666666668,
+          "bias": -3.0390000000000015,
+          "biasCI95": null,
+          "bootstrapValidReplicates": 0,
+          "sparse": true,
+          "sparseReason": "fewer than 30 rows"
+        }
+      ]
+    },
+    "bySeason": {
+      "2024-25": {
+        "n": 8141,
+        "gameweekClusters": 33,
+        "meanPredicted": 2.771693158088689,
+        "meanActual": 2.628915366662572,
+        "bias": 0.14277779142611666,
+        "biasCI95": [
+          0.09213938209823727,
+          0.19347096383625395
+        ],
+        "bootstrapValidReplicates": 2000,
+        "weightedCalibrationGap": 0.1632020636285492,
+        "sparse": false,
+        "bins": [
+          {
+            "label": "0–<1",
+            "lower": 0,
+            "upper": 1,
+            "n": 334,
+            "gameweekClusters": 33,
+            "meanPredicted": 0.7712185628742516,
+            "meanActual": 0.7395209580838323,
+            "bias": 0.0316976047904193,
+            "biasCI95": [
+              -0.1398855065545004,
+              0.19918927622651594
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "1–<2",
+            "lower": 1,
+            "upper": 2,
+            "n": 1605,
+            "gameweekClusters": 33,
+            "meanPredicted": 1.5707034267912763,
+            "meanActual": 1.573208722741433,
+            "bias": -0.0025052959501567287,
+            "biasCI95": [
+              -0.10024099795426215,
+              0.09462797021668769
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "2–<3",
+            "lower": 2,
+            "upper": 3,
+            "n": 3109,
+            "gameweekClusters": 33,
+            "meanPredicted": 2.5165889353489943,
+            "meanActual": 2.3087809585075587,
+            "bias": 0.20780797684143565,
+            "biasCI95": [
+              0.11361474421120216,
+              0.29218079492753096
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "3–<4",
+            "lower": 3,
+            "upper": 4,
+            "n": 2254,
+            "gameweekClusters": 33,
+            "meanPredicted": 3.4251614906832275,
+            "meanActual": 3.3070097604259097,
+            "bias": 0.11815173025731804,
+            "biasCI95": [
+              -0.034732618601901556,
+              0.2706172339184529
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "4–<5",
+            "lower": 4,
+            "upper": 5,
+            "n": 563,
+            "gameweekClusters": 33,
+            "meanPredicted": 4.3736660746003535,
+            "meanActual": 3.980461811722913,
+            "bias": 0.3932042628774403,
+            "biasCI95": [
+              0.16420923397274106,
+              0.6097139904942549
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "5–<6",
+            "lower": 5,
+            "upper": 6,
+            "n": 126,
+            "gameweekClusters": 33,
+            "meanPredicted": 5.400698412698414,
+            "meanActual": 5.007936507936508,
+            "bias": 0.3927619047619061,
+            "biasCI95": [
+              -0.3154801936619718,
+              1.1709374820512817
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "6–<7",
+            "lower": 6,
+            "upper": 7,
+            "n": 77,
+            "gameweekClusters": 26,
+            "meanPredicted": 6.464415584415582,
+            "meanActual": 6.8441558441558445,
+            "bias": -0.3797402597402613,
+            "biasCI95": [
+              -1.2465209254347187,
+              0.6163494939271249
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "7–<8",
+            "lower": 7,
+            "upper": 8,
+            "n": 43,
+            "gameweekClusters": 24,
+            "meanPredicted": 7.465372093023255,
+            "meanActual": 8.232558139534884,
+            "bias": -0.7671860465116287,
+            "biasCI95": [
+              -2.666126792717087,
+              1.3353808618012422
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "8–<9",
+            "lower": 8,
+            "upper": 9,
+            "n": 20,
+            "gameweekClusters": 13,
+            "meanPredicted": 8.3831,
+            "meanActual": 6.05,
+            "bias": 2.3331000000000004,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "9–<10",
+            "lower": 9,
+            "upper": 10,
+            "n": 6,
+            "gameweekClusters": 6,
+            "meanPredicted": 9.331833333333334,
+            "meanActual": 8.5,
+            "bias": 0.8318333333333333,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "10+",
+            "lower": 10,
+            "upper": null,
+            "n": 4,
+            "gameweekClusters": 3,
+            "meanPredicted": 14.02825,
+            "meanActual": 18.25,
+            "bias": -4.22175,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          }
+        ]
+      },
+      "2025-26": {
+        "n": 8108,
+        "gameweekClusters": 33,
+        "meanPredicted": 2.7123506413418825,
+        "meanActual": 2.858658115441539,
+        "bias": -0.14630747409965694,
+        "biasCI95": [
+          -0.19814777551452342,
+          -0.09456626230915295
+        ],
+        "bootstrapValidReplicates": 2000,
+        "weightedCalibrationGap": 0.18032622101628304,
+        "sparse": false,
+        "bins": [
+          {
+            "label": "0–<1",
+            "lower": 0,
+            "upper": 1,
+            "n": 333,
+            "gameweekClusters": 33,
+            "meanPredicted": 0.7929609609609615,
+            "meanActual": 1.0960960960960962,
+            "bias": -0.3031351351351347,
+            "biasCI95": [
+              -0.6002426084656084,
+              -0.007414737733814117
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "1–<2",
+            "lower": 1,
+            "upper": 2,
+            "n": 1603,
+            "gameweekClusters": 33,
+            "meanPredicted": 1.5442252027448538,
+            "meanActual": 1.6787273861509668,
+            "bias": -0.13450218340611322,
+            "biasCI95": [
+              -0.27963423078729416,
+              -0.0055329171526073175
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "2–<3",
+            "lower": 2,
+            "upper": 3,
+            "n": 3168,
+            "gameweekClusters": 33,
+            "meanPredicted": 2.5291183712121197,
+            "meanActual": 2.752840909090909,
+            "bias": -0.2237225378787892,
+            "biasCI95": [
+              -0.3428020291563792,
+              -0.10963855259124157
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "3–<4",
+            "lower": 3,
+            "upper": 4,
+            "n": 2329,
+            "gameweekClusters": 33,
+            "meanPredicted": 3.4114757406612206,
+            "meanActual": 3.52769428939459,
+            "bias": -0.11621854873336929,
+            "biasCI95": [
+              -0.250457831635486,
+              0.01947973218889416
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "4–<5",
+            "lower": 4,
+            "upper": 5,
+            "n": 481,
+            "gameweekClusters": 33,
+            "meanPredicted": 4.344841995842,
+            "meanActual": 4.232848232848233,
+            "bias": 0.11199376299376707,
+            "biasCI95": [
+              -0.16519059581665713,
+              0.38119174542682904
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "5–<6",
+            "lower": 5,
+            "upper": 6,
+            "n": 103,
+            "gameweekClusters": 30,
+            "meanPredicted": 5.40218446601942,
+            "meanActual": 5.058252427184466,
+            "bias": 0.3439320388349532,
+            "biasCI95": [
+              -0.6613015425659954,
+              1.2315565404040398
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "6–<7",
+            "lower": 6,
+            "upper": 7,
+            "n": 50,
+            "gameweekClusters": 19,
+            "meanPredicted": 6.4097,
+            "meanActual": 5.78,
+            "bias": 0.6297000000000003,
+            "biasCI95": [
+              -0.311365932377049,
+              2.7102035833333327
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "7–<8",
+            "lower": 7,
+            "upper": 8,
+            "n": 27,
+            "gameweekClusters": 11,
+            "meanPredicted": 7.433407407407407,
+            "meanActual": 8.148148148148149,
+            "bias": -0.7147407407407408,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "8–<9",
+            "lower": 8,
+            "upper": 9,
+            "n": 8,
+            "gameweekClusters": 5,
+            "meanPredicted": 8.306125,
+            "meanActual": 9.25,
+            "bias": -0.9438750000000002,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "9–<10",
+            "lower": 9,
+            "upper": 10,
+            "n": 4,
+            "gameweekClusters": 3,
+            "meanPredicted": 9.53325,
+            "meanActual": 5.25,
+            "bias": 4.283250000000001,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "10+",
+            "lower": 10,
+            "upper": null,
+            "n": 2,
+            "gameweekClusters": 2,
+            "meanPredicted": 11.3265,
+            "meanActual": 12,
+            "bias": -0.6735000000000007,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          }
+        ]
+      }
+    },
+    "byPosition": {
+      "GK": {
+        "n": 1423,
+        "gameweekClusters": 66,
+        "meanPredicted": 3.037517919887562,
+        "meanActual": 2.7905832747716093,
+        "bias": 0.24693464511595256,
+        "biasCI95": [
+          0.11422414554794023,
+          0.38256530049847925
+        ],
+        "bootstrapValidReplicates": 2000,
+        "weightedCalibrationGap": 0.2662951510892485,
+        "sparse": false,
+        "bins": [
+          {
+            "label": "0–<1",
+            "lower": 0,
+            "upper": 1,
+            "n": 69,
+            "gameweekClusters": 44,
+            "meanPredicted": 0.6998840579710146,
+            "meanActual": 0.3333333333333333,
+            "bias": 0.3665507246376813,
+            "biasCI95": [
+              -0.019019499577702687,
+              0.6263397887323944
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "1–<2",
+            "lower": 1,
+            "upper": 2,
+            "n": 120,
+            "gameweekClusters": 53,
+            "meanPredicted": 1.5031833333333324,
+            "meanActual": 0.8333333333333334,
+            "bias": 0.6698499999999991,
+            "biasCI95": [
+              0.3980311916120058,
+              0.9473989395183362
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "2–<3",
+            "lower": 2,
+            "upper": 3,
+            "n": 297,
+            "gameweekClusters": 66,
+            "meanPredicted": 2.606848484848486,
+            "meanActual": 2.5286195286195285,
+            "bias": 0.07822895622895751,
+            "biasCI95": [
+              -0.22284816757561982,
+              0.3644551893536373
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "3–<4",
+            "lower": 3,
+            "upper": 4,
+            "n": 867,
+            "gameweekClusters": 66,
+            "meanPredicted": 3.4262687427912346,
+            "meanActual": 3.220299884659746,
+            "bias": 0.2059688581314882,
+            "biasCI95": [
+              0.01710962691007291,
+              0.39240476183063494
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "4–<5",
+            "lower": 4,
+            "upper": 5,
+            "n": 50,
+            "gameweekClusters": 36,
+            "meanPredicted": 4.247799999999999,
+            "meanActual": 3.44,
+            "bias": 0.8077999999999992,
+            "biasCI95": [
+              0.2377033430232558,
+              1.3753986320754716
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "5–<6",
+            "lower": 5,
+            "upper": 6,
+            "n": 2,
+            "gameweekClusters": 2,
+            "meanPredicted": 5.666,
+            "meanActual": 8.5,
+            "bias": -2.8339999999999996,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "6–<7",
+            "lower": 6,
+            "upper": 7,
+            "n": 11,
+            "gameweekClusters": 5,
+            "meanPredicted": 6.530363636363637,
+            "meanActual": 5.454545454545454,
+            "bias": 1.075818181818182,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "7–<8",
+            "lower": 7,
+            "upper": 8,
+            "n": 5,
+            "gameweekClusters": 4,
+            "meanPredicted": 7.3786000000000005,
+            "meanActual": 9,
+            "bias": -1.6214,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "8–<9",
+            "lower": 8,
+            "upper": 9,
+            "n": 2,
+            "gameweekClusters": 2,
+            "meanPredicted": 8.228,
+            "meanActual": 5.5,
+            "bias": 2.7279999999999998,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "9–<10",
+            "lower": 9,
+            "upper": 10,
+            "n": 0,
+            "gameweekClusters": 0,
+            "meanPredicted": null,
+            "meanActual": null,
+            "bias": null,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "10+",
+            "lower": 10,
+            "upper": null,
+            "n": 0,
+            "gameweekClusters": 0,
+            "meanPredicted": null,
+            "meanActual": null,
+            "bias": null,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          }
+        ]
+      },
+      "DEF": {
+        "n": 6039,
+        "gameweekClusters": 66,
+        "meanPredicted": 2.5378049345918168,
+        "meanActual": 2.4648120549759893,
+        "bias": 0.07299287961582736,
+        "biasCI95": [
+          -0.007148007855582514,
+          0.15295364459755037
+        ],
+        "bootstrapValidReplicates": 2000,
+        "weightedCalibrationGap": 0.08919291273389328,
+        "sparse": false,
+        "bins": [
+          {
+            "label": "0–<1",
+            "lower": 0,
+            "upper": 1,
+            "n": 360,
+            "gameweekClusters": 66,
+            "meanPredicted": 0.7679333333333334,
+            "meanActual": 0.7722222222222223,
+            "bias": -0.004288888888888841,
+            "biasCI95": [
+              -0.21863328476551913,
+              0.19534428954719188
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "1–<2",
+            "lower": 1,
+            "upper": 2,
+            "n": 1355,
+            "gameweekClusters": 66,
+            "meanPredicted": 1.5591992619926194,
+            "meanActual": 1.4280442804428044,
+            "bias": 0.13115498154981495,
+            "biasCI95": [
+              0.0018568914553833645,
+              0.25836927784931824
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "2–<3",
+            "lower": 2,
+            "upper": 3,
+            "n": 2489,
+            "gameweekClusters": 66,
+            "meanPredicted": 2.5139445560466007,
+            "meanActual": 2.464845319405384,
+            "bias": 0.04909923664121721,
+            "biasCI95": [
+              -0.09795602863931718,
+              0.18750668987532515
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "3–<4",
+            "lower": 3,
+            "upper": 4,
+            "n": 1506,
+            "gameweekClusters": 66,
+            "meanPredicted": 3.396381806108893,
+            "meanActual": 3.3917662682602923,
+            "bias": 0.004615537848600761,
+            "biasCI95": [
+              -0.19678628296766154,
+              0.21806119866629609
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "4–<5",
+            "lower": 4,
+            "upper": 5,
+            "n": 258,
+            "gameweekClusters": 65,
+            "meanPredicted": 4.306980620155038,
+            "meanActual": 3.7868217054263567,
+            "bias": 0.5201589147286814,
+            "biasCI95": [
+              0.10193375489310452,
+              0.9414420789675062
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "5–<6",
+            "lower": 5,
+            "upper": 6,
+            "n": 34,
+            "gameweekClusters": 20,
+            "meanPredicted": 5.491647058823529,
+            "meanActual": 4.411764705882353,
+            "bias": 1.0798823529411758,
+            "biasCI95": [
+              -0.2139738636363636,
+              3.0395471111111108
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "6–<7",
+            "lower": 6,
+            "upper": 7,
+            "n": 18,
+            "gameweekClusters": 6,
+            "meanPredicted": 6.39922222222222,
+            "meanActual": 8.777777777777779,
+            "bias": -2.3785555555555575,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "7–<8",
+            "lower": 7,
+            "upper": 8,
+            "n": 13,
+            "gameweekClusters": 6,
+            "meanPredicted": 7.492615384615385,
+            "meanActual": 6.923076923076923,
+            "bias": 0.5695384615384612,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "8–<9",
+            "lower": 8,
+            "upper": 9,
+            "n": 3,
+            "gameweekClusters": 2,
+            "meanPredicted": 8.356666666666667,
+            "meanActual": 9,
+            "bias": -0.6433333333333332,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "9–<10",
+            "lower": 9,
+            "upper": 10,
+            "n": 2,
+            "gameweekClusters": 2,
+            "meanPredicted": 9.2625,
+            "meanActual": 7,
+            "bias": 2.2624999999999993,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "10+",
+            "lower": 10,
+            "upper": null,
+            "n": 1,
+            "gameweekClusters": 1,
+            "meanPredicted": 10.372,
+            "meanActual": 13,
+            "bias": -2.628,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          }
+        ]
+      },
+      "MID": {
+        "n": 7219,
+        "gameweekClusters": 66,
+        "meanPredicted": 2.7348053747056364,
+        "meanActual": 2.8262917301565316,
+        "bias": -0.09148635545089451,
+        "biasCI95": [
+          -0.15104135807689406,
+          -0.03230094335317654
+        ],
+        "bootstrapValidReplicates": 2000,
+        "weightedCalibrationGap": 0.11633023964538136,
+        "sparse": false,
+        "bins": [
+          {
+            "label": "0–<1",
+            "lower": 0,
+            "upper": 1,
+            "n": 216,
+            "gameweekClusters": 60,
+            "meanPredicted": 0.8271805555555554,
+            "meanActual": 1.2222222222222223,
+            "bias": -0.39504166666666685,
+            "biasCI95": [
+              -0.6644874337766747,
+              -0.15312525115518416
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "1–<2",
+            "lower": 1,
+            "upper": 2,
+            "n": 1526,
+            "gameweekClusters": 66,
+            "meanPredicted": 1.5638859764089141,
+            "meanActual": 1.8204456094364352,
+            "bias": -0.256559633027521,
+            "biasCI95": [
+              -0.39526386130880997,
+              -0.13268899834474074
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "2–<3",
+            "lower": 2,
+            "upper": 3,
+            "n": 3000,
+            "gameweekClusters": 66,
+            "meanPredicted": 2.5145006666666645,
+            "meanActual": 2.542333333333333,
+            "bias": -0.027832666666668955,
+            "biasCI95": [
+              -0.10175461940078372,
+              0.05204665882578112
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "3–<4",
+            "lower": 3,
+            "upper": 4,
+            "n": 1753,
+            "gameweekClusters": 66,
+            "meanPredicted": 3.415066172276096,
+            "meanActual": 3.4649172846548772,
+            "bias": -0.049851112378781384,
+            "biasCI95": [
+              -0.20708189398982801,
+              0.09141328407208173
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "4–<5",
+            "lower": 4,
+            "upper": 5,
+            "n": 474,
+            "gameweekClusters": 66,
+            "meanPredicted": 4.374913502109705,
+            "meanActual": 4.29957805907173,
+            "bias": 0.07533544303797529,
+            "biasCI95": [
+              -0.2854160795580723,
+              0.4226036020810548
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "5–<6",
+            "lower": 5,
+            "upper": 6,
+            "n": 132,
+            "gameweekClusters": 58,
+            "meanPredicted": 5.38710606060606,
+            "meanActual": 5.53030303030303,
+            "bias": -0.14319696969697002,
+            "biasCI95": [
+              -1.0525436757269278,
+              0.6987876313025203
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "6–<7",
+            "lower": 6,
+            "upper": 7,
+            "n": 60,
+            "gameweekClusters": 33,
+            "meanPredicted": 6.399450000000002,
+            "meanActual": 5.9,
+            "bias": 0.4994500000000016,
+            "biasCI95": [
+              -0.531098295454545,
+              1.4615449013157888
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "7–<8",
+            "lower": 7,
+            "upper": 8,
+            "n": 33,
+            "gameweekClusters": 23,
+            "meanPredicted": 7.439181818181818,
+            "meanActual": 9.484848484848484,
+            "bias": -2.045666666666667,
+            "biasCI95": [
+              -3.990982527777777,
+              0.42977588461537636
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "8–<9",
+            "lower": 8,
+            "upper": 9,
+            "n": 16,
+            "gameweekClusters": 13,
+            "meanPredicted": 8.371249999999998,
+            "meanActual": 7.375,
+            "bias": 0.9962499999999981,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "9–<10",
+            "lower": 9,
+            "upper": 10,
+            "n": 7,
+            "gameweekClusters": 7,
+            "meanPredicted": 9.436857142857145,
+            "meanActual": 8.285714285714286,
+            "bias": 1.1511428571428581,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "10+",
+            "lower": 10,
+            "upper": null,
+            "n": 2,
+            "gameweekClusters": 2,
+            "meanPredicted": 16.5105,
+            "meanActual": 24.5,
+            "bias": -7.9895,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          }
+        ]
+      },
+      "FWD": {
+        "n": 1568,
+        "gameweekClusters": 66,
+        "meanPredicted": 3.294222576530611,
+        "meanActual": 3.3934948979591835,
+        "bias": -0.09927232142857262,
+        "biasCI95": [
+          -0.24653969114418456,
+          0.04770950569044753
+        ],
+        "bootstrapValidReplicates": 2000,
+        "weightedCalibrationGap": 0.3370911989795934,
+        "sparse": false,
+        "bins": [
+          {
+            "label": "0–<1",
+            "lower": 0,
+            "upper": 1,
+            "n": 22,
+            "gameweekClusters": 19,
+            "meanPredicted": 0.8283636363636365,
+            "meanActual": 2.1363636363636362,
+            "bias": -1.3079999999999998,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "1–<2",
+            "lower": 1,
+            "upper": 2,
+            "n": 207,
+            "gameweekClusters": 62,
+            "meanPredicted": 1.5303623188405793,
+            "meanActual": 1.9468599033816425,
+            "bias": -0.4164975845410632,
+            "biasCI95": [
+              -0.8944215049601921,
+              -0.007632938132858685
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "2–<3",
+            "lower": 2,
+            "upper": 3,
+            "n": 491,
+            "gameweekClusters": 66,
+            "meanPredicted": 2.5689979633401197,
+            "meanActual": 2.8228105906313647,
+            "bias": -0.2538126272912448,
+            "biasCI95": [
+              -0.5032886261157441,
+              -0.011838926266759447
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "3–<4",
+            "lower": 3,
+            "upper": 4,
+            "n": 457,
+            "gameweekClusters": 66,
+            "meanPredicted": 3.486879649890589,
+            "meanActual": 3.711159737417943,
+            "bias": -0.224280087527354,
+            "biasCI95": [
+              -0.5724862906266492,
+              0.12293409390840082
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "4–<5",
+            "lower": 4,
+            "upper": 5,
+            "n": 262,
+            "gameweekClusters": 64,
+            "meanPredicted": 4.408179389312978,
+            "meanActual": 4.1603053435114505,
+            "bias": 0.24787404580152753,
+            "biasCI95": [
+              -0.18784124584623246,
+              0.6639930341055338
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "5–<6",
+            "lower": 5,
+            "upper": 6,
+            "n": 61,
+            "gameweekClusters": 40,
+            "meanPredicted": 5.373229508196723,
+            "meanActual": 4.180327868852459,
+            "bias": 1.1929016393442642,
+            "biasCI95": [
+              0.23799990384615427,
+              2.07242705170778
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "6–<7",
+            "lower": 6,
+            "upper": 7,
+            "n": 38,
+            "gameweekClusters": 31,
+            "meanPredicted": 6.506789473684209,
+            "meanActual": 6.421052631578948,
+            "bias": 0.08573684210526117,
+            "biasCI95": [
+              -1.4517797297297295,
+              1.6099173202614374
+            ],
+            "bootstrapValidReplicates": 2000,
+            "sparse": false,
+            "sparseReason": null
+          },
+          {
+            "label": "7–<8",
+            "lower": 7,
+            "upper": 8,
+            "n": 19,
+            "gameweekClusters": 18,
+            "meanPredicted": 7.469631578947369,
+            "meanActual": 6.631578947368421,
+            "bias": 0.8380526315789475,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "8–<9",
+            "lower": 8,
+            "upper": 9,
+            "n": 7,
+            "gameweekClusters": 7,
+            "meanPredicted": 8.377857142857142,
+            "meanActual": 5.571428571428571,
+            "bias": 2.806428571428571,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "9–<10",
+            "lower": 9,
+            "upper": 10,
+            "n": 1,
+            "gameweekClusters": 1,
+            "meanPredicted": 9.541,
+            "meanActual": 0,
+            "bias": 9.541,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          },
+          {
+            "label": "10+",
+            "lower": 10,
+            "upper": null,
+            "n": 3,
+            "gameweekClusters": 3,
+            "meanPredicted": 11.790999999999999,
+            "meanActual": 11.666666666666666,
+            "bias": 0.12433333333333252,
+            "biasCI95": null,
+            "bootstrapValidReplicates": 0,
+            "sparse": true,
+            "sparseReason": "fewer than 30 rows"
+          }
+        ]
+      }
+    },
+    "plausibleStarters": {
+      "n": 10015,
+      "gameweekClusters": 66,
+      "meanPredicted": 3.266782526210684,
+      "meanActual": 3.2247628557164254,
+      "bias": 0.04201967049425884,
+      "biasCI95": [
+        -0.01579922799630539,
+        0.09502631638683366
+      ],
+      "bootstrapValidReplicates": 2000,
+      "weightedCalibrationGap": 0.0622505242136808,
+      "sparse": false,
+      "bins": [
+        {
+          "label": "0–<1",
+          "lower": 0,
+          "upper": 1,
+          "n": 1,
+          "gameweekClusters": 1,
+          "meanPredicted": 0.974,
+          "meanActual": 1,
+          "bias": -0.026000000000000023,
+          "biasCI95": null,
+          "bootstrapValidReplicates": 0,
+          "sparse": true,
+          "sparseReason": "fewer than 30 rows"
+        },
+        {
+          "label": "1–<2",
+          "lower": 1,
+          "upper": 2,
+          "n": 329,
+          "gameweekClusters": 65,
+          "meanPredicted": 1.7953768996960486,
+          "meanActual": 1.8115501519756838,
+          "bias": -0.016173252279635338,
+          "biasCI95": [
+            -0.3658961643823314,
+            0.2806272132034629
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "2–<3",
+          "lower": 2,
+          "upper": 3,
+          "n": 4013,
+          "gameweekClusters": 66,
+          "meanPredicted": 2.5965589334662336,
+          "meanActual": 2.6070271617243956,
+          "bias": -0.01046822825816234,
+          "biasCI95": [
+            -0.1119845188376138,
+            0.08620142879513926
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "3–<4",
+          "lower": 3,
+          "upper": 4,
+          "n": 4210,
+          "gameweekClusters": 66,
+          "meanPredicted": 3.427147505938244,
+          "meanActual": 3.4061757719714962,
+          "bias": 0.020971733966747397,
+          "biasCI95": [
+            -0.0811755422017691,
+            0.12335292274590892
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "4–<5",
+          "lower": 4,
+          "upper": 5,
+          "n": 1009,
+          "gameweekClusters": 66,
+          "meanPredicted": 4.359835480673935,
+          "meanActual": 4.107036669970268,
+          "bias": 0.2527988107036675,
+          "biasCI95": [
+            0.06726507669665925,
+            0.43167366212687763
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "5–<6",
+          "lower": 5,
+          "upper": 6,
+          "n": 224,
+          "gameweekClusters": 63,
+          "meanPredicted": 5.403169642857146,
+          "meanActual": 5.017857142857143,
+          "bias": 0.38531250000000383,
+          "biasCI95": [
+            -0.1904090469806156,
+            1.0112121478873237
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "6–<7",
+          "lower": 6,
+          "upper": 7,
+          "n": 117,
+          "gameweekClusters": 45,
+          "meanPredicted": 6.446350427350426,
+          "meanActual": 6.17948717948718,
+          "bias": 0.2668632478632465,
+          "biasCI95": [
+            -0.44982697289156637,
+            1.1331574803149602
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "7–<8",
+          "lower": 7,
+          "upper": 8,
+          "n": 68,
+          "gameweekClusters": 35,
+          "meanPredicted": 7.445352941176472,
+          "meanActual": 7.970588235294118,
+          "bias": -0.5252352941176464,
+          "biasCI95": [
+            -1.8508775735294116,
+            1.1612760233918122
+          ],
+          "bootstrapValidReplicates": 2000,
+          "sparse": false,
+          "sparseReason": null
+        },
+        {
+          "label": "8–<9",
+          "lower": 8,
+          "upper": 9,
+          "n": 28,
+          "gameweekClusters": 18,
+          "meanPredicted": 8.361107142857142,
+          "meanActual": 6.964285714285714,
+          "bias": 1.3968214285714282,
+          "biasCI95": null,
+          "bootstrapValidReplicates": 0,
+          "sparse": true,
+          "sparseReason": "fewer than 30 rows"
+        },
+        {
+          "label": "9–<10",
+          "lower": 9,
+          "upper": 10,
+          "n": 10,
+          "gameweekClusters": 9,
+          "meanPredicted": 9.412400000000002,
+          "meanActual": 7.2,
+          "bias": 2.212400000000001,
+          "biasCI95": null,
+          "bootstrapValidReplicates": 0,
+          "sparse": true,
+          "sparseReason": "fewer than 30 rows"
+        },
+        {
+          "label": "10+",
+          "lower": 10,
+          "upper": null,
+          "n": 6,
+          "gameweekClusters": 5,
+          "meanPredicted": 13.127666666666665,
+          "meanActual": 16.166666666666668,
+          "bias": -3.0390000000000015,
+          "biasCI95": null,
+          "bootstrapValidReplicates": 0,
+          "sparse": true,
+          "sparseReason": "fewer than 30 rows"
+        }
+      ]
+    }
+  }
+}

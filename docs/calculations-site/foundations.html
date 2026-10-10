@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inputs &amp; team strength · FPL Terminal calculations</title>
+<link rel="stylesheet" href="style.css">
+<script src="site.js"></script>
+<style>
+  .unit { font-family: var(--font-num); font-size: 20px; color: var(--accent); margin: 0 0 4px; }
+  .unit-note { color: var(--muted); font-size: 13px; margin: 0; }
+  .tiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+  .tiers .card { border-top-width: 3px; }
+  .tiers .card.fact { border-top-color: var(--fact); }
+  .tiers .card.evidence { border-top-color: var(--evidence); }
+  .tiers .card.estimate { border-top-color: var(--estimate); }
+  .layers { display: grid; gap: 8px; margin: 14px 0; }
+  .layers .layer {
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  .layers .layer:nth-child(2) { margin-left: 18px; border-left-color: var(--info); }
+  .layers .layer:nth-child(3) { margin-left: 36px; border-left-color: var(--good); }
+  .layers .layer b { display: block; }
+  .tierbars .bar-row { grid-template-columns: 90px minmax(0, 1fr) 64px; }
+  .cancel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+  .cancel .card { text-align: center; }
+  .cancel .big { font-family: var(--font-num); font-size: 22px; color: var(--accent); }
+  @media (max-width: 900px) {
+    .tiers, .cancel { grid-template-columns: 1fr; }
+    .layers .layer:nth-child(2), .layers .layer:nth-child(3) { margin-left: 0; }
+    .tierbars .bar-row { grid-template-columns: 72px minmax(0, 1fr) 54px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sitenav" aria-label="Pages">
+    <a class="brand" href="index.html">FPL <span>Terminal</span></a>
+    <p class="tagline">How every number is made</p>
+    <ol>
+      <li><a href="index.html"><span class="sec">00</span>Overview</a></li>
+      <li><a href="foundations.html" aria-current="page"><span class="sec">§1–3</span>Inputs &amp; team strength</a></li>
+      <li><a href="availability.html"><span class="sec">§4–5</span>Who plays, and for how long</a></li>
+      <li><a href="rates.html"><span class="sec">§6</span>Per-90 rates</a></li>
+      <li><a href="fixtures.html"><span class="sec">§7</span>Fixture adjustment</a></li>
+      <li><a href="points.html"><span class="sec">§8–9</span>Expected points</a></li>
+      <li><a href="scores-lineup.html"><span class="sec">§10–14</span>Risk, value &amp; weekly lineup</a></li>
+      <li><a href="squad-tools.html"><span class="sec">§15–19</span>Analysis, transfers &amp; optimizer</a></li>
+      <li><a href="reference.html"><span class="sec">§20–21</span>Constants &amp; validation</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="page-head">
+      <div class="eyebrow">§1–3</div>
+      <h1>Inputs &amp; team strength</h1>
+      <p class="lede">This stage fixes the units, sorts every input into fact, evidence or estimate, and rates each club. It hands on clean player data and attack and defence strength ratios for each club.</p>
+    </header>
+
+    <!-- ===================== §1 ===================== -->
+    <section id="s1">
+      <h2><span class="secno">§1</span>Units and conventions</h2>
+      <p class="tldr"><strong>In short:</strong> every number in the app uses one fixed scale, so values from different stages fit together.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <p class="unit">105</p>
+          <h4>Money</h4>
+          <p class="unit-note">Integer tenths of a million pounds. <code>105</code> means £10.5m. Convert only for display: <code>priceTenths / 10</code>.</p>
+        </div>
+        <div class="card">
+          <p class="unit">0–90</p>
+          <h4>Minutes</h4>
+          <p class="unit-note">Always on a 0–90 scale for a single fixture.</p>
+        </div>
+        <div class="card">
+          <p class="unit">0–1</p>
+          <h4>Probabilities</h4>
+          <p class="unit-note">A chance of 0.25 means one in four.</p>
+        </div>
+        <div class="card">
+          <p class="unit">per 90</p>
+          <h4>Rates</h4>
+          <p class="unit-note">xG, xA, bonus, saves and defensive contributions are always per 90 minutes.</p>
+        </div>
+        <div class="card">
+          <p class="unit">mean</p>
+          <h4>xP</h4>
+          <p class="unit-note">Expected points are an average expectation, never a simulated sample.</p>
+        </div>
+        <div class="card">
+          <p class="unit">1 | 3 | 5 | 10</p>
+          <h4>Horizons</h4>
+          <p class="unit-note">Gameweeks ahead. They count <em>distinct</em> gameweeks, not fixtures (see §9).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== §2 ===================== -->
+    <section id="s2">
+      <h2><span class="secno">§2</span>Inputs and normalization</h2>
+      <p class="tldr"><strong>In short:</strong> the app turns live FPL data into one clean model and keeps facts, evidence and estimates apart.</p>
+
+      <div class="tiers">
+        <div class="card fact">
+          <span class="tag fact">fact</span>
+          <p>Live data straight from the FPL API: price, ownership, status, fixtures, season totals.</p>
+        </div>
+        <div class="card evidence">
+          <span class="tag evidence">evidence</span>
+          <p>Past results and published labels: last season's match data, RotoWire lineups, historical ClubElo.</p>
+        </div>
+        <div class="card estimate">
+          <span class="tag estimate">estimate</span>
+          <p>Model output: fixture difficulty, projections, risk and confidence. Each traces back to its inputs.</p>
+        </div>
+      </div>
+      <p class="src">lib/fpl/normalize.ts</p>
+
+      <section id="s2-1">
+        <h3><span class="secno">§2.1</span><code>current</code> stats <span class="tag fact">fact</span></h3>
+        <p class="tldr"><strong>In short:</strong> each player's live record copies the FPL fields, plus one derived number: points per 90.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Field</th><th>Source</th></tr></thead>
+            <tbody>
+              <tr><td><code>totalPoints</code></td><td><code>rawPlayer.total_points</code></td></tr>
+              <tr><td><code>pointsPer90</code></td><td><code>total_points / (minutes / 90)</code> when <code>minutes &gt; 0</code></td></tr>
+              <tr><td><code>goals</code>, <code>assists</code>, <code>cleanSheets</code>, <code>bonus</code>, <code>minutes</code>, <code>saves</code></td><td>matching bootstrap fields</td></tr>
+              <tr><td><code>expectedGoals</code>, <code>expectedAssists</code></td><td><code>expected_goals</code>, <code>expected_assists</code></td></tr>
+              <tr><td><code>yellowCards</code>, <code>redCards</code></td><td><code>yellow_cards</code>, <code>red_cards</code></td></tr>
+              <tr><td><code>status</code></td><td>FPL status string (<code>i</code>, <code>d</code>, <code>s</code>, <code>u</code>, <code>n</code>, …)</td></tr>
+              <tr><td><code>chanceOfPlaying</code></td><td><code>chance_of_playing_next_round</code> (may be null)</td></tr>
+              <tr><td><code>priceTenths</code></td><td><code>now_cost</code></td></tr>
+              <tr><td><code>ownership</code></td><td><code>selected_by_percent</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="src">lib/fpl/normalize.ts · normalizePlayer</p>
+      </section>
+
+      <section id="s2-2">
+        <h3><span class="secno">§2.2</span>Fixtures <span class="tag fact">fact</span> and difficulty <span class="tag estimate">estimate</span></h3>
+        <p class="tldr"><strong>In short:</strong> the app ignores FPL's own difficulty labels and rates each fixture from the Elo gap between the two clubs.</p>
+
+        <div class="flow">
+          <div class="step"><b>Club Elo snapshot</b>data/generated/club-elo.json</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>Match clubs</b>FPL short name to ClubElo code</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>Elo gap</b><code>E_opp − E_own</code></div>
+          <div class="arrow">→</div>
+          <div class="step hi"><b>Difficulty</b>1 (easy) to 5 (hard)</div>
+        </div>
+
+        <p>FDR is venue-agnostic by design. Venue lives in the attack multiplier (<code>1.102 / 0.898</code>) and in the clean-sheet path (§7). FDR rates only the Elo gap.</p>
+
+        <div class="formula"><span class="v">difficulty</span>       = clamp(round(<span class="k">3</span> + (<span class="v">E_opp</span> - <span class="v">E_own</span>) / <span class="k">300</span>), <span class="k">1</span>, <span class="k">5</span>)
+<span class="v">exactDifficulty</span>  = clamp(<span class="k">3</span> + (<span class="v">E_opp</span> - <span class="v">E_own</span>) / <span class="k">300</span>, <span class="k">1</span>, <span class="k">5</span>)</div>
+
+        <p>Both use 300 Elo per step. The screen shows the whole number. The projection uses the exact value, fraction included.</p>
+
+        <svg style="--vbw:620px" class="diagram wide" viewBox="0 0 620 290" role="img" aria-label="Difficulty against Elo gap. A straight line rises from 1 at a gap of minus 600 to 5 at plus 600. A staircase shows the rounded value.">
+          <!-- grid -->
+          <g stroke="rgba(232,239,234,.16)" stroke-width="1">
+            <line x1="50" y1="30" x2="570" y2="30"/>
+            <line x1="50" y1="77.5" x2="570" y2="77.5"/>
+            <line x1="50" y1="125" x2="570" y2="125"/>
+            <line x1="50" y1="172.5" x2="570" y2="172.5"/>
+            <line x1="50" y1="220" x2="570" y2="220"/>
+          </g>
+          <line x1="310" y1="30" x2="310" y2="220" stroke="rgba(232,239,234,.28)" stroke-dasharray="4 4"/>
+          <!-- y labels -->
+          <g class="num" font-size="12" fill="#93a69c" text-anchor="end">
+            <text x="42" y="224">1</text>
+            <text x="42" y="176.5">2</text>
+            <text x="42" y="129">3</text>
+            <text x="42" y="81.5">4</text>
+            <text x="42" y="34">5</text>
+          </g>
+          <!-- x labels -->
+          <g class="num" font-size="12" fill="#93a69c" text-anchor="middle">
+            <text x="87.1" y="240">-600</text>
+            <text x="198.6" y="240">-300</text>
+            <text x="310" y="240">0</text>
+            <text x="421.4" y="240">+300</text>
+            <text x="532.9" y="240">+600</text>
+          </g>
+          <text x="310" y="264" text-anchor="middle" font-size="12" fill="#93a69c">Elo gap (E_opp − E_own). Positive means a stronger opponent.</text>
+          <!-- staircase: displayed integer -->
+          <path data-anim="draw" style="--d: 1000ms" d="M50,220 H142.86 V172.5 H254.29 V125 H365.71 V77.5 H477.14 V30 H570" fill="none" stroke="#60a5fa" stroke-width="2"/>
+          <!-- exact line -->
+          <path data-anim="draw" d="M50,220 H87.14 L532.86,30 H570" fill="none" stroke="#f5b301" stroke-width="2.5"/>
+          <!-- example point: gap +200 -> 3.667 -->
+          <circle data-anim="pop" style="--d: 2000ms" cx="384.3" cy="93.3" r="5" fill="#f87171"/>
+          <text data-anim="pop" style="--d: 2100ms" x="394" y="88" font-size="12" fill="#f87171">gap +200: 3.667</text>
+          <!-- legend -->
+          <line data-anim="fade" x1="60" y1="14" x2="84" y2="14" stroke="#f5b301" stroke-width="2.5"/>
+          <text data-anim="fade" x="90" y="18" font-size="12">exactDifficulty</text>
+          <line data-anim="fade" style="--d: 1000ms" x1="210" y1="14" x2="234" y2="14" stroke="#60a5fa" stroke-width="2"/>
+          <text data-anim="fade" style="--d: 1000ms" x="240" y="18" font-size="12">difficulty (rounded)</text>
+        </svg>
+
+        <div class="example illustration">
+          <p>Club ratings are made up. Own Elo 1900, opponent Elo 2100.</p>
+          <ol>
+            <li>Gap = 2100 − 1900 = 200.</li>
+            <li><code>exactDifficulty</code> = 3 + 200 / 300 = 3.667.</li>
+            <li><code>difficulty</code> = round(3.667) = 4.</li>
+          </ol>
+          <p>A gap of +600 or more gives 5. A gap of −600 or less gives 1. A missing club rating gives 3.</p>
+        </div>
+
+        <details>
+          <summary>Club matching and safeguards</summary>
+          <ul>
+            <li><code>normalizeFixtures</code> and <code>normalizePlayerDetail</code> replace FPL's labels with the ClubElo snapshot. The upstream <code>team_h_difficulty</code>, <code>team_a_difficulty</code> and player-detail <code>difficulty</code> fields stay in the schemas for transport, but the app ignores them. Both functions take an optional snapshot, so a test can rate fixtures against one it builds.</li>
+            <li>Short names match ClubElo's three-letter codes. The source is not unique here: its England table lists both Stoke and Stockport as <code>STO</code>. A code held by two clubs names neither, so the lookup returns nothing instead of the higher-rated club.</li>
+            <li><code>BHA</code>, <code>MUN</code> and <code>NFO</code> have no matching code. <code>FPL_TO_CLUB_ELO_SLUG</code> maps them by slug (<code>Brighton</code>, <code>ManUnited</code>, <code>Forest</code>). Snapshot slugs are unique, so a mapped club cannot be displaced.</li>
+            <li>An unresolved club returns neutral difficulty <code>3</code>. It never falls back to FPL.</li>
+            <li><code>npm run data:elo</code> refuses to write a snapshot that cannot rate a current team. It names each team and the repair: a shared code, a code no club carries, or a mapped slug ClubElo has since renamed.</li>
+            <li>The refresh parses exact decimal rows in ClubElo's <code>vegaJson</code>, merges the full England ranking so clubs outside the chart's top 25 stay available, and writes the checked snapshot in one atomic step. Where two exact rows share a code, the merge keeps the ranking's own rounded Elo rather than attach one club's rating to another's row.</li>
+            <li>The snapshot is a static import, so it cannot change inside one process and stays out of the projection cache key. Its age does change. <code>enrichBootstrapWithProjections</code> recomputes the age on every call and reports <code>clubElo</code> next to <code>lineups</code>: <code>snapshotDate</code> is the day ClubElo rated the clubs, <code>fetchedAt</code> the day the file was downloaded, <code>ageSeconds</code> how long ago that was. Elo feeds every fixture difficulty, so a snapshot left alone drifts.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Backtest evidence for 300 Elo per step</summary>
+          <p>The Tier C walk-forward experiment picked 300 on 2023/24. On held-out 2024/25–2025/26 it cut team-xG multiplier RMSE by 0.00307 against 150 (95% gameweek-cluster interval −0.00514 to −0.00107). Historical Elo was a result-derived proxy, not archived ClubElo, so this supports the divisor on that proxy only.</p>
+          <p class="src">scripts/backtest/results/tier-c-elo.md</p>
+        </details>
+        <p class="src">lib/fpl/normalize.ts · normalizeFixtures, normalizePlayerDetail · data/generated/club-elo.json</p>
+
+        <section id="s2-2-1">
+          <h4><span class="secno">§2.2.1</span>Historical ClubElo for backtests <span class="tag evidence">evidence</span></h4>
+          <p class="tldr"><strong>In short:</strong> a backtest rates a past fixture with the last Elo published before that day, and never with a later one.</p>
+          <div class="grid-3">
+            <div class="card">
+              <h4>Rule</h4>
+              <p>For a fixture on date <code>d</code>, use the latest point with <code>point.date &lt; d</code>. Same-day points are out, because the chart records post-match ratings.</p>
+            </div>
+            <div class="card">
+              <h4>No substitutes</h4>
+              <p>A missing earlier value fails the lookup. Future values and synthetic ratings do not fill in.</p>
+            </div>
+            <div class="card">
+              <h4>Rating age</h4>
+              <p>The code records the age, since a summer break can leave the last value months old. In the committed fixture panel the 95th-percentile lag is 15 days and the maximum is 107 days.</p>
+            </div>
+          </div>
+          <details>
+            <summary>Source and limits</summary>
+            <ul>
+              <li>Public club pages embed dated <code>Date</code>/<code>Elo</code> rows in their <code>vegaJson</code> chart data. <code>clubelo-history.ts</code> fetches and checks these rows. It does not fill past ratings from the current ranking.</li>
+              <li>The dated CSV API was not reachable during this extraction. The public chart data covered all 25 clubs and 1,140 fixtures in 2023/24–2025/26. The archive records each club's source URL identity, retrieval time and raw dated rating values.</li>
+              <li>Chart values fetched today are evidence for retrospective tests. They do not copy the whole FPL input state at an old deadline.</li>
+              <li>Production still reads the committed current snapshot. Fetching the historical archive does not refresh that snapshot or change live projections.</li>
+            </ul>
+          </details>
+          <p class="src">scripts/backtest/clubelo-history.ts</p>
+        </section>
+      </section>
+
+      <section id="s2-3">
+        <h3><span class="secno">§2.3</span>Historical stats <span class="tag evidence">evidence</span></h3>
+        <p class="tldr"><strong>In short:</strong> last season's match rows add up to one record per player, linked to the live player by code or by name.</p>
+        <div class="flow">
+          <div class="step"><b>merged_gw.csv</b>the season file</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>Season totals</b>summed, then per-90 where needed</div>
+          <div class="arrow">→</div>
+          <div class="step hi"><b>HistoricalStats</b>linked by <code>playerMappings</code></div>
+        </div>
+        <p><code>HistoricalStats</code> carries <code>minutes</code>, <code>starts</code>, <code>totalPoints</code>, <code>goals</code>, <code>assists</code>, <code>cleanSheets</code>, <code>saves</code>, <code>bonus</code>, <code>bps</code>, <code>influence</code>, <code>creativity</code>, <code>threat</code>, <code>expectedGoals</code>, <code>expectedAssists</code>, <code>xGIPer90</code>, <code>pointsPer90</code>, <code>defensiveContribution</code>, <code>yellowCards</code> and <code>redCards</code>.</p>
+        <div class="grid-2">
+          <div class="card"><h4>EXACT</h4><p>The player matches by code.</p></div>
+          <div class="card"><h4>LIKELY</h4><p>No code match, so the link uses normalized name plus team.</p></div>
+        </div>
+        <p class="src">lib/historical/ingest.ts</p>
+      </section>
+
+      <section id="s2-4">
+        <h3><span class="secno">§2.4</span>RotoWire <span class="tag evidence">evidence</span></h3>
+        <p class="tldr"><strong>In short:</strong> RotoWire says who will start or who is out, and the app uses a team sheet only for the fixture it belongs to.</p>
+        <div class="grid-2">
+          <div class="card">
+            <h4><code>STARTER</code></h4>
+            <p><code>lineupStatus</code> is <code>PREDICTED</code> or <code>CONFIRMED</code>.</p>
+          </div>
+          <div class="card">
+            <h4><code>UNAVAILABLE</code></h4>
+            <p><code>availabilityStatus</code> is <code>QUES</code>, <code>OUT</code> or <code>SUS</code>.</p>
+          </div>
+        </div>
+        <p>Names map to FPL player ids in three steps: confirmed mapping, exact name, unique fallback. The app rejects ambiguous or unmapped records.</p>
+        <details>
+          <summary>How a team sheet gets used</summary>
+          <ul>
+            <li>At selection time, records group by their source fixture. The app keeps a group only when both mapped teams match the player's target <code>PlayerFixture</code> in the projected gameweek.</li>
+            <li>Once that fixture ends, its official FPL minutes feed the current-season role history. The old team sheet cannot raise a future fixture's start probability.</li>
+            <li>An omitted team does not count as covered. It stays on the historical and current-season estimate.</li>
+          </ul>
+        </details>
+        <p class="src">lib/availability/rotowire.ts · lib/availability/rotowireMapping.ts</p>
+      </section>
+    </section>
+
+    <!-- ===================== §3 ===================== -->
+    <section id="s3">
+      <h2><span class="secno">§3</span>Team strength <span class="tag estimate">estimate</span></h2>
+      <p class="tldr"><strong>In short:</strong> each club gets an attack and a defence ratio around 1.0, built in three layers that each nudge the one before and none overrides it.</p>
+
+      <div class="layers" data-anim-group>
+        <div class="layer" data-anim="fade" style="--d: 0ms"><b>1. Preseason consensus (§3.1)</b>Hand-set tiers 1–5 per club, turned into ratios from 0.84 to 1.16.</div>
+        <div class="layer" data-anim="fade" style="--d: 250ms"><b>2. Normalized by source (§3.2)</b>Each value divided by the league average of its own source group.</div>
+        <div class="layer" data-anim="fade" style="--d: 500ms"><b>3. Blended with in-season xG form (§3.3)</b>The prior mixes with what the club has done this season, with more weight as matches pile up.</div>
+      </div>
+
+      <section id="s3-1">
+        <h3><span class="secno">§3.1</span>Preseason consensus (attack and defence, independently)</h3>
+        <p class="tldr"><strong>In short:</strong> a club's tier from 1 to 5 maps to a ratio from 0.84 to 1.16, where 1.00 is average.</p>
+
+        <div class="bars tierbars">
+          <div class="bar-row"><span class="bar-label">Tier 1</span><span class="bar-track"><span class="bar-fill bad" style="width:72.4%"></span></span><span class="bar-val">0.84</span></div>
+          <div class="bar-row"><span class="bar-label">Tier 2</span><span class="bar-track"><span class="bar-fill" style="width:79.3%"></span></span><span class="bar-val">0.92</span></div>
+          <div class="bar-row"><span class="bar-label">Tier 3</span><span class="bar-track"><span class="bar-fill info" style="width:86.2%"></span></span><span class="bar-val">1.00</span></div>
+          <div class="bar-row"><span class="bar-label">Tier 4</span><span class="bar-track"><span class="bar-fill good" style="width:93.1%"></span></span><span class="bar-val">1.08</span></div>
+          <div class="bar-row"><span class="bar-label">Tier 5</span><span class="bar-track"><span class="bar-fill good" style="width:100%"></span></span><span class="bar-val">1.16</span></div>
+        </div>
+        <p class="unit-note">Bar length is proportional to the ratio (1.16 fills the bar).</p>
+
+        <div class="formula"><span class="v">consensus</span> = <span class="k">0.76</span> + <span class="v">tier</span> * <span class="k">0.08</span>        <span class="c">// tier in 1..5</span></div>
+
+        <p><code>data/manual/team-strengths.json</code> holds one <strong>overall</strong> tier and separate <strong>attack</strong> and <strong>defence</strong> tiers (1–5) per club.</p>
+        <ul>
+          <li>For a returning club, the attack/defence split comes from its 2025/26 FPL attack/defence strength ratios. The file averages that 50/50 with the overall consensus tier and rounds to the nearest whole tier.</li>
+          <li>A promoted club with no top-flight history uses the overall tier for both. The file's own <code>method</code> field documents this.</li>
+          <li>A club with an overall tier but no separate split uses the overall tier for both attack and defence, not undefined.</li>
+          <li>If no consensus tier exists at all for a dimension, the app uses the raw home/away/attack/defence strengths from the bootstrap payload, and falls back to 1.0 if those are missing.</li>
+        </ul>
+
+        <details>
+          <summary>Why this exact rescale</summary>
+          <p><code>0.76 + tier * 0.08</code> is not an arbitrary rescale. It puts tiers 1–5 exactly on <code>0.84, 0.92, 1.00, 1.08, 1.16</code>. These are the same five anchors that the clean-sheet probability table (§7.4) was calibrated against. A raw 1–5 integer would break every multiplier that assumes "1.0 = average", and it would make <code>nearestStrengthTier</code> (§7.4) snap almost every team to the wrong table row.</p>
+          <p><code>consensusRatio</code> applies this to <code>rating</code> (overall), <code>attackRating</code> and <code>defenceRating</code> independently.</p>
+        </details>
+        <p class="src">data/manual/team-strengths.json · lib/historical/enrichPlayers.ts · consensusRatio · lib/fpl/normalize.ts · NormalizedTeam.strength</p>
+      </section>
+
+      <section id="s3-2">
+        <h3><span class="secno">§3.2</span>Normalization by source</h3>
+        <p class="tldr"><strong>In short:</strong> each value is divided by the league average, and the app never averages hand-set ratios with raw FPL numbers in one pool.</p>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4>Consensus group</h4>
+            <p>Ratios near 0.84–1.16. Averaged only with each other.</p>
+          </div>
+          <div class="card">
+            <h4>Fallback group</h4>
+            <p>Raw FPL fields, which can run in the hundreds. Averaged only with each other.</p>
+          </div>
+        </div>
+        <p>Mixed pools would let one club without a manual tier crush every other club's ratio onto its scale. <code>normalizeBySource</code> computes the mean separately in each group, per dimension.</p>
+
+        <div class="formula"><span class="v">attackHome</span>  = attackHome.value  / mean(<span class="v">attackHome</span> values from the same source: consensus or fallback)
+<span class="v">attackAway</span>  = attackAway.value  / mean(<span class="v">attackAway</span> values from the same source)
+<span class="v">defenceHome</span> = defenceHome.value / mean(<span class="v">defenceHome</span> values from the same source)
+<span class="v">defenceAway</span> = defenceAway.value / mean(<span class="v">defenceAway</span> values from the same source)
+<span class="v">overall</span>     = (overallHome + overallAway) / <span class="k">2</span>, each normalized the same way</div>
+
+        <div class="example illustration">
+          <p>Made-up values for three clubs in one dimension.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Group</th><th class="num">Values</th><th class="num">Mean</th><th class="num">Ratios (2 d.p.)</th></tr></thead>
+              <tbody>
+                <tr><td>Consensus</td><td class="num">1.16, 1.00, 0.84</td><td class="num">1.00</td><td class="num">1.16, 1.00, 0.84</td></tr>
+                <tr><td>Fallback</td><td class="num">1300, 1100, 900</td><td class="num">1100</td><td class="num">1.18, 1.00, 0.82</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Both groups end on the same 1.0-centred scale.</p>
+        </div>
+
+        <p>A value above 1.0 means above average in that dimension. The consensus layer does not split by venue, so <code>attackHome</code> and <code>attackAway</code> share one consensus value. Venue enters later as the flat home/away multiplier in §7.1.</p>
+        <p class="src">lib/historical/enrichPlayers.ts · deriveTeamStrengths, normalizeBySource</p>
+      </section>
+
+      <section id="s3-3">
+        <h3><span class="secno">§3.3</span>In-season form (Joint Poisson &amp; schedule-adjusted recency-weighted xG)</h3>
+        <p class="tldr"><strong>In short:</strong> as matches are played, the app shifts each club's strength toward its own expected-goals record, and the shift grows with every match.</p>
+
+        <div class="flow">
+          <div class="step"><b>Prior</b>§3.1–3.2 ratio</div>
+          <div class="arrow">+</div>
+          <div class="step"><b>Observed</b>recent xG for and against, adjusted for opponents</div>
+          <div class="arrow">→</div>
+          <div class="step hi"><b>Blended</b>weight on observed = <code>n / (n + 12)</code></div>
+        </div>
+
+        <p><code>applyInSeasonForm</code> uses <strong>expected goals (xG)</strong>, not goals scored and not win/draw/loss.</p>
+
+        <h4>The share of this season grows with matches played</h4>
+        <svg style="--vbw:620px" class="diagram wide" viewBox="0 0 620 290" role="img" aria-label="Curve of in-season share n over n plus 12. It passes 50 percent at 12 matches, 65.7 percent at 23 and 76 percent at 38.">
+          <g stroke="rgba(232,239,234,.16)" stroke-width="1">
+            <line x1="50" y1="30" x2="570" y2="30"/>
+            <line x1="50" y1="77.5" x2="570" y2="77.5"/>
+            <line x1="50" y1="125" x2="570" y2="125"/>
+            <line x1="50" y1="172.5" x2="570" y2="172.5"/>
+            <line x1="50" y1="220" x2="570" y2="220"/>
+          </g>
+          <g class="num" font-size="12" fill="#93a69c" text-anchor="end">
+            <text x="42" y="224">0%</text>
+            <text x="42" y="176.5">25%</text>
+            <text x="42" y="129">50%</text>
+            <text x="42" y="81.5">75%</text>
+            <text x="42" y="34">100%</text>
+          </g>
+          <g class="num" font-size="12" fill="#93a69c" text-anchor="middle">
+            <text x="50" y="240">0</text>
+            <text x="180" y="240">10</text>
+            <text x="310" y="240">20</text>
+            <text x="440" y="240">30</text>
+            <text x="570" y="240">40</text>
+          </g>
+          <text x="310" y="264" text-anchor="middle" font-size="12" fill="#93a69c">Matches played (n)</text>
+          <polyline data-anim="draw" fill="none" stroke="#f5b301" stroke-width="2.5" points="50,220 76,192.86 102,172.5 128,156.67 154,144 180,133.64 206,125 232,117.69 258,111.43 284,106 310,101.25 336,97.06 362,93.33 388,90 414,87 440,84.29 466,81.82 492,79.57 518,77.5 544,75.6 570,73.85"/>
+          <g fill="#f5b301">
+            <circle data-anim="pop" style="--d: 450ms" cx="206" cy="125" r="5"/>
+            <circle data-anim="pop" style="--d: 750ms" cx="349" cy="95.14" r="5"/>
+            <circle data-anim="pop" style="--d: 1100ms" cx="544" cy="75.6" r="5"/>
+          </g>
+          <g font-size="12" class="num">
+            <text data-anim="pop" style="--d: 550ms" x="212" y="146">n=12: 50%</text>
+            <text data-anim="pop" style="--d: 850ms" x="340" y="122">n=23: 65.7%</text>
+            <text data-anim="pop" style="--d: 1200ms" x="470" y="104">n=38: 76%</text>
+          </g>
+        </svg>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-label">12 matches</span><span class="bar-track"><span class="bar-fill" style="width:50%"></span></span><span class="bar-val">50%</span></div>
+          <div class="bar-row"><span class="bar-label">23 matches</span><span class="bar-track"><span class="bar-fill" style="width:65.7%"></span></span><span class="bar-val">65.7%</span></div>
+          <div class="bar-row"><span class="bar-label">38 matches</span><span class="bar-track"><span class="bar-fill" style="width:76%"></span></span><span class="bar-val">76%</span></div>
+        </div>
+
+        <div class="formula"><span class="v">currentShare</span> = <span class="v">matchesPlayed</span> / (<span class="v">matchesPlayed</span> + <span class="k">12</span>)
+<span class="v">blended</span>      = <span class="v">prior</span> * (<span class="k">1</span> - <span class="v">currentShare</span>) + <span class="v">observed</span> * <span class="v">currentShare</span></div>
+
+        <div class="example illustration">
+          <p>Made-up ratios for one club, 12 matches played.</p>
+          <ol>
+            <li><code>currentShare</code> = 12 / (12 + 12) = 0.5.</li>
+            <li>Prior 1.10, observed 1.30.</li>
+            <li><code>blended</code> = 1.10 * (1 − 0.5) + 1.30 * 0.5 = 0.55 + 0.65 = 1.20.</li>
+          </ol>
+        </div>
+
+        <details open>
+          <summary>The Joint Poisson fit (used when fixture opponent data is present)</summary>
+          <p>When completed fixtures carry opponent and venue, <code>applyInSeasonForm</code> fits a <strong>Joint Poisson log-linear attack and defence model</strong> (<code>fitJointTeamStrengths</code>).</p>
+          <div class="formula"><span class="v">log λ_home</span> = log(<span class="v">x̄G</span> * <span class="k">1.102</span>) + <span class="v">a_home</span> - <span class="v">d_away</span>
+<span class="v">log λ_away</span> = log(<span class="v">x̄G</span> * <span class="k">0.898</span>) + <span class="v">a_away</span> - <span class="v">d_home</span></div>
+          <ul>
+            <li>The parameters <code>a_i</code> and <code>d_i</code> carry an L2 shrinkage penalty toward the zero-centred logarithm of the preseason prior. The prior weight is <code>λ_prior = 12</code>.</li>
+            <li>Each fixture's weight decays by recency with <code>decay = 0.90</code>. The weights scale so that each team's effective sample matches its total appearances.</li>
+          </ul>
+          <p class="src">lib/historical/inSeasonForm.ts · applyInSeasonForm, fitJointTeamStrengths</p>
+        </details>
+
+        <details>
+          <summary>The fallback: schedule-adjusted weighting (no opponent data)</summary>
+          <p>With no fixture opponent data (for example, synthetic test fixtures), <code>applyInSeasonForm</code> falls back to a heuristic blend, <code>blendInSeasonForm</code>. It adjusts each match for the opponent's prior strength:</p>
+          <div class="formula"><span class="v">adjXgFor_i</span>     = <span class="v">xgFor_i</span>     * <span class="v">oppPrior.defence</span>
+<span class="v">adjXgAgainst_i</span> = <span class="v">xgAgainst_i</span> / <span class="v">oppPrior.attack</span></div>
+          <div class="grid-2">
+            <div class="card">
+              <h4>Attack credit</h4>
+              <p>Creating 1.5 xG against a stout 1.25 defence counts as 1.5 * 1.25 = <strong>1.875</strong>. Against an anemic 0.80 defence it counts as 1.5 * 0.80 = <strong>1.20</strong>.</p>
+            </div>
+            <div class="card">
+              <h4>Defence credit</h4>
+              <p>Conceding 1.0 xG to a potent 1.25 attack is forgiven down to 1.0 / 1.25 = <strong>0.80</strong>. Conceding 1.0 xG to a weak 0.80 attack counts up to 1.0 / 0.80 = <strong>1.25</strong>.</p>
+            </div>
+          </div>
+          <p>Each finished match gets a weight that decays with recency:</p>
+          <div class="bars">
+            <div class="bar-row"><span class="bar-label">Latest (i=0)</span><span class="bar-track"><span class="bar-fill info" style="width:100%"></span></span><span class="bar-val">1.000</span></div>
+            <div class="bar-row"><span class="bar-label">i=1</span><span class="bar-track"><span class="bar-fill info" style="width:90%"></span></span><span class="bar-val">0.900</span></div>
+            <div class="bar-row"><span class="bar-label">i=2</span><span class="bar-track"><span class="bar-fill info" style="width:81%"></span></span><span class="bar-val">0.810</span></div>
+            <div class="bar-row"><span class="bar-label">i=3</span><span class="bar-track"><span class="bar-fill info" style="width:72.9%"></span></span><span class="bar-val">0.729</span></div>
+          </div>
+          <div class="formula"><span class="v">weight</span>(i matches before the most recent)  = <span class="k">decay</span>^<span class="v">i</span>
+<span class="v">weightedXgFor</span>      = Σ(weight_i * adjXgFor_i) / Σ(weight_i)
+<span class="v">weightedXgAgainst</span>  = Σ(weight_i * adjXgAgainst_i) / Σ(weight_i)
+<span class="v">observedAttack</span>     = weightedXgFor / leagueAverageXg
+<span class="v">observedDefence</span>    = leagueAverageXg / max(weightedXgAgainst, <span class="k">0.15</span>)     <span class="c">// inverted: fewer conceded = higher</span>
+<span class="v">currentShare</span>       = matchesPlayed / (matchesPlayed + <span class="k">12</span>)
+<span class="v">blended</span>            = prior * (<span class="k">1</span> - currentShare) + observed * currentShare</div>
+          <p class="unit-note">The weights shown use <code>decay = 0.90</code>.</p>
+          <p class="src">lib/historical/inSeasonForm.ts · blendInSeasonForm</p>
+        </details>
+
+        <details>
+          <summary>Why xG, why this share, and what the data feeds on</summary>
+          <ul>
+            <li><strong>Why xG.</strong> A backtest over 2023/24–2025/26 found that goals and win/draw/loss both do <em>worse</em> than never updating the prior. Goals carry too much finishing luck. Win/draw/loss folds attack and defence into one signal. xG clearly improves clean-sheet prediction (AUC) and the link to actual points.</li>
+            <li><strong>Joint model result.</strong> Over 3 seasons the joint model cut player xP RMSE against the heuristic static arm by −0.00258 (95% bootstrap CI [−0.00445, −0.00063]), winning 99.4% of gameweek clusters.</li>
+            <li><strong>Two separate decays.</strong> <code>decay = 0.90</code> sets recency inside the current-season xG estimate. The share of team strength grows on its own as <code>n / (n + 12)</code>, so the window's effective sample size does not cap it.</li>
+            <li><strong>No venue split.</strong> The blend stays venue-agnostic like the prior. A variant with separate home and away xG streams was tested and rejected: splitting an already thin sample by venue adds noise faster than signal.</li>
+            <li><strong><code>overall</code>.</strong> It comes from the blended attack/defence average, not from a separate consensus number, since nothing downstream scores with <code>overall</code>.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Where the observed xG comes from</summary>
+          <ul>
+            <li>Once every fixture in a gameweek is finished, <code>loadInSeasonForm.ts</code> sums each player's live <code>expected_goals</code> (<code>event/{gw}/live/</code>) by team. It pairs each fixture's two teams to get xG-for and xG-against, and saves the small total so the app never re-fetches an immutable gameweek.</li>
+            <li>It skips Double Gameweeks. The event feed totals each player's xG over the whole gameweek and cannot split it by fixture.</li>
+            <li>A gameweek whose total is zero across every team counts as unresolved (likely an upstream field rename), not as a cached shutout.</li>
+          </ul>
+          <p class="src">lib/historical/loadInSeasonForm.ts</p>
+        </details>
+      </section>
+
+      <section id="s3-4">
+        <h3><span class="secno">§3.4</span>What a strength number is, and what it is not</h3>
+        <p class="tldr"><strong>In short:</strong> every strength value is a ratio around 1.0, and each use divides one by another, so the overall level drops out.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Consumer</th><th>Expression</th></tr></thead>
+            <tbody>
+              <tr><td>attack multiplier (§7.2)</td><td><code>ownAttack / opponentDefence</code></td></tr>
+              <tr><td>schedule-adjusted form (§6.3.2)</td><td>player's past xG <code>/</code> their team's attack</td></tr>
+              <tr><td>clean sheets (§7.4)</td><td><code>attack'_opponent / defence'_own</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="cancel" data-anim-group>
+          <div class="card" data-anim="fade">
+            <h4>Illustration (made-up numbers)</h4>
+            <p>Own attack 1.2, opponent defence 0.8</p>
+            <p class="big">1.2 / 0.8 = 1.5</p>
+          </div>
+          <div class="card" data-anim="fade" style="--d: 250ms">
+            <h4>Every team's strength doubled</h4>
+            <p>Own attack 2.4, opponent defence 1.6</p>
+            <p class="big">2.4 / 1.6 = 1.5</p>
+          </div>
+        </div>
+        <p>A ratio cancels the level. Double every team's attack and defence and nothing above changes. So the absolute scale never had to be right, and it is not. The level <code>log(attack) + log(defence)</code> is about <strong>1.7x narrower</strong> than an independent Poisson fitted to the same season's xG (sd 0.189 against 0.319 over 2026/27's opening rounds).</p>
+        <p>Two things compress it. The §3.1 seed spans only <code>0.84</code>–<code>1.16</code> by construction, and §3.3 pulls the fit back toward that seed with a prior weight of 12.</p>
+
+        <div class="callout warn">
+          <span class="label">Rejected</span>Rescaling the level onto the goal scale. Walk-forward on 660 team-fixtures it is monotonically worse on team xG: <code>+0.0100</code> at 1.35x, <code>+0.0186</code> at 1.69x, <code>+0.0241</code> at 2.0x, every paired interval excluding zero. Clean-sheet Brier moves by less than the data can resolve. It also lifts the share of team-fixtures where the §7.2 clamps bite from 16.4% to 43.3%. Using ClubElo for part of the level is worse on the same measure at every weight tested (0.25 to 1.0).
+        </div>
+
+        <p>This is why §7.4 carries its own level instead of re-levelling section 3 for everyone. The clean-sheet read needs an absolute goal-scale mean, and the ratios were never built to supply one.</p>
+        <p class="src">scripts/backtest/team-level.ts</p>
+      </section>
+    </section>
+
+    <nav class="pager" aria-label="Previous and next">
+      <a class="prev" href="index.html"><small>← Previous</small>Overview</a>
+      <a class="next" href="availability.html"><small>Next →</small>Who plays, and for how long</a>
+    </nav>
+  </main>
+</div>
+</body>
+</html>

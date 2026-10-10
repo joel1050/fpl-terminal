@@ -1,0 +1,26 @@
+--- a/scripts/backtest/tier-c-combined.ts
++++ b/scripts/backtest/tier-c-combined.ts
+@@ -24,6 +24,8 @@
+ } from "@/lib/historical/types";
+ import type { HistoricalBundle } from "@/lib/historical/types";
+ import {
++  CLUB_ELO_SNAPSHOT,
++  clubEloForFplShortName,
+   calculateClubEloFdr,
+   calculateContinuousClubEloFdr,
+ } from "@/lib/clubElo";
+@@ -337,7 +339,13 @@
+   for (const team of teamInfo) {
+     assert.ok(Number.isFinite(ratings.get(team.teamId)), `${seasonName}: missing pre-GW Elo for ${team.name}.`);
+   }
+-  const result = deriveCleanSheetStrengths(strengths, ratings, played);
++  const clubs = teamInfo.map((team) => {
++    const identity = clubEloForFplShortName(team.shortName, CLUB_ELO_SNAPSHOT);
++    assert.ok(identity, `Missing club identity ${team.shortName}`);
++    return { ...identity, elo: ratings.get(team.teamId)! };
++  });
++  const snapshot = { ...CLUB_ELO_SNAPSHOT, clubs };
++  const result = deriveCleanSheetStrengths(strengths, new Map(teamInfo.map(team => [team.teamId, team.shortName])), snapshot, played);
+   assert.equal(Object.keys(result).length, teamInfo.length, `${seasonName}: clean-sheet strengths were not rated for all teams.`);
+   return result;
+ }

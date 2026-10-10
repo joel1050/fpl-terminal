@@ -83,6 +83,8 @@ interface ScoreRow {
   position: Position;
   actual: number;
   prediction: number;
+  /** Production expected minutes for one fixture in this Gameweek. */
+  expectedMinutes: number;
   actualMinutes: number;
   fixtureCount: number;
 }
@@ -636,6 +638,7 @@ function runSeason(): PredictionFile {
         position: player.position,
         actual,
         prediction: predictionValue,
+        expectedMinutes: prediction.expectedMinutes,
         actualMinutes,
         fixtureCount: targetRowsForPlayer.length,
       };

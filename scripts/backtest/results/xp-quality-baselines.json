@@ -1,0 +1,390 @@
+{
+  "source": {
+    "predictionDirectory": "/tmp/xp-quality-production",
+    "preparedDataDirectory": "/tmp/fpl-tier-c-elo-corrected-20261008",
+    "seasons": [
+      "2024-25",
+      "2025-26"
+    ],
+    "gameweeks": [
+      6,
+      38
+    ],
+    "predictionFiles": {
+      "2024-25": {
+        "sha256": "77de010eaf443c429b9e59478a990d994492fefa6de09376df4e6376741680c0",
+        "ratingHistorySha256": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+        "previous": {
+          "sha256": "af4583c6ecfaa9ace99147f96c718279d4a7adaaae62c82c053ff874a27efc0a",
+          "productionHashes": {
+            "lib/clubElo.ts": "61d88d89e36f2602bd92db8dd94ce54d91b45a2de09425cb7af35cc4b894608c",
+            "lib/availability/selection.ts": "cd44144c5b6ed6f3130eb9cf12f9d76bf6c71967f1cbbb461c69278a3c4115b3",
+            "lib/projections/projectPlayer.ts": "ba268c7742930393c817022a7706602bfe76876aa6de7064f68fee0cb78a90b6"
+          }
+        },
+        "productionHashes": {
+          "lib/clubElo.ts": "580f83afffb1e48bf771a05565ae2c8263e3ea99e72b35959c000641042c2858",
+          "lib/availability/selection.ts": "58b184318076bededde85abcb7e52425415b473a0b7311c3d020fdf23481906a",
+          "lib/projections/projectPlayer.ts": "ad18675c0524de7bdbd8f65d5e804f10a603ad5d9e29e9e29de8ecd9efbf2e99"
+        },
+        "inputHashes": {
+          "historical-match-stats.json": "ad0f8ad14b7b0568b25489574f5c5c09c133ba469395f55a33938996105043c9",
+          "historical-players.json": "de202338162b484ae4036f4e33741d8c0f96a921783082a4c4abc149191160fc",
+          "previous-player-anchors.json": "9ee668bcff8214be930ffdaf85b63e239f7cca759e60eed0f26525dc27b6be75",
+          "preseason-team-strength.json": "469f20ea0360d42a4c48181f6c6ee0e08173217328ad36263d57fa74d23d6279",
+          "fixture-difficulty.json": "e5ccd6cb47a429c2fe829a844414ddfa3e10fcc997914404ecca7432f1d577aa",
+          "clubelo-history.json": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+          "previous-historical-match-stats.json": "96212d6538c7ab62f83f10f096cbece46e45672022ef55451b767a061ab43684",
+          "previous-historical-players.json": "173b9a4a04b5bfa7b28f45785272935bd3252a2ac6a675be955eb9a03fc0380a",
+          "previous-team-strength.json": "9e3225a64f415e59b8e6fa71cc24958950e8492ab17e6753f3726137c893fcee"
+        }
+      },
+      "2025-26": {
+        "sha256": "f5c132f0e69c3131711eb58f40f546eefed5cae88caeeaf7d1630ecee34c54f8",
+        "ratingHistorySha256": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+        "previous": {
+          "sha256": "524b7a96f9500a6e88ff8fc44e73ad788c64ccfb5ca9b372bea438df6a563422",
+          "productionHashes": {
+            "lib/clubElo.ts": "61d88d89e36f2602bd92db8dd94ce54d91b45a2de09425cb7af35cc4b894608c",
+            "lib/availability/selection.ts": "cd44144c5b6ed6f3130eb9cf12f9d76bf6c71967f1cbbb461c69278a3c4115b3",
+            "lib/projections/projectPlayer.ts": "ba268c7742930393c817022a7706602bfe76876aa6de7064f68fee0cb78a90b6"
+          }
+        },
+        "productionHashes": {
+          "lib/clubElo.ts": "580f83afffb1e48bf771a05565ae2c8263e3ea99e72b35959c000641042c2858",
+          "lib/availability/selection.ts": "58b184318076bededde85abcb7e52425415b473a0b7311c3d020fdf23481906a",
+          "lib/projections/projectPlayer.ts": "ad18675c0524de7bdbd8f65d5e804f10a603ad5d9e29e9e29de8ecd9efbf2e99"
+        },
+        "inputHashes": {
+          "historical-match-stats.json": "fceef346112d4ae57a118e37da7305ee1cadc5f5ea130a4434fbf392461009cd",
+          "historical-players.json": "246ff4f6cbabf6494dd5e366d194a616b377f63d3a3f34e18728f520b184aeac",
+          "previous-player-anchors.json": "9e01258e9e9c0bbb0f865beff8a8b3ee91e50cc2ff76732061956288252f3f6f",
+          "preseason-team-strength.json": "eeb68409b56542bb9a47c97bc1567ec1024bb7ebb6c661dc448dc539e24c1614",
+          "fixture-difficulty.json": "6cae2ce752a41dd351d649bbbb4bc402a70143be507b241da68ee05d97a52e34",
+          "clubelo-history.json": "107ab941212243388d91dc9a79faf1c1abf91e04cfbf856db987883e2460c604",
+          "previous-historical-match-stats.json": "ad0f8ad14b7b0568b25489574f5c5c09c133ba469395f55a33938996105043c9",
+          "previous-historical-players.json": "de202338162b484ae4036f4e33741d8c0f96a921783082a4c4abc149191160fc",
+          "previous-team-strength.json": "901e7fc05709d07b2dec3c40559e273d2ab383d80c0a8d58facc83958a11ed1b"
+        }
+      }
+    }
+  },
+  "method": {
+    "currentModel": "current production projectPlayer() via candidate arm, 300-point Elo FDR and actual dated ClubElo ratings",
+    "rollingBaseline": "sum of points / sum of recorded player-fixture rows over latest 5 prior recorded player-GWs, multiplied by target fixture count",
+    "minutesBaseline": "sum of points / sum of actual minutes over latest 5 prior recorded player-GWs, multiplied by production expected minutes per fixture and target fixture count",
+    "recentWindowGameweeks": 5,
+    "minimumPriorGameweeksForRolling": 3,
+    "minimumPriorMinutesForMinutesBaseline": 180,
+    "zeroMinuteOutcome": "explicit recorded fixture row, zero minutes retained; absent rows are not imputed",
+    "doubleGameweeks": "points and minutes sum across the player fixtures; forecast expected minutes are multiplied by target fixture count",
+    "interval": "10,000 paired gameweek-cluster bootstrap draws, stratified by season; delta is production RMSE minus baseline RMSE",
+    "commonCohortRows": 16249,
+    "bootstrapSeed": 20261008
+  },
+  "coverage": {
+    "seasons": {
+      "2024-25": {
+        "productionRows": 23575,
+        "zeroMinuteOutcomes": 13708,
+        "doubleGameweekRows": 359,
+        "rollingAvailable": 23320,
+        "minutesAvailable": 8147,
+        "commonBaselineRows": 8141,
+        "excludedFromCommonCohort": 15434
+      },
+      "2025-26": {
+        "productionRows": 25637,
+        "zeroMinuteOutcomes": 15824,
+        "doubleGameweekRows": 408,
+        "rollingAvailable": 25411,
+        "minutesAvailable": 8112,
+        "commonBaselineRows": 8108,
+        "excludedFromCommonCohort": 17529
+      }
+    },
+    "pooled": {
+      "productionRows": 49212,
+      "zeroMinuteOutcomes": 29532,
+      "doubleGameweekRows": 767,
+      "rollingAvailable": 48731,
+      "minutesAvailable": 16259,
+      "commonBaselineRows": 16249,
+      "excludedFromCommonCohort": 32963
+    },
+    "commonBaselineRowsBySeason": {
+      "2024-25": 8141,
+      "2025-26": 8108
+    }
+  },
+  "seasons": {
+    "2024-25": {
+      "coverage": {
+        "productionRows": 23575,
+        "zeroMinuteOutcomes": 13708,
+        "doubleGameweekRows": 359,
+        "rollingAvailable": 23320,
+        "minutesAvailable": 8147,
+        "commonBaselineRows": 8141,
+        "excludedFromCommonCohort": 15434
+      },
+      "productionAllRows": {
+        "n": 23575,
+        "rmse": 1.9462611108920993,
+        "mae": 0.9959538494167579,
+        "meanBias": 0.0009975821845172798
+      },
+      "previousAllRows": {
+        "n": 23575,
+        "rmse": 1.9933531599376177,
+        "mae": 1.0662467444326764,
+        "meanBias": 0.08332415694591652
+      },
+      "previousFullDelta": {
+        "n": 23575,
+        "clusters": 33,
+        "deltaRmse": -0.04709204904551845,
+        "ci95": [
+          -0.06453420822683982,
+          -0.0317422371147323
+        ]
+      },
+      "commonCohort": {
+        "production": {
+          "n": 8141,
+          "rmse": 2.907943169233955,
+          "mae": 2.129839577447488,
+          "meanBias": 0.1427777914261151
+        },
+        "previous": {
+          "n": 8141,
+          "rmse": 2.9620738905087745,
+          "mae": 2.1415969782581947,
+          "meanBias": 0.06197260778774071
+        },
+        "rolling": {
+          "n": 8141,
+          "rmse": 3.15217741369673,
+          "mae": 2.286545761898913,
+          "meanBias": 0.22340446066646805
+        },
+        "minutes": {
+          "n": 8141,
+          "rmse": 3.102574151215155,
+          "mae": 2.1919132770971306,
+          "meanBias": 0.014329786987885609
+        },
+        "pairedRmseDelta": {
+          "previous": {
+            "n": 8141,
+            "clusters": 33,
+            "deltaRmse": -0.05413072127481966,
+            "ci95": [
+              -0.07956584559434805,
+              -0.03149495318640481
+            ]
+          },
+          "rolling": {
+            "n": 8141,
+            "clusters": 33,
+            "deltaRmse": -0.24423424446277542,
+            "ci95": [
+              -0.2785126003264239,
+              -0.20852238418139554
+            ]
+          },
+          "minutes": {
+            "n": 8141,
+            "clusters": 33,
+            "deltaRmse": -0.1946309819812,
+            "ci95": [
+              -0.22787368563495458,
+              -0.16061521971389509
+            ]
+          }
+        }
+      }
+    },
+    "2025-26": {
+      "coverage": {
+        "productionRows": 25637,
+        "zeroMinuteOutcomes": 15824,
+        "doubleGameweekRows": 408,
+        "rollingAvailable": 25411,
+        "minutesAvailable": 8112,
+        "commonBaselineRows": 8108,
+        "excludedFromCommonCohort": 17529
+      },
+      "productionAllRows": {
+        "n": 25637,
+        "rmse": 1.94774417250027,
+        "mae": 0.9384048445606004,
+        "meanBias": -0.1229348597729838
+      },
+      "previousAllRows": {
+        "n": 25637,
+        "rmse": 1.9939381360319577,
+        "mae": 1.0087236416117396,
+        "meanBias": -0.05379584194718644
+      },
+      "previousFullDelta": {
+        "n": 25637,
+        "clusters": 33,
+        "deltaRmse": -0.0461939635316877,
+        "ci95": [
+          -0.061741048722807695,
+          -0.0315364186255728
+        ]
+      },
+      "commonCohort": {
+        "production": {
+          "n": 8108,
+          "rmse": 2.9877317741131533,
+          "mae": 2.158096571287608,
+          "meanBias": -0.14630747409965447
+        },
+        "previous": {
+          "n": 8108,
+          "rmse": 3.0595433248784265,
+          "mae": 2.197710286137143,
+          "meanBias": -0.2529917365564881
+        },
+        "rolling": {
+          "n": 8108,
+          "rmse": 3.2586182749493893,
+          "mae": 2.460406241924501,
+          "meanBias": 0.3189234031056916
+        },
+        "minutes": {
+          "n": 8108,
+          "rmse": 3.1914647992420098,
+          "mae": 2.338296606633783,
+          "meanBias": 0.07776471582464352
+        },
+        "pairedRmseDelta": {
+          "previous": {
+            "n": 8108,
+            "clusters": 33,
+            "deltaRmse": -0.07181155076527324,
+            "ci95": [
+              -0.09769432472623885,
+              -0.04862055850666625
+            ]
+          },
+          "rolling": {
+            "n": 8108,
+            "clusters": 33,
+            "deltaRmse": -0.270886500836236,
+            "ci95": [
+              -0.3083319284234321,
+              -0.2336554201517628
+            ]
+          },
+          "minutes": {
+            "n": 8108,
+            "clusters": 33,
+            "deltaRmse": -0.2037330251288565,
+            "ci95": [
+              -0.2323871862124318,
+              -0.17272473357790497
+            ]
+          }
+        }
+      }
+    }
+  },
+  "pooled": {
+    "coverage": {
+      "productionRows": 49212,
+      "zeroMinuteOutcomes": 29532,
+      "doubleGameweekRows": 767,
+      "rollingAvailable": 48731,
+      "minutesAvailable": 16259,
+      "commonBaselineRows": 16249,
+      "excludedFromCommonCohort": 32963
+    },
+    "productionAllRows": {
+      "n": 49212,
+      "rmse": 1.9470338530547138,
+      "mae": 0.9659736852800106,
+      "meanBias": -0.06356504511094835
+    },
+    "previousAllRows": {
+      "n": 49212,
+      "rmse": 1.9936579247538744,
+      "mae": 1.0362800739656939,
+      "meanBias": 0.011891469560268875
+    },
+    "previousFullDelta": {
+      "n": 49212,
+      "clusters": 66,
+      "deltaRmse": -0.04662407169916061,
+      "ci95": [
+        -0.058053765680690726,
+        -0.03593235482460943
+      ]
+    },
+    "commonCohort": {
+      "production": {
+        "n": 16249,
+        "rmse": 2.948026397550555,
+        "mae": 2.1439393808849796,
+        "meanBias": -0.0014712905409563358
+      },
+      "previous": {
+        "n": 16249,
+        "rmse": 3.0111040425276636,
+        "mae": 2.169596652101673,
+        "meanBias": -0.09518973475290814
+      },
+      "rolling": {
+        "n": 16249,
+        "rmse": 3.2057315613385966,
+        "mae": 2.3732994557907006,
+        "meanBias": 0.271066937452561
+      },
+      "minutes": {
+        "n": 16249,
+        "rmse": 3.147243053964713,
+        "mae": 2.2649562973373483,
+        "meanBias": 0.0459828365914571
+      },
+      "pairedRmseDelta": {
+        "previous": {
+          "n": 16249,
+          "clusters": 66,
+          "deltaRmse": -0.06307764497710844,
+          "ci95": [
+            -0.08071447659380973,
+            -0.04679217824350649
+          ]
+        },
+        "rolling": {
+          "n": 16249,
+          "clusters": 66,
+          "deltaRmse": -0.2577051637880414,
+          "ci95": [
+            -0.2836133752583441,
+            -0.23181336116900317
+          ]
+        },
+        "minutes": {
+          "n": 16249,
+          "clusters": 66,
+          "deltaRmse": -0.19921665641415798,
+          "ci95": [
+            -0.22146122610155305,
+            -0.17653005878040723
+          ]
+        }
+      }
+    }
+  },
+  "caveats": [
+    "Historical availability is reconstructed: every projected player is marked available, with no archived injury status or RotoWire lineup evidence, so forecast minutes are less informed than live production minutes.",
+    "Historical market prices are unavailable; every player receives the common £5.0m price prior.",
+    "The corpus does not contain a complete event-time FPL roster. Rows with no recorded player-fixture outcome are not scored or imputed, and incomplete target fixture rows are excluded by the production backtest harness.",
+    "The 2024/25 and 2025/26 seasons were used in earlier model tuning, so results are historical validation rather than a new untouched holdout.",
+    "The previous model is 74ceff2 rerun using the same actual ClubElo ratings and prepared inputs. Its old clean-sheet helper accepts a club snapshot rather than a ratings map; the temporary runner adapts only that input signature, leaving its production code intact."
+  ]
+}

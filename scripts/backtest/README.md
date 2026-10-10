@@ -574,3 +574,60 @@ not concluded from.
   flatter arms win - `NONE`, which makes every fixture neutral, beats the
   shipped formula - which is what a sum of squares over single-match points
   rewards regardless of whether the signal is real. Team xG is the instrument.
+
+## xP quality: baselines, calibration, and ranking
+
+The quality tests share 49,212 reconstructed player-gameweek forecasts across
+2024/25 and 2025/26, GWs 6–38, using strictly prior actual ClubElo ratings.
+Both recent-form baselines exist for 16,249 rows; all three tests use that
+intersection for comparable results. Production RMSE is 2.948 versus 3.206
+for recent points per fixture and 3.147 for recent points per minute scaled by
+forecast minutes. The prior model at `74ceff2` scores 3.011 on that intersection.
+Pooled calibration hides opposing season biases; ranking improves over both
+recent-form baselines, including among forecast starters. These seasons have
+already informed model work and are not a new untouched holdout.
+
+Reports: [baselines](results/xp-quality-baselines.md),
+[calibration](results/xp-quality-calibration.md),
+[ranking](results/xp-quality-ranking.md). Each report's JSON companion contains
+slices and metadata. No production calculation changes were made.
+
+Generate both current forecasts with the existing combined runner, using the
+prepared season directory and actual-history cache described above:
+
+```sh
+for season in 2024-25 2025-26; do
+  BACKTEST_DATA_DIR=/tmp/fpl-tier-c-elo-corrected-20261008/$season \
+    TIER_C_ARM=candidate TIER_C_SOURCE_REF=1c823c7 \
+    TIER_C_ELO_SOURCE=historical-clubelo \
+    TIER_C_OUTPUT_DIR=/tmp/xp-quality-production \
+    node --import tsx scripts/backtest/tier-c-combined.ts run
+done
+```
+
+For the previous model, extract `74ceff2` into a temporary checkout, link its
+`node_modules` to this checkout, and copy the current `tier-c-combined.ts`,
+`season.ts`, `multiSeasonData.ts`, `historicalBacktest.ts`, `clubelo-history.ts`,
+and `vaastavFixtures.ts` into its `scripts/backtest/`. Apply
+`xp-quality-legacy-runner.patch` with `git apply` in that temporary checkout.
+The patch adapts the old clean-sheet helper's input signature: it packages
+identical dated ratings as a club snapshot instead of a map. It changes no
+production source. Run the same loop there with `TIER_C_ARM=main`,
+`TIER_C_SOURCE_REF=74ceff2`, and `TIER_C_CLUBELO_HISTORY_FILE` set to this
+checkout's absolute `scripts/backtest/results/clubelo-history.json` path.
+Use the same output directory. The baseline script rejects differing prepared
+input hashes, rating caches, row membership, outcomes, or fixture counts.
+
+```sh
+node --import tsx scripts/backtest/xp-quality-baselines.ts
+node --import tsx scripts/backtest/xp-quality-calibration.ts
+node --import tsx scripts/backtest/xp-quality-ranking.ts
+```
+
+The baseline script writes `output/xp-quality/rows.json`; the other two consume
+that file. Override `BACKTEST_MULTI_DATA_DIR` and `XP_QUALITY_PREDICTIONS_DIR`
+when using other directories. The latest-five-recorded-GW baselines retain
+explicit DNP outcomes, normalize past doubles per fixture, and require three
+prior recorded weeks and 180 prior minutes for the shared cohort. Missing
+archived injuries, lineups, prices, and complete rosters limit the conclusions;
+top-ranked returns are not a legal squad or captaincy replay.

@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who plays, and for how long · FPL Terminal calculations</title>
+<link rel="stylesheet" href="style.css">
+<script src="site.js"></script>
+<style>
+  .stack { display: flex; height: 28px; border-radius: 4px; overflow: hidden; margin: 6px 0; font-family: var(--font-num); font-size: 12px; }
+  .stack span { display: flex; align-items: center; justify-content: center; color: var(--ground); font-weight: 600; white-space: nowrap; overflow: hidden; }
+  .stack .st { background: var(--good); }
+  .stack .cm { background: var(--accent); }
+  .stack .no { background: var(--line-strong); color: var(--text); }
+  .stack-label { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+  .ladder { display: grid; gap: 8px; margin: 14px 0; counter-reset: rung; }
+  .ladder .rung { background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 10px 14px 10px 44px; position: relative; font-size: 14px; }
+  .ladder .rung::before { counter-increment: rung; content: counter(rung); position: absolute; left: 12px; top: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--ground); font-family: var(--font-num); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .ladder .rung b { display: block; }
+  .scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 14px 0; text-align: center; }
+  .scale div { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; padding: 8px 4px; font-size: 13px; }
+  .scale div b { display: block; font-family: var(--font-num); font-size: 20px; }
+  .scale .r1 b { color: var(--fdr-5); }
+  .scale .r2 b { color: var(--fdr-4); }
+  .scale .r3 b { color: var(--muted); }
+  .scale .r4 b { color: var(--fdr-2); }
+  .scale .r5 b { color: var(--fdr-1); }
+  @media (max-width: 900px) { .scale div { font-size: 12px; } }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sitenav" aria-label="Pages">
+    <a class="brand" href="index.html">FPL <span>Terminal</span></a>
+    <p class="tagline">How every number is made</p>
+    <ol>
+      <li><a href="index.html"><span class="sec">00</span>Overview</a></li>
+      <li><a href="foundations.html"><span class="sec">§1–3</span>Inputs &amp; team strength</a></li>
+      <li><a href="availability.html" aria-current="page"><span class="sec">§4–5</span>Who plays, and for how long</a></li>
+      <li><a href="rates.html"><span class="sec">§6</span>Per-90 rates</a></li>
+      <li><a href="fixtures.html"><span class="sec">§7</span>Fixture adjustment</a></li>
+      <li><a href="points.html"><span class="sec">§8–9</span>Expected points</a></li>
+      <li><a href="scores-lineup.html"><span class="sec">§10–14</span>Risk, value &amp; weekly lineup</a></li>
+      <li><a href="squad-tools.html"><span class="sec">§15–19</span>Analysis, transfers &amp; optimizer</a></li>
+      <li><a href="reference.html"><span class="sec">§20–21</span>Constants &amp; validation</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="page-head">
+      <div class="eyebrow">§4–5</div>
+      <h1>Who plays, and for how long</h1>
+      <p class="lede">This stage takes last season's starts, this season's matches, RotoWire lineups and the FPL status flag. It hands on three odds per player (start, cameo, no appearance) and the minutes they imply.</p>
+    </header>
+
+    <section id="s4">
+      <h2><span class="secno">§4</span>Selection / availability model</h2>
+      <p class="tldr"><strong>In short:</strong> the model blends three signals (past starts, RotoWire lineups, FPL status) into the odds that a player starts, comes on as a sub, or does not play.</p>
+
+      <div class="flow">
+        <div class="step"><b>Seed</b>Last season's start and cameo rates (§4.1)</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>This season</b>EWMA over each completed match (§4.1.1)</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>RotoWire blend</b>0.75 lineup, 0.25 role (§4.3)</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>Status gate</b>FPL flag and QUES (§4.4)</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>Scenarios</b>start / cameo / no appearance (§4.5)</div>
+        <div class="arrow">→</div>
+        <div class="step hi"><b>Expected minutes</b>(§4.6)</div>
+      </div>
+      <p><span class="tag evidence">evidence</span> past starts and RotoWire lineups. <span class="tag fact">fact</span> the FPL status code and chance of playing. <span class="tag estimate">estimate</span> everything the model computes from them.</p>
+      <p class="src">lib/availability/selection.ts · buildPlayerSelections</p>
+
+      <section id="s4-1">
+        <h3><span class="secno">§4.1</span>Historical signal</h3>
+        <p class="tldr"><strong>In short:</strong> last season's share of starts and share of sub appearances give the model a starting guess for each player.</p>
+        <div class="formula"><span class="v">sample</span>    = max(<span class="v">matches</span>, <span class="v">starts</span>, ceil(<span class="v">minutes</span> / <span class="k">90</span>))
+<span class="v">startRate</span> = <span class="v">starts</span> / <span class="v">sample</span>
+<span class="v">cameoRate</span> = clamp(max(<span class="k">0</span>, <span class="v">appearances</span> - <span class="v">starts</span>) / <span class="v">sample</span>, <span class="k">0</span>, <span class="k">1</span> - <span class="v">startRate</span>)</div>
+        <p><code>starts</code> comes from the recorded <code>starts</code> count when present. Otherwise it counts matches with <code>minutes &gt;= 60</code>. Start and cameo minute averages come from the top-<code>starts</code> rows and the remaining appearance rows.</p>
+        <p>This is the <strong>seed only</strong>. This season's completed matches update the start estimate through the EWMA (§4.1.1), and keep doing so after 240 observed minutes.</p>
+        <p class="src">lib/availability/selection.ts · historicalSignal</p>
+
+        <section id="s4-1-1">
+          <h3><span class="secno">§4.1.1</span>Current-season update</h3>
+          <p class="tldr"><strong>In short:</strong> after each match the start estimate moves 40% of the way toward what just happened (1 for a start, 0 for no start).</p>
+          <div class="formula"><span class="v">p0</span> = <span class="v">previousSeasonStartRate</span>        <span class="c">// §4.1, or the §4.2 fallback</span>
+<span class="v">pn</span> = (<span class="k">1</span> - <span class="v">alpha</span>) * <span class="v">p(n-1)</span> + <span class="v">alpha</span> * <span class="v">startedThisMatch</span>
+
+<span class="v">alpha</span> = <span class="k">START_RATE_ALPHA = 0.40</span></div>
+          <p>The spec's example: a 20% starter who starts five matches in a row.</p>
+          <svg style="--vbw:560px" class="diagram wide" viewBox="0 0 560 230" role="img" aria-label="Start estimate for a 20 percent starter after five straight starts: 20.0, 52.0, 71.2, 82.7, 89.6, 93.8 percent">
+            <line x1="40" y1="190" x2="540" y2="190" style="stroke: var(--line-strong)"/>
+            <g class="num" font-size="12">
+              <rect x="60" y="150" width="52" height="40" data-anim="grow-y" style="--d:0ms; fill: var(--chalk-faint)"/><text x="86" y="143" text-anchor="middle" data-anim="pop" style="--d:450ms">20.0%</text><text x="86" y="208" text-anchor="middle" data-anim="fade" style="--d:0ms; fill: var(--chalk-dim)">seed</text>
+              <rect x="143" y="86" width="52" height="104" data-anim="grow-y" style="--d:180ms; fill: #f5b301"/><text x="169" y="79" text-anchor="middle" data-anim="pop" style="--d:630ms">52.0%</text><text x="169" y="208" text-anchor="middle" data-anim="fade" style="--d:180ms; fill: var(--chalk-dim)">start 1</text>
+              <rect x="226" y="47.6" width="52" height="142.4" data-anim="grow-y" style="--d:360ms; fill: #f5b301"/><text x="252" y="40" text-anchor="middle" data-anim="pop" style="--d:810ms">71.2%</text><text x="252" y="208" text-anchor="middle" data-anim="fade" style="--d:360ms; fill: var(--chalk-dim)">start 2</text>
+              <rect x="309" y="24.6" width="52" height="165.4" data-anim="grow-y" style="--d:540ms; fill: #f5b301"/><text x="335" y="17" text-anchor="middle" data-anim="pop" style="--d:990ms">82.7%</text><text x="335" y="208" text-anchor="middle" data-anim="fade" style="--d:540ms; fill: var(--chalk-dim)">start 3</text>
+              <rect x="392" y="10.8" width="52" height="179.2" data-anim="grow-y" style="--d:720ms; fill: #f5b301"/><text x="418" y="5" text-anchor="middle" dy="0.9em" data-anim="pop" style="--d:1170ms; fill: var(--ground)">89.6%</text><text x="418" y="208" text-anchor="middle" data-anim="fade" style="--d:720ms; fill: var(--chalk-dim)">start 4</text>
+              <rect x="475" y="2.4" width="52" height="187.6" data-anim="grow-y" style="--d:900ms; fill: #f5b301"/><text x="501" y="16" text-anchor="middle" data-anim="pop" style="--d:1350ms; fill: var(--ground)">93.8%</text><text x="501" y="208" text-anchor="middle" data-anim="fade" style="--d:900ms; fill: var(--chalk-dim)">start 5</text>
+            </g>
+          </svg>
+          <p>Check: 0.6 × 0.20 + 0.40 = 0.520. Then 0.6 × 0.520 + 0.40 = 0.712, then 0.8272, 0.89632 and 0.937792.</p>
+          <p><strong>Cameo is derived, not run alone:</strong> <code>cameo = clamp(pAppeared - pStart, 0, 1)</code>. <code>pAppeared</code> is the same recursion over <code>minutes &gt; 0</code>, seeded at <code>startRate + cameoRate</code>.</p>
+          <p class="src">lib/availability/startRate.ts · blendStartRate</p>
+          <details>
+            <summary>Why no sample-size shrinkage</summary>
+            <p>Unlike <code>blendPlayerRate</code> (§6.3.1) and <code>blendInSeasonForm</code> (§5.2), this recursion has <strong>no sample-size shrinkage</strong>. That is deliberate. A role is a fact about the present, not an average over the season. Weighting by effective matches would destroy the responsiveness the model exists for.</p>
+            <p>Running cameo as its own EWMA let a dropped player read as a 0.02 starter still carrying a 0.30 cameo rate. That reads as "regular substitute" for a player out of the squad.</p>
+          </details>
+          <details>
+            <summary>Where the observations come from</summary>
+            <p><code>loadInSeasonStarts</code> gives one row per eligible gameweek per player on an eligible team.</p>
+            <ul>
+              <li>A start is <code>minutes &gt;= 60</code>, the same rule as the seed. FPL's per-match <code>starts</code> flag is more exact, but a seed and an update that measure different things are worse than a pair that is uniformly approximate.</li>
+              <li>Zero-minute players <strong>are</strong> recorded, as <code>{started: false, appeared: false}</code>. Without those rows, a player who loses their place would stop being updated and stay "nailed". Hence a loader of its own and its own <code>in-season-starts-gw-N</code> snapshot key. An extra field on the rates loader would silently rebase the xG/xA blend behind <code>PLAYER_FORM_DECAY</code>.</li>
+              <li>Each row carries the observed minutes. Start duration begins at the historical start average when one exists. Otherwise the first current-season start sets the baseline, and the position default applies only when neither source exists. It then follows the same <code>0.40</code> EWMA over current starts, so three current 90-minute starts pull a stale short historical duration toward 90.</li>
+              <li>Eligibility matches the xG loaders. <strong>Double gameweeks add nothing</strong>, and a <strong>blank gameweek is no observation</strong>, not a benching.</li>
+            </ul>
+            <p class="src">lib/historical/loadInSeasonForm.ts · loadInSeasonStarts</p>
+          </details>
+          <details>
+            <summary>Backtest evidence and a caveat</summary>
+            <p>Walk-forward over 2023/24, 2024/25 and 2025/26 (<code>scripts/backtest/start-rate-alpha.ts</code>). Alpha 0.40 beats 0.60 in all three seasons on Brier score (0.0936 vs 0.0966, 0.1039 vs 0.1101, 0.0940 vs 0.0973). It cuts log loss by about 20% (0.42–0.47 against 0.53–0.58). A faster alpha catches a lost role, but it brings severe overconfidence penalties.</p>
+            <div class="callout warn"><span class="label">Caveat</span>Zero minutes is ambiguous. Benched, rotated, injured, suspended and unregistered all look the same. A layoff therefore reads as role loss, and a returning player needs about five matches to recover. In practice, RotoWire naming them in the XI gives at least <code>0.9 x 0.75 = 0.675</code> (the §4.3 blend, before any status discount), whatever the recursion says, and the §4.4 hard gate handles the absence itself.</div>
+          </details>
+        </section>
+      </section>
+
+      <section id="s4-2">
+        <h3><span class="secno">§4.2</span>Fallbacks</h3>
+        <p class="tldr"><strong>In short:</strong> with no history, the model guesses from this season's minutes, or from a flat 0.15 start rate for a new player.</p>
+        <div class="formula"><span class="v">fallbackStartRate</span> = <span class="v">current.minutes</span> &lt;= <span class="k">0</span> ? <span class="k">0.15</span> : clamp(<span class="k">0.1</span> + <span class="v">minutes</span> / <span class="k">1800</span>, <span class="k">0.15</span>, <span class="k">0.8</span>)
+<span class="v">fallbackCameoRate</span> = <span class="v">current.minutes</span> &gt; <span class="k">0</span> ? <span class="k">0.12</span> : <span class="k">0.08</span></div>
+        <p>A player with <strong>no previous season at all</strong> (a promoted club's squad, or a new signing) gets a flat seed once this season has match observations (<code>observations.length &gt; 0</code>):</p>
+        <div class="formula"><span class="k">UNKNOWN_START_SEED = 0.15</span>
+<span class="k">UNKNOWN_CAMEO_SEED = 0.08</span></div>
+        <p>The fallbacks read <code>player.current.minutes</code>, the running total that the recursion is about to replay match by match. Seeding from it would count this season twice at two speeds. The <code>fallbackStartRate</code> terms still apply with zero current-season observations, where they are the only evidence there is.</p>
+        <p class="src">lib/availability/selection.ts · fallbackStartRate, fallbackCameoRate, UNKNOWN_START_SEED, UNKNOWN_CAMEO_SEED</p>
+      </section>
+
+      <section id="s4-3">
+        <h3><span class="secno">§4.3</span>Blending</h3>
+        <p class="tldr"><strong>In short:</strong> when RotoWire covers the player's team, its lineup counts for 75% of the answer and the role estimate for 25%.</p>
+        <div class="formula"><span class="v">roleStart</span>  = blendStartRate(<span class="v">seedStart</span>, <span class="v">observations</span>)            <span class="c">// §4.1.1</span>
+<span class="v">roleCameo</span>  = blendCameoRate(<span class="v">seedStart</span>, <span class="v">seedCameo</span>, <span class="v">observations</span>)  <span class="c">// or the current frequency, see below</span>
+<span class="v">seedWeight</span> = <span class="v">observations.length</span> &gt; <span class="k">0</span> ? <span class="k">0</span> : <span class="k">0.25</span>
+<span class="v">start</span>      = <span class="v">roleStart</span> * (<span class="k">1</span> - <span class="v">seedWeight</span>) + <span class="v">fallbackStartRate</span> * <span class="v">seedWeight</span>
+<span class="v">cameo</span>      = <span class="v">roleCameo</span> * (<span class="k">1</span> - <span class="v">seedWeight</span>) + <span class="v">fallbackCameoRate</span> * <span class="v">seedWeight</span></div>
+        <p><code>seedStart</code> and <code>seedCameo</code> are the §4.1 historical rates, or the §4.2 seeds when there is no history. With no observations, the recursion returns the seed unchanged.</p>
+        <p>The <code>0.25</code> fallback term applies only while the player has no current-season observations. It tempers an estimate whose only evidence is last season. Once this season's matches are in, that term only dilutes them: <code>fallbackStartRate</code> is clamped to 0.15–0.80, so it would drag a measured 0.99 down to 0.94 and push a measured 0.02 up to 0.05.</p>
+
+        <h4>When RotoWire covers the team for the target fixture or gameweek</h4>
+        <div class="grid-2">
+          <div class="card">
+            <h4>RotoWire start value</h4>
+            <div class="bars">
+              <div class="bar-row"><span class="bar-label">Confirmed starter</span><span class="bar-track"><span class="bar-fill good" style="width:96%"></span></span><span class="bar-val">0.96</span></div>
+              <div class="bar-row"><span class="bar-label">Predicted starter</span><span class="bar-track"><span class="bar-fill good" style="width:90%"></span></span><span class="bar-val">0.90</span></div>
+              <div class="bar-row"><span class="bar-label">Not named</span><span class="bar-track"><span class="bar-fill bad" style="width:10%"></span></span><span class="bar-val">0.10</span></div>
+            </div>
+            <p>Cameo value: <code>0.05</code> for a starter, <code>0.12</code> for a player not named.</p>
+          </div>
+          <div class="card">
+            <h4>The blend</h4>
+            <div class="stack" data-anim-group aria-label="75 percent RotoWire, 25 percent role estimate">
+              <span data-anim="grow-x" style="--d:0ms; width:75%; background:var(--evidence)">RotoWire 0.75</span>
+              <span data-anim="grow-x" style="--d:160ms; width:25%; background:var(--info)">role 0.25</span>
+            </div>
+            <p>Both start and cameo use the same weights.</p>
+          </div>
+        </div>
+        <div class="formula"><span class="v">rotowireStart</span> = <span class="v">starter</span> ? (<span class="v">confirmed</span> ? <span class="k">0.96</span> : <span class="k">0.90</span>) : <span class="k">0.10</span>
+<span class="v">rotowireCameo</span> = <span class="v">starter</span> ? <span class="k">0.05</span> : <span class="k">0.12</span>
+<span class="v">start</span>         = <span class="v">rotowireStart</span> * <span class="k">0.75</span> + <span class="v">roleStart</span> * <span class="k">0.25</span>
+<span class="v">cameo</span>         = <span class="v">rotowireCameo</span> * <span class="k">0.75</span> + <span class="v">roleCameo</span> * <span class="k">0.25</span></div>
+        <p>RotoWire's own <code>UNAVAILABLE</code> records then apply. <code>OUT</code> and <code>SUS</code> are rulings, not doubts. They gate as hard as FPL's unavailable codes (§4.4): start and cameo are capped at <code>0.01</code>. Only <code>QUES</code> is soft. It discounts start by <code>0.65</code> and cameo by <code>0.75</code>, and the model resolves it against FPL's status instead of multiplying the two (§4.4.1).</p>
+        <p class="src">lib/availability/selection.ts</p>
+        <details>
+          <summary>Start uses the EWMA always; cameo and duration switch at 240 minutes</summary>
+          <p>Start probability always uses the historical-seeded EWMA. Removing the old 240-minute start-frequency override cut held-out start Brier by 0.01542 (95% gameweek-cluster interval 0.01318–0.01748) over 56,569 player-gameweeks. See <code>scripts/backtest/results/tier-c-role.md</code>.</p>
+          <p>Once eligible observations hold at least 240 total minutes, cameo probability uses the current-season frequency, and expected start duration uses the current-season average across starts. Below that, those two calculations keep their historical blend. The experiment did not test changing them.</p>
+        </details>
+      </section>
+
+      <section id="s4-4">
+        <h3><span class="secno">§4.4</span>Official status gate</h3>
+        <p class="tldr"><strong>In short:</strong> the FPL status code scales the odds down, and an unavailable code cuts them to almost nothing.</p>
+        <p><code>officialAvailability</code> applies a final factor. It reads only the short FPL code on <code>player.status</code> (<code>i</code>, <code>d</code>, <code>s</code>, <code>u</code>, <code>n</code>, …), never free text. <span class="tag fact">fact</span></p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>FPL status</th><th>factor</th><th>extra</th></tr></thead>
+            <tbody>
+              <tr><td>Unavailable: <code>i</code>, <code>u</code>, <code>n</code>, <code>s</code></td><td class="num">0.01</td><td>Then times <code>chanceOfPlaying / 100</code> when present. Start and cameo also cap at <code>0.01</code>.</td></tr>
+              <tr><td>Doubtful: <code>d</code> with a percentage</td><td class="num">chanceOfPlaying / 100</td><td>Used as-is. FPL's number is already specific to this player.</td></tr>
+              <tr><td>Doubtful: <code>d</code> with no percentage</td><td class="num">0.7</td><td></td></tr>
+              <tr><td>Anything else</td><td class="num">1</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="src">lib/availability/selection.ts · officialAvailability</p>
+
+        <section id="s4-4-1">
+          <h3><span class="secno">§4.4.1</span>Precedence, not a product</h3>
+          <p class="tldr"><strong>In short:</strong> a flag from FPL and a flag from RotoWire usually report the same injury, so the model takes the worse one and does not multiply them.</p>
+          <div class="ladder" data-anim-group>
+            <div class="rung" data-anim="fade" style="--d:0ms"><b>Hard gate wins</b>FPL says out (<code>i</code>, <code>u</code>, <code>n</code>, <code>s</code>) or RotoWire records <code>OUT</code> / <code>SUS</code>. Start and cameo cap at <code>0.01</code>. Nothing below runs.</div>
+            <div class="rung" data-anim="fade" style="--d:150ms"><b>Otherwise one discount: the smallest</b><code>startFactor = min(QUES ? 0.65 : 1, officialFactor)</code>. Cameo does the same with <code>0.75</code>.</div>
+            <div class="rung" data-anim="fade" style="--d:300ms"><b>RotoWire floor, if it still names a doubtful player in the XI</b><code>0.62</code> for a predicted XI, <code>0.80</code> for a confirmed team sheet. The floor does not apply on the hard-gate path.</div>
+          </div>
+          <div class="formula"><span class="k">ROTOWIRE_PREDICTED_FLOOR = 0.62</span>
+<span class="k">ROTOWIRE_CONFIRMED_FLOOR = 0.80</span></div>
+          <h4>Product against min: RotoWire QUES (0.65) with FPL at 75%</h4>
+          <div class="bars">
+            <div class="bar-row"><span class="bar-label">Product (old)</span><span class="bar-track"><span class="bar-fill bad" style="width:48.75%"></span></span><span class="bar-val">0.4875</span></div>
+            <div class="bar-row"><span class="bar-label">Min (used)</span><span class="bar-track"><span class="bar-fill good" style="width:65%"></span></span><span class="bar-val">0.65</span></div>
+          </div>
+          <p>Factors: 0.65 × 0.75 = 0.4875, against min(0.65, 0.75) = 0.65. The spec reports that a predicted starter with both flags used to land near <code>0.43</code>, which reads as a rotation risk, not as the likely starter RotoWire named.</p>
+          <p>A predicted XI is a forecast published before the news. On the snapshot of 21 August 2026, <strong>53 of 310</strong> RotoWire starters were players FPL had already given a 0% chance of playing. RotoWire never overrides that. <span class="tag evidence">evidence</span> <span class="tag fact">fact</span></p>
+          <p><code>evidenceFor</code> also surfaces <code>player.news</code>, FPL's free-text injury or return note, as an <code>FPL_STATUS</code> evidence entry. It shows on screen but does not change any probability.</p>
+          <div class="callout warn"><span class="label">Not backtested</span>There is no RotoWire archive for a past season, only the current snapshot. Deterministic tests in <code>tests/data/rotowire-precedence.test.ts</code> hold these rules in place instead.</div>
+          <p class="src">lib/availability/selection.ts · evidenceFor, ROTOWIRE_PREDICTED_FLOOR, ROTOWIRE_CONFIRMED_FLOOR</p>
+        </section>
+      </section>
+
+      <section id="s4-5">
+        <h3><span class="secno">§4.5</span>Scenario normalization</h3>
+        <p class="tldr"><strong>In short:</strong> start, cameo and no appearance must add to 1, so the model rescales when start and cameo add to more.</p>
+        <p><code>normalizeScenarios</code> produces <code>startProbability</code>, <code>cameoProbability</code> and <code>noAppearanceProbability</code>. If <code>start + cameo &lt;= 1</code>, the remainder is "no appearance". Otherwise both are rescaled by their sum and no appearance is 0.</p>
+        <div class="example illustration">
+          <p>Two made-up players. The arithmetic follows the rule above.</p>
+          <p class="stack-label">Start 0.70 + cameo 0.20 = 0.90, so no appearance = 0.10</p>
+          <div class="stack" data-anim-group><span class="st" data-anim="grow-x" style="--d:0ms; width:70%">start 0.70</span><span class="cm" data-anim="grow-x" style="--d:160ms; width:20%">cameo 0.20</span><span class="no" data-anim="grow-x" style="--d:320ms; width:10%">none</span></div>
+          <p class="stack-label">Start 0.80 + cameo 0.40 = 1.20, so divide both by 1.20</p>
+          <div class="stack" data-anim-group><span class="st" data-anim="grow-x" style="--d:0ms; width:66.67%">start 0.667</span><span class="cm" data-anim="grow-x" style="--d:160ms; width:33.33%">cameo 0.333</span></div>
+        </div>
+        <p class="src">lib/availability/selection.ts · normalizeScenarios</p>
+      </section>
+
+      <section id="s4-6">
+        <h3><span class="secno">§4.6</span>Expected minutes (selection model)</h3>
+        <p class="tldr"><strong>In short:</strong> expected minutes are the chance of starting times a start's length, plus the chance of a cameo times a cameo's length.</p>
+        <div class="formula"><span class="v">expectedStartMinutes</span> = clamp(currentStartDuration(<span class="v">history.startMinutes</span>, <span class="v">observations</span>), <span class="k">60</span>, <span class="k">90</span>)
+<span class="v">expectedCameoMinutes</span> = clamp(<span class="v">history.cameoMinutes</span> ?? <span class="v">CAMEO_MINUTES[position]</span>, <span class="k">1</span>, <span class="k">45</span>)
+<span class="v">expectedMinutes</span>      = <span class="v">startProbability</span> * <span class="v">expectedStartMinutes</span>
+                       + <span class="v">cameoProbability</span> * <span class="v">expectedCameoMinutes</span></div>
+        <p>Position defaults:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Position</th><th class="num">START_MINUTES</th><th class="num">CAMEO_MINUTES</th></tr></thead>
+            <tbody>
+              <tr><td>GK</td><td class="num">90</td><td class="num">5</td></tr>
+              <tr><td>DEF</td><td class="num">84</td><td class="num">14</td></tr>
+              <tr><td>MID</td><td class="num">79</td><td class="num">20</td></tr>
+              <tr><td>FWD</td><td class="num">78</td><td class="num">20</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="example illustration">
+          <p>A made-up midfielder with no minute history: start 0.70, cameo 0.20, using the MID defaults.</p>
+          <p class="num">0.70 × 79 + 0.20 × 20 = 55.3 + 4.0 = 59.3 minutes</p>
+        </div>
+        <details>
+          <summary>How currentStartDuration works</summary>
+          <p>Below the 240-minute role threshold, <code>currentStartDuration</code> starts from the previous-season average. With no historical average, it starts from the first current-season start. It updates only on observations classified as starts:</p>
+          <div class="formula"><span class="v">duration_n</span> = <span class="v">duration_(n-1)</span> * (<span class="k">1</span> - <span class="k">0.40</span>) + <span class="v">observedMinutes_n</span> * <span class="k">0.40</span></div>
+          <p>The position default applies only when neither source exists. At or above the threshold, the current-season start average replaces this blend.</p>
+        </details>
+        <p class="src">lib/availability/selection.ts · START_MINUTES, CAMEO_MINUTES, currentStartDuration</p>
+      </section>
+
+      <section id="s4-7">
+        <h3><span class="secno">§4.7</span>Nailed rating</h3>
+        <p class="tldr"><strong>In short:</strong> start probability maps to a 1–5 rating of how safe the player's place is.</p>
+        <div class="scale" data-anim-group>
+          <div class="r1" data-anim="fade" style="--d:0ms"><b>1</b>below 0.15</div>
+          <div class="r2" data-anim="fade" style="--d:140ms"><b>2</b>0.15 to below 0.45</div>
+          <div class="r3" data-anim="fade" style="--d:280ms"><b>3</b>0.45 to below 0.70</div>
+          <div class="r4" data-anim="fade" style="--d:420ms"><b>4</b>0.70 to below 0.85</div>
+          <div class="r5" data-anim="fade" style="--d:560ms"><b>5</b>0.85 or more</div>
+        </div>
+        <div class="formula">&gt;= <span class="k">0.85</span> → 5     &gt;= <span class="k">0.70</span> → 4     &gt;= <span class="k">0.45</span> → 3     &gt;= <span class="k">0.15</span> → 2     else → 1</div>
+        <p class="src">lib/availability/selection.ts · rating</p>
+      </section>
+
+      <section id="s4-8">
+        <h3><span class="secno">§4.8</span>Selection confidence</h3>
+        <p class="tldr"><strong>In short:</strong> confidence says how much evidence sits behind the odds, in three levels.</p>
+        <div class="grid-3">
+          <div class="card">
+            <h4><span class="tag estimate">HIGH</span></h4>
+            <p>Any one of:</p>
+            <ul>
+              <li>a RotoWire signal</li>
+              <li>a covered team</li>
+              <li><code>history.matches &gt;= 10</code></li>
+              <li><code>observations.length &gt;= 5</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4><span class="tag estimate">MEDIUM</span></h4>
+            <p>Any one of:</p>
+            <ul>
+              <li>any history (<code>history.matches &gt; 0</code>)</li>
+              <li>any current-season observation (<code>observations.length &gt; 0</code>)</li>
+              <li>current minutes (<code>player.current.minutes &gt; 0</code>)</li>
+              <li>a known <code>chanceOfPlaying</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4><span class="tag estimate">LOW</span></h4>
+            <p>None of the above.</p>
+          </div>
+        </div>
+        <p>Five matches take the EWMA most of the way from its seed to what this season says. By then the estimate rests on observed starts, not on last season's rate.</p>
+        <p class="src">lib/availability/selection.ts · confidence</p>
+      </section>
+    </section>
+
+    <section id="s5">
+      <h2><span class="secno">§5</span>Expected minutes (standalone)</h2>
+      <p class="tldr"><strong>In short:</strong> this is a backup minutes formula for a player with no selection model, and the app never runs it.</p>
+      <div class="callout warn"><span class="label">Never runs in the app</span><code>estimateExpectedMinutes</code> returns at once when <code>player.selection</code> exists and carries a finite <code>expectedMinutes</code>. <code>enrichPlayersWithHistory</code> always attaches a selection before projecting, so in the app's pipeline this logic never executes. It serves callers that pass a player without a selection model, such as a hand-built player in a test. It is not a live fallback in the app's request path.</div>
+
+      <div class="flow">
+        <div class="step"><b>Selection exists?</b>Return its <code>expectedMinutes</code>. Done.</div>
+        <div class="arrow">→ no →</div>
+        <div class="step hi"><b>Standalone formula</b>prior and recent blend</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>statusAvailability</b>scales the estimate</div>
+      </div>
+
+      <p>For a player without a selection:</p>
+      <div class="formula"><span class="v">prior</span>  = <span class="v">history.minutes</span> &lt;= <span class="k">0</span> ? <span class="k">0</span> : <span class="k">22</span> + clamp(<span class="v">starts</span> / <span class="k">38</span>, <span class="k">0</span>, <span class="k">1</span>) * <span class="k">60</span>
+<span class="v">recent</span> = average recent minutes (<span class="v">current minutes</span> / <span class="v">matches</span>), adjusted by sub rate
+<span class="v">weight</span> = clamp(<span class="v">currentGameweek</span> / <span class="k">8</span>, <span class="k">0.15</span>, <span class="k">0.65</span>)
+<span class="v">estimate</span> = <span class="v">prior</span> * (<span class="k">1</span> - <span class="v">weight</span>) + <span class="v">recent</span> * <span class="v">weight</span>
+<span class="v">estimate</span> *= statusAvailability(<span class="v">player</span>)</div>
+
+      <p><code>statusAvailability</code> mirrors <code>officialAvailability</code> (§4.4) exactly. A player without a selection model gets the same discount as one with a selection model for the same fact.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>FPL status</th><th>factor</th></tr></thead>
+          <tbody>
+            <tr><td>Unavailable: <code>i</code>, <code>u</code>, <code>n</code>, <code>s</code></td><td>0.01, then times <code>chanceOfPlaying / 100</code> when present</td></tr>
+            <tr><td>Doubtful: <code>d</code></td><td><code>chanceOfPlaying / 100</code> when supplied, else 0.7</td></tr>
+            <tr><td>Otherwise</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">lib/projections/expectedMinutes.ts · estimateExpectedMinutes, statusAvailability</p>
+    </section>
+
+    <nav class="pager" aria-label="Previous and next">
+      <a class="prev" href="foundations.html"><small>← Previous</small>Inputs &amp; team strength</a>
+      <a class="next" href="rates.html"><small>Next →</small>Per-90 rates</a>
+    </nav>
+  </main>
+</div>
+</body>
+</html>

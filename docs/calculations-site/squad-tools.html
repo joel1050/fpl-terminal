@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analysis, transfers &amp; optimizer · FPL Terminal calculations</title>
+<link rel="stylesheet" href="style.css">
+<script src="site.js"></script>
+<style>
+  .stack { display: flex; height: 34px; border-radius: 6px; overflow: hidden; margin: 12px 0 6px; border: 1px solid var(--line-strong); }
+  .stack span { display: flex; align-items: center; justify-content: center; font-family: var(--font-num); font-size: 12px; color: var(--ground); font-weight: 600; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .checklist { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 6px; }
+  .checklist li { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; font-size: 14px; }
+  .checklist li code { margin-right: 4px; }
+  .halves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+  .half { border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); padding: 12px 14px; }
+  .half h4 { margin: 0 0 8px; font-size: 14px; font-family: var(--font-num); color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips span { font-size: 12px; border: 1px solid var(--line-strong); border-radius: 999px; padding: 4px 9px; background: var(--surface-2); }
+  .half .after { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+  .sel { color: var(--accent); }
+  @media (max-width: 900px) { .halves { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sitenav" aria-label="Pages">
+    <a class="brand" href="index.html">FPL <span>Terminal</span></a>
+    <p class="tagline">How every number is made</p>
+    <ol>
+      <li><a href="index.html"><span class="sec">00</span>Overview</a></li>
+      <li><a href="foundations.html"><span class="sec">§1–3</span>Inputs &amp; team strength</a></li>
+      <li><a href="availability.html"><span class="sec">§4–5</span>Who plays, and for how long</a></li>
+      <li><a href="rates.html"><span class="sec">§6</span>Per-90 rates</a></li>
+      <li><a href="fixtures.html"><span class="sec">§7</span>Fixture adjustment</a></li>
+      <li><a href="points.html"><span class="sec">§8–9</span>Expected points</a></li>
+      <li><a href="scores-lineup.html"><span class="sec">§10–14</span>Risk, value &amp; weekly lineup</a></li>
+      <li><a href="squad-tools.html" aria-current="page"><span class="sec">§15–19</span>Analysis, transfers &amp; optimizer</a></li>
+      <li><a href="reference.html"><span class="sec">§20–21</span>Constants &amp; validation</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="page-head">
+      <div class="eyebrow">§15–19</div>
+      <h1>Analysis, transfers &amp; optimizer</h1>
+      <p class="lede">This stage takes the projections and the weekly lineup and turns them into squad advice: which slot is weak, which transfer helps, which 15 players to pick, and what a sale really pays. All of it is estimates; only prices and bank are facts.</p>
+    </header>
+
+    <!-- ================= 15 ================= -->
+    <section id="s15">
+      <h2><span class="secno">§15</span>Squad analysis metrics</h2>
+      <p class="tldr"><strong>In short:</strong> the app grades each squad slot against same-position peers and rates your lineup against the best lineup money could buy.</p>
+      <p>These helpers sit in <code>lib/analysis/</code> and build on the projections. <span class="tag estimate">estimate</span></p>
+
+      <section id="s15-1">
+        <h3><span class="secno">§15.1</span>horizonValue</h3>
+        <p class="tldr"><strong>In short:</strong> the points a player is worth over the chosen horizon, with two fallbacks.</p>
+        <div class="flow">
+          <div class="step hi"><b>1. Read it</b>projection.nextGW / next3 / next5</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>2. Recompute</b>if absent, project the player again</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>3. Fall back</b>if that fails too</div>
+        </div>
+        <div class="formula"><span class="v">fallback</span> = <span class="v">pointsPer90</span> * <span class="v">minutes</span> / <span class="k">90</span> * <span class="v">horizon</span></div>
+        <p class="src">lib/analysis/context.ts · horizonValue</p>
+      </section>
+
+      <section id="s15-2">
+        <h3><span class="secno">§15.2</span>Fixture difficulty (normalized)</h3>
+        <p class="tldr"><strong>In short:</strong> average the next fixtures' difficulty (3 if unknown) and squeeze it onto a 0 to 1 scale.</p>
+        <div class="formula"><span class="v">avg</span> = mean(<span class="v">fixture.difficulty</span> ?? <span class="k">3</span>) over the first <span class="v">horizon</span> fixtures
+<span class="v">fixtureDifficulty</span> = clamp((<span class="v">avg</span> - <span class="k">1</span>) / <span class="k">4</span>, <span class="k">0</span>, <span class="k">1</span>)      <span class="c">// empty schedule → 0.5</span></div>
+        <p>So an average of 1 gives 0, an average of 3 gives 0.5, and an average of 5 gives 1.</p>
+        <p class="src">lib/analysis/context.ts · fixtureDifficulty</p>
+      </section>
+
+      <section id="s15-3">
+        <h3><span class="secno">§15.3</span>Weakness score</h3>
+        <p class="tldr"><strong>In short:</strong> six checks, weighted so the weights add to 100; a higher total means a weaker player.</p>
+        <p>The weights below make one bar of 100 points. Projection and value carry half the score.</p>
+        <div class="stack" data-anim-group role="img" aria-label="Weakness weights: projection 30, value 20, fixtures 15, minutes 15, availability 12, confidence 8">
+          <span data-anim="grow-x" style="--d:0ms;width:30%;background:var(--accent)">30</span>
+          <span data-anim="grow-x" style="--d:180ms;width:20%;background:var(--info)">20</span>
+          <span data-anim="grow-x" style="--d:360ms;width:15%;background:var(--good)">15</span>
+          <span data-anim="grow-x" style="--d:540ms;width:15%;background:var(--violet)">15</span>
+          <span data-anim="grow-x" style="--d:720ms;width:12%;background:var(--warn)">12</span>
+          <span data-anim="grow-x" style="--d:900ms;width:8%;background:var(--bad)">8</span>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>projection</span>
+          <span><i style="background:var(--info)"></i>value</span>
+          <span><i style="background:var(--good)"></i>fixtures</span>
+          <span><i style="background:var(--violet)"></i>minutes</span>
+          <span><i style="background:var(--warn)"></i>availability</span>
+          <span><i style="background:var(--bad)"></i>confidence</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Component</th><th class="num">Weight</th><th>Definition</th></tr></thead>
+            <tbody>
+              <tr><td>projection</td><td class="num">30</td><td>percentile deficit of <code>horizonValue</code></td></tr>
+              <tr><td>value</td><td class="num">20</td><td>percentile deficit of <code>horizonValue / price</code></td></tr>
+              <tr><td>fixtures</td><td class="num">15</td><td><code>fixtureDifficulty</code></td></tr>
+              <tr><td>minutes</td><td class="num">15</td><td><code>1 - expectedMinutes / 90</code></td></tr>
+              <tr><td>availability</td><td class="num">12</td><td><code>availabilityRisk</code></td></tr>
+              <tr><td>confidence</td><td class="num">8</td><td><code>1 - confidenceWeight(confidence)</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The player is compared with same-position peers. <code>percentileDeficit</code> is one minus the share of peers strictly below them, so ties count against the player:</p>
+        <div class="formula"><span class="v">percentileDeficit</span> = <span class="k">1</span> - (#<span class="v">peers strictly below</span>) / (<span class="v">peers.length</span> - <span class="k">1</span>)
+<span class="v">score</span> = round(clamp(Σ <span class="v">component</span> * <span class="v">weight</span>, <span class="k">0</span>, <span class="k">100</span>))</div>
+        <div class="example illustration">
+          <p>Made-up case: a midfielder sits in a list of 11 midfielders, so <code>peers.length - 1</code> = 10. If 8 are strictly below this player, the deficit is 1 - 8/10 = 0.2, and the projection check adds 0.2 * 30 = 6. A player below every peer has deficit 1 and adds the full 30.</p>
+        </div>
+        <details><summary>Detail</summary>
+          <p>The clamp keeps the total between 0 and 100 and the result rounds to a whole number.</p>
+        </details>
+        <p class="src">lib/analysis/weakness.ts · scoreWeakness</p>
+      </section>
+
+      <section id="s15-4">
+        <h3><span class="secno">§15.4</span>Strengths</h3>
+        <p class="tldr"><strong>In short:</strong> the app names what your squad does well using three tests.</p>
+        <div class="grid-3">
+          <div class="card"><h4>Minutes</h4>Share of the squad with <code>expectedMinutes &gt;= 80</code>. A share of 70% or more counts as positive.</div>
+          <div class="card"><h4>Fixtures</h4>A favourable average run: <code>fixtureDifficulty &lt;= 0.45</code>.</div>
+          <div class="card"><h4>Points</h4>Total projected points.</div>
+        </div>
+        <p class="src">lib/analysis/analyzeSquad.ts · buildStrengths</p>
+      </section>
+
+      <section id="s15-5">
+        <h3><span class="secno">§15.5</span>Team rating</h3>
+        <p class="tldr"><strong>In short:</strong> your lineup's expected points as a percentage of the best legal XI the whole player pool could field on the same budget.</p>
+        <div class="flow">
+          <div class="step"><b>Your lineup</b>projectedXI + captainBonus</div>
+          <div class="arrow">÷</div>
+          <div class="step"><b>Market ceiling</b>bestPossibleXI.projectedTotal</div>
+          <div class="arrow">× 100</div>
+          <div class="step hi"><b>Rating</b>rounded, clamped 0 to 100</div>
+        </div>
+        <div class="formula"><span class="v">lineupXp</span>   = <span class="v">currentGWPlan.projectedXI</span> + <span class="v">currentGWPlan.captainBonus</span>
+<span class="v">teamRating</span> = clamp(round(<span class="v">lineupXp</span> / <span class="v">bestPossibleXI.projectedTotal</span> * <span class="k">100</span>), <span class="k">0</span>, <span class="k">100</span>)</div>
+        <div class="example illustration">
+          <p>Made-up numbers: lineup 58.2 xP, ceiling 64.0 xP. 58.2 / 64.0 * 100 = 90.94, which rounds to a rating of 91.</p>
+          <div class="bars">
+            <div class="bar-row"><span class="bar-label">Your lineup</span><span class="bar-track"><span class="bar-fill" style="width:90.94%"></span></span><span class="bar-val" data-count="58.2">58.2</span></div>
+            <div class="bar-row"><span class="bar-label">Ceiling</span><span class="bar-track"><span class="bar-fill info" style="width:100%"></span></span><span class="bar-val" data-count="64.0">64.0</span></div>
+          </div>
+        </div>
+        <div class="callout warn"><span class="label">Reads off</span>The two sides price the armband differently. The ceiling adds its captain's full points. The lineup adds <code>captainBonus</code> (§14.7), cut by the chance that the captain and vice-captain do not play. So the rating reads slightly low when the captain is in doubt. With a saved lineup and a chip active, the lineup side also carries the chip: Triple Captain doubles its <code>captainBonus</code>, and Bench Boost puts all 15 players in <code>projectedXI</code>. The ceiling never plays a chip, so the rating reads high under a chip, and the clamp at 100 can bind.</div>
+        <p><code>bestPossibleXI</code> comes from <code>exactBestPossibleXI</code> via <code>/api/best-xi</code> (see §17.4). It uses the same weekly lineup metric as the lineup side, with no bench or autosub on either side.</p>
+        <p class="src">components/terminal/TerminalApp.tsx · teamRating · lib/optimizer/bestPossibleXI.ts</p>
+      </section>
+    </section>
+
+    <!-- ================= 16 ================= -->
+    <section id="s16">
+      <h2><span class="secno">§16</span>Transfer suggestions</h2>
+      <p class="tldr"><strong>In short:</strong> the app tries swaps, keeps those that gain points and that no other swap beats on both points and cash, and shows the best five.</p>
+
+      <section id="s16-1">
+        <h3><span class="secno">§16.1</span>Replacements</h3>
+        <p class="tldr"><strong>In short:</strong> for one outgoing player, rank same-position candidates by points gained, with small bonuses for minutes (SAFE only) and cash saved.</p>
+        <div class="formula"><span class="v">score</span> = <span class="v">projectedDelta</span> + (SAFE ? <span class="v">expectedMinutes</span> / <span class="k">100</span> : <span class="k">0</span>) + <span class="v">bankDelta</span> / <span class="k">100</span>
+<span class="v">projectedDelta</span> = <span class="v">candidate.nextN</span> - <span class="v">outgoing.nextN</span>
+<span class="v">bankDelta</span>      = <span class="v">outgoing.price</span> - <span class="v">candidate.price</span></div>
+        <p>A candidate must pass the club limit, the budget, the exclusions and, for SAFE, the availability and confidence gates.</p>
+        <p class="src">lib/analysis/replacements.ts · findReplacements</p>
+      </section>
+
+      <section id="s16-2">
+        <h3><span class="secno">§16.2</span>Single transfers</h3>
+        <p class="tldr"><strong>In short:</strong> test every legal one-player swap that gains xP, then drop any swap that another swap beats on both xP and cash.</p>
+        <p>The chart is an illustration. Each dot is a swap. Gold dots stay; grey dots lose to a gold dot that has more cash and more xP.</p>
+        <svg style="--vbw:600px" class="diagram wide" viewBox="0 0 600 310" role="img" aria-label="Pareto frontier of transfers: xP gain per gameweek against cash released. Four swaps stay on the frontier and four are dominated.">
+          <rect x="60" y="30" width="500" height="230" fill="none" stroke="rgba(232,239,234,.16)"/>
+          <line x1="252.3" y1="30" x2="252.3" y2="260" stroke="rgba(232,239,234,.16)" stroke-dasharray="4 4"/>
+          <polyline data-anim="draw" style="--d:1000ms" points="136.9,76.7 252.3,125.6 406.1,186.7 521.5,235.6" fill="none" stroke="#f5b301" stroke-width="2"/>
+          <g fill="#5d7268">
+            <circle data-anim="pop" style="--d:0ms" cx="194.6" cy="150" r="6"/>
+            <circle data-anim="pop" style="--d:100ms" cx="213.8" cy="137.8" r="6"/>
+            <circle data-anim="pop" style="--d:200ms" cx="329.2" cy="223.3" r="6"/>
+            <circle data-anim="pop" style="--d:300ms" cx="444.6" cy="247.8" r="6"/>
+          </g>
+          <g fill="#f5b301">
+            <circle data-anim="pop" style="--d:500ms" cx="136.9" cy="76.7" r="7"/>
+            <circle data-anim="pop" style="--d:620ms" cx="252.3" cy="125.6" r="7"/>
+            <circle data-anim="pop" style="--d:740ms" cx="406.1" cy="186.7" r="7"/>
+            <circle data-anim="pop" style="--d:860ms" cx="521.5" cy="235.6" r="7"/>
+          </g>
+          <text x="300" y="296" font-size="13" text-anchor="middle" fill="#93a69c" style="fill:#93a69c">cash released (£m) →</text>
+          <text x="252" y="24" font-size="12" text-anchor="middle" style="fill:#93a69c">0</text>
+          <text x="18" y="150" font-size="13" text-anchor="middle" transform="rotate(-90 18 150)" style="fill:#93a69c">xP gain per GW →</text>
+          <text data-anim="fade" style="fill:#f5b301;--d:1500ms" x="150" y="68" font-size="12">kept</text>
+          <text data-anim="fade" style="fill:#93a69c;--d:400ms" x="226" y="170" font-size="12">dominated</text>
+        </svg>
+        <div class="formula"><span class="v">cashReleasedTenths</span> = <span class="v">sellingPrice(outgoing)</span> - <span class="v">incoming.priceTenths</span>
+<span class="v">score</span>              = <span class="v">projectedDeltaPerGW</span> + <span class="k">0.25</span> * (<span class="v">cashReleasedTenths</span> / <span class="k">10</span>)   <span class="c">// CASH_XP_PER_MILLION</span></div>
+        <div class="example illustration">
+          <p>Made-up swap: +0.8 xP per gameweek, and it releases 5 tenths (£0.5m). Score = 0.8 + 0.25 * (5 / 10) = 0.925.</p>
+        </div>
+        <p>The label is <code>XP_UPGRADE</code>, or <code>BOTH</code> when the swap also releases cash. The route returns the top five.</p>
+        <details><summary>What <code>projectedDelta</code> counts, and the budget rule</summary>
+          <p><code>projectedDelta</code> is the change in the §14 weekly lineup total summed over the horizon. It counts bench order, captaincy and autosubs, not just the two players.</p>
+          <p>The selling price follows the official rule (§19.1) when purchase prices are supplied, and equals the market price otherwise. With a real bank the app does not check the owned squad against the budget, since team value is selling value plus bank. Each swap must instead fit within <code>bank + sellingPrice(outgoing)</code>.</p>
+        </details>
+        <p class="src">lib/analysis/singleTransfers.ts · findBestSingleTransfers</p>
+      </section>
+
+      <section id="s16-3">
+        <h3><span class="secno">§16.3</span>Simulate a change</h3>
+        <p class="tldr"><strong>In short:</strong> compare squad analyses before and after a change.</p>
+        <div class="card">For a legal full squad, it uses the weekly lineup engine (§14) to give optimized <code>projectedDeltaGW</code>, <code>projectedDeltaGW3</code> and <code>projectedDeltaGW5</code>.</div>
+        <p class="src">lib/analysis/simulateChange.ts · simulateChange</p>
+      </section>
+
+      <section id="s16-4">
+        <h3><span class="secno">§16.4</span>Multi-transfer plans</h3>
+        <p class="tldr"><strong>In short:</strong> when a request sets <code>maxTransfers</code> (1 to 5), an exact HiGHS solve replaces §16.2 and finds whole plans of up to that many transfers.</p>
+        <div class="flow">
+          <div class="step"><b>1. Candidates</b>top 25 per position, plus every owned player</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>2. Solve</b>for each k, keep exactly 15 - k owned players</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>3. Cut and repeat</b>so the next plan differs</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>4. Rescore</b>full §14 lineup total over the horizon</div>
+          <div class="arrow">→</div>
+          <div class="step hi"><b>5. Rank</b>best five</div>
+        </div>
+        <ul>
+          <li><strong>Candidates:</strong> incoming players need status <code>a</code> or <code>d</code>, must not be excluded, and under <code>SAFE</code> must not carry availability risk.</li>
+          <li><strong>Variables and constraints:</strong> the same squad, weekly XI and captain variables as §17.3: 15 players, 2/5/5/3, at most 3 per club, locked players kept, and for each <code>k</code> exactly <code>15 - k</code> owned players retained.</li>
+          <li><strong>Budget:</strong> <code>Σ cost ≤ bank + Σ sellingPrice(owned)</code>. An owned player costs their selling price; an incoming player costs their market price. <code>bank</code> defaults to 0.</li>
+          <li><strong>Objective:</strong> each gameweek's starter and captain xP, plus a flat reserve value of <code>0.15 ×</code> xP for an outfield reserve and <code>0.05 ×</code> for a goalkeeper. This is simpler than the pDNP-based reserve weights in §17.3.</li>
+        </ul>
+        <div class="formula"><span class="v">reserve value</span> = <span class="k">0.15</span> * <span class="v">xP</span>   <span class="c">// outfield reserve</span>
+<span class="v">reserve value</span> = <span class="k">0.05</span> * <span class="v">xP</span>   <span class="c">// goalkeeper reserve</span></div>
+        <details><summary>Plan count, rescoring and ranking</summary>
+          <p>For each <code>k</code> from 1 to <code>maxTransfers</code>, it finds up to <code>max(2, min(3, 5 - k))</code> distinct plans (five when <code>maxTransfers = 1</code>), adding a cut after each so the next solve must differ. It then rescores every plan with the full §14 weekly lineup total over the horizon, and drops any plan with no xP gain. It pairs outgoing and incoming players by position and orders them so the moves that release the most cash come first.</p>
+          <p>It returns the five best plans, ranked by: xP gain, then fewer transfers, then more cash released, then lower incoming risk.</p>
+        </details>
+        <p class="src">lib/optimizer/milpTransfers.ts · findMilpTransferSuggestions</p>
+      </section>
+    </section>
+
+    <!-- ================= 17 ================= -->
+    <section id="s17">
+      <h2><span class="secno">§17</span>Squad optimization</h2>
+      <p class="tldr"><strong>In short:</strong> a heuristic beam search can build a squad, but the exact optimizer solves for the best legal squad, and the same solver sets the market ceiling for the team rating.</p>
+
+      <section id="s17-1">
+        <h3><span class="secno">§17.1</span>Objective</h3>
+        <p class="tldr"><strong>In short:</strong> starters count in full, and the bench counts for a fraction that shrinks down the order.</p>
+        <p><code>objectiveScore</code> scores a completed squad in the heuristic beam search.</p>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-label">Starting XI</span><span class="bar-track"><span class="bar-fill" style="width:100%"></span></span><span class="bar-val">1.00</span></div>
+          <div class="bar-row"><span class="bar-label">Bench 1</span><span class="bar-track"><span class="bar-fill info" style="width:25%"></span></span><span class="bar-val">0.25</span></div>
+          <div class="bar-row"><span class="bar-label">Bench 2</span><span class="bar-track"><span class="bar-fill info" style="width:15%"></span></span><span class="bar-val">0.15</span></div>
+          <div class="bar-row"><span class="bar-label">Bench 3</span><span class="bar-track"><span class="bar-fill info" style="width:10%"></span></span><span class="bar-val">0.10</span></div>
+          <div class="bar-row"><span class="bar-label">Backup GK</span><span class="bar-track"><span class="bar-fill violet" style="width:5%"></span></span><span class="bar-val">0.05</span></div>
+        </div>
+        <p>Weights multiply <code>utilityValue</code>. Bars show the multiplier.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Slot</th><th>Contribution</th></tr></thead>
+            <tbody>
+              <tr><td>Every starting XI player</td><td>full <code>utilityValue</code></td></tr>
+              <tr><td>Backup GK</td><td><code>utility * 0.05 - price / 20</code></td></tr>
+              <tr><td>Outfield bench (ordered)</td><td><code>utility * {0.25, 0.15, 0.10}</code></td></tr>
+              <tr><td>Each HIGH-confidence starter</td><td><code>+0.01</code> (tie-break)</td></tr>
+              <tr><td><code>bench === CHEAP</code></td><td><code>-price / 10000</code> per bench player</td></tr>
+              <tr><td><code>bench === STRONG</code></td><td><code>+utility * 0.04</code> per bench player</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The <code>price / 20</code> penalty pulls the backup goalkeeper toward the £4.0m tier, and it does so without making incompatible locks an error.</p>
+        <p class="src">lib/optimizer/optimizer.ts · objectiveScore</p>
+      </section>
+
+      <section id="s17-2">
+        <h3><span class="secno">§17.2</span>Construction (beam search)</h3>
+        <p class="tldr"><strong>In short:</strong> fill the squad one slot at a time, keep only the best partial squads, and drop any that cannot afford a legal finish.</p>
+        <div class="flow">
+          <div class="step"><b>Grow</b>add one slot to each state in the beam</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>Prune</b>cut states that fail <code>minimumCheapCost</code>, a lower bound on the spend still needed</div>
+          <div class="arrow">→</div>
+          <div class="step hi"><b>Rank</b>finalists by <code>objectiveScore</code></div>
+        </div>
+        <p class="src">lib/optimizer/optimizer.ts · beamConstruct</p>
+      </section>
+
+      <section id="s17-3">
+        <h3><span class="secno">§17.3</span>Exact optimizer (HiGHS MILP)</h3>
+        <p class="tldr"><strong>In short:</strong> a solver picks 15 players, 11 starters each week and one captain each week to maximize total projected points, under the squad rules.</p>
+        <p><code>exactOptimizeFullSquad</code> and <code>exactCompletePartialSquad</code> build a Mixed Integer Linear Program (MILP) and solve it with HiGHS WebAssembly. The squad is planned for <code>planGameweek</code> across <code>horizon</code> (1, 3, 5 or 10 gameweeks) and maximizes raw projected points from <code>gameweekValue(player, gameweek)</code>. Chip planning can instead pass an explicit list of <code>gameweeks</code>, such as one gameweek for a Free Hit (§19.3).</p>
+
+        <h4>The three choices</h4>
+        <div class="grid-3">
+          <div class="card"><h4><code>x</code>: choose 15</h4><code>x[i]</code> is 0 or 1: is player i in the squad?</div>
+          <div class="card"><h4><code>s</code>: choose 11 each week</h4><code>s[g,i]</code> is 0 or 1: does player i start in gameweek g?</div>
+          <div class="card"><h4><code>c</code>: choose a captain each week</h4><code>c[g,i]</code> is 0 or 1, for each g from planGameweek to planGameweek + horizon - 1.</div>
+        </div>
+
+        <h4>What it maximizes</h4>
+        <ul>
+          <li><strong>Normal solve:</strong> <code>Σ xP[g,i] * (s[g,i] + c[g,i])</code> over all g and i plus a fixed reserve weight. A starter earns xP, and a captain earns it a second time.</li>
+          <li><strong>Bench Boost solve:</strong> <code>Σ xP[g,i] * (x[i] + c[g,i])</code> over all g and i. All 15 squad players count, and the bench strategy is ignored.</li>
+        </ul>
+
+        <h4>Rules it must obey</h4>
+        <ul class="checklist">
+          <li><code>s ≤ x</code> <code>s[g,i] ≤ x[i]</code>: only squad players can start.</li>
+          <li><code>15 and 11</code> <code>Σ x[i] = 15</code> and <code>Σ s[g,i] = 11</code> for every gameweek.</li>
+          <li><code>Budget</code> <code>Σ cost[i] * x[i] ≤ budget</code>. Without finance inputs, cost is the market price and the budget is <code>budgetTenths</code>. When both <code>bankTenths</code> and <code>purchasePricesTenths</code> are supplied, <code>financeContext</code> prices each owned player at their selling price (§19.1) and each incoming player at market price, and sets the budget to bank plus the owned squad's selling value. The app then does not check the owned squad's own market cost against <code>budgetTenths</code>.</li>
+          <li><code>Positions</code> 2 GK, 5 DEF, 5 MID, 3 FWD in the squad. The starting XI needs 1 GK, at least 3 DEF, at least 2 MID and at least 1 FWD.</li>
+          <li><code>Clubs</code> <code>Σ x[i] over one club ≤ 3</code> (or the configured maximum).</li>
+          <li><code>Locks</code> <code>x[i] = 1</code> for every fixed or locked player ID.</li>
+          <li><code>Captain</code> <code>c[g,i] ≤ s[g,i]</code> (the captain starts that week) and <code>Σ c[g,i] = 1</code> for each gameweek.</li>
+        </ul>
+
+        <h4>Bench value in a normal solve</h4>
+        <p>Reserve coefficients come from the same <code>P(DNP)</code> (chance of not playing) that the weekly autosub model uses. For each gameweek, the optimizer forms a representative legal formation from the highest-xP players. Its ten outfield players have DNP probabilities <code>p1 … p10</code>.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mode</th><th>Weight on each outfield reserve</th><th>In plain words</th></tr></thead>
+            <tbody>
+              <tr><td><code>BALANCED</code></td><td><code>min(1, Σ p / 3)</code></td><td>Expected absences, spread over the three reserve slots.</td></tr>
+              <tr><td><code>STRONG</code></td><td><code>1 - Π(1 - p)</code></td><td>Chance that at least one outfield starter misses the week, so every reserve counts as first cover.</td></tr>
+              <tr><td><code>CHEAP</code></td><td>the <code>BALANCED</code> weight, times the position's minimum price ÷ the player's price</td><td>Cheap reserves keep their value for their price.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li>The backup goalkeeper uses the representative starting goalkeeper's DNP probability in every mode.</li>
+          <li>A reserve's coefficient also includes their own appearance probability, <code>1 - P(DNP)</code>.</li>
+          <li>Under <code>CHEAP</code>, a tiny price tie-break picks the cheaper reserve only when projected values are otherwise equal.</li>
+          <li>The solver precomputes the coefficients, so all three modes use the same variables and one solver pass.</li>
+        </ul>
+        <div class="callout good"><span class="label">Exact</span>The result is the true optimum of this model, not a guess.</div>
+        <p class="src">lib/optimizer/exactOptimizer.ts · exactOptimizeFullSquad, exactCompletePartialSquad</p>
+      </section>
+
+      <section id="s17-4">
+        <h3><span class="secno">§17.4</span>Best possible XI (market ceiling)</h3>
+        <p class="tldr"><strong>In short:</strong> a smaller solve finds the highest-scoring legal XI the whole player pool could field on your budget, and the team rating divides by it.</p>
+        <div class="flow">
+          <div class="step"><b>Score</b>each player with <code>weeklyPlayerMetrics(player, gameweek).points</code></div>
+          <div class="arrow">→</div>
+          <div class="step"><b>Pick 11</b>1 GK, at least 3 DEF, at least 2 MID, at least 1 FWD; max 1 GK</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>Pick 1 captain</b><code>c[i] ≤ s[i]</code> and <code>Σ c[i] = 1</code></div>
+          <div class="arrow">→</div>
+          <div class="step hi"><b>Maximize</b>XI points plus captain bonus</div>
+        </div>
+        <p>It uses <code>budgetTenths</code> and the club limit (at most 3 per club). It has no bench or autosub mechanics. It is the denominator in <code>teamRating</code> (§15.5).</p>
+        <p class="src">lib/optimizer/bestPossibleXI.ts · exactBestPossibleXI</p>
+      </section>
+    </section>
+
+    <!-- ================= 18 ================= -->
+    <section id="s18">
+      <h2><span class="secno">§18</span>Budget feasibility</h2>
+      <p class="tldr"><strong>In short:</strong> the app answers "can this partial squad still be finished within budget?" by pricing the cheapest legal way to fill the gaps.</p>
+      <div class="flow">
+        <div class="step"><b>Missing slots</b>each position sends its open slots to distinct players</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>Club cap</b>each club takes at most three players in total</div>
+        <div class="arrow">→</div>
+        <div class="step hi"><b>Cheapest fill</b>an exact min-cost flow gives the minimum remaining spend</div>
+      </div>
+      <p>Only the cheapest completions per club need checking. That is exact, because no club can add more than three players.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Function</th><th>What it returns</th></tr></thead>
+          <tbody>
+            <tr><td><code>minimumRemainingSpend</code></td><td>the min-cost flow result above</td></tr>
+            <tr><td><code>calculateBudgetFeasibility</code></td><td>spent, bank, minimum required spend, and flexible headroom (<code>bank - minimum</code>)</td></tr>
+            <tr><td><code>maxSafePriceForPosition</code></td><td>the highest price that keeps the squad completable</td></tr>
+            <tr><td><code>explainIllegalSelection</code></td><td>the shortfall in pounds when an add breaks feasibility</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="formula"><span class="v">flexible headroom</span> = <span class="v">bank</span> - <span class="v">minimum</span></div>
+      <details><summary>The lighter check in the analysis layer</summary>
+        <p><code>cheapCompletionCost</code> approximates the same completion cost. It runs a depth-first search over the 12 cheapest players per position.</p>
+        <p class="src">lib/analysis/replacements.ts · cheapCompletionCost</p>
+      </details>
+      <p class="src">lib/squad/budget.ts</p>
+    </section>
+
+    <!-- ================= 19 ================= -->
+    <section id="s19">
+      <h2><span class="secno">§19</span>Selling prices, transfers and chips</h2>
+      <p class="tldr"><strong>In short:</strong> the money and chip rules, shared by the planner, the optimizer, transfer search and chip suggestions, live in <code>lib/chips/</code>.</p>
+
+      <section id="s19-1">
+        <h3><span class="secno">§19.1</span>Selling price</h3>
+        <p class="tldr"><strong>In short:</strong> you keep half of any price rise, rounded down to the tenth, and you lose all of any fall.</p>
+        <span class="tag fact">fact</span> prices and purchase prices &nbsp; (the rule is official).
+        <div class="formula"><span class="v">sellingPrice</span> = <span class="v">current</span> &lt;= <span class="v">purchase</span> ? <span class="v">current</span>
+             : <span class="v">purchase</span> + floor((<span class="v">current</span> - <span class="v">purchase</span>) * <span class="k">0.5</span>)      <span class="c">// sellProfitFraction</span></div>
+        <div class="example">
+          <p>Bought at 60 tenths (£6.0m), now 65 (£6.5m). Rise = 5. Half of 5 is 2.5, rounded down to 2. Selling price = 60 + 2 = 62, so £6.2m.</p>
+        </div>
+        <p>Selling price for a player bought at 60, by current price (tenths):</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Current</th><th class="num">55</th><th class="num">60</th><th class="num">61</th><th class="num">62</th><th class="num">63</th><th class="num">64</th><th class="num">65</th><th class="num">66</th><th class="num">67</th><th class="num">68</th></tr></thead>
+            <tbody><tr><th>Sells for</th><td class="num">55</td><td class="num">60</td><td class="num">60</td><td class="num">61</td><td class="num">61</td><td class="num">62</td><td class="num">62</td><td class="num">63</td><td class="num">63</td><td class="num">64</td></tr></tbody>
+          </table>
+        </div>
+        <svg style="--vbw:600px" class="diagram wide" viewBox="0 0 600 240" role="img" aria-label="Selling price against market price for a player bought at 60: equal to the market price at or below 60, then a staircase that rises one tenth for every two tenths of market rise.">
+          <rect x="50" y="20" width="520" height="180" fill="none" stroke="rgba(232,239,234,.16)"/>
+          <polyline data-anim="draw" style="--d:500ms" points="100,195 150,170" fill="none" stroke="#f87171" stroke-width="2"/>
+          <polyline data-anim="draw" style="--d:1000ms" points="150,170 250,170 250,145 350,145 350,120 450,120 450,95" fill="none" stroke="#f5b301" stroke-width="2"/>
+          <line data-anim="fade" x1="150" y1="170" x2="450" y2="20" stroke="#5d7268" stroke-dasharray="5 4"/>
+          <line x1="150" y1="20" x2="150" y2="200" stroke="rgba(232,239,234,.16)" stroke-dasharray="3 3"/>
+          <text x="310" y="226" font-size="13" text-anchor="middle" style="fill:#93a69c">market price (bought at 60) →</text>
+          <text x="20" y="110" font-size="13" text-anchor="middle" transform="rotate(-90 20 110)" style="fill:#93a69c">you get →</text>
+          <text data-anim="fade" x="262" y="192" font-size="12" style="--d:1100ms;fill:#f5b301">gold: you get half the rise, rounded down</text>
+          <text data-anim="fade" x="330" y="44" font-size="12" style="--d:0ms;fill:#93a69c">dashed: market price</text>
+          <text data-anim="fade" x="56" y="214" font-size="12" style="--d:500ms;fill:#f87171">at or below 60: market price</text>
+        </svg>
+        <p>A squad is priced the same way: <code>squadFinanceSnapshot</code> returns <code>spendableBudget = bank + Σ sellingPrice</code>. Without a purchase price, the market price stands in, so selling price equals market price.</p>
+        <p class="src">lib/chips/finance.ts · sellingPriceTenths, squadFinanceSnapshot</p>
+      </section>
+
+      <section id="s19-2">
+        <h3><span class="secno">§19.2</span>Transfer accounting</h3>
+        <p class="tldr"><strong>In short:</strong> each normal week you get one new free transfer, you can bank up to five, and every transfer past the free balance costs 4 points.</p>
+        <div class="formula"><span class="v">transfers</span>      = min(<span class="v">transferCount</span>, <span class="k">20</span>)                  <span class="c">// maxTransfersPerGameweek</span>
+<span class="v">freeUsed</span>       = min(<span class="v">transfers</span>, min(<span class="v">freeBefore</span>, <span class="k">5</span>))      <span class="c">// maxFreeTransfers</span>
+<span class="v">paid</span>           = <span class="v">transfers</span> - <span class="v">freeUsed</span>
+<span class="v">hitCost</span>        = <span class="v">paid</span> * <span class="k">4</span>                                <span class="c">// hitCostPerTransferPoints</span>
+<span class="v">freeAfter</span>      = min(<span class="k">5</span>, <span class="v">freeBefore</span> - <span class="v">freeUsed</span> + <span class="k">1</span>)</div>
+        <div class="example">
+          <p>Free transfers over eight weeks, worked from the formulas above.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Week</th><th class="num">freeBefore</th><th class="num">transfers</th><th class="num">freeUsed</th><th class="num">paid</th><th class="num">hitCost</th><th class="num">freeAfter</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td class="num">1</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">2</td></tr>
+                <tr><td>2</td><td class="num">2</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">3</td></tr>
+                <tr><td>3</td><td class="num">3</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">4</td></tr>
+                <tr><td>4</td><td class="num">4</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">5</td></tr>
+                <tr><td>5</td><td class="num">5</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">5</td></tr>
+                <tr><td>6</td><td class="num">5</td><td class="num">7</td><td class="num">5</td><td class="num">2</td><td class="num">8</td><td class="num">1</td></tr>
+                <tr><td>7</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num">0</td><td class="num">0</td><td class="num">1</td></tr>
+                <tr><td>8</td><td class="num">1</td><td class="num">2</td><td class="num">1</td><td class="num">1</td><td class="num">4</td><td class="num">1</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Week 5 shows the cap: 5 - 0 + 1 = 6, held at 5. Week 6 uses all 5 free transfers and pays 2 hits: 2 * 4 = 8 points.</p>
+        </div>
+        <p>A sale or purchase without its pair is not yet a transfer, so it costs no points. The planner warns about each hit, and the squad panel's Proj. GW figure subtracts it.</p>
+        <p>A Wildcard or Free Hit week is free and unlimited. It uses up that week's new free transfer, and saved transfers carry on (<code>freeTransfersAfterChipWeek</code>).</p>
+        <p class="src">lib/chips/finance.ts · accountNormalTransfers · hit cost from SEASON_CHIP_POLICY (lib/chips/seasonPolicy.ts)</p>
+
+        <h4>Replaying a plan</h4>
+        <p><code>replayTimeline</code> replays a saved plan week by week from the imported baseline. It pairs each sale with a purchase, moves money in integer tenths, and keeps a purchase-price ledger so later sales use the right selling price.</p>
+        <div class="grid-2">
+          <div class="card"><h4>Wildcard</h4>The new squad becomes permanent.</div>
+          <div class="card"><h4>Free Hit</h4>The scoring squad is temporary. The permanent squad, its purchase prices and the bank all revert the next week.</div>
+        </div>
+        <p>Each week records <code>bankTenths</code> (the bank while its squad is active) and <code>bankAfterTenths</code> (the bank carried into the next week). The two differ only in a Free Hit week.</p>
+        <p class="src">lib/chips/timeline.ts · replayTimeline</p>
+      </section>
+
+      <section id="s19-3">
+        <h3><span class="secno">§19.3</span>Chip rules and suggestions</h3>
+        <p class="tldr"><strong>In short:</strong> you get one of each chip per half-season, one chip per week, and the app suggests the best week for each chip except the Wildcard.</p>
+        <div class="halves" data-anim-group>
+          <div class="half" data-anim="fade"><h4>GW1–19</h4>
+            <div class="chips"><span>Wildcard</span><span>Free Hit</span><span>Bench Boost</span><span>Triple Captain</span></div>
+            <p class="after">First-half chips expire unused.</p></div>
+          <div class="half" data-anim="fade" style="--d:300ms"><h4>GW20–38</h4>
+            <div class="chips"><span>Wildcard</span><span>Free Hit</span><span>Bench Boost</span><span>Triple Captain</span></div>
+            <p class="after">A fresh set of four.</p></div>
+        </div>
+        <ul>
+          <li>One of each chip in each half.</li>
+          <li>One chip per gameweek.</li>
+          <li>No Free Hits in consecutive gameweeks.</li>
+        </ul>
+        <p class="src">lib/chips/seasonPolicy.ts · validateChipSelection</p>
+
+        <p><code>projectTimeline</code> scores each planned week with the §14 lineup engine, with and without its chip:</p>
+        <div class="formula"><span class="v">chipEffect</span> = <span class="v">lineupTotal(with chip)</span> - <span class="v">lineupTotal(without chip)</span>
+<span class="v">netTotal</span>   = <span class="v">lineupTotal(with chip)</span> - <span class="v">hitCost</span></div>
+        <p class="src">lib/chips/timelineProjections.ts · projectTimeline</p>
+
+        <h4>Chip suggestions</h4>
+        <p><code>/api/chip-suggestions</code> tries each legal gameweek in the planning window and returns the best week for each chip, ranked by <code>incrementalXp</code>.</p>
+        <div class="grid-2">
+          <div class="card"><h4>Bench Boost and Triple Captain</h4>The §14.7 chip total minus the saved lineup's total for that week.</div>
+          <div class="card"><h4>Free Hit</h4>An exact §17.3 solve for that one gameweek, with a budget of bank plus the permanent squad's selling value. It is scored with the §14 lineup engine and compared with the saved plan's net total for that week.</div>
+        </div>
+        <div class="callout warn"><span class="label">Wildcard</span>Never suggested. Its timing turns on fixture swings and news, and a deterministic model always answers "play it now".</div>
+      </section>
+    </section>
+
+    <nav class="pager" aria-label="Previous and next">
+      <a class="prev" href="scores-lineup.html"><small>← Previous</small>Risk, value &amp; weekly lineup</a>
+      <a class="next" href="reference.html"><small>Next →</small>Constants &amp; validation</a>
+    </nav>
+  </main>
+</div>
+</body>
+</html>

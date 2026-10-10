@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overview · FPL Terminal calculations</title>
+<link rel="stylesheet" href="style.css">
+<script src="site.js"></script>
+<style>
+  .pipeline a rect { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.5; transition: stroke 150ms ease, fill 150ms ease; }
+  .pipeline a:focus-visible rect { stroke: var(--accent); fill: var(--surface-2); }
+  .pipeline a:focus { outline: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .pipeline a:hover rect { stroke: var(--accent); fill: var(--surface-2); }
+  }
+  .pipeline rect.fact { stroke: var(--fact); }
+  .pipeline rect.evidence { stroke: var(--evidence); }
+  .pipeline rect.core { stroke: var(--accent); }
+  .pipeline .t { font-size: 15px; font-weight: 700; }
+  .pipeline .s { font-size: 12px; fill: var(--muted); }
+  .pipeline .sec { font-size: 12px; fill: var(--accent); font-family: var(--font-num); }
+  .pipeline .tier { font-size: 12px; font-family: var(--font-num); }
+  .pipeline line, .pipeline path { stroke: var(--dim); stroke-width: 1.5; fill: none; }
+  .pipeline .ball { fill: var(--accent); filter: drop-shadow(0 0 6px var(--accent-glow)); }
+
+  /* the chain builds in the order the numbers are made */
+  .js .pipeline [data-anim="draw"] { transition-duration: 450ms; }
+  .js .pipeline a[data-anim] { transform: translateY(8px); }
+  .js .pipeline[data-in] a[data-anim] { transform: none; }
+
+  .pipeline-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+  .pipeline-foot p { margin: 0; color: var(--chalk-dim); font-size: 13px; }
+  .replay {
+    font: 500 12px var(--font-num);
+    color: var(--chalk-dim);
+    background: var(--turf);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: color 150ms ease, border-color 150ms ease, transform 120ms var(--ease-out);
+  }
+  .replay:active { transform: scale(0.97); }
+  .replay:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  html:not(.js) .replay { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .replay:hover { color: var(--chalk); border-color: var(--accent); }
+  }
+
+  .tiers .card { border-top-width: 3px; }
+  .tiers .fact { border-top-color: var(--fact); }
+  .tiers .evidence { border-top-color: var(--evidence); }
+  .tiers .estimate { border-top-color: var(--estimate); }
+  .tiers ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+
+  .pages { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+  .pages a.card { display: block; margin: 0; color: var(--text); }
+  .pages a.card:hover { border-color: var(--accent); text-decoration: none; }
+  .pages .sec { font-family: var(--font-num); font-size: 13px; color: var(--accent); margin-bottom: 4px; }
+  .pages h3 { margin: 0 0 6px; font-size: 16px; }
+  .pages p { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+  .pages .formula { margin: 0; font-size: 12px; }
+
+  .units { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .units .card { margin: 0; }
+  .units .big { font-family: var(--font-num); font-size: 20px; color: var(--accent); }
+  .units p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 900px) {
+    .pages, .units { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sitenav" aria-label="Pages">
+    <a class="brand" href="index.html">FPL <span>Terminal</span></a>
+    <p class="tagline">How every number is made</p>
+    <ol>
+      <li><a href="index.html" aria-current="page"><span class="sec">00</span>Overview</a></li>
+      <li><a href="foundations.html"><span class="sec">§1–3</span>Inputs &amp; team strength</a></li>
+      <li><a href="availability.html"><span class="sec">§4–5</span>Who plays, and for how long</a></li>
+      <li><a href="rates.html"><span class="sec">§6</span>Per-90 rates</a></li>
+      <li><a href="fixtures.html"><span class="sec">§7</span>Fixture adjustment</a></li>
+      <li><a href="points.html"><span class="sec">§8–9</span>Expected points</a></li>
+      <li><a href="scores-lineup.html"><span class="sec">§10–14</span>Risk, value &amp; weekly lineup</a></li>
+      <li><a href="squad-tools.html"><span class="sec">§15–19</span>Analysis, transfers &amp; optimizer</a></li>
+      <li><a href="reference.html"><span class="sec">§20–21</span>Constants &amp; validation</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="page-head">
+      <div class="eyebrow" aria-hidden="true">§1–21</div>
+      <h1>How FPL Terminal turns data into expected points</h1>
+      <p class="lede">Every number in the app comes from one chain of steps. Live FPL data, past seasons and team news go in. Expected points (xP) for each player and fixture come out. The lineup, transfer and squad tools all build on that one number.</p>
+    </header>
+
+    <section id="pipeline">
+      <h2>The whole chain on one page</h2>
+      <p class="tldr"><strong>In short:</strong> work out how strong each team is, how long each player will play, and how often they score per 90 minutes. Adjust for the opponent, convert to FPL points, then add those points up over the weeks you plan for.</p>
+
+      <div class="pipeline-wrap"><svg id="pipeline-svg" style="--vbw:760px" class="diagram wide pipeline" viewBox="0 0 760 780" role="img" aria-label="Calculation pipeline from inputs to squad tools">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" style="fill: var(--dim); stroke: none"/>
+          </marker>
+        </defs>
+
+        <!-- the ball runs behind the boxes, so it shows only on the connectors -->
+        <circle class="ball" cx="135" cy="50" r="5" opacity="0">
+          <animateMotion id="ball-move" path="M0,0 L0,345 L60,345 L60,560 L205,560 L205,675" dur="2.4s" begin="indefinite" fill="freeze"/>
+          <animate id="ball-show" attributeName="opacity" values="0;1;1;0" keyTimes="0;0.04;0.96;1" dur="2.4s" begin="indefinite" fill="freeze"/>
+        </circle>
+
+        <!-- connectors -->
+        <g data-anim="fade" style="--d: 400ms">
+          <line data-anim="draw" x1="135" y1="80" x2="135" y2="105"/>
+          <line data-anim="draw" x1="380" y1="80" x2="380" y2="105"/>
+          <line data-anim="draw" x1="625" y1="80" x2="625" y2="105"/>
+          <line data-anim="draw" x1="135" y1="105" x2="625" y2="105"/>
+        </g>
+        <g data-anim="fade" style="--d: 650ms">
+          <line data-anim="draw" x1="135" y1="105" x2="135" y2="128" marker-end="url(#arrow)"/>
+          <line data-anim="draw" x1="380" y1="105" x2="380" y2="128" marker-end="url(#arrow)"/>
+          <line data-anim="draw" x1="625" y1="105" x2="625" y2="128" marker-end="url(#arrow)"/>
+        </g>
+        <g data-anim="fade" style="--d: 1150ms">
+          <line data-anim="draw" x1="135" y1="200" x2="135" y2="248" marker-end="url(#arrow)"/>
+        </g>
+        <g data-anim="fade" style="--d: 1550ms">
+          <line data-anim="draw" x1="135" y1="310" x2="135" y2="358" marker-end="url(#arrow)"/>
+          <line data-anim="draw" x1="380" y1="200" x2="380" y2="358" marker-end="url(#arrow)"/>
+          <line data-anim="draw" x1="625" y1="200" x2="625" y2="358" marker-end="url(#arrow)"/>
+        </g>
+        <g data-anim="fade" style="--d: 2050ms">
+          <line data-anim="draw" x1="195" y1="430" x2="195" y2="468" marker-end="url(#arrow)"/>
+          <line data-anim="draw" x1="565" y1="430" x2="565" y2="468" marker-end="url(#arrow)"/>
+        </g>
+        <g data-anim="fade" style="--d: 2500ms">
+          <line data-anim="draw" x1="195" y1="530" x2="195" y2="578" marker-end="url(#arrow)"/>
+          <path data-anim="draw" d="M710,530 L710,688" marker-end="url(#arrow)"/>
+        </g>
+        <g data-anim="fade" style="--d: 2900ms">
+          <line data-anim="draw" x1="340" y1="640" x2="340" y2="688" marker-end="url(#arrow)"/>
+        </g>
+
+        <!-- row 1: inputs -->
+        <a data-anim="fade" style="--d: 0ms" href="foundations.html#s2-1">
+          <rect class="fact" x="20" y="20" width="230" height="60" rx="8"/>
+          <text class="t" x="34" y="44">FPL API</text>
+          <text class="tier" x="34" y="66" style="fill: var(--fact)">fact · prices, status</text>
+        </a>
+        <a data-anim="fade" style="--d: 80ms" href="foundations.html#s2-3">
+          <rect class="evidence" x="265" y="20" width="230" height="60" rx="8"/>
+          <text class="t" x="279" y="44">Past seasons + RotoWire</text>
+          <text class="tier" x="279" y="66" style="fill: var(--evidence)">evidence · history, lineups</text>
+        </a>
+        <a data-anim="fade" style="--d: 160ms" href="foundations.html#s2-2">
+          <rect class="evidence" x="510" y="20" width="230" height="60" rx="8"/>
+          <text class="t" x="524" y="44">ClubElo snapshot</text>
+          <text class="tier" x="524" y="66" style="fill: var(--evidence)">evidence · fixture difficulty</text>
+        </a>
+
+        <!-- row 2: three building blocks -->
+        <a data-anim="fade" style="--d: 800ms" href="foundations.html#s3">
+          <rect x="20" y="130" width="230" height="70" rx="8"/>
+          <text class="sec" x="34" y="150">§3</text>
+          <text class="t" x="34" y="170">Team strength</text>
+          <text class="s" x="34" y="188">attack and defence ratios, 1.0 = average</text>
+        </a>
+        <a data-anim="fade" style="--d: 880ms" href="availability.html">
+          <rect x="265" y="130" width="230" height="70" rx="8"/>
+          <text class="sec" x="279" y="150">§4–5</text>
+          <text class="t" x="279" y="170">Who plays, how long</text>
+          <text class="s" x="279" y="188">P(start), P(cameo), expected minutes</text>
+        </a>
+        <a data-anim="fade" style="--d: 960ms" href="rates.html">
+          <rect x="510" y="130" width="230" height="70" rx="8"/>
+          <text class="sec" x="524" y="150">§6</text>
+          <text class="t" x="524" y="170">Per-90 rates</text>
+          <text class="s" x="524" y="188">xG, xA, saves, bonus, cards per 90</text>
+        </a>
+
+        <!-- row 3: fixture -->
+        <a data-anim="fade" style="--d: 1350ms" href="fixtures.html">
+          <rect x="20" y="250" width="230" height="60" rx="8"/>
+          <text class="sec" x="34" y="270">§7</text>
+          <text class="t" x="34" y="290">Fixture adjustment</text>
+          <text class="s" x="120" y="270">attack ×, clean sheet %</text>
+        </a>
+
+        <!-- row 4: xP -->
+        <a data-anim="fade" style="--d: 1800ms" href="points.html#s8">
+          <rect class="core" x="20" y="360" width="720" height="70" rx="8"/>
+          <text class="sec" x="34" y="380">§8</text>
+          <text class="t" x="34" y="400">Expected points for one fixture</text>
+          <text class="s" x="34" y="418">appearance + goals + assists + clean sheets − conceded + saves + defensive contributions + bonus − cards</text>
+        </a>
+
+        <!-- row 5 -->
+        <a data-anim="fade" style="--d: 2250ms" href="points.html#s9">
+          <rect x="20" y="470" width="350" height="60" rx="8"/>
+          <text class="sec" x="34" y="490">§9</text>
+          <text class="t" x="34" y="510">Add up by gameweek</text>
+          <text class="s" x="190" y="490">nextGW, next3, next5, next10</text>
+        </a>
+        <a data-anim="fade" style="--d: 2330ms" href="scores-lineup.html#s10">
+          <rect x="390" y="470" width="350" height="60" rx="8"/>
+          <text class="sec" x="404" y="490">§10–13</text>
+          <text class="t" x="404" y="510">Risk, confidence, value, utility</text>
+        </a>
+
+        <!-- row 6 -->
+        <a data-anim="fade" style="--d: 2700ms" href="scores-lineup.html#s14">
+          <rect x="20" y="580" width="640" height="60" rx="8"/>
+          <text class="sec" x="34" y="600">§14</text>
+          <text class="t" x="34" y="620">Weekly lineup: best XI, bench order, captain</text>
+        </a>
+
+        <!-- row 7 -->
+        <a data-anim="fade" style="--d: 3100ms" href="squad-tools.html">
+          <rect x="20" y="690" width="720" height="70" rx="8"/>
+          <text class="sec" x="34" y="710">§15–19</text>
+          <text class="t" x="34" y="730">Squad analysis, transfers, exact optimizer, budget, chips</text>
+          <text class="s" x="34" y="748">every tool scores squads with the same weekly lineup total</text>
+        </a>
+      </svg></div>
+      <div class="pipeline-foot">
+        <p>Click any box to open its page. On a phone, scroll the diagram sideways.</p>
+        <button class="replay" type="button" data-replay="#pipeline-svg">Replay</button>
+      </div>
+    </section>
+
+    <section id="tiers">
+      <h2>Three kinds of data, kept apart</h2>
+      <p class="tldr"><strong>In short:</strong> the app never mixes what FPL reports with what it guesses. Each estimate traces back to the inputs that made it.</p>
+      <div class="grid-3 tiers">
+        <div class="card fact">
+          <h4><span class="tag fact">fact</span></h4>
+          <p>Straight from the official FPL API.</p>
+          <ul><li>price, ownership</li><li>injury status codes</li><li>fixtures, deadlines</li><li>season totals so far</li></ul>
+        </div>
+        <div class="card evidence">
+          <h4><span class="tag evidence">evidence</span></h4>
+          <p>Outside sources that inform a guess.</p>
+          <ul><li>past-season match stats</li><li>RotoWire predicted XIs</li><li>RotoWire QUES / OUT / SUS</li><li>ClubElo ratings</li></ul>
+        </div>
+        <div class="card estimate">
+          <h4><span class="tag estimate">estimate</span></h4>
+          <p>What the model works out. Same inputs, same answer.</p>
+          <ul><li>expected minutes</li><li>team strengths</li><li>xP, risk, confidence</li><li>nailed rating</li></ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="units">
+      <h2><span class="secno">§1</span>Rules that hold everywhere</h2>
+      <div class="units">
+        <div class="card"><div class="big">105 = £10.5m</div><p>Money is whole tenths of a million. Divide by 10 only to display it.</p></div>
+        <div class="card"><div class="big">0–90</div><p>Minutes are for one fixture.</p></div>
+        <div class="card"><div class="big">0–1</div><p>Every probability.</p></div>
+        <div class="card"><div class="big">per 90</div><p>Every rate: xG, xA, bonus, saves, defensive contributions.</p></div>
+        <div class="card"><div class="big">xP = mean</div><p>An average outcome, never one random draw.</p></div>
+        <div class="card"><div class="big">1 · 3 · 5 · 10</div><p>Horizons count distinct gameweeks, not fixtures.</p></div>
+      </div>
+    </section>
+
+    <section id="pages">
+      <h2>The pages</h2>
+      <div class="pages">
+        <a class="card" href="foundations.html">
+          <div class="sec">§1–3</div>
+          <h3>Inputs &amp; team strength</h3>
+          <p>What comes in, how fixture difficulty comes from Elo, and how each team's attack and defence move from a preseason guess toward this season's xG.</p>
+          <div class="formula">difficulty = clamp(round(3 + (E_opp − E_own) / 300), 1, 5)</div>
+        </a>
+        <a class="card" href="availability.html">
+          <div class="sec">§4–5</div>
+          <h3>Who plays, and for how long</h3>
+          <p>Last season's start rate, updated match by match, then RotoWire's predicted XI and FPL's injury flag.</p>
+          <div class="formula">pn = (1 − 0.40) × p(n−1) + 0.40 × startedThisMatch</div>
+        </a>
+        <a class="card" href="rates.html">
+          <div class="sec">§6</div>
+          <h3>Per-90 rates</h3>
+          <p>How often a player does each thing per 90 minutes, pulled toward a sensible prior until enough minutes back it up.</p>
+          <div class="formula">rate = (observed × minutes + prior × 900) / (minutes + 900)</div>
+        </a>
+        <a class="card" href="fixtures.html">
+          <div class="sec">§7</div>
+          <h3>Fixture adjustment</h3>
+          <p>The opponent and venue scale attacking output and set the clean-sheet chance.</p>
+          <div class="formula">attackMultiplier = base × (home ? 1.102 : 0.898)</div>
+        </a>
+        <a class="card" href="points.html">
+          <div class="sec">§8–9</div>
+          <h3>Expected points</h3>
+          <p>Each way a player can score or lose FPL points, weighted by start and cameo chances, then summed per gameweek.</p>
+          <div class="formula">total = sum of all components</div>
+        </a>
+        <a class="card" href="scores-lineup.html">
+          <div class="sec">§10–14</div>
+          <h3>Risk, value &amp; weekly lineup</h3>
+          <p>Risk score, confidence, value per million, the utility the optimizer ranks by, and how the app picks the XI, bench and captain.</p>
+          <div class="formula">projectedTotal = projectedXI + captainBonus + autosubValue</div>
+        </a>
+        <a class="card" href="squad-tools.html">
+          <div class="sec">§15–19</div>
+          <h3>Analysis, transfers &amp; optimizer</h3>
+          <p>Weak spots, the best single transfers, the exact HiGHS solver, budget checks, selling prices and chips.</p>
+          <div class="formula">sellingPrice = purchase + floor((current − purchase) × 0.5)</div>
+        </a>
+        <a class="card" href="reference.html">
+          <div class="sec">§20–21</div>
+          <h3>Constants &amp; validation</h3>
+          <p>Every fixed number in one place, and which parts of the model have been tested against past seasons.</p>
+        </a>
+      </div>
+    </section>
+
+    <p class="src">Source: calculations.md in the FPL Terminal repository. Where this site and the spec differ, the spec wins.</p>
+
+    <nav class="pager" aria-label="Previous and next">
+      <span></span>
+      <a class="next" href="foundations.html"><small>Next →</small>Inputs &amp; team strength</a>
+    </nav>
+  </main>
+</div>
+<script>
+  // after the chain has built, one ball runs from the inputs to the squad tools
+  (function () {
+    var svg = document.getElementById("pipeline-svg");
+    var move = document.getElementById("ball-move");
+    var show = document.getElementById("ball-show");
+    if (!svg || !move || !move.beginElementAt) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    svg.addEventListener("enter", function () {
+      move.beginElementAt(3.4);
+      show.beginElementAt(3.4);
+    });
+  })();
+</script>
+</body>
+</html>

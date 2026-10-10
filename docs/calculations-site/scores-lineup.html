@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Risk, value &amp; weekly lineup · FPL Terminal calculations</title>
+<link rel="stylesheet" href="style.css">
+<script src="site.js"></script>
+</head>
+<body>
+<div class="layout">
+  <nav class="sitenav" aria-label="Pages">
+    <a class="brand" href="index.html">FPL <span>Terminal</span></a>
+    <p class="tagline">How every number is made</p>
+    <ol>
+      <li><a href="index.html"><span class="sec">00</span>Overview</a></li>
+      <li><a href="foundations.html"><span class="sec">§1–3</span>Inputs &amp; team strength</a></li>
+      <li><a href="availability.html"><span class="sec">§4–5</span>Who plays, and for how long</a></li>
+      <li><a href="rates.html"><span class="sec">§6</span>Per-90 rates</a></li>
+      <li><a href="fixtures.html"><span class="sec">§7</span>Fixture adjustment</a></li>
+      <li><a href="points.html"><span class="sec">§8–9</span>Expected points</a></li>
+      <li><a href="scores-lineup.html" aria-current="page"><span class="sec">§10–14</span>Risk, value &amp; weekly lineup</a></li>
+      <li><a href="squad-tools.html"><span class="sec">§15–19</span>Analysis, transfers &amp; optimizer</a></li>
+      <li><a href="reference.html"><span class="sec">§20–21</span>Constants &amp; validation</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="page-head">
+      <div class="eyebrow">§10–14</div>
+      <h1>Risk, value &amp; weekly lineup</h1>
+      <p class="lede">This stage takes each player's expected points and availability. It scores risk, confidence, value and utility, then builds the weekly XI, bench, captain and total.</p>
+    </header>
+
+    <section id="s10">
+      <h2><span class="secno">§10</span>Risk score</h2>
+      <p class="tldr"><strong>In short:</strong> a 0 to 100 score where higher means a less safe pick. <span class="tag estimate">estimate</span></p>
+      <p>Four parts add up. The maximum each part can add is fixed: minutes 38, availability 35, sample 17, confidence 10.</p>
+      <svg style="--vbw:600px" class="diagram wide" viewBox="0 0 600 70" role="img" aria-label="Risk score parts: minutes 38, availability 35, sample 17, confidence 10">
+        <rect data-anim="grow-x" style="--d:0ms" x="0" y="10" width="228" height="30" fill="#f5b301"/><text data-anim="pop" x="114" y="30" text-anchor="middle" style="--d:350ms;fill:#0c1913" class="num">minutes 38</text>
+        <rect data-anim="grow-x" style="--d:150ms" x="228" y="10" width="210" height="30" fill="#60a5fa"/><text data-anim="pop" x="333" y="30" text-anchor="middle" style="--d:500ms;fill:#0c1913" class="num">availability 35</text>
+        <rect data-anim="grow-x" style="--d:300ms" x="438" y="10" width="102" height="30" fill="#a78bfa"/><text data-anim="pop" x="489" y="30" text-anchor="middle" style="--d:650ms;fill:#0c1913" class="num">sample 17</text>
+        <rect data-anim="grow-x" style="--d:450ms" x="540" y="10" width="60" height="30" fill="#f87171"/><text data-anim="pop" x="570" y="30" text-anchor="middle" style="--d:800ms;fill:#0c1913" class="num">conf. 10</text>
+        <text data-anim="fade" x="0" y="62" class="num" style="font-size:12px;fill:var(--chalk-dim)">0</text>
+        <text data-anim="fade" x="600" y="62" text-anchor="end" class="num" style="font-size:12px;fill:var(--chalk-dim)">100</text>
+      </svg>
+      <div class="formula"><span class="v">minutesRisk</span>      = <span class="v">expectedMinutes</span> === undefined ? <span class="k">25</span> : clamp((<span class="k">90</span> - <span class="v">expectedMinutes</span>) / <span class="k">90</span>, <span class="k">0</span>, <span class="k">1</span>) * <span class="k">38</span>
+<span class="v">availabilityRisk</span> = (<span class="k">1</span> - <span class="v">availability</span>(player)) * <span class="k">35</span>
+<span class="v">sampleRisk</span>       = clamp(<span class="k">1</span> - <span class="v">sampleMinutes</span> / <span class="k">1800</span>, <span class="k">0</span>, <span class="k">1</span>) * <span class="k">17</span>
+<span class="v">confidenceRisk</span>   = LOW ? <span class="k">10</span> : MEDIUM ? <span class="k">5</span> : <span class="k">0</span>
+<span class="v">riskScore</span>        = round(clamp(<span class="v">minutesRisk</span> + <span class="v">availabilityRisk</span> + <span class="v">sampleRisk</span> + <span class="v">confidenceRisk</span>, <span class="k">0</span>, <span class="k">100</span>))</div>
+      <p class="src">lib/projections/metrics.ts · calculateRiskScore</p>
+      <div class="example illustration">
+        <p>A player with 72 expected minutes, a 75% chance of playing, 900 sample minutes and MEDIUM confidence (made-up numbers):</p>
+        <ul>
+          <li>minutesRisk = (90 - 72) / 90 * 38 = 7.6</li>
+          <li>availabilityRisk = (1 - 0.75) * 35 = 8.75</li>
+          <li>sampleRisk = (1 - 900 / 1800) * 17 = 8.5</li>
+          <li>confidenceRisk = 5</li>
+          <li>riskScore = round(7.6 + 8.75 + 8.5 + 5) = round(29.85) = <strong>30</strong></li>
+        </ul>
+      </div>
+      <div class="callout"><span class="label">Score of 100</span>No projected minutes, a 0% chance of playing, no sample, and low confidence.</div>
+      <details>
+        <summary>Inputs and the availability helper</summary>
+        <p><code>sampleMinutes</code> is <code>historical.minutes ?? current.minutes</code>. <code>availability</code> here is the simpler helper in <code>lib/projections/metrics.ts</code>: <code>chanceOfPlaying / 100</code> when FPL gives a percentage. Otherwise it is <code>0.25</code> for an unavailable status (<code>i</code>, <code>s</code>, <code>u</code>, <code>n</code>), <code>0.75</code> for doubtful (<code>d</code>), else <code>1</code>.</p>
+        <p>When <code>expectedMinutes</code> is missing, <code>minutesRisk</code> is a flat 25.</p>
+      </details>
+    </section>
+
+    <section id="s11">
+      <h2><span class="secno">§11</span>Confidence</h2>
+      <p class="tldr"><strong>In short:</strong> each projection is HIGH, MEDIUM or LOW confidence, and each level has a weight. <span class="tag estimate">estimate</span></p>
+      <p>If a selection model exists, its <code>selection.confidence</code> (§4.8) is the answer. If not, these rules apply, checked top to bottom:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Level</th><th>Rule (no selection model)</th><th class="num">Weight</th></tr></thead>
+        <tbody>
+          <tr><td>LOW</td><td><code>available &lt; 0.6</code> or <code>sample &lt; 360</code></td><td class="num">0.7</td></tr>
+          <tr><td>MEDIUM</td><td><code>available &lt; 0.85</code> or <code>sample &lt; 900</code> or no history</td><td class="num">0.85</td></tr>
+          <tr><td>HIGH</td><td>otherwise</td><td class="num">1</td></tr>
+        </tbody>
+      </table></div>
+      <div class="bars">
+        <div class="bar-row"><span class="bar-label">HIGH</span><span class="bar-track"><span class="bar-fill good" style="width:100%"></span></span><span class="bar-val">1</span></div>
+        <div class="bar-row"><span class="bar-label">MEDIUM</span><span class="bar-track"><span class="bar-fill" style="width:85%"></span></span><span class="bar-val">0.85</span></div>
+        <div class="bar-row"><span class="bar-label">LOW</span><span class="bar-track"><span class="bar-fill bad" style="width:70%"></span></span><span class="bar-val">0.7</span></div>
+      </div>
+      <p class="src">lib/projections/metrics.ts · projectionConfidence; lib/analysis/context.ts · confidenceWeight</p>
+    </section>
+
+    <section id="s12">
+      <h2><span class="secno">§12</span>Value per million</h2>
+      <p class="tldr"><strong>In short:</strong> projected points for each £1m of price. <span class="tag estimate">estimate</span></p>
+      <div class="formula"><span class="v">valuePerMillion</span> = <span class="v">projectedPoints</span> / (<span class="v">priceTenths</span> / <span class="k">10</span>)</div>
+      <div class="example illustration">17 projected points at a price of 85 tenths (£8.5m): 17 / (85 / 10) = 17 / 8.5 = 2.0. The numbers are made up.</div>
+      <p class="src">lib/projections/metrics.ts · valuePerMillion</p>
+    </section>
+
+    <section id="s13">
+      <h2><span class="secno">§13</span>Utility value</h2>
+      <p class="tldr"><strong>In short:</strong> utility is a ranking score for the optimizer. It is <em>not</em> xP. <span class="tag estimate">estimate</span></p>
+      <p>Utility starts from xP and scales it by minutes, confidence, availability and the chosen risk mode. SAFE and BALANCED always scale it down; AGGRESSIVE can lift it slightly above xP.</p>
+      <p>The four weights inside the bracket add to 1. Minutes, confidence and availability each take part of the 1; 0.62 is the share every player keeps.</p>
+      <svg style="--vbw:600px" class="diagram wide" viewBox="0 0 600 70" role="img" aria-label="Utility bracket weights: base 0.62, minutes 0.16, confidence 0.12, availability 0.10">
+        <rect data-anim="grow-x" style="--d:0ms" x="0" y="10" width="372" height="30" fill="#5d7268"/><text data-anim="pop" style="--d:350ms" x="186" y="30" text-anchor="middle" class="num">base 0.62</text>
+        <rect data-anim="grow-x" style="--d:150ms" x="372" y="10" width="96" height="30" fill="#f5b301"/><text data-anim="pop" x="420" y="30" text-anchor="middle" style="--d:500ms;fill:#0c1913" class="num">min 0.16</text>
+        <rect data-anim="grow-x" style="--d:300ms" x="468" y="10" width="72" height="30" fill="#a78bfa"/><text data-anim="pop" x="504" y="30" text-anchor="middle" style="--d:650ms;fill:#0c1913" class="num">conf 0.12</text>
+        <rect data-anim="grow-x" style="--d:450ms" x="540" y="10" width="60" height="30" fill="#60a5fa"/><text data-anim="pop" x="570" y="30" text-anchor="middle" style="--d:800ms;fill:#0c1913" class="num">avail 0.10</text>
+        <text data-anim="fade" x="0" y="62" class="num" style="font-size:12px;fill:var(--chalk-dim)">0</text>
+        <text data-anim="fade" x="600" y="62" text-anchor="end" class="num" style="font-size:12px;fill:var(--chalk-dim)">1.00</text>
+      </svg>
+      <div class="formula"><span class="v">projection</span>     = horizonValue(player, horizon)
+<span class="v">minutes</span>        = expectedMinutes(player) / <span class="k">100</span>
+<span class="v">confidence</span>     = confidenceWeight(projection.confidence)   <span class="c">// §11</span>
+<span class="v">availability</span>   = <span class="k">1</span> - availabilityRisk(player)
+<span class="v">riskMultiplier</span> = SAFE ? <span class="k">0.72</span> : AGGRESSIVE ? <span class="k">1.08</span> : <span class="k">0.90</span>
+<span class="v">utility</span>        = <span class="v">projection</span> * (<span class="k">0.62</span> + <span class="k">0.16</span>*<span class="v">minutes</span> + <span class="k">0.12</span>*<span class="v">confidence</span> + <span class="k">0.10</span>*<span class="v">availability</span>) * <span class="v">riskMultiplier</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Risk mode</th><th class="num">riskMultiplier</th></tr></thead>
+        <tbody><tr><td>SAFE</td><td class="num">0.72</td></tr><tr><td>BALANCED</td><td class="num">0.90</td></tr><tr><td>AGGRESSIVE</td><td class="num">1.08</td></tr></tbody>
+      </table></div>
+      <p class="src">lib/analysis/context.ts · utilityValue</p>
+      <div class="example illustration">
+        <p>Projection 5.0, expected minutes 80, HIGH confidence, full availability, BALANCED (made-up numbers):</p>
+        <ul><li>bracket = 0.62 + 0.16*0.8 + 0.12*1 + 0.10*1 = 0.968</li><li>utility = 5.0 * 0.968 * 0.90 = <strong>4.356</strong></li></ul>
+      </div>
+      <details>
+        <summary>availabilityRisk and windowUtility</summary>
+        <p><code>availabilityRisk</code> (<code>lib/analysis/context.ts</code>) is its own helper: status <code>i</code>/<code>s</code> adds <code>0.75</code>, <code>d</code>/<code>u</code> adds <code>0.35</code>, and <code>chanceOfPlaying</code> adds <code>max(0, 1 - chance/100) * 0.65</code>, capped at 1.</p>
+        <p><code>windowUtility</code> scores an explicit planning window <code>[gameweek, gameweek + horizon - 1]</code> rather than always starting at the live gameweek:</p>
+        <div class="formula"><span class="v">windowValue</span>   = sum over g in [gameweek, ..., gameweek + horizon - 1] of gameweekValue(player, g)
+<span class="v">windowUtility</span> = <span class="v">windowValue</span> * utilityScale(player, risk)</div>
+        <p><code>gameweekValue</code> returns the fixture-projected points for that gameweek. Double gameweeks sum, and blank gameweeks score zero. Multi-gameweek plans and the exact optimizer use this.</p>
+      </details>
+    </section>
+
+    <section id="s14">
+      <h2><span class="secno">§14</span>Weekly lineup engine</h2>
+      <p class="tldr"><strong>In short:</strong> one module picks the XI, bench, captain and total for a gameweek. Do not rebuild these totals in the UI.</p>
+      <p class="src">lib/squad/weeklyLineup.ts</p>
+      <div class="flow">
+        <div class="step"><b>1. Player inputs</b>points and pDNP (§14.1, §14.2)</div><span class="arrow">→</span>
+        <div class="step"><b>2. Legal XIs</b>1 GK, 3+ DEF, 2+ MID, 1+ FWD (§14.3)</div><span class="arrow">→</span>
+        <div class="step"><b>3. Pick XI</b>0.25 window, then SAFE or BALANCED (§14.4)</div><span class="arrow">→</span>
+        <div class="step"><b>4. Bench order</b>best expected autosub value (§14.5)</div><span class="arrow">→</span>
+        <div class="step"><b>5. Captain, vice</b>(§14.6)</div><span class="arrow">→</span>
+        <div class="step hi"><b>6. Weekly total</b>(§14.7)</div>
+      </div>
+
+      <section id="s14-1">
+        <h3><span class="secno">§14.1</span>Per-player weekly metrics</h3>
+        <p class="tldr"><strong>In short:</strong> each player gets points and minutes for one gameweek. <span class="tag estimate">estimate</span></p>
+        <p><code>basePoints</code> returns a player's points for one gameweek:</p>
+        <ol>
+          <li>With fixture-level projections for that gameweek, sum their <code>expectedPoints</code>. A blank gameweek returns 0.</li>
+          <li>With a fixture schedule but no entry for this gameweek, return 0. It never reuses <code>nextGW</code> from another week.</li>
+          <li>Otherwise use <code>projection.nextGW</code>, then <code>pointsPer90 * minutes / 90</code>.</li>
+        </ol>
+        <p><code>minutes</code> sums the fixture <code>expectedMinutes</code> for the gameweek, each clamped 0 to 90.</p>
+        <p class="src">lib/squad/weeklyLineup.ts · basePoints, minutes</p>
+      </section>
+
+      <section id="s14-2">
+        <h3><span class="secno">§14.2</span>Probability did not play (pDNP)</h3>
+        <p class="tldr"><strong>In short:</strong> the chance a player gets no minutes this gameweek. <span class="tag estimate">estimate</span></p>
+        <p>Rules run top to bottom; the first match wins.</p>
+        <div class="formula">if (fixture schedule exists and no fixture this gameweek) → <span class="k">1</span>
+if (fixtures exist but 0 minutes)                        → <span class="k">1</span>
+if (status is i, u, n or s)                              → <span class="k">1</span>
+if (selection.noAppearanceProbability is finite)         → clamp(noAppearanceProbability, <span class="k">0</span>, <span class="k">1</span>)
+<span class="c">// fallback, for a player without a selection model:</span>
+<span class="v">availabilityRisk</span> = status d ? <span class="k">0.5</span> : <span class="k">0</span>
+<span class="v">availabilityRisk</span> = max(<span class="v">availabilityRisk</span>, <span class="k">1</span> - chanceOfPlaying/<span class="k">100</span>)
+<span class="v">minutesRisk</span>      = clamp((<span class="k">45</span> - minutes) / <span class="k">45</span>, <span class="k">0</span>, <span class="k">1</span>)
+<span class="v">pDNP</span>             = clamp(<span class="v">availabilityRisk</span> * <span class="k">0.75</span> + <span class="v">minutesRisk</span> * <span class="k">0.25</span>, <span class="k">0</span>, <span class="k">1</span>)</div>
+        <p class="src">lib/squad/weeklyLineup.ts · probabilityDidNotPlay</p>
+        <div class="callout"><span class="label">In the app</span><code>enrichPlayersWithHistory</code> gives every player a selection, so pDNP is the selection model's no-appearance probability (§4.5). The <code>0.75 / 0.25</code> fallback runs only for a player built without one, such as in a test.</div>
+      </section>
+
+      <section id="s14-3">
+        <h3><span class="secno">§14.3</span>Legal starting XIs</h3>
+        <p class="tldr"><strong>In short:</strong> the engine lists every legal 11-player subset of the squad.</p>
+        <div class="grid-4">
+          <div class="card"><h4>GK</h4>exactly 1</div>
+          <div class="card"><h4>DEF</h4>at least 3</div>
+          <div class="card"><h4>MID</h4>at least 2</div>
+          <div class="card"><h4>FWD</h4>at least 1</div>
+        </div>
+        <p>The XI has 11 players: 1 GK and 10 outfield players. A malformed squad yields no candidates rather than corrupting state.</p>
+        <p class="src">lib/squad/weeklyLineup.ts · enumerateLegalStartingXIs</p>
+      </section>
+
+      <section id="s14-4">
+        <h3><span class="secno">§14.4</span>Selecting the XI and risk modes</h3>
+        <p class="tldr"><strong>In short:</strong> keep the XIs within 0.25 points of the best, then break the near-tie by risk mode.</p>
+        <p>Each candidate has three scores: <code>projectedXI</code> (sum of starter points), <code>risk</code> (sum of pDNP) and <code>minutes</code> (sum of minutes). The near-equal window of <code>0.25</code> points keeps candidates whose projected XI is within 0.25 of the best. <code>compareCandidates</code> then picks the winner:</p>
+        <div class="grid-2">
+          <div class="card"><h4>SAFE</h4>Minimize total risk (pDNP).</div>
+          <div class="card"><h4>BALANCED</h4>Maximize total minutes.</div>
+        </div>
+        <p>Remaining ties: highest projected XI, then lowest risk (not in AGGRESSIVE), then most minutes, then id. The id step makes the result the same every time.</p>
+        <p class="src">lib/squad/weeklyLineup.ts · compareCandidates</p>
+      </section>
+
+      <section id="s14-5">
+        <h3><span class="secno">§14.5</span>Bench order and autosubs</h3>
+        <p class="tldr"><strong>In short:</strong> the bench order with the highest expected autosub value wins.</p>
+        <p>The bench is one GK plus three ordered outfield substitutes. <code>expectedAutosubValue</code> computes the expected points a bench order recovers, across all appearance masks:</p>
+        <ul>
+          <li><strong>Goalkeeper:</strong> <code>P(starting GK out) * P(bench GK plays) * benchGK.points</code>.</li>
+          <li><strong>Outfield:</strong> for each starting and bench appearance state, substitutes play in bench order for absent starters <em>only where FPL formation rules still hold</em> (<code>legalFormation</code>). Each one adds the substitute's points.</li>
+        </ul>
+        <p class="src">lib/squad/weeklyLineup.ts · expectedAutosubValue, legalFormation</p>
+      </section>
+
+      <section id="s14-6">
+        <h3><span class="secno">§14.6</span>Captain and vice-captain</h3>
+        <p class="tldr"><strong>In short:</strong> the captain has the most points; the vice-captain has the most points weighted by the chance to play.</p>
+        <div class="grid-2">
+          <div class="card"><h4>Captain</h4>The starter with the highest points. Ties go to the lowest pDNP, then id.</div>
+          <div class="card"><h4>Vice-captain</h4>The highest <code>points * (1 - pDNP)</code> among the rest.</div>
+        </div>
+        <p class="src">lib/squad/weeklyLineup.ts · captainPair</p>
+      </section>
+
+      <section id="s14-7">
+        <h3><span class="secno">§14.7</span>Weekly totals</h3>
+        <p class="tldr"><strong>In short:</strong> total = starters + armband bonus + expected autosub value.</p>
+        <div class="formula"><span class="v">projectedXI</span>    = sum of starter points
+<span class="v">captainBonus</span>   = (<span class="k">1</span> - <span class="v">pDNP_C</span>) * <span class="v">points_C</span> + <span class="v">pDNP_C</span> * (<span class="k">1</span> - <span class="v">pDNP_V</span>) * <span class="v">points_V</span>
+<span class="v">autosubValue</span>   = expected autosub value <span class="c">(§14.5)</span>
+<span class="v">projectedTotal</span> = <span class="v">projectedXI</span> + <span class="v">captainBonus</span> + <span class="v">autosubValue</span></div>
+        <p><code>expectedCaptainBonus</code> pays the armband's extra points: the captain's when the captain plays, else the vice-captain's when the vice-captain plays. The tree shows the two paths.</p>
+        <svg style="--vbw:600px" class="diagram wide" viewBox="0 0 600 220" role="img" aria-label="Captain bonus tree: captain plays with probability 1 minus pDNP_C pays points_C; captain out then vice plays pays points_V; both out pays 0">
+          <g stroke="rgba(232,239,234,.16)" stroke-width="1.5" fill="none">
+            <path data-anim="draw" style="--d:120ms" d="M120 110 L250 50"/><path data-anim="draw" style="--d:700ms" d="M120 110 L250 150"/><path data-anim="draw" style="--d:1250ms" d="M370 150 L470 110"/><path data-anim="draw" style="--d:1350ms" d="M370 150 L470 195"/>
+          </g>
+          <g data-anim="pop" style="--d:0ms"><rect x="20" y="92" width="100" height="36" rx="6" fill="#102019" stroke="#f5b301"/><text x="70" y="115" text-anchor="middle" style="font-size:13px">Captain</text></g>
+          <g data-anim="pop" style="--d:300ms"><text x="140" y="68" class="num" style="font-size:12px;fill:var(--chalk-dim)">plays: 1 - pDNP_C</text></g>
+          <g data-anim="pop" style="--d:850ms"><text x="140" y="148" class="num" style="font-size:12px;fill:var(--chalk-dim)">out: pDNP_C</text></g>
+          <g data-anim="pop" style="--d:600ms"><rect x="250" y="32" width="200" height="36" rx="6" fill="#102019" stroke="#4ade80"/><text x="350" y="55" text-anchor="middle" class="num" style="font-size:13px">pays points_C</text></g>
+          <g data-anim="pop" style="--d:1100ms"><rect x="250" y="132" width="120" height="36" rx="6" fill="#102019" stroke="#60a5fa"/><text x="310" y="155" text-anchor="middle" style="font-size:13px">Vice-captain</text></g>
+          <g data-anim="pop" style="--d:1400ms"><text x="400" y="118" class="num" style="font-size:12px;fill:var(--chalk-dim)" text-anchor="middle">plays: 1 - pDNP_V</text></g>
+          <g data-anim="pop" style="--d:1450ms"><text x="400" y="190" class="num" style="font-size:12px;fill:var(--chalk-dim)" text-anchor="middle">out: pDNP_V</text></g>
+          <g data-anim="pop" style="--d:1650ms"><rect x="470" y="94" width="120" height="30" rx="6" fill="#102019" stroke="#4ade80"/><text x="530" y="114" text-anchor="middle" class="num" style="font-size:13px">pays points_V</text></g>
+          <g data-anim="pop" style="--d:1750ms"><rect x="470" y="180" width="120" height="30" rx="6" fill="#102019" stroke="#f87171"/><text x="530" y="200" text-anchor="middle" class="num" style="font-size:13px">pays 0</text></g>
+        </svg>
+        <div class="example illustration" data-anim-group style="--d:0ms">
+          <p>Captain: points 8, pDNP 0.1. Vice-captain: points 6, pDNP 0.2 (made-up numbers).</p>
+          <ul><li>captainBonus = 0.9 * 8 + 0.1 * 0.8 * 6 = 7.2 + 0.48 = <strong data-count="7.68">7.68</strong></li></ul>
+        </div>
+        <h4>Chips</h4>
+        <div class="grid-2">
+          <div class="card"><h4>Triple Captain (<code>3xc</code>)</h4><code>captainBonus</code> is doubled, so the armband pays two extra multiples.</div>
+          <div class="card"><h4>Bench Boost (<code>bboost</code>)</h4>All 15 players score. <code>projectedXI</code> sums all 15 and the captain and vice-captain come from all 15. <code>autosubValue</code> is 0 because no one comes off the bench.</div>
+        </div>
+        <p>Free Hit and Wildcard change the squad, not the lineup scoring (§19.3).</p>
+        <p class="src">lib/squad/weeklyLineup.ts · expectedCaptainBonus</p>
+      </section>
+
+      <section id="s14-8">
+        <h3><span class="secno">§14.8</span>Projection fingerprint</h3>
+        <p class="tldr"><strong>In short:</strong> a short hash tells the app when a saved lineup no longer matches the projections.</p>
+        <div class="card">The <code>fingerprint</code> is an FNV-1a hash of the gameweek plus every player's <code>basePoints</code> and <code>pDNP</code> (to 3 decimals). A stale fingerprint on a saved lineup gives a warning rather than a silent overwrite.</div>
+        <p class="src">lib/squad/weeklyLineup.ts · fingerprint</p>
+      </section>
+    </section>
+
+    <nav class="pager" aria-label="Previous and next">
+      <a class="prev" href="points.html"><small>← Previous</small>Expected points</a>
+      <a class="next" href="squad-tools.html"><small>Next →</small>Analysis, transfers &amp; optimizer</a>
+    </nav>
+  </main>
+</div>
+</body>
+</html>

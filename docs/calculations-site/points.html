@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expected points · FPL Terminal calculations</title>
+<link rel="stylesheet" href="style.css">
+<script src="site.js"></script>
+<style>
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 14px; font-size: 13px; margin: 8px 0 14px; }
+  .legend .n { font-family: var(--font-num); float: right; }
+  .legend .neg .n { color: var(--bad); }
+  .matrix td, .matrix th { text-align: center; }
+  .matrix td:first-child, .matrix th:first-child { text-align: left; }
+  .matrix .yes { color: var(--good); font-family: var(--font-num); }
+  .matrix .no { color: var(--dim); }
+  .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+  .two-col > .card { margin: 0; }
+  .timeline-scroll { overflow-x: auto; margin: 12px 0; }
+  .timeline { min-width: 340px; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px; font-size: 12px; }
+  .timeline .gw { text-align: center; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; padding: 4px 0; line-height: 1.3; }
+  .timeline .gw small { display: block; color: var(--muted); font-size: 12px; }
+  .timeline .gw b { font-family: var(--font-num); font-weight: 600; }
+  .timeline .gw.dgw { border-color: var(--accent); }
+  .timeline .gw.blank { border-style: dashed; color: var(--dim); }
+  .timeline .win { height: 20px; border-radius: 4px; font-family: var(--font-num); font-size: 12px; line-height: 20px; padding: 0 6px; color: var(--ground); white-space: nowrap; overflow: hidden; }
+  .win.w1 { background: var(--good); }
+  .win.w3 { background: var(--info); }
+  .win.w5 { background: var(--violet); }
+  .win.w10 { background: var(--accent); }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sitenav" aria-label="Pages">
+    <a class="brand" href="index.html">FPL <span>Terminal</span></a>
+    <p class="tagline">How every number is made</p>
+    <ol>
+      <li><a href="index.html"><span class="sec">00</span>Overview</a></li>
+      <li><a href="foundations.html"><span class="sec">§1–3</span>Inputs &amp; team strength</a></li>
+      <li><a href="availability.html"><span class="sec">§4–5</span>Who plays, and for how long</a></li>
+      <li><a href="rates.html"><span class="sec">§6</span>Per-90 rates</a></li>
+      <li><a href="fixtures.html"><span class="sec">§7</span>Fixture adjustment</a></li>
+      <li><a href="points.html" aria-current="page"><span class="sec">§8–9</span>Expected points</a></li>
+      <li><a href="scores-lineup.html"><span class="sec">§10–14</span>Risk, value &amp; weekly lineup</a></li>
+      <li><a href="squad-tools.html"><span class="sec">§15–19</span>Analysis, transfers &amp; optimizer</a></li>
+      <li><a href="reference.html"><span class="sec">§20–21</span>Constants &amp; validation</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="page-head">
+      <div class="eyebrow">§8–9</div>
+      <h1>Expected points</h1>
+      <p class="lede">This stage takes the minutes scenarios, the per-90 rates and the fixture adjustment, and turns them into FPL points. It adds the points from each part of the game, then sums fixtures into one total per gameweek and per horizon.</p>
+    </header>
+
+    <section id="s8">
+      <h2><span class="secno">§8</span>Expected points (xP) components</h2>
+      <p class="tldr"><strong>In short:</strong> a player's xP for one fixture is the sum of nine parts, such as appearance, goals and clean sheets, each priced with the FPL points table.</p>
+      <p><span class="tag estimate">estimate</span> Every xP value is a model result, not a fact. It turns past and current stats (<span class="tag evidence">evidence</span>, <span class="tag fact">fact</span>) into per-90 rates and minutes (<span class="tag estimate">estimate</span>), then into points.</p>
+
+      <div class="example illustration">
+        <p>One defender in one fixture, split into the nine parts. The numbers are made up. The top row adds points; the red row below takes them away.</p>
+        <div data-anim-group>
+        <svg class="diagram" viewBox="0 0 540 90" role="img" aria-label="Stacked bar: appearance 1.85, goals 0.35, assists 0.40, clean sheets 1.30, defensive contributions 0.55, bonus 0.40, then goals conceded minus 0.55 and cards minus 0.17, net 4.13">
+          <rect data-anim="grow-x" style="--d: 0ms" x="20" y="12" width="185" height="26" fill="#60a5fa"/>
+          <rect data-anim="grow-x" style="--d: 150ms" x="205" y="12" width="35" height="26" fill="#f5b301"/>
+          <rect data-anim="grow-x" style="--d: 300ms" x="240" y="12" width="40" height="26" fill="#a78bfa"/>
+          <rect data-anim="grow-x" style="--d: 450ms" x="280" y="12" width="130" height="26" fill="#4ade80"/>
+          <rect data-anim="grow-x" style="--d: 600ms" x="410" y="12" width="55" height="26" fill="#f97316"/>
+          <rect data-anim="grow-x" style="--d: 750ms" x="465" y="12" width="40" height="26" fill="#14b8a6"/>
+          <rect data-anim="grow-x" style="--d: 900ms" x="450" y="50" width="55" height="26" fill="#f87171"/>
+          <rect data-anim="grow-x" style="--d: 1050ms" x="433" y="50" width="17" height="26" fill="#be123c"/>
+          <line data-anim="fade" style="--d: 1250ms; stroke: var(--chalk)" x1="433" y1="6" x2="433" y2="82" stroke="#e8efea" stroke-width="2" stroke-dasharray="4 3"/>
+        </svg>
+        <div class="legend">
+          <div data-anim="fade" style="--d: 0ms"><span class="swatch" style="background:#60a5fa"></span>Appearance<span class="n">+1.85</span></div>
+          <div data-anim="fade" style="--d: 150ms"><span class="swatch" style="background:#f5b301"></span>Goals<span class="n">+0.35</span></div>
+          <div data-anim="fade" style="--d: 300ms"><span class="swatch" style="background:#a78bfa"></span>Assists<span class="n">+0.40</span></div>
+          <div data-anim="fade" style="--d: 450ms"><span class="swatch" style="background:#4ade80"></span>Clean sheets<span class="n">+1.30</span></div>
+          <div data-anim="fade" style="--d: 600ms"><span class="swatch" style="background:#f97316"></span>Defensive contributions<span class="n">+0.55</span></div>
+          <div data-anim="fade" style="--d: 750ms"><span class="swatch" style="background:#14b8a6"></span>Bonus<span class="n">+0.40</span></div>
+          <div class="neg" data-anim="fade" style="--d: 900ms"><span class="swatch" style="background:#f87171"></span>Goals conceded<span class="n">−0.55</span></div>
+          <div class="neg" data-anim="fade" style="--d: 1050ms"><span class="swatch" style="background:#be123c"></span>Cards<span class="n">−0.17</span></div>
+          <div data-anim="fade" style="--d: 1400ms"><span class="swatch" style="background:var(--chalk)"></span>Total (dashed line)<span class="n" data-count="4.13">4.13</span></div>
+        </div>
+        </div>
+        <p>Saves are zero for a defender, so they do not show. The red bars sit under the green row and end at the dashed line, which marks the total.</p>
+      </div>
+
+      <p><code>fixtureComponents</code> works out one fixture and returns the parts as <code>ProjectionComponents</code>. The total is their sum. The <code>penalties</code> field exists in the type but nothing fills it, so it is always 0 (§8.10).</p>
+      <p class="src">lib/projections/projectPlayer.ts · fixtureComponents · types/projection.ts · ProjectionComponents</p>
+
+      <h3>Two scenarios per fixture</h3>
+      <p>The selection model (§4.5) gives two ways the player can feature. The code computes every component once for each way, then weights the results by how likely each way is.</p>
+      <div class="two-col" data-anim-group>
+        <div class="card" data-anim="fade" style="--d: 0ms">
+          <h4>Start scenario</h4>
+          <p>The player starts. <code>weight</code> is the chance of this scenario, and the scenario carries its own expected minutes.</p>
+        </div>
+        <div class="card" data-anim="fade" style="--d: 250ms">
+          <h4>Cameo scenario</h4>
+          <p>The player plays as a substitute. It has its own <code>weight</code> and its own expected minutes.</p>
+        </div>
+      </div>
+      <div class="formula"><span class="v">weight</span>       = <span class="v">probability</span> <span class="c">// of that scenario</span>
+<span class="v">minutesShare</span> = clamp(<span class="v">minutes</span>, <span class="k">0</span>, <span class="k">90</span>) / <span class="k">90</span></div>
+      <p>Each component below adds <code>weight</code> times its own term, once per scenario.</p>
+
+      <h3>Which position scores what</h3>
+      <div class="table-wrap">
+        <table class="matrix">
+          <thead><tr><th>Component</th><th>GK</th><th>DEF</th><th>MID</th><th>FWD</th></tr></thead>
+          <tbody>
+            <tr><td>Appearance (§8.1)</td><td class="yes">1 / 2</td><td class="yes">1 / 2</td><td class="yes">1 / 2</td><td class="yes">1 / 2</td></tr>
+            <tr><td>Goals (§8.2)</td><td class="no">always 0</td><td class="yes">6 per goal</td><td class="yes">5 per goal</td><td class="yes">4 per goal</td></tr>
+            <tr><td>Assists (§8.3)</td><td class="yes">3 per assist</td><td class="yes">3 per assist</td><td class="yes">3 per assist</td><td class="yes">3 per assist</td></tr>
+            <tr><td>Clean sheets (§8.4)</td><td class="yes">4</td><td class="yes">4</td><td class="yes">1</td><td class="no">0</td></tr>
+            <tr><td>Goals conceded (§8.5)</td><td class="yes">yes</td><td class="yes">yes</td><td class="no">–</td><td class="no">–</td></tr>
+            <tr><td>Saves (§8.6)</td><td class="yes">yes</td><td class="no">–</td><td class="no">–</td><td class="no">–</td></tr>
+            <tr><td>Defensive contributions (§8.7)</td><td class="no">none</td><td class="yes">at 10</td><td class="yes">at 12</td><td class="yes">at 12</td></tr>
+            <tr><td>Bonus (§8.8)</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+            <tr><td>Cards (§8.9)</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <section id="s8-1">
+        <h3><span class="secno">§8.1</span>Appearance</h3>
+        <p class="tldr"><strong>In short:</strong> 1 point for playing, 2 points for playing 60 minutes or more.</p>
+        <div class="formula"><span class="v">appearance</span> += <span class="v">weight</span> * (<span class="v">minutes</span> &gt;= <span class="k">60</span> ? <span class="k">2</span> : <span class="k">1</span>)   <span class="c">// 1 for playing, 2 for 60+ min</span></div>
+        <p class="src">lib/projections/projectPlayer.ts · fixtureComponents</p>
+      </section>
+
+      <section id="s8-2">
+        <h3><span class="secno">§8.2</span>Goals</h3>
+        <p class="tldr"><strong>In short:</strong> expected goals, converted for the position, scaled by minutes and the fixture, times the points for a goal.</p>
+        <div class="formula"><span class="v">goals</span> += <span class="v">weight</span> * <span class="v">xgRate</span> * <span class="v">GOAL_CONVERSION</span>[<span class="v">position</span>] * <span class="v">minutesShare</span> * <span class="v">attackMultiplier</span> * <span class="v">GOAL_POINTS</span>[<span class="v">position</span>]</div>
+        <div class="formula"><span class="k">GOAL_POINTS</span> = { GK: <span class="k">10</span>, DEF: <span class="k">6</span>, MID: <span class="k">5</span>, FWD: <span class="k">4</span> }</div>
+        <p>Goalkeepers are the exception. Their goals component is always zero: 0 goals in about 9,700 walk-forward GK rows in 2023/24–2025/26, and their xG prior is 0.</p>
+        <p><code>attackMultiplier</code> comes from the fixture adjustment (<a href="fixtures.html">previous page</a>).</p>
+        <div class="example illustration">
+          <p>A midfielder: weight 0.8, <code>xgRate</code> 0.40 per 90, conversion 0.981, a full 90 minutes (<code>minutesShare</code> 1), <code>attackMultiplier</code> 1.0, 5 points per goal. All made up.</p>
+          <div class="formula">0.8 * 0.40 * 0.981 * 1 * 1.0 * 5 = <span class="k">1.5696</span></div>
+        </div>
+        <p class="src">lib/projections/projectPlayer.ts · fixtureComponents</p>
+      </section>
+
+      <section id="s8-3">
+        <h3><span class="secno">§8.3</span>Assists</h3>
+        <p class="tldr"><strong>In short:</strong> expected assists, converted for the position, scaled the same way, times 3 points.</p>
+        <div class="formula"><span class="v">assists</span> += <span class="v">weight</span> * <span class="v">xaRate</span> * <span class="v">ASSIST_CONVERSION</span>[<span class="v">position</span>] * <span class="v">minutesShare</span> * <span class="v">attackMultiplier</span> * <span class="k">3</span></div>
+        <p class="src">lib/projections/projectPlayer.ts · fixtureComponents</p>
+
+        <section id="s8-3-1">
+          <h4 style="margin:18px 0 6px"><span class="secno" style="font-family:var(--font-num);color:var(--accent);margin-right:8px">§8.3.1</span>xG and xA are not goals and assists</h4>
+          <p class="tldr"><strong>In short:</strong> the code multiplies each rate by a factor per position before it pays points, because defenders score less than their xG says and FPL pays more assists than xA says.</p>
+          <p><span class="tag evidence">evidence</span> Measured over 2025/26 and cross-validated by gameweek.</p>
+
+          <div class="grid-2">
+            <div class="card">
+              <h4>Goals per xG</h4>
+              <div class="bars">
+                <div class="bar-row"><span class="bar-label">GK</span><span class="bar-track"><span class="bar-fill info" style="display:block;width:47.3%"></span></span><span class="bar-val">1.000</span></div>
+                <div class="bar-row"><span class="bar-label">DEF</span><span class="bar-track"><span class="bar-fill bad" style="display:block;width:33.1%"></span></span><span class="bar-val">0.700</span></div>
+                <div class="bar-row"><span class="bar-label">MID</span><span class="bar-track"><span class="bar-fill info" style="display:block;width:46.4%"></span></span><span class="bar-val">0.981</span></div>
+                <div class="bar-row"><span class="bar-label">FWD</span><span class="bar-track"><span class="bar-fill info" style="display:block;width:46.7%"></span></span><span class="bar-val">0.988</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <h4>Assists per xA</h4>
+              <div class="bars">
+                <div class="bar-row"><span class="bar-label">GK</span><span class="bar-track"><span class="bar-fill info" style="display:block;width:47.3%"></span></span><span class="bar-val">1.000</span></div>
+                <div class="bar-row"><span class="bar-label">DEF</span><span class="bar-track"><span class="bar-fill violet" style="display:block;width:60.2%"></span></span><span class="bar-val">1.272</span></div>
+                <div class="bar-row"><span class="bar-label">MID</span><span class="bar-track"><span class="bar-fill violet" style="display:block;width:57.1%"></span></span><span class="bar-val">1.207</span></div>
+                <div class="bar-row"><span class="bar-label">FWD</span><span class="bar-track"><span class="bar-fill good" style="display:block;width:100%"></span></span><span class="bar-val">2.114</span></div>
+              </div>
+            </div>
+          </div>
+          <p class="src">Both charts use the same scale, from 0 to 2.114.</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Position</th><th class="num">goals per xG</th><th class="num">assists per xA</th></tr></thead>
+              <tbody>
+                <tr><td>GK</td><td class="num">1.000</td><td class="num">1.000</td></tr>
+                <tr><td>DEF</td><td class="num"><strong>0.700</strong></td><td class="num"><strong>1.272</strong></td></tr>
+                <tr><td>MID</td><td class="num">0.981</td><td class="num"><strong>1.207</strong></td></tr>
+                <tr><td>FWD</td><td class="num">0.988</td><td class="num"><strong>2.114</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>These are two separate facts. A defender's chances are set-piece headers, and they convert at 0.70, where a midfielder or forward converts at close to 1.0. And FPL pays more assists than xA predicts: it pays for the final pass whatever happens to the shot, so a forward earns 2.11 assists per xA.</p>
+
+          <details>
+            <summary>What the table leaves out on purpose</summary>
+            <p>A larger set of factors scores better on the backtest: RMSE −0.0074, with the paired interval excluding zero, against no measurable gain for the factors above. Those larger factors also absorb a second effect, which is the model overstating a midfielder's xG rate by 20%. They are not shipped, because <code>tests/core/calibration.test.ts</code> catches what they really are.</p>
+            <p>Given exact rates, they under-pay midfielders by 0.178 points and over-pay forwards by 0.215. That pushes the positional spread to 0.393, against a guard of 0.35. A rate error is not a scoring rule, so it does not belong in one. The table above holds the guard at 0.284.</p>
+            <div class="callout warn"><span class="label">Open</span>The rate error is real and unfixed. §6.3.1 is where it lives. Shrinking a player's own anchor toward the pool rate by its sample size was worth −0.0237 RMSE in testing, which is more than anything else measured so far. It barely moves the bias, so the cause is regression to the mean, not noise. It stays open.</div>
+            <p>To re-derive any of this, run <code>npx tsx scripts/backtest/fit-conversions.ts</code>.</p>
+          </details>
+        </section>
+      </section>
+
+      <section id="s8-4">
+        <h3><span class="secno">§8.4</span>Clean sheets</h3>
+        <p class="tldr"><strong>In short:</strong> a clean sheet pays only if the player reaches 60 minutes.</p>
+        <div class="formula"><span class="v">cleanSheets</span> += <span class="v">weight</span> * <span class="v">cleanSheetProbability</span> * <span class="v">CLEAN_SHEET_POINTS</span>[<span class="v">position</span>]   <span class="c">// only if the player reaches 60 minutes</span>
+<span class="k">CLEAN_SHEET_POINTS</span> = { GK: <span class="k">4</span>, DEF: <span class="k">4</span>, MID: <span class="k">1</span>, FWD: <span class="k">0</span> }</div>
+        <p class="src">lib/projections/projectPlayer.ts · fixtureComponents</p>
+      </section>
+
+      <section id="s8-5">
+        <h3><span class="secno">§8.5</span>Goals conceded (GK/DEF only)</h3>
+        <p class="tldr"><strong>In short:</strong> a goalkeeper or defender loses 1 point for every 2 goals conceded while on the pitch.</p>
+        <p>This is a threshold rule, so a straight average would give the wrong answer. The code sums over a Poisson count of goals instead, and takes the expected value of the rounded-down half.</p>
+        <div class="formula"><span class="v">goalsConceded</span> -= <span class="v">weight</span> * E[ floor(<span class="v">expectedGoalsAgainst</span> * <span class="v">minutesShare</span> / <span class="k">2</span>) ]</div>
+        <p><code>E[floor(X / d)]</code> uses a <code>Poisson(expectedGoalsAgainst * minutesShare)</code> distribution.</p>
+        <p class="src">lib/projections/distributions.ts · expectedFloorDivision</p>
+      </section>
+
+      <section id="s8-6">
+        <h3><span class="secno">§8.6</span>Saves (GK only)</h3>
+        <p class="tldr"><strong>In short:</strong> 1 point per 3 saves, with the save rate scaled by how many goals the opponent is expected to score.</p>
+        <p>The same sum over a distribution applies. The environment factor stays between 0.7 and 1.4.</p>
+        <div class="formula"><span class="v">savesEnvironment</span> = clamp(<span class="v">expectedGoalsAgainst</span> / <span class="k">1.35</span>, <span class="k">0.7</span>, <span class="k">1.4</span>)
+<span class="v">saves</span> += <span class="v">weight</span> * E[ floor(<span class="v">savesRate</span> * <span class="v">minutesShare</span> * <span class="v">savesEnvironment</span> / <span class="k">3</span>) ]</div>
+        <p class="src">lib/projections/projectPlayer.ts · fixtureComponents</p>
+      </section>
+
+      <section id="s8-7">
+        <h3><span class="secno">§8.7</span>Defensive contributions</h3>
+        <p class="tldr"><strong>In short:</strong> 2 points once a player's count of defensive actions reaches 10 (DEF) or 12 (MID, FWD); goalkeepers get none.</p>
+        <p>The code needs the chance of reaching the threshold, not a share of it.</p>
+        <div class="formula"><span class="v">defensiveContribution</span> += <span class="v">weight</span> * <span class="k">2</span> * P(<span class="v">count</span> &gt;= <span class="v">threshold</span>)</div>
+        <p><code>P(count &gt;= threshold)</code> uses a <strong>negative binomial</strong> with mean <code>defContRate * minutesShare</code> and <code>dispersion = 8</code>. Match-by-match counts spread out more than a Poisson allows.</p>
+        <p class="src">lib/projections/distributions.ts · thresholdProbability</p>
+      </section>
+
+      <section id="s8-8">
+        <h3><span class="secno">§8.8</span>Bonus</h3>
+        <p class="tldr"><strong>In short:</strong> bonus points follow the player's regressed bonus rate and expected minutes; only GK and DEF carry the fixture's attack multiplier.</p>
+        <div class="formula"><span class="v">bonusMultiplier</span> = <span class="v">position</span> in {GK, DEF} ? <span class="v">adjustment.attackMultiplier</span> : <span class="k">1</span>
+<span class="v">bonus</span> += <span class="v">weight</span> * <span class="v">bonusRate</span> * <span class="v">minutesShare</span> * <span class="v">bonusMultiplier</span></div>
+        <p>MID and FWD use a flat bonus rate.</p>
+        <details>
+          <summary>Backtest evidence</summary>
+          <p>The Tier C comparison cut MID/FWD whole-xP RMSE by 0.0051 (95% gameweek-cluster interval −0.0081 to −0.0022). It used 11,947 player-fixtures from 2024/25–2025/26.</p>
+          <div class="callout warn"><span class="label">Caveat</span>Bonus-only RMSE is still unresolved. The result supports the change to total points, not a claim of better bonus forecasts. See <code>scripts/backtest/results/tier-c-bonus.md</code>.</div>
+        </details>
+        <p class="src">lib/projections/projectPlayer.ts · fixtureComponents</p>
+      </section>
+
+      <section id="s8-9">
+        <h3><span class="secno">§8.9</span>Cards</h3>
+        <p class="tldr"><strong>In short:</strong> a yellow costs 1 point and a red costs 3, each weighted by the chance it happens in the minutes played.</p>
+        <div class="formula"><span class="v">yellowChance</span> = <span class="k">1</span> - exp(-<span class="v">yellowRate</span> * <span class="v">minutesShare</span>)
+<span class="v">redChance</span>    = <span class="k">1</span> - exp(-<span class="v">redRate</span> * <span class="v">minutesShare</span>)
+<span class="v">cards</span>       -= <span class="v">weight</span> * (<span class="k">1</span> * <span class="v">yellowChance</span> + <span class="k">3</span> * <span class="v">redChance</span>)</div>
+        <p>A booking either happens or it does not. That makes this a probability, not a rate times minutes, and it stops a full match from implying more than one card. The code adds yellows and reds separately. A red that follows a second yellow is rare (0.005 per 90 at its highest), so the code does not model the overlap.</p>
+        <p><code>yellowRate</code> and <code>redRate</code> are the player's own rates from §6.3. They use a prior weight of 40 matches and ceilings of 0.8 and 0.1 per 90. <span class="tag evidence">evidence</span> The position priors are measured, not assumed. This table covers every 2025/26 appearance:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Position</th><th class="num">yellow / 90</th><th class="num">red / 90</th><th class="num">points per appearance</th></tr></thead>
+            <tbody>
+              <tr><td>GK</td><td class="num">0.072</td><td class="num">0.0013</td><td class="num">-0.076</td></tr>
+              <tr><td>DEF</td><td class="num">0.182</td><td class="num">0.0082</td><td class="num">-0.165</td></tr>
+              <tr><td>MID</td><td class="num">0.188</td><td class="num">0.0048</td><td class="num">-0.134</td></tr>
+              <tr><td>FWD</td><td class="num">0.149</td><td class="num">0.0000</td><td class="num">-0.088</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>League-wide that is <strong>−0.135 points per appearance</strong>. It differs by position: a defender loses about twice what a forward does. Leaving cards out flattered defenders, and held midfielders, against the forwards they compete with.</p>
+        <details>
+          <summary>Priors in code, and what the cards term fixed</summary>
+          <p>No forward was sent off in the sample, so their red prior is a floor and not the observed zero. The code rounds the red priors to GK 0.001, DEF 0.008, MID 0.005 and FWD 0.002.</p>
+          <p>Adding this term moved overall bias from <strong>+0.174 to +0.045</strong> points per appearance. It moved midfielders from +0.175 to +0.001. Both figures use a per-player anchor (<code>npx tsx scripts/backtest/anchor.ts</code>).</p>
+        </details>
+        <p class="src">lib/projections/projectPlayer.ts · fixtureComponents</p>
+      </section>
+
+      <section id="s8-10">
+        <h3><span class="secno">§8.10</span>Total</h3>
+        <p><code>total</code> is the sum of all components. The <code>penalties</code> field exists in the type but nothing fills it, so it is always 0.</p>
+      </section>
+
+      <section id="s8-11">
+        <h3><span class="secno">§8.11</span>Breakdown display</h3>
+        <p class="tldr"><strong>In short:</strong> the breakdown view shows one gameweek's xP split into its parts and adds no maths of its own.</p>
+        <ul>
+          <li><code>packComponents</code> sends each fixture's components as nine numbers rounded to 0.01, in the fixed order of <code>BREAKDOWN_COMPONENT_KEYS</code>: appearance, goals, assists, cleanSheets, goalsConceded, saves, defensiveContribution, bonus, cards. It leaves out <code>penalties</code> and <code>total</code>. <code>unpackComponents</code> rebuilds the object and recomputes <code>total</code> from the parts. The order is the format, so new keys go at the end.</li>
+          <li><code>gameweekBreakdown</code> sums the components of every fixture in the gameweek (a double gameweek reports <code>matches = 2</code>). It returns <code>null</code> when the player has no fixture or no components. A row is hidden only when the position cannot score it and its value is zero, so the rows shown always add up to the total shown.</li>
+          <li>Each row cites the player's recorded per-90 figures for this season and last. A sample under 90 minutes reads "not enough minutes yet" in place of a number.</li>
+        </ul>
+        <p class="src">lib/projections/breakdown.ts · packComponents · unpackComponents · gameweekBreakdown</p>
+      </section>
+    </section>
+
+    <section id="s9">
+      <h2><span class="secno">§9</span>Aggregation: nextGW, next3, next5, next10, value</h2>
+      <p class="tldr"><strong>In short:</strong> xP sums per gameweek first, then over the next 1, 3, 5 or 10 gameweeks, and value divides the 5-week total by the price in millions.</p>
+      <p><code>projectPlayer</code> projects every upcoming fixture, from <code>currentGameweek</code> out to <code>fixtureHorizon</code> (by default, the season's remaining weeks), and then sums.</p>
+
+      <div class="example illustration">
+        <p>Current gameweek 10. Gameweek 11 is a double, so it sums two fixtures (3.0 + 2.6). Gameweek 12 is a blank, so it adds 0. All numbers are made up.</p>
+        <div class="timeline-scroll">
+          <div class="timeline" data-anim-group role="group" aria-label="Ten gameweeks with their xP and the four windows">
+            <div class="gw"><small>GW10</small><b>4.1</b></div>
+            <div class="gw dgw" data-anim="pop" style="--d: 900ms"><small>GW11</small><b>5.6</b></div>
+            <div class="gw blank" data-anim="pop" style="--d: 1100ms"><small>GW12</small><b>0</b></div>
+            <div class="gw"><small>GW13</small><b>3.8</b></div>
+            <div class="gw"><small>GW14</small><b>4.4</b></div>
+            <div class="gw"><small>GW15</small><b>3.9</b></div>
+            <div class="gw"><small>GW16</small><b>4.0</b></div>
+            <div class="gw"><small>GW17</small><b>3.6</b></div>
+            <div class="gw"><small>GW18</small><b>4.2</b></div>
+            <div class="gw"><small>GW19</small><b>3.7</b></div>
+            <div class="win w1" data-anim="grow-x" style="--d: 0ms; grid-column:1 / span 1">1</div><div style="grid-column:2 / span 9"></div>
+            <div class="win w3" data-anim="grow-x" style="--d: 200ms; grid-column:1 / span 3">next3 9.7</div><div style="grid-column:4 / span 7"></div>
+            <div class="win w5" data-anim="grow-x" style="--d: 400ms; grid-column:1 / span 5">next5 17.9</div><div style="grid-column:6 / span 5"></div>
+            <div class="win w10" data-anim="grow-x" style="--d: 600ms; grid-column:1 / span 10">next10 37.3</div>
+          </div>
+        </div>
+        <ul>
+          <li>nextGW = 4.1 (the green bar, one gameweek)</li>
+          <li>next3 = 4.1 + 5.6 + 0 = 9.7</li>
+          <li>next5 = 9.7 + 3.8 + 4.4 = 17.9</li>
+          <li>next10 = 17.9 + 3.9 + 4.0 + 3.6 + 4.2 + 3.7 = 37.3</li>
+        </ul>
+      </div>
+
+      <div class="formula"><span class="v">nextGW</span> = sum of <span class="v">expectedPoints</span> for fixtures in <span class="v">currentGameweek</span>        <span class="c">// 0 if blank</span>
+<span class="v">next3</span>  = sum over gameweeks [current, current+<span class="k">1</span>, current+<span class="k">2</span>]
+<span class="v">next5</span>  = sum over gameweeks [current, ..., current+<span class="k">4</span>]
+<span class="v">next10</span> = sum over gameweeks [current, ..., current+<span class="k">9</span>]</div>
+
+      <p>The code adds per <strong>distinct gameweek</strong>. A double gameweek sums all its fixtures, a blank gameweek adds zero, and totals over several gameweeks never count a fixture row twice.</p>
+      <p class="src">lib/projections/projectPlayer.ts · aggregateFixturePointsByGameweek</p>
+
+      <h3>Value</h3>
+      <div class="formula"><span class="v">valueNext5</span> = <span class="v">next5</span> / (<span class="v">priceTenths</span> / <span class="k">10</span>)</div>
+      <p><span class="tag fact">fact</span> The price is the live FPL price, kept in integer tenths. Dividing by 10 turns it into millions only for this step.</p>
+      <div class="example illustration">
+        <p>With next5 = 17.9 from the strip above and a made-up price of 75 tenths (£7.5m):</p>
+        <div class="formula">17.9 / (75 / 10) = 17.9 / 7.5 = <span class="k">2.39</span> <span class="c">// rounded to two places</span></div>
+      </div>
+
+      <p><code>factors</code> builds the list of reasons the interface shows: expected minutes, average fixture difficulty, confidence and position model. It is for display only.</p>
+      <p class="src">lib/projections/projectPlayer.ts · projectPlayer · factors</p>
+    </section>
+
+    <nav class="pager" aria-label="Previous and next">
+      <a class="prev" href="fixtures.html"><small>← Previous</small>Fixture adjustment</a>
+      <a class="next" href="scores-lineup.html"><small>Next →</small>Risk, value &amp; weekly lineup</a>
+    </nav>
+  </main>
+</div>
+</body>
+</html>

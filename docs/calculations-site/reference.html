@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Constants &amp; validation · FPL Terminal calculations</title>
+<link rel="stylesheet" href="style.css">
+<script src="site.js"></script>
+<style>
+  /* page-only styles go here; never edit style.css */
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sitenav" aria-label="Pages">
+    <a class="brand" href="index.html">FPL <span>Terminal</span></a>
+    <p class="tagline">How every number is made</p>
+    <ol>
+      <li><a href="index.html"><span class="sec">00</span>Overview</a></li>
+      <li><a href="foundations.html"><span class="sec">§1–3</span>Inputs &amp; team strength</a></li>
+      <li><a href="availability.html"><span class="sec">§4–5</span>Who plays, and for how long</a></li>
+      <li><a href="rates.html"><span class="sec">§6</span>Per-90 rates</a></li>
+      <li><a href="fixtures.html"><span class="sec">§7</span>Fixture adjustment</a></li>
+      <li><a href="points.html"><span class="sec">§8–9</span>Expected points</a></li>
+      <li><a href="scores-lineup.html"><span class="sec">§10–14</span>Risk, value &amp; weekly lineup</a></li>
+      <li><a href="squad-tools.html"><span class="sec">§15–19</span>Analysis, transfers &amp; optimizer</a></li>
+      <li><a href="reference.html" aria-current="page"><span class="sec">§20–21</span>Constants &amp; validation</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="page-head">
+      <div class="eyebrow">§20–21</div>
+      <h1>Constants &amp; validation</h1>
+      <p class="lede">The constant tables from the spec, with their source files, then what the backtests have and have not shown.</p>
+    </header>
+
+    <section id="s20">
+      <h2><span class="secno">§20</span>Constant tables</h2>
+      <p class="tldr"><strong>In short:</strong> the spec's constant tables, grouped by area. Each card names its source file.</p>
+      <div class="grid-2">
+<div class="card"><h3>Team strength</h3><p class="src">lib/historical/inSeasonForm.ts</p>
+<div class="table-wrap"><table><thead><tr><th>Constant</th><th>Value</th></tr></thead><tbody><tr><td>Consensus tier → ratio</td><td><code>0.76 + tier * 0.08</code></td></tr><tr><td>In-season form decay (per match)</td><td>0.90</td></tr><tr><td>In-season form prior weight</td><td>12 (<code>n / (n + 12)</code>)</td></tr><tr><td>xG floor (avoids divide-by-zero)</td><td>0.15</td></tr></tbody></table></div>
+<p>Explained in <a href="foundations.html">Inputs &amp; team strength</a></p></div>
+<div class="card"><h3>Player form</h3><p class="src">lib/projections/playerForm.ts</p>
+<div class="table-wrap"><table><thead><tr><th>Constant</th><th>Value</th></tr></thead><tbody><tr><td>xG/xA in-season form decay (per match)</td><td>0.95</td></tr><tr><td>xG/xA in-season form prior weight</td><td>6 "matches worth"</td></tr><tr><td>Player form winsor ratio (<code>PLAYER_FORM_WINSOR_RATIO</code>)</td><td>3.0</td></tr><tr><td>Card prior weight (<code>PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS</code>)</td><td>40 matches</td></tr><tr><td>Defender per-match xG cap (<code>projectPlayer.ts</code>)</td><td>0.35 per 90</td></tr></tbody></table></div>
+<p>Explained in <a href="rates.html">Per-90 rates</a></p></div>
+<div class="card"><h3>Start rate and availability</h3><p class="src">lib/availability/startRate.ts, lib/availability/selection.ts</p>
+<div class="table-wrap"><table><thead><tr><th>Constant</th><th>Value</th></tr></thead><tbody><tr><td>Start rate update alpha (<code>START_RATE_ALPHA</code>)</td><td>0.40</td></tr><tr><td>Threshold minutes for start (<code>MINUTES_FOR_START</code>)</td><td>60</td></tr><tr><td>Unknown start seed without history (<code>UNKNOWN_START_SEED</code>)</td><td>0.15</td></tr><tr><td>Unknown cameo seed without history (<code>UNKNOWN_CAMEO_SEED</code>)</td><td>0.08</td></tr><tr><td>RotoWire predicted XI floor</td><td>0.62</td></tr><tr><td>RotoWire confirmed XI floor</td><td>0.80</td></tr><tr><td>RotoWire <code>QUES</code> discount (start / cameo)</td><td>0.65 / 0.75</td></tr><tr><td>Seed weight with zero observations</td><td>0.25</td></tr></tbody></table></div>
+<p>Explained in <a href="availability.html">Who plays, and for how long</a> (start-rate update: <a href="availability.html#s4-3">§4.3</a>)</p></div>
+<div class="card"><h3>Scoring</h3><p class="src">lib/projections/projectPlayer.ts</p>
+<div class="table-wrap"><table><thead><tr><th>Constant</th><th>Value</th></tr></thead><tbody><tr><td>Goal points</td><td>GK 10, DEF 6, MID 5, FWD 4</td></tr><tr><td>Goals per xG</td><td>GK 1.000, DEF 0.700, MID 0.981, FWD 0.988</td></tr><tr><td>Assists per xA</td><td>GK 1.000, DEF 1.272, MID 1.207, FWD 2.114</td></tr><tr><td>Assist points</td><td>3</td></tr><tr><td>Clean sheet points</td><td>GK 4, DEF 4, MID 1, FWD 0</td></tr><tr><td>Defensive contribution points</td><td>2 (threshold GK 0, DEF 10, MID 12, FWD 12)</td></tr><tr><td>Saves per point</td><td>3</td></tr><tr><td>Goals-conceded deduction</td><td>1 point per 2 goals</td></tr><tr><td>Card deductions</td><td>yellow 1, red 3</td></tr><tr><td>Yellow prior per 90</td><td>GK 0.072, DEF 0.182, MID 0.188, FWD 0.149</td></tr><tr><td>Red prior per 90</td><td>GK 0.001, DEF 0.008, MID 0.005, FWD 0.002</td></tr><tr><td>Rate ceilings per 90 (<code>RATE_CEILING</code>)</td><td>goal involvement 3, saves 10, defensive contributions 30, bonus 3, yellow 0.8, red 0.1</td></tr></tbody></table></div>
+<p>Explained in <a href="points.html">Expected points</a></p></div>
+<div class="card"><h3>Fixtures</h3><p class="src">lib/clubElo.ts, lib/projections/fixtureAdjustment.ts, lib/projections/cleanSheetStrength.ts</p>
+<div class="table-wrap"><table><thead><tr><th>Constant</th><th>Value</th></tr></thead><tbody><tr><td>ClubElo difficulty divisor</td><td>300 Elo per step</td></tr><tr><td>Clean-sheet Elo level slope</td><td>0.0034</td></tr><tr><td>Clean-sheet skew weight</td><td>0.6</td></tr><tr><td>Clean-sheet level prior</td><td>12 played matches</td></tr><tr><td>Rated clean-sheet mean / NB dispersion</td><td>1.408 / 12</td></tr><tr><td>Clean-sheet probability clamp (rated and table paths)</td><td>0.02 – 0.9</td></tr><tr><td>League average goals against</td><td>1.35</td></tr><tr><td>Difficulty multipliers</td><td>1→1.14, 2→1.07, 3→1.00, 4→0.92, 5→0.84</td></tr><tr><td>Home / away attack venue</td><td>1.102 / 0.898 (measured)</td></tr><tr><td>Attack ratio clamp</td><td>0.70 – 1.35</td></tr><tr><td>Attack multiplier clamp</td><td>0.55 – 1.60 (backstop only)</td></tr><tr><td>Strength tier anchors</td><td>0.84, 0.92, 1.00, 1.08, 1.16</td></tr></tbody></table></div>
+<p>Explained in <a href="fixtures.html">Fixture adjustment</a> (ClubElo step: <a href="foundations.html#s2-2">§2.2</a>)</p></div>
+<div class="card"><h3>Weekly lineup</h3><p class="src">lib/squad/weeklyLineup.ts</p>
+<div class="table-wrap"><table><thead><tr><th>Constant</th><th>Value</th></tr></thead><tbody><tr><td>Near-equal XI window</td><td>0.25 points</td></tr><tr><td>pDNP availability / minutes split (fallback only, §14.2)</td><td>0.75 / 0.25</td></tr><tr><td>pDNP minutes knee (fallback only)</td><td>45 minutes</td></tr><tr><td>Triple Captain extra armband multiple</td><td>2</td></tr></tbody></table></div>
+<p>Explained in <a href="scores-lineup.html">Risk, value &amp; weekly lineup</a> (fallback split: <a href="scores-lineup.html#s14-2">§14.2</a>)</p></div>
+<div class="card"><h3>Beam-search objective</h3><p class="src"><code>objectiveScore</code>, lib/optimizer/optimizer.ts</p>
+<div class="table-wrap"><table><thead><tr><th>Constant</th><th>Value</th></tr></thead><tbody><tr><td>Backup GK utility weight (<code>BACKUP_GOALKEEPER_WEIGHT</code>)</td><td>0.05</td></tr><tr><td>Backup GK price divisor (<code>BACKUP_GOALKEEPER_PRICE_DIVISOR</code>)</td><td>20</td></tr><tr><td>Outfield bench utility weights</td><td>0.25, 0.15, 0.10</td></tr><tr><td><code>STRONG</code> bench bonus (inline)</td><td>0.04 × bench utility</td></tr><tr><td><code>CHEAP</code> bench penalty (inline)</td><td>bench price / 10000</td></tr><tr><td>High-confidence starter bonus (tie-break)</td><td>0.01</td></tr></tbody></table></div>
+<p>Explained in <a href="squad-tools.html">Analysis, transfers &amp; optimizer</a></p></div>
+<div class="card"><h3>Transfers</h3><p class="src">lib/analysis/singleTransfers.ts, lib/optimizer/milpTransfers.ts</p>
+<div class="table-wrap"><table><thead><tr><th>Constant</th><th>Value</th></tr></thead><tbody><tr><td>Cash value in single-transfer score (<code>CASH_XP_PER_MILLION</code>)</td><td>0.25 score per £1m released, added to xP gain per gameweek</td></tr><tr><td>Multi-transfer reserve weight (outfield / GK)</td><td>0.15 / 0.05</td></tr><tr><td>Multi-transfer candidates per position</td><td>25</td></tr><tr><td>Maximum transfers per multi-transfer request</td><td>5</td></tr></tbody></table></div>
+<p>Explained in <a href="squad-tools.html">Analysis, transfers &amp; optimizer</a></p></div>
+<div class="card"><h3>Finance and chips</h3><p class="src"><code>SEASON_CHIP_POLICY</code>, lib/chips/seasonPolicy.ts</p>
+<div class="table-wrap"><table><thead><tr><th>Constant</th><th>Value</th></tr></thead><tbody><tr><td>Selling profit kept (<code>sellProfitFraction</code>)</td><td>0.5, rounded down</td></tr><tr><td>Maximum saved free transfers</td><td>5</td></tr><tr><td>Maximum transfers per gameweek</td><td>20</td></tr><tr><td>Points per paid transfer (<code>hitCostPerTransferPoints</code>)</td><td>4</td></tr><tr><td>Chip windows</td><td>GW1-19, GW20-38; one of each chip per window</td></tr></tbody></table></div>
+<p>Explained in <a href="squad-tools.html">Analysis, transfers &amp; optimizer</a></p></div>
+      </div>
+    </section>
+
+    <section id="s21">
+      <h2><span class="secno">§21</span>Validation and research status</h2>
+      <p class="tldr"><strong>In short:</strong> three changes, taken together, beat the old model in a backtest, but the test is not a clean holdout. Other ideas stay out of production.</p>
+
+      <div class="callout good"><span class="label">Combined gain</span>
+        <p>The three Tier C production changes are the 300-point ClubElo difficulty step (<a href="foundations.html#s2-2">§2.2</a>), retaining the start-probability EWMA after 240 observed minutes (<a href="availability.html#s4-3">§4.3</a>), and flat MID/FWD bonus scaling (<a href="points.html#s8-8">§8.8</a>). The combined comparison against <code>74ceff2</code> scored 49,212 player-gameweeks in 2024/25 and 2025/26, including recorded zero-minute outcomes and summing double-gameweek fixtures. Both seasons and all four positions improved.</p>
+        <div class="table-wrap"><table><thead><tr><th>Measure</th><th>Value</th></tr></thead><tbody>
+        <tr><td>RMSE before</td><td>1.99371</td></tr>
+        <tr><td>RMSE after</td><td>1.94641</td></tr>
+        <tr><td>Paired RMSE difference</td><td>-0.04730</td></tr>
+        <tr><td>95% season-stratified gameweek-cluster interval</td><td>[-0.05879, -0.03619]</td></tr>
+        </tbody></table></div>
+        <p>These figures measure the combined changes, not the effect of any one edit.</p>
+        <p class="src">scripts/backtest/results/tier-c-combined.md</p>
+      </div>
+
+      <div class="callout warn"><span class="label">Not a clean holdout</span>
+        <p>That comparison used historical result-derived Elo, reconstructed availability, and a common £5.0m player prior. It excluded cold starts, unsupported positions, target-team changes and incomplete fixture coverage. The seasons had already informed policy selection, so this is retrospective confirmation under shared inputs rather than an untouched holdout or a replay of archived live forecasts. Access to real ClubElo histories does not retroactively change those inputs.</p>
+      </div>
+
+      <div class="callout good"><span class="label">Backtest guards in place</span>
+        <p>The combined runner now shares explicit guards for pre-gameweek history, conflicting player-fixture duplicates, and recorded DNPs. It forecasts selection and minutes through production rather than using the target match's observed minutes, and passes continuous fixture difficulty. An absent player record is unknown, not an assumed DNP. Optional actual-history runs freeze all clubs' ratings strictly before the first fixture date of the target gameweek and record the cache hash, cutoff, rating dates and lag. Their outputs must remain separate from proxy runs.</p>
+        <p class="src">scripts/backtest/README.md (reproduction)</p>
+      </div>
+
+      <div class="callout good"><span class="label">Refactor checked</span>
+        <p>The rating-input refactor was checked against <code>ab5925e</code> with identical prepared inputs: all 49,212 scored player-gameweek predictions and coverage counts were unchanged. An actual-ClubElo 2025/26 run completed with 25,637 scored rows and 20 strictly prior ratings in each evaluated gameweek; this checks the new input path, not a gain over another model.</p>
+      </div>
+
+      <div class="callout"><span class="label">Outside production</span>
+        <p>The rating-input refactor changes where ratings enter the calculation; it does not select a new rating source or recalibrate any production constant. Historical-access and backtest safeguards likewise do not replace the live model. Homegrown Elo, separate xG attack/defence models and their experimental calibrations remain outside the production calculation described here.</p>
+      </div>
+    </section>
+
+    <nav class="pager" aria-label="Previous and next">
+      <a class="prev" href="squad-tools.html"><small>← Previous</small>Analysis, transfers &amp; optimizer</a>
+      <a class="next" href="index.html"><small>Next →</small>Back to overview</a>
+    </nav>
+  </main>
+</div>
+</body>
+</html>

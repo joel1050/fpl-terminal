@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Per-90 rates · FPL Terminal calculations</title>
+<link rel="stylesheet" href="style.css">
+<script src="site.js"></script>
+<style>
+  .chart-wrap { overflow-x: auto; margin: 12px 0; }
+  .chart-wrap .diagram { min-width: 600px; margin: 0; }
+  .diagram .axis { stroke: var(--line-strong); stroke-width: 1; fill: none; }
+  .diagram .grid { stroke: var(--line); stroke-width: 1; }
+  .diagram .curve { stroke: var(--accent); stroke-width: 2.5; fill: none; }
+  .diagram .dot { fill: var(--accent); }
+  .diagram .lbl { font-size: 12px; fill: var(--muted); }
+  .diagram .lbl-hi { font-size: 12px; fill: var(--text); }
+  .diagram .bar-xg { fill: var(--accent); }
+  .diagram .bar-xa { fill: var(--info); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: 6px 0; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+  .pair .bar-row { grid-template-columns: 110px minmax(0, 1fr) 64px; }
+  .strike { color: var(--bad); }
+  .ok { color: var(--good); }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sitenav" aria-label="Pages">
+    <a class="brand" href="index.html">FPL <span>Terminal</span></a>
+    <p class="tagline">How every number is made</p>
+    <ol>
+      <li><a href="index.html"><span class="sec">00</span>Overview</a></li>
+      <li><a href="foundations.html"><span class="sec">§1–3</span>Inputs &amp; team strength</a></li>
+      <li><a href="availability.html"><span class="sec">§4–5</span>Who plays, and for how long</a></li>
+      <li><a href="rates.html" aria-current="page"><span class="sec">§6</span>Per-90 rates</a></li>
+      <li><a href="fixtures.html"><span class="sec">§7</span>Fixture adjustment</a></li>
+      <li><a href="points.html"><span class="sec">§8–9</span>Expected points</a></li>
+      <li><a href="scores-lineup.html"><span class="sec">§10–14</span>Risk, value &amp; weekly lineup</a></li>
+      <li><a href="squad-tools.html"><span class="sec">§15–19</span>Analysis, transfers &amp; optimizer</a></li>
+      <li><a href="reference.html"><span class="sec">§20–21</span>Constants &amp; validation</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="page-head">
+      <div class="eyebrow">§6</div>
+      <h1>Per-90 rates</h1>
+      <p class="lede">This stage turns a player's goals, assists, bonus, saves and cards into a rate for each 90 minutes. It mixes last season with this season, pulls the result toward a sensible prior, and hands the rate on to the fixture step.</p>
+    </header>
+
+    <section id="s6">
+      <h2><span class="secno">§6</span>Per-90 rates and regression</h2>
+      <p class="tldr"><strong>In short:</strong> a player's rate starts as a count divided by minutes, then a prior pulls it back until the player has played enough to trust.</p>
+
+      <div class="flow">
+        <div class="step"><b>Count to rate</b>value / minutes × 90</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>Blend seasons</b>last season plus this season</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>Pull toward prior</b>900 minutes of prior weight</div>
+        <div class="arrow">→</div>
+        <div class="step hi"><b>Clamp</b>stay between 0 and the ceiling <span class="tag estimate">estimate</span></div>
+      </div>
+
+      <section id="s6-1">
+        <h3><span class="secno">§6.1</span>Rate extraction</h3>
+        <p class="tldr"><strong>In short:</strong> divide the count by the minutes played, then multiply by 90.</p>
+        <div class="formula"><span class="v">rate per 90</span> = <span class="v">value</span> / <span class="v">minutes</span> * <span class="k">90</span></div>
+        <div class="example illustration">
+          <p>Made-up numbers: a player has 0.6 xG in 180 minutes. The rate is 0.6 / 180 × 90 = 0.30 xG per 90.</p>
+        </div>
+        <p class="src">lib/projections/projectPlayer.ts · historicalRate, currentRate</p>
+      </section>
+
+      <section id="s6-2">
+        <h3><span class="secno">§6.2</span>Regression toward a prior</h3>
+        <p class="tldr"><strong>In short:</strong> a player with few minutes gets a rate close to the prior, and a player with many minutes gets a rate close to their own.</p>
+
+        <p>The prior counts as 900 minutes (10 matches) of evidence. The weight on the player's own rate is <code>sampleMinutes / (sampleMinutes + 900)</code>. At 900 minutes it is one half.</p>
+
+        <div class="chart-wrap">
+        <svg style="--vbw:600px" class="diagram wide" viewBox="0 0 600 240" role="img" aria-label="Line chart: weight on the observed rate rises from 0 at zero minutes to one half at 900 minutes and 0.8 at 3600 minutes.">
+          <line class="grid" x1="60" y1="20" x2="600" y2="20"/>
+          <line class="grid" x1="60" y1="105" x2="600" y2="105"/>
+          <line class="axis" x1="60" y1="190" x2="600" y2="190"/>
+          <line class="axis" x1="60" y1="20" x2="60" y2="190"/>
+          <text class="lbl num" x="52" y="24" text-anchor="end">1.0</text>
+          <text class="lbl num" x="52" y="109" text-anchor="end">0.5</text>
+          <text class="lbl num" x="52" y="194" text-anchor="end">0</text>
+          <text class="lbl num" x="60" y="210" text-anchor="middle">0</text>
+          <text class="lbl num" x="195" y="210" text-anchor="middle">900</text>
+          <text class="lbl num" x="330" y="210" text-anchor="middle">1800</text>
+          <text class="lbl num" x="465" y="210" text-anchor="middle">2700</text>
+          <text class="lbl num" x="600" y="210" text-anchor="end">3600</text>
+          <text class="lbl" x="330" y="232" text-anchor="middle">sample minutes</text>
+          <text class="lbl" x="66" y="14">weight on the player's own rate</text>
+          <polyline class="curve" data-anim="draw" points="60,190 105,147.5 150,122 195,105 262.5,88 330,76.7 465,62.5 600,54"/>
+          <circle class="dot" data-anim="pop" style="--d: 1000ms" cx="195" cy="105" r="4"/>
+          <text class="lbl-hi num" data-anim="pop" style="--d: 1150ms" x="203" y="125">900 min: 0.50</text>
+          <circle class="dot" data-anim="pop" style="--d: 500ms" cx="105" cy="147.5" r="3"/>
+          <circle class="dot" data-anim="pop" style="--d: 1300ms" cx="330" cy="76.7" r="3"/>
+          <text class="lbl num" data-anim="pop" style="--d: 1450ms" x="338" y="96">1800 min: 0.667</text>
+        </svg>
+        </div>
+
+        <div class="formula"><span class="v">rate</span> = (<span class="v">observedPer90</span> * <span class="v">sampleMinutes</span> + <span class="v">priorPer90</span> * <span class="k">900</span>) / (<span class="v">sampleMinutes</span> + <span class="k">900</span>)</div>
+
+        <div class="example illustration">
+          <p>Made-up numbers: observed 0.50 xG per 90 over 450 minutes, prior 0.20.</p>
+          <ol>
+            <li>Top: 0.50 × 450 + 0.20 × 900 = 225 + 180 = 405.</li>
+            <li>Bottom: 450 + 900 = 1350.</li>
+            <li>Rate: 405 / 1350 = <b>0.30</b>. The player's own rate carries weight 450 / 1350 = 1/3.</li>
+          </ol>
+        </div>
+        <p class="src">lib/projections/regression.ts · regressPer90</p>
+      </section>
+
+      <section id="s6-3">
+        <h3><span class="secno">§6.3</span>Blending current and historical, then regressing</h3>
+        <p class="tldr"><strong>In short:</strong> for bonus, saves, defensive contributions and cards, last season's rate mixes with this season's, then the prior pulls the result back.</p>
+
+        <div class="flow">
+          <div class="step"><b>1. Historical rate</b>last season's rate, or the prior if none <span class="tag evidence">evidence</span></div>
+          <div class="arrow">→</div>
+          <div class="step"><b>2. Cap current rate</b>at anchor × 3.0, upper side only</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>3. Blend</b>weight = matches / (matches + W)</div>
+          <div class="arrow">→</div>
+          <div class="step"><b>4. Regress</b>to the prior with 900</div>
+          <div class="arrow">→</div>
+          <div class="step hi"><b>5. Clamp</b>0 to ceiling <span class="tag estimate">estimate</span></div>
+        </div>
+
+        <div class="formula"><span class="v">rate</span>   = <span class="v">historicalRate</span> ?? <span class="v">prior</span>
+<span class="v">sample</span> = <span class="v">historicalMinutes</span>
+if current exists:
+    <span class="v">currentWeight</span> = <span class="v">matches</span> / (<span class="v">matches</span> + <span class="v">W</span>)              <span class="c">// with a match history</span>
+                  | clamp(<span class="v">currentGameweek</span> / <span class="k">10</span>, <span class="k">0</span>, <span class="k">0.6</span>)  <span class="c">// without one</span>
+    <span class="v">anchor</span>        = <span class="v">rate</span> &gt; 0 ? <span class="v">rate</span> : <span class="v">prior</span>
+    <span class="v">currentRate</span>   = min(<span class="v">currentRate</span>, <span class="v">anchor</span> * <span class="k">3.0</span>)       <span class="c">// PLAYER_FORM_WINSOR_RATIO, upper side only</span>
+    <span class="v">rate</span>   = <span class="v">rate</span> * (<span class="k">1</span> - <span class="v">currentWeight</span>) + <span class="v">currentRate</span> * <span class="v">currentWeight</span>
+    <span class="v">sample</span> += <span class="v">currentMinutes</span> * <span class="v">currentWeight</span>
+<span class="v">rate</span> = clamp(regressPer90(<span class="v">rate</span>, <span class="v">sample</span>, <span class="v">prior</span>, <span class="k">900</span>), <span class="k">0</span>, <span class="v">ceiling</span>)</div>
+
+        <p><code>matches</code> is the number of finished gameweeks the player featured in (<code>options.playerForm</code>, §6.3.1). The weight counts the player's own appearances, not the calendar. The old <code>currentGameweek / 10</code> ramp gave a player with one appearance the same weight as a player with ten. The calendar ramp still applies to a caller that has not loaded match history.</p>
+
+        <h4>The prior weight W, in matches</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Stat</th><th class="num">W</th><th>Constant</th></tr></thead>
+            <tbody>
+              <tr><td>Bonus, defensive contributions</td><td class="num">6</td><td><code>PLAYER_FORM_PRIOR_WEIGHT_MATCHES</code></td></tr>
+              <tr><td>Saves</td><td class="num">6</td><td>unless a backtest passes <code>savesPriorWeight</code></td></tr>
+              <tr><td>Yellow and red cards</td><td class="num">40</td><td><code>PLAYER_FORM_PRIOR_WEIGHT_RARE_EVENTS</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Why cards use 40: a yellow card comes about once in five matches, so last season is worth far more against this season's few cards than it is for xG. Here is the weight this season gets after 10 matches (made-up player, real formula):</p>
+        <div class="bars pair">
+          <div class="bar-row"><span class="bar-label">W = 6</span><span class="bar-track"><span class="bar-fill" style="width:62.5%"></span></span><span class="bar-val" data-count="0.625">0.625</span></div>
+          <div class="bar-row"><span class="bar-label">W = 40</span><span class="bar-track"><span class="bar-fill violet" style="width:20%"></span></span><span class="bar-val" data-count="0.200">0.200</span></div>
+        </div>
+        <p>With W = 6, ten matches give 10 / 16 = 0.625. With W = 40, ten matches give 10 / 50 = 0.200, so this season's few cards move the rate less.</p>
+
+        <details>
+          <summary>Backtest evidence and caveats</summary>
+          <ul>
+            <li>Counting appearances instead of the calendar was worth 2.2–10.9% rest-of-season rate RMSE on yellow cards and 0.9–3.3% on bonus across three held-out seasons, most of it before GW15.</li>
+            <li>Leaving each of 2023/24–2025/26 out in turn, <code>W = 40</code> beat <code>W = 10</code> on all three held-out seasons (+2.7%, +10.9%, +4.3% RMSE).</li>
+            <li class="strike">The comment on the constant names <code>scripts/backtest/changes.mjs</code> as the sweep, but that script was never committed, so this result cannot be re-run from the repository.</li>
+          </ul>
+        </details>
+        <p class="src">lib/projections/projectPlayer.ts · regressedPlayerRate</p>
+      </section>
+
+      <section id="s6-3-1">
+        <h3><span class="secno">§6.3.1</span>xG and xA: recency-weighted match history</h3>
+        <p class="tldr"><strong>In short:</strong> for xG and xA, recent matches count more than old ones, and a long match counts more than a short cameo.</p>
+
+        <p>xG and xA use a different current-season blend, <code>regressedFormRate</code>. A player's regressed historical rate (or the neutral price-tier prior) anchors the blend. The current-season share comes from <code>blendPlayerRateByMinutes</code>, which weights each match by recency and by the minutes played in it.</p>
+
+        <h4>Recency weights: decay<sup>i</sup> with decay 0.95</h4>
+        <p>Match <code>i</code> counts <code>0.95^i</code>, where <code>i</code> is how many matches before the most recent one it was played.</p>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-label">latest (i = 0)</span><span class="bar-track"><span class="bar-fill" style="width:100%"></span></span><span class="bar-val" data-count="1.000">1.000</span></div>
+          <div class="bar-row"><span class="bar-label">i = 1</span><span class="bar-track"><span class="bar-fill" style="width:95%"></span></span><span class="bar-val" data-count="0.950">0.950</span></div>
+          <div class="bar-row"><span class="bar-label">i = 2</span><span class="bar-track"><span class="bar-fill" style="width:90.25%"></span></span><span class="bar-val" data-count="0.903">0.903</span></div>
+          <div class="bar-row"><span class="bar-label">i = 5</span><span class="bar-track"><span class="bar-fill" style="width:77.38%"></span></span><span class="bar-val" data-count="0.774">0.774</span></div>
+          <div class="bar-row"><span class="bar-label">i = 10</span><span class="bar-track"><span class="bar-fill" style="width:59.87%"></span></span><span class="bar-val" data-count="0.599">0.599</span></div>
+          <div class="bar-row"><span class="bar-label">i = 20</span><span class="bar-track"><span class="bar-fill" style="width:35.85%"></span></span><span class="bar-val" data-count="0.358">0.358</span></div>
+          <div class="bar-row"><span class="bar-label">i = 37</span><span class="bar-track"><span class="bar-fill" style="width:14.99%"></span></span><span class="bar-val" data-count="0.150">0.150</span></div>
+        </div>
+
+        <div class="formula"><span class="v">weight</span>(i matches before the most recently played) = <span class="k">decay</span>^<span class="v">i</span>
+<span class="v">observedRate</span>     = <span class="k">90</span> * Σ(<span class="v">weight_i</span> * <span class="v">value_i</span>) / Σ(<span class="v">weight_i</span> * <span class="v">minutes_i</span>)
+<span class="v">effectiveMatches</span> = Σ(<span class="v">weight_i</span>)
+<span class="v">cappedRate</span>       = clamp(<span class="v">observedRate</span>, <span class="v">basePrior</span> / <span class="k">3.0</span>, <span class="v">basePrior</span> * <span class="k">3.0</span>)
+<span class="v">blended</span>          = (<span class="v">basePrior</span> * <span class="v">priorWeightMatches</span> + <span class="v">cappedRate</span> * <span class="v">effectiveMatches</span>)
+                   / (<span class="v">priorWeightMatches</span> + <span class="v">effectiveMatches</span>)</div>
+        <p><code>value_i</code> is the raw xG or xA from match <code>i</code>. Constants: <code>decay = 0.95</code> (<code>PLAYER_FORM_DECAY</code>), <code>priorWeightMatches = 6</code> (<code>PLAYER_FORM_PRIOR_WEIGHT_MATCHES</code>), and the <code>3.0</code> cap (<code>PLAYER_FORM_WINSOR_RATIO</code>).</p>
+
+        <h4>How much of the blend is this season?</h4>
+        <p>The effective matches are the sum of the weights. Against the prior weight of 6, this season's share is <code>effectiveMatches / (6 + effectiveMatches)</code>.</p>
+        <div class="bars pair">
+          <div class="bar-row"><span class="bar-label">after 2 matches</span><span class="bar-track"><span class="bar-fill info" style="width:24.5%"></span></span><span class="bar-val" data-count="24.5" data-suffix="%">24.5%</span></div>
+          <div class="bar-row"><span class="bar-label">after 38 matches</span><span class="bar-track"><span class="bar-fill info" style="width:74.1%"></span></span><span class="bar-val" data-count="74.1" data-suffix="%">74.1%</span></div>
+        </div>
+        <p>After two appearances the season adds 1 + 0.95 = 1.95 effective matches: 1.95 / (6 + 1.95) = 24.5%. After 38 it adds 17.15 effective matches: 17.15 / (6 + 17.15) = 74.1%.</p>
+
+        <h4>Why sum the values, then divide by the sum of minutes</h4>
+        <p>Averaging per-90 rates match by match, as <code>blendPlayerRate</code> does, gives an eight-minute cameo the same say as a full match. Pooling the totals gives a cameo only a cameo's worth of evidence.</p>
+        <div class="example illustration">
+          <p>Made-up numbers, with the recency weights left out so the point stays plain. Match A: 90 minutes, 0.2 xG. Match B: an 8-minute cameo, 0.4 xG.</p>
+          <ul>
+            <li>Rates: A is 0.2 per 90. B is 0.4 / 8 × 90 = 4.5 per 90.</li>
+            <li class="strike">Average of rates: (0.2 + 4.5) / 2 = 2.35 per 90. The cameo dominates.</li>
+            <li class="ok">Pooled: 90 × (0.2 + 0.4) / (90 + 8) = 54 / 98 = 0.55 per 90.</li>
+          </ul>
+        </div>
+
+        <div class="callout"><span class="label">Defender cap</span>A defender's xG is capped at <code>0.35</code> per 90 in each match before the blend. No backtest note records a test of this cap.</div>
+
+        <details>
+          <summary>Backtest evidence and how the constants were chosen</summary>
+          <ul>
+            <li>Pooling minutes instead of averaging rates was worth 2.0–6.3% rest-of-season rate RMSE on xG across three held-out seasons, and 1.1–1.4% on xA. The anchor's weight is still counted in matches, so <code>priorWeightMatches</code> keeps its meaning.</li>
+            <li>Decay 0.93–0.95 tied on actual-points RMSE and 0.95 won the main split (<code>scripts/backtest/evidence-weights.ts</code>).</li>
+            <li>A three-season (2023/24–2025/26) sweep of the prior weight against next-match xG/xA, scored with genuine previous-season anchors, bottomed at 6 for xG and 4 for xA (flat across 4–8). So 6 covers both within noise.</li>
+            <li>The 3.0 cap bounds single-match spikes, such as a fluke hat-trick, which dominate squared error and revert hardest.</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>No match history yet: the fallback path</summary>
+          <p>This path needs an in-season match history (<code>options.playerForm</code>, filled by <code>loadInSeasonPlayerRates</code> in <code>lib/historical/loadInSeasonForm.ts</code>, one entry per finished gameweek the player featured in). Without one, xG and xA use cumulative <code>Player.current.expectedGoals</code> / <code>expectedAssists</code>. This happens before any gameweek has finished, or for a caller that has not loaded it.</p>
+          <div class="formula"><span class="v">rate</span>   = <span class="v">historicalRate</span> / <span class="v">sourceAttack</span>      (or <span class="v">pricePrior</span> with no history)
+<span class="v">sample</span> = <span class="v">historicalMinutes</span>
+if current exists:
+    <span class="v">currentWeight</span> = clamp(<span class="v">currentGameweek</span> / <span class="k">10</span>, <span class="k">0</span>, <span class="k">0.6</span>)
+    <span class="v">rate</span>   = <span class="v">rate</span> * (<span class="k">1</span> - <span class="v">currentWeight</span>) + (<span class="v">currentRate</span> / <span class="v">ownAttack</span>) * <span class="v">currentWeight</span>
+    <span class="v">sample</span> += <span class="v">currentMinutes</span> * <span class="v">currentWeight</span>
+<span class="v">rate</span> = clamp(regressPer90(<span class="v">rate</span>, <span class="v">sample</span>, <span class="v">pricePrior</span>, <span class="k">900</span>), <span class="k">0</span>, <span class="k">3</span>)</div>
+          <p>Unlike §6.3, this fallback has no cap on the current rate, and it divides each side by the attack of the club that produced it.</p>
+        </details>
+
+        <details>
+          <summary>The historical anchor</summary>
+          <p>On the match-history path, the historical xG/xA anchor is regressed toward the neutral price-tier prior before it enters the blend:</p>
+          <div class="formula"><span class="v">historicalAnchor</span> = regressPer90(<span class="v">historicalRate</span>, <span class="v">historicalMinutes</span>, <span class="v">pricePrior</span>, <span class="k">900</span>)</div>
+          <p>The generic <code>pricePrior</code> is deliberately league-neutral. It is not divided by the current club's attack, so the upcoming fixture multiplier still lowers a player on a weak attack. A historical sample is normalized by the attack of the club that produced it, using the source team's strength from the historical bundle. A transfer therefore does not rescale old production with the new club's attack.</p>
+        </details>
+        <p class="src">lib/projections/projectPlayer.ts · regressedFormRate · lib/projections/playerForm.ts · blendPlayerRateByMinutes</p>
+      </section>
+
+      <section id="s6-3-2">
+        <h3><span class="secno">§6.3.2</span>Schedule adjustment: counting the fixture once</h3>
+        <p class="tldr"><strong>In short:</strong> the model divides each past match's output by that match's fixture multiplier, so §7's multiplier for the next match does not count fixture quality a second time.</p>
+
+        <p>A match against a weak defence produced a higher rate for that reason, and §7's multiplier for the upcoming fixture is about to apply on top. Left alone, the model counts fixture quality twice.</p>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4><span class="strike">Without the adjustment: counted twice</span></h4>
+            <div class="flow">
+              <div class="step">Past rate, lifted by soft fixtures</div>
+              <div class="arrow">→</div>
+              <div class="step">Blend</div>
+              <div class="arrow">→</div>
+              <div class="step">× upcoming multiplier (§7)</div>
+            </div>
+            <p>Soft opponents lift the form twice: once in the past rate, once in the next fixture.</p>
+          </div>
+          <div class="card">
+            <h4><span class="ok">With the adjustment: counted once</span></h4>
+            <div class="flow">
+              <div class="step">Past rate ÷ <code>m_i</code></div>
+              <div class="arrow">→</div>
+              <div class="step">Blend</div>
+              <div class="arrow">→</div>
+              <div class="step">× upcoming multiplier (§7)</div>
+            </div>
+            <p>The past rate has fixture quality removed, so only the next fixture adds it back.</p>
+          </div>
+        </div>
+
+        <div class="formula"><span class="v">m_i</span>          = attackMultiplier(<span class="v">opponent_i</span>, <span class="v">venue_i</span>)    <span class="c">// base = 1; see below</span>
+<span class="v">sourceAttack</span> = historical source club attack, when available
+<span class="v">rate</span>         = blendPlayerRateByMinutes({ <span class="v">value_i</span> / <span class="v">m_i</span>, <span class="v">minutes_i</span> }, <span class="v">historicalAnchor</span> / <span class="v">sourceAttack</span>)</div>
+
+        <div class="example illustration">
+          <p>Made-up numbers: a player's recent form is 0.50 xG per 90, played against fixtures with <code>m_i = 1.25</code>. The next fixture also has multiplier 1.25.</p>
+          <ul>
+            <li class="strike">Unadjusted: 0.50 × 1.25 = 0.625. The soft run counts twice.</li>
+            <li class="ok">Adjusted: 0.50 / 1.25 = 0.40, then 0.40 × 1.25 = 0.50. The soft fixture counts once.</li>
+          </ul>
+        </div>
+
+        <ul>
+          <li><b>Both halves move together.</b> The anchor and the form are both normalized. Normalizing the form alone leaves an inflated anchor against a deflated form estimate, and scores worse than doing nothing in every season tested.</li>
+          <li><b>No historical sample.</b> The code passes <code>pricePrior</code> as the neutral anchor instead of dividing it by the current team's attack. The current team's attack stays in each upcoming fixture's multiplier, so generic priors keep the team-strength effect.</li>
+          <li><b>Which strengths <code>m_i</code> uses.</b> It uses the current strength table and leaves <code>base</code> at 1, because the model stores neither a past gameweek's strengths nor its difficulty. It stores only the opponent and the venue, which <code>loadInSeasonPlayerRates</code> attaches to each appearance from the fixture list. Both approximations were measured, not assumed: scoring past matches with today's strengths is better than the walk-forward version, and the asymmetry against a live-FDR upcoming fixture costs 0.001–0.003 RMSE and does not move the bias.</li>
+        </ul>
+
+        <div class="callout warn"><span class="label">Fallback</span>If any appearance has no opponent, or faces a team with no strength entry, the whole player falls back to the unadjusted blend, so the model never mixes scales.</div>
+
+        <details>
+          <summary>What it buys: backtest 2022/23–2025/26</summary>
+          <p>RMSE is a wash. The mean prediction gap between arms is 0.016–0.026 xGI/90 against a residual of 0.17–0.25, so the test cannot resolve it. Bias is where it lands: the absolute bias falls in 7 of 8 season-metric comparisons.</p>
+          <p>Sort started rows by the mean multiplier their form window was played under. The unadjusted model's bias rises monotonically across all five quintiles in all four seasons. It over-projects a player coming off a soft run and under-projects one off a hard run. The head-to-tail gradient (xGI/90) falls as follows.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Backtest season</th><th class="num">Unadjusted</th><th class="num">Adjusted</th></tr></thead>
+              <tbody>
+                <tr><td>A</td><td class="num">+0.164</td><td class="num">+0.033</td></tr>
+                <tr><td>B</td><td class="num">+0.078</td><td class="num">-0.041</td></tr>
+                <tr><td>C</td><td class="num">+0.098</td><td class="num">-0.004</td></tr>
+                <tr><td>D</td><td class="num">+0.092</td><td class="num">-0.011</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>One row per backtest season; the source does not say which row is which season.</p>
+        </details>
+
+        <details>
+          <summary>What it does not fix</summary>
+          <p>Splitting that gradient shows most of it is not the schedule. Bucketed by a player's recent run against their own baseline, the tilt is mixed. Bucketed by team level, it is monotone in every season. A player's own xG rate still carries some team quality, so the schedule arm remains an approximation, not a full player-share decomposition.</p>
+          <p>Re-run with <code>npx tsx scripts/backtest/schedule-adjust.ts</code>.</p>
+        </details>
+        <p class="src">lib/projections/projectPlayer.ts · regressedFormRate, pastFixtureMultiplier</p>
+      </section>
+
+      <section id="s6-4">
+        <h3><span class="secno">§6.4</span>Priors and ceilings</h3>
+        <p class="tldr"><strong>In short:</strong> a player with no history starts from a prior set by position (and by price, for goals and assists), and every rate stops at a ceiling.</p>
+
+        <h4>Per-position priors</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Stat</th><th class="num">GK</th><th class="num">DEF</th><th class="num">MID</th><th class="num">FWD</th></tr></thead>
+            <tbody>
+              <tr><td>xG/xA prior</td><td class="num" colspan="4">price-tiered, see below</td></tr>
+              <tr><td>Defensive contributions</td><td class="num">0</td><td class="num">7.7</td><td class="num">8.6</td><td class="num">4.7</td></tr>
+              <tr><td>Saves</td><td class="num">2.8</td><td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+              <tr><td>Bonus</td><td class="num">0.22</td><td class="num">0.22</td><td class="num">0.32</td><td class="num">0.59</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="src">lib/projections/projectPlayer.ts</p>
+
+        <h4>Price-tiered attacking priors</h4>
+        <p>Players with no usable historical goal or assist sample use a prior set by cost bracket, not one flat prior per position. This reflects empirical FPL output by cost.</p>
+
+        <div class="legend"><span><i style="background:var(--accent)"></i>xG per 90</span><span><i style="background:var(--info)"></i>xA per 90</span></div>
+        <div class="chart-wrap">
+        <svg style="--vbw:600px" class="diagram wide" viewBox="0 0 600 270" role="img" aria-label="Grouped bar chart of xG and xA priors by price tier for midfielders and forwards. Values are in the table below.">
+          <line class="axis" x1="10" y1="200" x2="590" y2="200"/>
+          <!-- MID: xG then xA -->
+          <rect class="bar-xg" data-anim="grow-y" style="--d: 0ms" x="18" y="188" width="24" height="12"/>
+          <rect class="bar-xa" data-anim="grow-y" style="--d: 60ms" x="46" y="185.6" width="24" height="14.4"/>
+          <rect class="bar-xg" data-anim="grow-y" style="--d: 130ms" x="82" y="178.4" width="24" height="21.6"/>
+          <rect class="bar-xa" data-anim="grow-y" style="--d: 190ms" x="110" y="180.8" width="24" height="19.2"/>
+          <rect class="bar-xg" data-anim="grow-y" style="--d: 260ms" x="146" y="161.6" width="24" height="38.4"/>
+          <rect class="bar-xa" data-anim="grow-y" style="--d: 320ms" x="174" y="166.4" width="24" height="33.6"/>
+          <rect class="bar-xg" data-anim="grow-y" style="--d: 390ms" x="210" y="140" width="24" height="60"/>
+          <rect class="bar-xa" data-anim="grow-y" style="--d: 450ms" x="238" y="152" width="24" height="48"/>
+          <rect class="bar-xg" data-anim="grow-y" style="--d: 520ms" x="274" y="108.8" width="24" height="91.2"/>
+          <rect class="bar-xa" data-anim="grow-y" style="--d: 580ms" x="302" y="137.6" width="24" height="62.4"/>
+          <!-- FWD -->
+          <rect class="bar-xg" data-anim="grow-y" style="--d: 650ms" x="338" y="152" width="24" height="48"/>
+          <rect class="bar-xa" data-anim="grow-y" style="--d: 710ms" x="366" y="185.6" width="24" height="14.4"/>
+          <rect class="bar-xg" data-anim="grow-y" style="--d: 780ms" x="402" y="113.6" width="24" height="86.4"/>
+          <rect class="bar-xa" data-anim="grow-y" style="--d: 840ms" x="430" y="178.4" width="24" height="21.6"/>
+          <rect class="bar-xg" data-anim="grow-y" style="--d: 910ms" x="466" y="92" width="24" height="108"/>
+          <rect class="bar-xa" data-anim="grow-y" style="--d: 970ms" x="494" y="166.4" width="24" height="33.6"/>
+          <rect class="bar-xg" data-anim="grow-y" style="--d: 1040ms" x="530" y="32" width="24" height="168"/>
+          <rect class="bar-xa" data-anim="grow-y" style="--d: 1100ms" x="558" y="161.6" width="24" height="38.4"/>
+          <g class="lbl num" text-anchor="middle">
+            <text class="lbl num" data-anim="fade" style="--d: 0ms" x="44" y="218">≤4.5</text>
+            <text class="lbl num" data-anim="fade" style="--d: 130ms" x="108" y="218">5.0</text>
+            <text class="lbl num" data-anim="fade" style="--d: 260ms" x="172" y="218">5.5–6.5</text>
+            <text class="lbl num" data-anim="fade" style="--d: 390ms" x="236" y="218">7.0–8.5</text>
+            <text class="lbl num" data-anim="fade" style="--d: 520ms" x="300" y="218">≥9.0</text>
+            <text class="lbl num" data-anim="fade" style="--d: 650ms" x="364" y="218">≤5.0</text>
+            <text class="lbl num" data-anim="fade" style="--d: 780ms" x="428" y="218">5.5–6.5</text>
+            <text class="lbl num" data-anim="fade" style="--d: 910ms" x="492" y="218">7.0–8.5</text>
+            <text class="lbl num" data-anim="fade" style="--d: 1040ms" x="556" y="218">≥9.0</text>
+          </g>
+          <line class="axis" x1="14" y1="232" x2="326" y2="232"/>
+          <line class="axis" x1="334" y1="232" x2="586" y2="232"/>
+          <text class="lbl-hi" x="170" y="252" text-anchor="middle">MID (price in £m)</text>
+          <text class="lbl-hi" x="460" y="252" text-anchor="middle">FWD (price in £m)</text>
+        </svg>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Position</th><th>Price tier</th><th>Type</th><th class="num">xG</th><th class="num">xA</th></tr></thead>
+            <tbody>
+              <tr><td>GK</td><td>all prices</td><td>goals killed outright; assists kept</td><td class="num">0</td><td class="num">0.02</td></tr>
+              <tr><td>DEF</td><td>≤ £4.5m</td><td>budget CBs and fullbacks</td><td class="num">0.02</td><td class="num">0.02</td></tr>
+              <tr><td>DEF</td><td>£5.0m–£5.5m</td><td>mid-tier</td><td class="num">0.05</td><td class="num">0.06</td></tr>
+              <tr><td>DEF</td><td>≥ £6.0m</td><td>premium attacking wing-backs</td><td class="num">0.08</td><td class="num">0.10</td></tr>
+              <tr><td>MID</td><td>≤ £4.5m</td><td>holding and defensive mids</td><td class="num">0.05</td><td class="num">0.06</td></tr>
+              <tr><td>MID</td><td>£5.0m</td><td>box-to-box</td><td class="num">0.09</td><td class="num">0.08</td></tr>
+              <tr><td>MID</td><td>£5.5m–£6.5m</td><td>mid-tier wingers and creators</td><td class="num">0.16</td><td class="num">0.14</td></tr>
+              <tr><td>MID</td><td>£7.0m–£8.5m</td><td>secondary talismans</td><td class="num">0.25</td><td class="num">0.20</td></tr>
+              <tr><td>MID</td><td>≥ £9.0m</td><td>premiums</td><td class="num">0.38</td><td class="num">0.26</td></tr>
+              <tr><td>FWD</td><td>≤ £5.0m</td><td>bench enablers</td><td class="num">0.20</td><td class="num">0.06</td></tr>
+              <tr><td>FWD</td><td>£5.5m–£6.5m</td><td>mid-table starters</td><td class="num">0.36</td><td class="num">0.09</td></tr>
+              <tr><td>FWD</td><td>£7.0m–£8.5m</td><td>upper-tier strikers</td><td class="num">0.45</td><td class="num">0.14</td></tr>
+              <tr><td>FWD</td><td>≥ £9.0m</td><td>super-premiums</td><td class="num">0.70</td><td class="num">0.16</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="src">lib/projections/projectPlayer.ts · priceTieredAttackingPrior</p>
+
+        <h4>Ceilings</h4>
+        <p>No rate goes above its ceiling (all per 90).</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Stat</th><th class="num">Ceiling per 90</th></tr></thead>
+            <tbody>
+              <tr><td>Goal involvement</td><td class="num">3</td></tr>
+              <tr><td>Saves</td><td class="num">10</td></tr>
+              <tr><td>Defensive contributions</td><td class="num">30</td></tr>
+              <tr><td>Bonus</td><td class="num">3</td></tr>
+              <tr><td>Yellow cards</td><td class="num">0.8</td></tr>
+              <tr><td>Red cards</td><td class="num">0.1</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="src">lib/projections/projectPlayer.ts · RATE_CEILING</p>
+      </section>
+    </section>
+
+    <nav class="pager" aria-label="Previous and next">
+      <a class="prev" href="availability.html"><small>← Previous</small>Who plays, and for how long</a>
+      <a class="next" href="fixtures.html"><small>Next →</small>Fixture adjustment</a>
+    </nav>
+  </main>
+</div>
+</body>
+</html>
