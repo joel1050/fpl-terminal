@@ -118,6 +118,24 @@ test.describe("squad pitch", () => {
     await expect(squadPanel(page).getByTestId("squad-token").locator(".run")).toHaveCount(15);
   });
 
+  test("shows a visible xP label after every token's value, on desktop and phone", async ({ page }) => {
+    await importTeam(page);
+    const labels = squadPanel(page).getByTestId("token-xp").locator("small");
+
+    for (const [width, height] of [[1440, 900], [390, 844]] as const) {
+      await page.setViewportSize({ width, height });
+      await expect(labels).toHaveCount(15);
+      for (const label of await labels.all()) {
+        await expect(label).toHaveText("xP");
+        await expect(label).toBeVisible();
+        // toBeVisible passes on the 1px screen-reader clip too, so check the real box.
+        const box = await label.boundingBox();
+        expect(box, "every xP label has a box").not.toBeNull();
+        expect(box!.width).toBeGreaterThan(4);
+      }
+    }
+  });
+
   test("opens an action sheet from a token, sets the captain, and keeps it after a reload", async ({ page }) => {
     await importTeam(page);
 

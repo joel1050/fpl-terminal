@@ -32,7 +32,7 @@ import {
   type TerminalMode,
   type SortKey,
 } from "@/store/terminalStore";
-import { PitchToken, captainMultiplier, pitchXp } from "@/components/terminal/squad/PitchToken";
+import { PitchToken } from "@/components/terminal/squad/PitchToken";
 import { PlayerActions } from "@/components/terminal/squad/PlayerActions";
 import { SquadKpis } from "@/components/terminal/squad/SquadKpis";
 import { SquadPitch } from "@/components/terminal/squad/SquadPitch";
@@ -1311,10 +1311,6 @@ export default function TerminalApp() {
       : store.byPosition[position].slice(0, DRAFT_XI_COUNTS[position]).map((id) => playerById.get(id)).filter((player): player is TerminalPlayer => Boolean(player));
     return { position, players, slotCount: currentGWPlan ? players.length : DRAFT_XI_COUNTS[position] };
   });
-  const pitchCaptain = playerById.get((lineupApplied ? store.captainId : currentGWPlan?.captainId) ?? -1);
-  const captainCaption = pitchCaptain
-    ? `Captain counts ${captainMultiplier(true, store.chip) === 3 ? "triple" : "double"}: ${pitchCaptain.displayName} ${points(pitchXp(pitchCaptain, planningGameweek, false))} → ${points(pitchXp(pitchCaptain, planningGameweek, true, store.chip))}`
-    : undefined;
   const allSquadPlayersLocked = store.playerIds.length > 0 && store.playerIds.every((id) => store.lockedPlayerIds.includes(id));
   return (
     <main className="terminal-app">
@@ -1385,7 +1381,6 @@ export default function TerminalApp() {
                 />
               </> : <SquadPitch
                 startingMeta={`${currentGWPlan ? formationLabel(currentGWPlan) : "3-4-3"} · ${currentGWPlan ? 11 : draftStarterCount}/11`}
-                captainCaption={captainCaption}
                 rows={pitchRows}
                 bench={benchSlots.map((slot) => ({ player: slot.id ? playerById.get(slot.id) : undefined, position: slot.position, label: slot.label }))}
                 hint={swapHint}
